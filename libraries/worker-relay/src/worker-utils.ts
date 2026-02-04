@@ -1,4 +1,3 @@
-import { SqliteRelay } from "./sqlite/sqlite-relay";
 import { InMemoryRelay } from "./memory-relay";
 import { setLogging } from "./debug";
 import { installConsoleLogLevelFilter, normalizeLogLevel, setGlobalLogLevel } from "@nostrwatch/utils";
@@ -103,8 +102,19 @@ export const relayInit = async (state: WorkerState, args: InitAargs) => {
     typeof (globalThis as any).Atomics !== "undefined";
   try {
     if ("WebAssembly" in state.self && opfsCapable) {
-      state.relay = new SqliteRelay();
-      state.storageStatus = { kind: "sqlite" };
+      try {
+        // Avoid eagerly importing sqlite-wasm in non-COOP/COEP contexts. Some browsers
+        // will fail to load the module (or its WASM dependencies) before we can
+        // fall back to memory storage.
+        const { SqliteRelay } = await import("./sqlite/sqlite-relay");
+        state.relay = new SqliteRelay();
+        state.storageStatus = { kind: "sqlite" };
+      } catch (e: any) {
+        const message = e?.message ? String(e.message) : String(e);
+        console.warn("OPFS/SQLite module failed to load, falling back to InMemoryRelay", e);
+        state.relay = new InMemoryRelay();
+        state.storageStatus = { kind: "memory", reason: "sqlite-import-failed", errorMessage: message };
+      }
     } else {
       state.relay = new InMemoryRelay();
       state.storageStatus = opfsCapable

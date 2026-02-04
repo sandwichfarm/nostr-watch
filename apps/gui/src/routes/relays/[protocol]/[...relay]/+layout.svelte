@@ -124,10 +124,10 @@
 	    // doLiveSync.set(true);
 	    if (currentRelay === relayUrl) return;
 	    
-	    let resume: LiveSyncResumer = async () => {};
+	    let resume: LiveSyncResumer | null = null;
 	    void pauseLiveSync()
 	      .then((r) => {
-	        resume = r;
+	        resume = typeof r === 'function' ? r : null;
 	      })
 	      .catch((err) => {
 	        console.warn('[relay layout] pauseLiveSync failed', err);
@@ -144,7 +144,7 @@
 	    })
 	    return () => {
 	      void stopRelayLiveSync().catch(() => {});
-	      void resume().catch(() => {});
+	      if (resume) void resume().catch(() => {});
 	    }
 	    };
 
@@ -186,19 +186,19 @@
   bgOpacity={0.2} 
 />
 
-<div class="hidden space-y-6 py-10 px-4 pb-16 md:block">
-    <div class="flex flex-col space-y-8 lg:flex-row lg:space-x-12 lg:space-y-0 gap-8">
-      <aside class="-ml-10 lg:w-1/6">
-        <RelaySidebar items={sidebarNavItems} class="hidden lg:block" />
-      </aside>
-      {#key pathname}
-      <div 
-        class="flex-1 pr-10" 
-        in:fade={{ duration: 300, delay: 400 }} 
+<div class="space-y-6 px-4 py-6 pb-16 md:py-10">
+  <div class="flex flex-col gap-8 space-y-8 lg:flex-row lg:space-x-12 lg:space-y-0">
+    <aside class="hidden -ml-10 lg:block lg:w-1/6">
+      <RelaySidebar items={sidebarNavItems} class="hidden lg:block" />
+    </aside>
+    {#key pathname}
+      <div
+        class="flex-1 lg:pr-10"
+        in:fade={{ duration: 300, delay: 400 }}
         out:fade={{ duration: 150 }}
-        >
+      >
         <slot {relayAggregate} />
       </div>
-      {/key}
-    </div>
+    {/key}
+  </div>
 </div>

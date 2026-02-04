@@ -33,6 +33,8 @@
 	let syncing = false;
 	let hydrating = false;
 	let inView = false;
+	let chartHasAttemptedLoad = false;
+	let chartPointCount = 0;
 	let subscription: RelayDeltasSubscriptionHandle | null = null;
 	let timeRange = '24h'; // Default time range
 	let smaWindow = '5'; // SMA window (points)
@@ -203,6 +205,7 @@
 
 		const background = opts?.background ?? false;
 		if (!background) {
+			chartHasAttemptedLoad = true;
 			loading = true;
 			error = null;
 		}
@@ -314,6 +317,11 @@
 		}
 
 		if (error) return 0;
+		if (!background) {
+			chartPointCount = seriesData.length;
+		} else if (seriesData.length > 0) {
+			chartPointCount = seriesData.length;
+		}
 
 		// Ensure canvas is mounted before creating Chart.js instance.
 		await tick();
@@ -541,6 +549,12 @@
 				<div class="absolute inset-0 flex items-center justify-center rounded bg-black/60">
 					<div class="text-white/60">
 						{syncing ? 'Syncing relay data...' : hydrating ? 'Hydrating chart data…' : 'Loading chart...'}
+					</div>
+				</div>
+			{:else if chartHasAttemptedLoad && chartPointCount === 0}
+				<div class="absolute inset-0 flex items-center justify-center rounded bg-black/60 p-6">
+					<div class="max-w-md text-center text-sm text-white/60">
+						No chart data available for this time range.
 					</div>
 				</div>
 			{/if}

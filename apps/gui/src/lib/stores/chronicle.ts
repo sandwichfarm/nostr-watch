@@ -166,37 +166,40 @@ async function ensureRelayDeltasSubscription(
   relay: string,
   options?: { since?: number }
 ): Promise<void> {
+  const requestedSince = normalizeSince(options?.since);
+  const currentSince = relayDeltasSinceMin.get(relay);
+
+  // Track earliest requested since for this relay while subscribed.
+  if (
+    requestedSince !== undefined &&
+    (currentSince === undefined || requestedSince < currentSince)
+  ) {
+    relayDeltasSinceMin.set(relay, requestedSince);
+  }
+
   const existing = relayDeltasEnsureInFlight.get(relay);
-  if (existing) return existing;
+  if (existing) {
+    // Wait for the in-flight ensure, then run again in case `since` was updated while waiting.
+    await existing;
+  }
+
+  const inFlightNow = relayDeltasEnsureInFlight.get(relay);
+  if (inFlightNow) return inFlightNow;
 
   const task = (async () => {
-    const requestedSince = normalizeSince(options?.since);
-    const currentSince = relayDeltasSinceMin.get(relay);
-
-    // Track earliest requested since for this relay while subscribed.
-    const shouldUpgradeSince =
-      requestedSince !== undefined &&
-      (currentSince === undefined || requestedSince < currentSince);
-
-    if (shouldUpgradeSince) {
-      relayDeltasSinceMin.set(relay, requestedSince);
-    }
-
     const desiredSince = relayDeltasSinceMin.get(relay);
+    const wantsSubscription = (relayDeltasRefCount.get(relay) ?? 0) > 0;
 
-    // If already subscribed and we didn't need to expand the time window, nothing to do.
-    if (isSyncing(relay) && !shouldUpgradeSince) return;
-
-    // If we need to expand the time window, restart the subscription with an earlier `since`.
-    if (isSyncing(relay) && shouldUpgradeSince) {
-      await unsyncRelay(relay);
+    if (!wantsSubscription) {
+      if (isSyncing(relay)) await unsyncRelay(relay);
+      return;
     }
 
+    // ChronicleService will keep a live subscription and backfill history as `since` expands.
     await syncRelay(relay, { since: desiredSince, keepAlive: true });
 
     // If a one-shot sync was in-flight, the first call above can return without creating a keepAlive
     // subscription. Double-check and retry once if we still want the subscription.
-    const wantsSubscription = (relayDeltasRefCount.get(relay) ?? 0) > 0;
     if (wantsSubscription && !isSyncing(relay)) {
       await syncRelay(relay, { since: desiredSince, keepAlive: true });
     }

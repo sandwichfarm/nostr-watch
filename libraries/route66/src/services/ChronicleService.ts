@@ -99,9 +99,11 @@ export interface UptimePeriod {
 export class ChronicleService extends Service {
   public storage: Route66EventStorage;
   private memoryByRelay: Map<string, Map<string, IDeltaEvent>> = new Map();
+  private memoryBoundsByRelay: Map<string, { min: number; max: number }> = new Map();
   private options: ChronicleServiceOptions;
   private kind1066Subscriptions: Map<string, string> = new Map();
   private syncInFlight: Map<string, Promise<void>> = new Map();
+  private desiredSinceByRelay: Map<string, number | undefined> = new Map();
 
   private aggregateTimeSeries(
     points: TimeSeriesPoint[],
@@ -174,12 +176,45 @@ export class ChronicleService extends Service {
     return trimmed.replace(/\/+$/, '');
   }
 
+  private normalizeSince(since?: number): number | undefined {
+    if (typeof since !== 'number') return undefined;
+    if (!Number.isFinite(since)) return undefined;
+    return since;
+  }
+
   private relayTagValues(relay: string): string[] {
     const trimmed = (relay || '').trim();
     if (!trimmed) return [];
     const withoutTrailingSlash = trimmed.replace(/\/+$/, '');
     const withTrailingSlash = `${withoutTrailingSlash}/`;
     return Array.from(new Set([trimmed, withoutTrailingSlash, withTrailingSlash]));
+  }
+
+  /**
+   * Values to use for *remote* `#r` filtering.
+   *
+   * Some relays (notably `wss://relay.nostr.watch`) appear to mishandle multiple values
+   * within a single `#r: [...]` array. To remain compatible, we query each candidate
+   * as a separate filter/request.
+   */
+  private relayTagQueryValues(relay: string): string[] {
+    const trimmed = (relay || '').trim();
+    if (!trimmed) return [];
+    const withoutTrailingSlash = trimmed.replace(/\/+$/, '');
+    if (!withoutTrailingSlash) return [];
+    const withTrailingSlash = `${withoutTrailingSlash}/`;
+    return Array.from(new Set([withoutTrailingSlash, withTrailingSlash]));
+  }
+
+  private updateMemoryBounds(relayKey: string, createdAt: number): void {
+    if (!Number.isFinite(createdAt)) return;
+    const existing = this.memoryBoundsByRelay.get(relayKey);
+    if (!existing) {
+      this.memoryBoundsByRelay.set(relayKey, { min: createdAt, max: createdAt });
+      return;
+    }
+    if (createdAt < existing.min) existing.min = createdAt;
+    if (createdAt > existing.max) existing.max = createdAt;
   }
 
   constructor(
@@ -195,11 +230,20 @@ export class ChronicleService extends Service {
     this.init();
   }
 
-  private rememberEvent(relay: string, event: unknown): void {
+  private extractRelayKeyFromEvent(event: unknown): string | null {
+    const ev = event as any;
+    if (!ev || ev.kind !== 1066) return null;
+    const rTag = Array.isArray(ev.tags) ? ev.tags.find((t: any[]) => t?.[0] === 'r')?.[1] : undefined;
+    if (typeof rTag !== 'string' || !rTag) return null;
+    return this.normalizeRelayKey(rTag);
+  }
+
+  private rememberEvent(event: unknown, relayKey: string): void {
     const ev = event as any;
     if (!ev || ev.kind !== 1066 || typeof ev.id !== 'string') return;
-
-    const relayKey = this.normalizeRelayKey(relay);
+    if (typeof ev.created_at === 'number') {
+      this.updateMemoryBounds(relayKey, ev.created_at);
+    }
 
     let relayMap = this.memoryByRelay.get(relayKey);
     if (!relayMap) {
@@ -211,7 +255,107 @@ export class ChronicleService extends Service {
     // Validate it's a proper Kind 1066 event before storing
     if (DeltaEvent.KIND === ev.kind) {
       relayMap.set(ev.id, ev as IDeltaEvent);
-      console.log(`[Chronicle] Stored event ${ev.id?.slice(0, 8)} for ${relayKey}, map size: ${relayMap.size}`);
+    }
+  }
+
+  private async backfillKind1066ForRelayTag(
+    relayKey: string,
+    relayTagValue: string,
+    options?: { since?: number; until?: number }
+  ): Promise<void> {
+    const PAGE_LIMIT = 5000;
+    const MAX_PAGES = 250; // safety guard for pathological relays/ranges
+
+    const targetSince = this.normalizeSince(options?.since);
+    let cursorUntil = this.normalizeSince(options?.until) ?? Math.floor(Date.now() / 1000);
+
+    let pages = 0;
+    let lastOldest: number | undefined;
+
+    while (pages < MAX_PAGES) {
+      const filter: Filter = {
+        kinds: [1066],
+        '#r': [relayTagValue],
+        until: cursorUntil,
+        limit: PAGE_LIMIT,
+      };
+      if (typeof targetSince === 'number') filter.since = targetSince;
+
+      const args: WebsocketRequestBody = {
+        filters: [filter],
+        relays: this.options.syncRelays,
+        hash: deterministicHash([filter]),
+        options: {
+          cache: false,
+          stream: false,
+          keepAlive: false,
+          returnResults: true,
+        },
+      };
+
+      let events: unknown[] = [];
+      try {
+        const res = await this.fetchFromWebsocket(args);
+        events = Array.isArray(res) ? res : [];
+      } catch (err) {
+        console.warn(`[Chronicle] Fetch error for ${relayTagValue}:`, err);
+        return;
+      }
+
+      if (!events.length) return;
+
+      let oldest: number | undefined;
+      for (const event of events) {
+        const ev = event as any;
+        if (!ev || ev.kind !== 1066) continue;
+        if (this.extractRelayKeyFromEvent(ev) !== relayKey) continue;
+        if (typeof ev.created_at === 'number') {
+          if (oldest === undefined || ev.created_at < oldest) oldest = ev.created_at;
+        }
+        this.rememberEvent(ev, relayKey);
+      }
+
+      // If we didn't see any matching events in this page, bail (either relay has no data,
+      // or the remote relay isn't returning the expected tag variant).
+      if (oldest === undefined) return;
+
+      if (typeof targetSince === 'number' && oldest <= targetSince) return;
+
+      // If we got fewer than the page limit, we likely exhausted history for this tag/range.
+      if (events.length < PAGE_LIMIT) return;
+
+      // Safety: avoid infinite loops if server keeps returning the same oldest timestamp.
+      if (oldest === lastOldest) return;
+      lastOldest = oldest;
+
+      // Page backwards in time.
+      const nextUntil = oldest - 1;
+      if (!Number.isFinite(nextUntil) || nextUntil <= 0) return;
+      if (nextUntil >= cursorUntil) return;
+      cursorUntil = nextUntil;
+      pages += 1;
+    }
+  }
+
+  private async backfillKind1066ForRelay(
+    relay: string,
+    relayKey: string,
+    options?: { since?: number; until?: number }
+  ): Promise<void> {
+    const targetSince = this.normalizeSince(options?.since);
+    const bounds = this.memoryBoundsByRelay.get(relayKey);
+    if (
+      typeof targetSince === 'number' &&
+      bounds &&
+      Number.isFinite(bounds.min) &&
+      bounds.min <= targetSince
+    ) {
+      return;
+    }
+
+    const tagValues = this.relayTagQueryValues(relay);
+    for (const tagValue of tagValues) {
+      await this.backfillKind1066ForRelayTag(relayKey, tagValue, options);
     }
   }
 
@@ -223,13 +367,10 @@ export class ChronicleService extends Service {
     return {
       async query(options: QueryOptions): Promise<IDeltaEvent[]> {
         const relayKeys = relayTagValues(options.relay);
-        console.log(`[Chronicle] Memory query for relay: ${options.relay}, keys: ${JSON.stringify(relayKeys)}`);
-        console.log(`[Chronicle] memoryByRelay has ${memoryByRelay.size} entries:`, Array.from(memoryByRelay.keys()));
         const relayMaps = relayKeys
           .map((key) => memoryByRelay.get(normalizeRelayKey(key)))
           .filter((m): m is Map<string, IDeltaEvent> => Boolean(m && m.size));
 
-        console.log(`[Chronicle] Found ${relayMaps.length} matching maps`);
         if (relayMaps.length === 0) return [];
 
         const byId = new Map<string, IDeltaEvent>();
@@ -267,7 +408,6 @@ export class ChronicleService extends Service {
           events = events.slice(-options.limit);
         }
 
-        console.log(`[Chronicle] Memory query returning ${events.length} events`);
         return events;
       },
     };
@@ -299,114 +439,91 @@ export class ChronicleService extends Service {
     await this.ready();
 
     const keepAlive = options?.keepAlive ?? this.options.autoSync ?? false;
+    const relayKey = this.normalizeRelayKey(relay);
 
-    // Check if already subscribed
-    if (this.kind1066Subscriptions.has(relay)) {
-      console.warn(`[Chronicle] Already syncing ${relay}`);
-      return;
+    const requestedSince = this.normalizeSince(options?.since);
+    const prevDesiredSince = this.desiredSinceByRelay.get(relayKey);
+    const desiredSince =
+      requestedSince === undefined
+        ? prevDesiredSince
+        : prevDesiredSince === undefined
+          ? requestedSince
+          : Math.min(prevDesiredSince, requestedSince);
+    this.desiredSinceByRelay.set(relayKey, desiredSince);
+
+    const existing = this.syncInFlight.get(relayKey);
+    if (existing) {
+      // If another sync is already in-flight, wait for it, then re-evaluate whether we
+      // still need to start/extend syncing (e.g. the requested `since` expanded).
+      await existing;
     }
 
-    const existing = this.syncInFlight.get(relay);
-    if (existing) return existing;
+    const effectiveSince = this.desiredSinceByRelay.get(relayKey);
+    const bounds = this.memoryBoundsByRelay.get(relayKey);
+    const needsBackfill =
+      typeof effectiveSince === 'number'
+        ? !bounds || !Number.isFinite(bounds.min) || bounds.min > effectiveSince
+        : false;
+    const needsLiveSubscription = keepAlive && !this.kind1066Subscriptions.has(relayKey);
+
+    const inFlightNow = this.syncInFlight.get(relayKey);
+    if (inFlightNow) return inFlightNow;
+    if (!needsBackfill && !needsLiveSubscription) return;
 
     const task = (async () => {
-      const relayValues = this.relayTagValues(relay);
+      if (keepAlive) {
+        // Start a lightweight live subscription for new deltas. Historical ranges are fetched
+        // explicitly via backfill to avoid relay `limit` caps truncating initial results.
+        if (!this.kind1066Subscriptions.has(relayKey)) {
+          const liveSince = Math.floor(Date.now() / 1000) - 60;
+          const tagValues = this.relayTagQueryValues(relay);
 
-      // Build filter for Kind 1066 delta events.
-      // Include both trailing-slash and non-trailing-slash relay tag variants.
-      const filter: Filter = {
-        kinds: [1066],
-        '#r': relayValues,
-      };
-      if (typeof options?.since === 'number' && Number.isFinite(options.since)) {
-        filter.since = options.since;
+          const filters: Filter[] = tagValues.map((tagValue) => ({
+            kinds: [1066],
+            '#r': [tagValue],
+            since: liveSince,
+          }));
+
+          const hash = deterministicHash({ kind: 1066, relay: relayKey, tagValues });
+
+          const args: WebsocketRequestBody = {
+            filters,
+            relays: this.options.syncRelays,
+            hash,
+            options: {
+              cache: false,
+              stream: true,
+              keepAlive: true,
+              returnResults: true,
+            },
+          };
+
+          const callbacks: SubscribeHandlers = {
+            onevent: (event) => {
+              const eventRelayKey = this.extractRelayKeyFromEvent(event);
+              if (!eventRelayKey || eventRelayKey !== relayKey) return;
+              this.rememberEvent(event, relayKey);
+            },
+          };
+
+          this.subscribe(args, callbacks, true).catch((err) => {
+            console.warn(`[Chronicle] Subscribe error for ${relay}:`, err);
+          });
+
+          this.kind1066Subscriptions.set(relayKey, hash);
+        }
       }
 
-      const filters: Filter[] = [filter];
-
-      console.log(`[Chronicle] syncRelay starting for ${relay}, keepAlive=${keepAlive}`);
-      console.log(`[Chronicle] Filter #r values:`, relayValues);
-      console.log(`[Chronicle] Sync relays:`, this.options.syncRelays);
-      console.log(`[Chronicle] Full filters:`, JSON.stringify(filters));
-
-      let eventCount = 0;
-
-      if (keepAlive) {
-        // Use subscribe for live streaming updates
-        const args: WebsocketRequestBody = {
-          filters,
-          relays: this.options.syncRelays,
-          hash: deterministicHash(filters),
-          options: {
-            cache: true,
-            stream: true,
-            keepAlive: true,
-            returnResults: true,
-          },
-        };
-
-        const callbacks: SubscribeHandlers = {
-          onevent: (event) => {
-            this.rememberEvent(relay, event);
-            eventCount++;
-            console.log(`[Chronicle] Received Kind 1066 for ${relay}`, (event as any).id?.slice(0, 8));
-          },
-          oneose: () => {
-            console.log(`[Chronicle] EOSE for ${relay} (${eventCount} events)`);
-          },
-        };
-
-        // Subscribe for live updates - don't await since it's keepAlive
-        this.subscribe(args, callbacks, false).catch((err) => {
-          console.warn(`[Chronicle] Subscribe error for ${relay}:`, err);
-        });
-
-        this.kind1066Subscriptions.set(relay, args.hash!);
-        console.log(`[Chronicle] Syncing ${relay} (hash: ${args.hash})`);
-      } else {
-        // Use fetch for one-shot queries - this is more reliable than subscribe
-        const args: WebsocketRequestBody = {
-          filters,
-          relays: this.options.syncRelays,
-          hash: deterministicHash(filters),
-          options: {
-            cache: false,
-            stream: false,
-            keepAlive: false,
-            returnResults: true,
-          },
-        };
-
-        // Use fetch() for one-shot queries - uses fetcher.allEventsIterator internally
-        // which is more reliable than pool.subscribeMany for single queries
-        console.log(`[Chronicle] Using fetch() for one-shot query`);
-        console.log(`[Chronicle] Fetch args:`, JSON.stringify({
-          filters: args.filters,
-          relays: args.relays,
-          options: args.options,
-        }));
-        try {
-          const events = await this.fetch(args);
-          console.log(`[Chronicle] Fetch returned:`, Array.isArray(events) ? `${events.length} events` : typeof events);
-          if (Array.isArray(events)) {
-            for (const event of events) {
-              const ev = event as any;
-              console.log(`[Chronicle] Processing event: kind=${ev.kind}, id=${ev.id?.slice(0, 8)}`);
-              this.rememberEvent(relay, event);
-              eventCount++;
-            }
-          }
-        } catch (err) {
-          console.warn(`[Chronicle] Fetch error for ${relay}:`, err);
-        }
-
-        console.log(`[Chronicle] Sync complete for ${relay} (${eventCount} events in memory)`);
+      // Always backfill the requested history window into memory so charts don't hydrate
+      // from partial data.
+      if (needsBackfill) {
+        await this.backfillKind1066ForRelay(relay, relayKey, { since: effectiveSince });
       }
     })().finally(() => {
-      this.syncInFlight.delete(relay);
+      this.syncInFlight.delete(relayKey);
     });
 
-    this.syncInFlight.set(relay, task);
+    this.syncInFlight.set(relayKey, task);
     return task;
   }
 
@@ -416,11 +533,14 @@ export class ChronicleService extends Service {
    * @param relay - Relay URL to stop syncing
    */
   async unsyncRelay(relay: string): Promise<void> {
-    const hash = this.kind1066Subscriptions.get(relay);
+    const relayKey = this.normalizeRelayKey(relay);
+    const hash = this.kind1066Subscriptions.get(relayKey);
+    this.desiredSinceByRelay.delete(relayKey);
+    this.memoryByRelay.delete(relayKey);
+    this.memoryBoundsByRelay.delete(relayKey);
     if (hash) {
+      this.kind1066Subscriptions.delete(relayKey);
       await this.unsubscribe(hash);
-      this.kind1066Subscriptions.delete(relay);
-      console.log(`[Chronicle] Stopped syncing ${relay}`);
     }
   }
 
@@ -442,7 +562,7 @@ export class ChronicleService extends Service {
     // Optionally sync first if autoSync enabled
     if (
       this.options.autoSync &&
-      !this.kind1066Subscriptions.has(options.relay)
+      !this.kind1066Subscriptions.has(this.normalizeRelayKey(options.relay))
     ) {
       await this.syncRelay(options.relay, { since: options.since });
     }
@@ -470,8 +590,6 @@ export class ChronicleService extends Service {
       console.warn(`[Chronicle] No events found for ${options.relay}`);
       return [];
     }
-
-    console.log(`[Chronicle] Found ${events.length} events for ${options.relay} time series`);
 
     let timeSeries: TimeSeriesPoint[] = [];
 
@@ -541,8 +659,6 @@ export class ChronicleService extends Service {
       periods = await uptimeHistory(this.storage, relay, options);
     }
 
-    console.log(`[Chronicle] Found ${periods.length} uptime periods for ${relay}`);
-
     // Convert to UptimePeriod format
     return periods.map((period) => ({
       start: period.start,
@@ -561,7 +677,7 @@ export class ChronicleService extends Service {
   async getDeltaEvents(options: QueryOptions): Promise<IDeltaEvent[]> {
     await this.ready();
 
-    if (this.options.autoSync && !this.kind1066Subscriptions.has(options.relay)) {
+    if (this.options.autoSync && !this.kind1066Subscriptions.has(this.normalizeRelayKey(options.relay))) {
       await this.syncRelay(options.relay, { since: options.since });
     }
 
@@ -582,7 +698,7 @@ export class ChronicleService extends Service {
    * @returns True if relay is being synced
    */
   isSyncing(relay: string): boolean {
-    return this.kind1066Subscriptions.has(relay);
+    return this.kind1066Subscriptions.has(this.normalizeRelayKey(relay));
   }
 
   /**

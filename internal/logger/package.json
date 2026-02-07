@@ -73,7 +73,7 @@
     "ts-loader": "^9.0.0",
     "typescript": "^5.0.0",
     "vitest": "^0.34.1",
-    "webpack": "^5.0.0",
+    "webpack": "^5.104.1",
     "webpack-cli": "^5.0.0"
   },
   "files": [

@@ -53,6 +53,6 @@
     "vitest": "0.34.6",
     "vitest-nostr": "0.4.1",
     "vitest-websocket-mock": "^0.4.0",
-    "webpack": "^5.96.1"
+    "webpack": "^5.104.1"
   }
 }

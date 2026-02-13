@@ -34,6 +34,7 @@
     "docker:stop": "docker-compose down"
   },
   "dependencies": {
+    "applesauce-relay": "^4.0.0",
     "@contextvm/sdk": "^0.1.37",
     "@fastify/cors": "^11.1.0",
     "@fastify/swagger": "^9.5.2",

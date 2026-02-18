@@ -178,12 +178,14 @@ export class ResilientRelayPool implements RelayPool {
    * Get pool health stats for monitoring.
    */
   getStats(): {
+    connected: boolean
     subscriptionCount: number
     relayCount: number
     subscriptions: Array<{ id: string; ageMs: number; restartCount: number }>
   } {
     const now = Date.now()
     return {
+      connected: this.isConnected,
       subscriptionCount: this.subscriptions.size,
       relayCount: this.relays.length,
       subscriptions: Array.from(this.subscriptions.values()).map(s => ({

@@ -102,10 +102,10 @@ export default defineConfig({
       ext: '.br',
       apply: 'build',
     }),
-    viteCompression({
-      algorithm: 'gzip',
-      ext: '.gz',
-      apply: 'build',
-    }),
+    // viteCompression({
+    //   algorithm: 'gzip',
+    //   ext: '.gz',
+    //   apply: 'build',
+    // }),
   ],
 });

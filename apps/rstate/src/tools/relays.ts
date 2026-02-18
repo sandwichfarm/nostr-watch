@@ -450,8 +450,18 @@ export function createRelaysBySoftwareTool(ctx: RelayToolsContext): CVMTool {
       },
     },
     outputSchema: loadSchema('relays-by-software-output.json'),
-    handler: async (): Promise<RelaysBySoftwareOutput> => {
+    handler: async (params: { family?: string }): Promise<RelaysBySoftwareOutput> => {
       const groupsMap = ctx.core.query.relays.bySoftware()
+
+      // Filter by specific family if requested (matches REST behavior)
+      if (params.family) {
+        const relays = groupsMap[params.family] || []
+        return {
+          groups: relays.length > 0
+            ? [{ family: params.family, count: relays.length, relays }]
+            : [],
+        }
+      }
 
       return {
         groups: Object.entries(groupsMap).map(([family, relays]) => ({

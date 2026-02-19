@@ -49,7 +49,7 @@ class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
         // Wait for the connection to be established
         try {
           this.bind_events();
-          const aborted = new Promise((reject) => {
+          const aborted = new Promise((_, reject) => {
             this.abortController.signal.addEventListener('abort', () => {
               reject(new Error('WebSocket connection aborted'));
             });

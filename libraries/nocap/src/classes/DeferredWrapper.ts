@@ -44,22 +44,15 @@ export class DeferredWrapper {
   }
 
   reflect(key: string) {
-    const promise = this.get(key).promise;
-    if (!promise) return false;
-    const state = { isFulfilled: false, isRejected: false, isPending: true };
-    const reflectedPromise = promise.then(
-      (value: any) => {
-        state.isFulfilled = true;
-        state.isPending = false;
-        return value;
-      },
-      (error: any) => {
-        state.isRejected = true;
-        state.isPending = false;
-        throw error;
-      }
-    );
-    return { state, reflectedPromise };
+    const deferred = this.get(key);
+    if (!deferred?.promise) return false;
+    const settledState = deferred._state || 'pending';
+    const state = {
+      isFulfilled: settledState === 'fulfilled',
+      isRejected: settledState === 'rejected',
+      isPending: settledState === 'pending',
+    };
+    return { state, reflectedPromise: deferred.promise };
   }
 
   clearSessionPromises(_session?: string) {
@@ -69,7 +62,19 @@ export class DeferredWrapper {
 
   create(key: string) {
     this.setup();
-    this.promises[this.session][key] = new Deferred();
+    const deferred = new Deferred();
+    deferred._state = 'pending';
+    const origResolve = deferred.resolve.bind(deferred);
+    const origReject = deferred.reject.bind(deferred);
+    deferred.resolve = (...args: any[]) => {
+      deferred._state = 'fulfilled';
+      return origResolve(...args);
+    };
+    deferred.reject = (...args: any[]) => {
+      deferred._state = 'rejected';
+      return origReject(...args);
+    };
+    this.promises[this.session][key] = deferred;
     return this.get(key);
   }
 

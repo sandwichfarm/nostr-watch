@@ -618,4 +618,128 @@ describe('Data Quality Audit — 2026-02-25', () => {
       expect(state!.nips!.support[50]).toBeCloseTo(0.5, 1)
     })
   })
+
+  // ─── Geo / Nearby / Bbox ─────────────────────────────────────────────────
+
+  describe('Geospatial queries — nearby and bbox', () => {
+    // Geohash '9q8yy' decodes to roughly lat=37.79, lon=-122.40 (San Francisco)
+    const sfGeohashes = ['9q8yy', '9q8y', '9q8']
+    // Geohash 'u33d' decodes to roughly lat=52.5, lon=13.4 (Berlin)
+    const berlinGeohashes = ['u33dc', 'u33d', 'u33']
+
+    it('should populate geo.lat and geo.lon from geohashes', () => {
+      const observations: RelayObservation[] = [
+        {
+          id: 'geo-obs-1',
+          author: 'monitor_a',
+          relayUrl: 'wss://geo-test.example.com',
+          network: 'clearnet',
+          created_at: baseTime + 10,
+          rtt: { open: 100 },
+          geohashes: sfGeohashes,
+        },
+        {
+          id: 'geo-obs-2',
+          author: 'monitor_b',
+          relayUrl: 'wss://geo-test.example.com',
+          network: 'clearnet',
+          created_at: baseTime + 20,
+          rtt: { open: 110 },
+          geohashes: sfGeohashes,
+        },
+      ]
+
+      core.ingest.observations(observations)
+      core.computeAll()
+
+      const state = core.query.relays.getState('wss://geo-test.example.com')
+      expect(state).not.toBeNull()
+      expect(state!.geo).toBeDefined()
+      // lat/lon must always be present when geo is defined
+      expect(state!.geo!.lat).toBeTypeOf('number')
+      expect(state!.geo!.lon).toBeTypeOf('number')
+      // Should be near San Francisco
+      expect(state!.geo!.lat).toBeGreaterThan(37)
+      expect(state!.geo!.lat).toBeLessThan(38)
+      expect(state!.geo!.lon).toBeGreaterThan(-123)
+      expect(state!.geo!.lon).toBeLessThan(-122)
+      expect(state!.geo!.geohash).toBe('9q8yy')
+    })
+
+    it('nearby should return relays within radius and include relay data', () => {
+      // Also add a Berlin relay so we can test it's excluded
+      const observations: RelayObservation[] = [
+        {
+          id: 'nearby-sf-1',
+          author: 'monitor_a',
+          relayUrl: 'wss://sf-relay.example.com',
+          network: 'clearnet',
+          created_at: baseTime + 10,
+          rtt: { open: 80 },
+          geohashes: sfGeohashes,
+        },
+        {
+          id: 'nearby-berlin-1',
+          author: 'monitor_a',
+          relayUrl: 'wss://berlin-relay.example.com',
+          network: 'clearnet',
+          created_at: baseTime + 10,
+          rtt: { open: 120 },
+          geohashes: berlinGeohashes,
+        },
+      ]
+
+      core.ingest.observations(observations)
+      core.computeAll()
+
+      // Search near San Francisco with 50km radius
+      const nearby = core.query.relays.nearby(37.78, -122.42, 50)
+
+      // SF relay should be found
+      const sfRelay = nearby.find(r => r.relayUrl === 'wss://sf-relay.example.com')
+      expect(sfRelay).toBeDefined()
+      expect(sfRelay!.relayUrl).toBe('wss://sf-relay.example.com')
+      // Relay state should have full data, not be empty
+      expect(sfRelay!.network?.value).toBe('clearnet')
+      expect(sfRelay!.rtt?.open?.value).toBeDefined()
+
+      // Berlin relay should NOT be within 50km of SF
+      const berlinRelay = nearby.find(r => r.relayUrl === 'wss://berlin-relay.example.com')
+      expect(berlinRelay).toBeUndefined()
+    })
+
+    it('bbox should return relays within bounding box with full data', () => {
+      // Bounding box covering San Francisco area
+      const inBox = core.query.relays.bbox(
+        { lat: 37, lon: -123 },
+        { lat: 38, lon: -122 }
+      )
+
+      // SF relay should be in the box
+      const sfRelay = inBox.find(r => r.relayUrl === 'wss://sf-relay.example.com')
+      expect(sfRelay).toBeDefined()
+      expect(sfRelay!.relayUrl).toBe('wss://sf-relay.example.com')
+      // Should have full relay data
+      expect(sfRelay!.network?.value).toBe('clearnet')
+
+      // Berlin relay should NOT be in the SF bounding box
+      const berlinRelay = inBox.find(r => r.relayUrl === 'wss://berlin-relay.example.com')
+      expect(berlinRelay).toBeUndefined()
+    })
+
+    it('bbox should return empty array when no relays in region', () => {
+      // Bounding box in the middle of the Pacific Ocean
+      const inBox = core.query.relays.bbox(
+        { lat: 0, lon: -170 },
+        { lat: 5, lon: -165 }
+      )
+      expect(inBox).toHaveLength(0)
+    })
+
+    it('nearby should return empty array when no relays in radius', () => {
+      // Search in Antarctica
+      const nearby = core.query.relays.nearby(-80, 0, 10)
+      expect(nearby).toHaveLength(0)
+    })
+  })
 })

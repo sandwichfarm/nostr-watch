@@ -5,7 +5,8 @@
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
-import { NostrServerTransport, PrivateKeySigner, EncryptionMode } from '@contextvm/sdk'
+import { NostrServerTransport, PrivateKeySigner, EncryptionMode, withServerPayments, LnBolt11NwcPaymentProcessor } from '@contextvm/sdk'
+import { pricedCapabilities } from './payments/cvm-pricing.js'
 import { ResilientRelayPool } from './resilient-relay-pool.js'
 import type { Config } from './config.js'
 import { getLogger } from './utils/logger.js'
@@ -181,6 +182,26 @@ export class CVMServer {
       isPublicServer: cvmConfig.allowedPubkeys.length === 0,
       allowedPublicKeys: cvmConfig.allowedPubkeys.length > 0 ? cvmConfig.allowedPubkeys : undefined,
     })
+
+    // Wrap transport with CEP-8 payment gating if enabled
+    if (process.env.CVM_PAYMENTS_ENABLED === 'true') {
+      const nwcConnectionString = process.env.CVM_NWC_CONNECTION_STRING
+      if (!nwcConnectionString) {
+        throw new Error('CVM_PAYMENTS_ENABLED=true but CVM_NWC_CONNECTION_STRING is not set')
+      }
+
+      const nwcProcessor = new LnBolt11NwcPaymentProcessor({
+        nwcConnectionString,
+        relayHandler: this.transportPool!.toRelayHandler(),
+      })
+
+      this.transport = withServerPayments(this.transport, {
+        processors: [nwcProcessor],
+        pricedCapabilities,
+      })
+
+      logger.info({ pricedTools: pricedCapabilities.length }, 'CVM payment gating enabled (CEP-8)')
+    }
 
     // Create notification delivery service
     this.notificationDelivery = new NotificationDeliveryService(

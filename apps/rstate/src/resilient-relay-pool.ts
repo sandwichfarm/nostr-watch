@@ -157,8 +157,9 @@ export class ResilientRelayPool implements RelayPool {
         filters: Filter[],
         onEvent: (event: NostrEvent) => void,
         onEose?: () => void,
-      ) => {
-        this.subscribe(filters, onEvent, onEose)
+      ): Promise<() => void> => {
+        const handle = this.subscribe(filters, onEvent, onEose)
+        return handle.unsubscribe
       },
       unsubscribe: () => {
         // RelayHandler.unsubscribe() kills all subscriptions (matches SDK semantics)

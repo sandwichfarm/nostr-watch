@@ -16,7 +16,7 @@
     "@jspm/core": "^2.1.0",
     "@nostrability/schemata": "^0.1.6",
     "@nostrwatch/websocket": "workspace:^",
-    "ajv": "^8.17.1",
+    "ajv": "^8.18.0",
     "ajv-errors": "^3.0.0",
     "browserify-zlib": "^0.2.0",
     "buffer": "^6.0.3",

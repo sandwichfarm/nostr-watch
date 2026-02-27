@@ -13,8 +13,6 @@ import { RestServer } from '../src/rest/server.js'
 import { MetricsService } from '../src/services/metrics.js'
 import { SecurityService } from '../src/services/security.js'
 import { RateLimiterService } from '../src/services/rate-limiter.js'
-import { SubscriptionManager } from '../src/services/subscription-manager.js'
-import { SSEDeliveryService } from '../src/rest/sse-delivery.js'
 import { DEFAULT_QUERY_SHAPE } from '../src/utils/validation.js'
 import {
   createRelaysListTool,
@@ -209,9 +207,6 @@ describe('REST vs Tool Parity (seeded dataset)', () => {
     enableRateLimiting: false,
     enableAuth: false,
   })
-  const subscriptionManager = new SubscriptionManager()
-  const sseDelivery = new SSEDeliveryService(subscriptionManager)
-
   const rest = new RestServer(
     {
       host: '127.0.0.1',
@@ -225,8 +220,6 @@ describe('REST vs Tool Parity (seeded dataset)', () => {
       core,
       metrics,
       security,
-      subscriptionManager,
-      sseDelivery,
       allowPolicyUpdate: false,
       getUptime: () => 0,
       getRelayCount: () => ({ transport: 1, ingestion: 1 }),

@@ -64,6 +64,7 @@ export interface CompactRelayState {
   }
   ipAddrs?: string[]
   country?: CompactAggregatedValue<string>
+  nip11?: Record<string, any>
 }
 
 /**
@@ -183,6 +184,11 @@ export function toCompact(state: RelayState): CompactRelayState {
   // IP addresses (already compact)
   if (state.ipAddrs) {
     compact.ipAddrs = state.ipAddrs
+  }
+
+  // NIP-11 (already compact - no attribution)
+  if (state.nip11) {
+    compact.nip11 = state.nip11
   }
 
   // Country (remove contributingAuthors)

@@ -425,6 +425,33 @@ export function computeRelayState(
     }
   }
 
+  // Aggregate NIP-11 info document (majority hash wins, tiebreak by recency)
+  const withNip11 = observations.filter((o) => o.nip11)
+  if (withNip11.length > 0) {
+    // Group by JSON hash — identical documents produce the same key
+    const buckets = new Map<string, typeof withNip11>()
+    for (const obs of withNip11) {
+      const key = JSON.stringify(obs.nip11)
+      if (!buckets.has(key)) buckets.set(key, [])
+      buckets.get(key)!.push(obs)
+    }
+
+    // Pick the bucket with the most votes; tiebreak by most recent observation
+    let best = withNip11[0]
+    let bestCount = 0
+    let bestLatest = 0
+    for (const group of buckets.values()) {
+      const latest = Math.max(...group.map((o) => o.created_at))
+      if (group.length > bestCount || (group.length === bestCount && latest > bestLatest)) {
+        bestCount = group.length
+        bestLatest = latest
+        best = group.find((o) => o.created_at === latest)!
+      }
+    }
+
+    state.nip11 = best.nip11
+  }
+
   // Aggregate requirements (with optional weights)
   const requirementKeys = new Set<string>()
   for (const obs of observations) {

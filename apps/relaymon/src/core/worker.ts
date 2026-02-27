@@ -218,8 +218,8 @@ export class Worker {
       this.logger.debug(`Persisting result for relay: ${relayUrl}, online: ${wasOnline}`);
       persistResult(dedupedResult);
       
-      if (isRetry) {
-        this.logger.debug(`Incrementing retry count for ${relayUrl} as it's still offline`);
+      if (wentOffline || isRetry) {
+        this.logger.debug(`Incrementing retry count for ${relayUrl} as it ${wentOffline ? 'went offline' : 'is still offline'}`);
         this.handleRetryForRelay(relayUrl);
       }
       
@@ -361,15 +361,17 @@ export class Worker {
       // Detect deltas from last check
       const deltas = detectDeltas(lastCompositeState, currentCompositeState);
 
-      // Store current state for next comparison
-      storeDeltaState(relayUrl, {
-        state: currentInfo,
-        rttOpen: result.open?.duration,
-        rttRead: result.read?.duration,
-        rttWrite: result.write?.duration,
-        dns: currentDns,
-        geo: currentGeo,
-      });
+      // Store current state for next comparison (only when online to preserve last-known-good state)
+      if (wasOnline) {
+        storeDeltaState(relayUrl, {
+          state: currentInfo,
+          rttOpen: result.open?.duration,
+          rttRead: result.read?.duration,
+          rttWrite: result.write?.duration,
+          dns: currentDns,
+          geo: currentGeo,
+        });
+      }
 
       // Handle period aggregates if enabled
       let periodsToEmit: string[] = [];

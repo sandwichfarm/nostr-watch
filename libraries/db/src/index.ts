@@ -89,14 +89,15 @@ export function isReadyToCheck(
   }
   
   // For retry backoff, calculate when the next check should happen
-  let nextCheckTime = checkedAt + expirySeconds;
-  
-  // Apply backoff for relays with retries - the higher the retry count, the longer we wait
+  let nextCheckTime;
+
   if (retries > 0) {
-    // Get the appropriate delay based on retry count (in ms)
+    // When retrying, use backoff delay as the interval (not added to expiry)
+    // This ensures retries happen faster than the normal check interval
     const backoffDelay = retryManager.getDelay(retries);
-    // Convert from ms to seconds and add to the time when the relay was last checked
-    nextCheckTime += Math.floor(backoffDelay / 1000);
+    nextCheckTime = checkedAt + Math.floor(backoffDelay / 1000);
+  } else {
+    nextCheckTime = checkedAt + expirySeconds;
   }
   
   // Return true if now is later than the next check time

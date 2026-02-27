@@ -11,14 +11,15 @@ import apiReference from '@scalar/fastify-api-reference'
 import type { StateCore } from '../core/index.js'
 import type { MetricsService } from '../services/metrics.js'
 import type { SecurityService } from '../services/security.js'
-import type { SubscriptionManager } from '../services/subscription-manager.js'
+// DISABLED: Subscription system (kept for later re-enabling)
+// import type { SubscriptionManager } from '../services/subscription-manager.js'
 import { RateLimiterService } from '../services/rate-limiter.js'
-import { SSEDeliveryService } from './sse-delivery.js'
+// import { SSEDeliveryService } from './sse-delivery.js'
 import { getLogger } from '../utils/logger.js'
 import { registerRelayRoutes } from './routes/relays.js'
 import { registerMonitorRoutes } from './routes/monitors.js'
 import { registerPolicyRoutes } from './routes/policy.js'
-import { registerSubscriptionRoutes } from './routes/subscriptions.js'
+// import { registerSubscriptionRoutes } from './routes/subscriptions.js'
 import { registerMetricsRoutes } from './routes/metrics.js'
 import { registerPaymentsHealthRoutes } from './routes/payments-health.js'
 import { schemas } from './schemas.js'
@@ -50,8 +51,9 @@ export interface RestContext {
   core: StateCore
   metrics: MetricsService
   security: SecurityService
-  subscriptionManager: SubscriptionManager
-  sseDelivery: SSEDeliveryService
+  // DISABLED: Subscription system
+  // subscriptionManager: SubscriptionManager
+  // sseDelivery: SSEDeliveryService
   queryCache: import('../services/cache.js').QueryCache
   allowPolicyUpdate: boolean
   getUptime: () => number
@@ -159,7 +161,8 @@ export class RestServer {
           { name: 'relays', description: 'Relay state queries' },
           { name: 'monitors', description: 'Monitor information' },
           { name: 'policy', description: 'Policy management' },
-          { name: 'subscriptions', description: 'Relay state subscriptions' },
+          // DISABLED: Subscription system
+          // { name: 'subscriptions', description: 'Relay state subscriptions' },
         ],
       },
     })
@@ -272,7 +275,8 @@ export class RestServer {
     // POST/PUT/DELETE have higher costs
     if (method === 'POST' || method === 'PUT') {
       if (path.includes('/policy')) return 10 // Policy changes are expensive
-      if (path.includes('/subscriptions')) return 2 // Subscription creation
+      // DISABLED: Subscription system
+      // if (path.includes('/subscriptions')) return 2 // Subscription creation
       return 2
     }
 
@@ -290,10 +294,10 @@ export class RestServer {
     if (!this.rateLimiter) return
 
     this.app.addHook('preHandler', async (request: FastifyRequest, reply: FastifyReply) => {
-      // Skip rate limiting for SSE event stream (long-lived connection with keepalive pings)
-      if (request.url.startsWith('/subscriptions/events')) {
-        return
-      }
+      // DISABLED: Subscription system
+      // if (request.url.startsWith('/subscriptions/events')) {
+      //   return
+      // }
 
       // Extract client IP (trust proxy headers)
       const clientIp = request.ip || request.socket.remoteAddress || 'unknown'
@@ -521,8 +525,8 @@ export class RestServer {
       await this.routesReady
       logger.info('Routes and API documentation ready')
 
-      // Start SSE delivery service
-      this.context.sseDelivery.start()
+      // DISABLED: Subscription system
+      // this.context.sseDelivery.start()
 
       await this.app.listen({
         host: this.config.host,
@@ -549,8 +553,8 @@ export class RestServer {
    */
   async stop(): Promise<void> {
     try {
-      // Stop SSE delivery service
-      this.context.sseDelivery.stop()
+      // DISABLED: Subscription system
+      // this.context.sseDelivery.stop()
 
       await this.app.close()
       logger.info('REST server stopped')

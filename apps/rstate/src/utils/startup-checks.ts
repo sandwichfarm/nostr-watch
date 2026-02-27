@@ -30,9 +30,10 @@ function resolveSchemasDir(): string {
 export function verifyCriticalSchemas(): void {
   try {
     const dir = resolveSchemasDir()
-    const required = [
-      'relays-subscribe-state-output.json',
-      'relays-unsubscribe-output.json',
+    const required: string[] = [
+      // Subscription schemas disabled — kept for later
+      // 'relays-subscribe-state-output.json',
+      // 'relays-unsubscribe-output.json',
     ]
 
     for (const name of required) {

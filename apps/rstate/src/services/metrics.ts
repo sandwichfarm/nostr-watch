@@ -32,12 +32,12 @@ export interface MetricsSnapshot {
     relaysCached: number
   }
 
-  // Subscription metrics
-  subscriptions: {
-    activeSubscriptions: number
-    notificationQueueDepth: number
-    debounceTimers: number
-  }
+  // DISABLED: Subscription system (kept for later re-enabling)
+  // subscriptions: {
+  //   activeSubscriptions: number
+  //   notificationQueueDepth: number
+  //   debounceTimers: number
+  // }
 
   // Monitor scoring metrics
   scoring: {
@@ -184,7 +184,7 @@ export class MetricsService {
     ingestionStats: any,
     observationStats: any,
     stateManager: any,
-    subscriptionStats: any,
+    _subscriptionStats: any, // DISABLED: Subscription system
     scoringStats: any,
     cacheStats: any,
     rateLimitStats: any
@@ -217,11 +217,12 @@ export class MetricsService {
         relaysCached: stateManager ? stateManager.getRelayCount() : 0,
       },
 
-      subscriptions: {
-        activeSubscriptions: subscriptionStats.subscriptionCount,
-        notificationQueueDepth: subscriptionStats.queueSize,
-        debounceTimers: subscriptionStats.debounceTimerCount,
-      },
+      // DISABLED: Subscription system
+      // subscriptions: {
+      //   activeSubscriptions: subscriptionStats.subscriptionCount,
+      //   notificationQueueDepth: subscriptionStats.queueSize,
+      //   debounceTimers: subscriptionStats.debounceTimerCount,
+      // },
 
       scoring: {
         scoredMonitors: scoringStats.scoredMonitorCount,
@@ -263,10 +264,10 @@ export class MetricsService {
       issues.push(`High ingestion lag: ${snapshot.ingestion.lag}s`)
     }
 
-    // Check notification backpressure
-    if (snapshot.subscriptions.notificationQueueDepth > 5000) {
-      issues.push(`High notification queue: ${snapshot.subscriptions.notificationQueueDepth}`)
-    }
+    // DISABLED: Subscription system
+    // if (snapshot.subscriptions.notificationQueueDepth > 5000) {
+    //   issues.push(`High notification queue: ${snapshot.subscriptions.notificationQueueDepth}`)
+    // }
 
     // Check aggregation staleness
     const now = Date.now()

@@ -94,8 +94,9 @@ export const schemas = {
     get get() { return loadSchema('policy-get-output.json') },
     get set() { return loadSchema('policy-set-output.json') },
   },
-  subscriptions: {
-    get subscribe() { return loadSchema('relays-subscribe-state-output.json') },
-    get unsubscribe() { return loadSchema('relays-unsubscribe-output.json') },
-  },
+  // subscriptions: disabled — dead code, kept for later
+  // subscriptions: {
+  //   get subscribe() { return loadSchema('relays-subscribe-state-output.json') },
+  //   get unsubscribe() { return loadSchema('relays-unsubscribe-output.json') },
+  // },
 }

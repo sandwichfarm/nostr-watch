@@ -7,6 +7,7 @@
 	import JsonHighlighter from '$lib/components/partials/JsonHighlighter.svelte';
 	import { relayNip11$ } from '$stores/helpers/helpers-nip11s';
 	import { get } from 'lodash';
+	import { generateRelayUrlFromPath } from '$utils/routing';
 
     const relayUrl = generateRelayUrlFromPath()
 

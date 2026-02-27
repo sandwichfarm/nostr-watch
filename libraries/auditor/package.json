@@ -57,7 +57,7 @@
     "@types/ws": "^8.5.13",
     "babel-plugin-espower": "^3.0.1",
     "babelify": "^10.0.0",
-    "esbuild": "^0.24.0",
+    "esbuild": "^0.25.0",
     "esbuild-plugin-alias-path": "^2.0.2",
     "esbuild-plugin-browserify-adapter": "^0.1.4",
     "esbuild-plugin-node-polyfills": "^1.0.2",

@@ -4,8 +4,6 @@ import { initStateCore } from '../src/core/index.js'
 import { MetricsService } from '../src/services/metrics.js'
 import { SecurityService } from '../src/services/security.js'
 import { RateLimiterService } from '../src/services/rate-limiter.js'
-import { SubscriptionManager } from '../src/services/subscription-manager.js'
-import { SSEDeliveryService } from '../src/rest/sse-delivery.js'
 import { QueryCache } from '../src/services/cache.js'
 import { DEFAULT_QUERY_SHAPE } from '../src/utils/validation.js'
 
@@ -35,8 +33,6 @@ describe('OpenAPI 402 documentation', () => {
       enableAuth: false,
       allowAnyPubkey: true,
     })
-    const subscriptionManager = new SubscriptionManager()
-    const sseDelivery = new SSEDeliveryService(subscriptionManager)
     const queryCache = new QueryCache()
 
     server = new RestServer(
@@ -52,8 +48,6 @@ describe('OpenAPI 402 documentation', () => {
         core,
         metrics,
         security,
-        subscriptionManager,
-        sseDelivery,
         queryCache,
         allowPolicyUpdate: false,
         getUptime: () => 100,

@@ -23,11 +23,11 @@
     "node-schedule": "2.1.1"
   },
   "devDependencies": {
-    "esbuild": "^0.24.2",
+    "esbuild": "^0.25.0",
     "rimraf": "^6.0.1",
     "ts-loader": "^9.5.1",
     "typescript": "^5.7.2",
-    "webpack": "^5.96.1",
+    "webpack": "^5.104.1",
     "webpack-cli": "^5.1.4"
   }
 }

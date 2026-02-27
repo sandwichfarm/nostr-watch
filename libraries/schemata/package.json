@@ -6,12 +6,12 @@
   "license": "MIT",
   "dependencies": {
     "@apidevtools/json-schema-ref-parser": "^11.7.2",
-    "ajv": "8.17.1",
+    "ajv": "^8.18.0",
     "esbuild-yaml": "^1.2.0",
     "json-loader": "0.5.7",
     "quicktype": "23.0.170",
     "quicktype-core": "23.0.170",
-    "webpack": "5.94.0",
+    "webpack": "^5.104.1",
     "webpack-cli": "5.1.4",
     "webpack-merge": "6.0.1",
     "webpack-node-externals": "3.0.0",
@@ -19,7 +19,7 @@
     "yaml-convert": "1.0.1"
   },
   "devDependencies": {
-    "esbuild": "^0.24.2",
+    "esbuild": "^0.25.0",
     "rimraf": "^6.0.1",
     "ts-loader": "^9.2.6",
     "typedoc": "^0.22.15",

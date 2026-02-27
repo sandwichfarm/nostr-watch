@@ -37,11 +37,11 @@
     "dist"
   ],
   "dependencies": {
-    "lodash": "^4.17.21"
+    "lodash": "^4.17.23"
   },
   "devDependencies": {
     "@types/lodash": "^4",
-    "esbuild": "^0.24.0",
+    "esbuild": "^0.25.0",
     "typescript": "^5.2.2"
   },
   "peerDependencies": {

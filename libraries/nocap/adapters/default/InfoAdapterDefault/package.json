@@ -33,7 +33,7 @@
     "test-ui": "vitest --ui --testTimeout=15000"
   },
   "dependencies": {
-    "ajv": "8.17.1",
+    "ajv": "^8.18.0",
     "cross-fetch": "4.0.0",
     "tor-request": "^3.1.0",
     "@nostrwatch/nocap": "workspace:^"
@@ -53,6 +53,6 @@
     "vitest": "0.34.6",
     "vitest-nostr": "0.4.1",
     "vitest-websocket-mock": "^0.4.0",
-    "webpack": "^5.96.1"
+    "webpack": "^5.104.1"
   }
 }

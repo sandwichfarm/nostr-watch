@@ -273,10 +273,10 @@ describe('REST API Integration Tests', () => {
     })
 
     it('should return 304 Not Modified for matching ETag', async () => {
-      // First request
+      // Use a static endpoint (relay list returns deterministic results for same dataset)
       const response1 = await app.inject({
         method: 'GET',
-        url: '/health/ping',
+        url: '/relays?limit=1&offset=0',
       })
 
       if (response1.statusCode !== 200) {
@@ -288,11 +288,12 @@ describe('REST API Integration Tests', () => {
 
       expect(response1.statusCode).toBe(200)
       const etag = response1.headers['etag']
+      expect(etag).toBeDefined()
 
       // Second request with If-None-Match
       const response2 = await app.inject({
         method: 'GET',
-        url: '/health/ping',
+        url: '/relays?limit=1&offset=0',
         headers: {
           'if-none-match': etag,
         },

@@ -320,6 +320,7 @@ export class RelayStateManager {
     minSupport?: number
   }): RelayState[] {
     let results = this.getAllRelayStates()
+    if (!filters) return results
 
     // Filter by network
     if (filters.network) {

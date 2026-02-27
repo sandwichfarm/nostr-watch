@@ -14,9 +14,10 @@ import { createHealthTool } from './tools/health.js'
 import { initStateCore, type StateCore } from './core/index.js'
 import { IngestionService } from './services/ingestion.js'
 import { RestServer } from './rest/index.js'
-import { SSEDeliveryService } from './rest/sse-delivery.js'
-import { SubscriptionManager } from './services/subscription-manager.js'
-import { NotificationDeliveryService } from './services/notification-delivery.js'
+// DISABLED: Subscription system (kept for later re-enabling)
+// import { SSEDeliveryService } from './rest/sse-delivery.js'
+// import { SubscriptionManager } from './services/subscription-manager.js'
+// import { NotificationDeliveryService } from './services/notification-delivery.js'
 import { RateLimiterService } from './services/rate-limiter.js'
 import { SecurityService } from './services/security.js'
 import { MetricsService } from './services/metrics.js'
@@ -43,10 +44,11 @@ import {
 } from './tools/relays.js'
 import { createMonitorsGetTool, createMonitorsListTool } from './tools/monitors.js'
 import { createPolicyGetTool, createPolicySetTool } from './tools/policy.js'
-import {
-  createRelaysSubscribeStateTool,
-  createRelaysUnsubscribeTool,
-} from './tools/subscriptions.js'
+// DISABLED: Subscription tools (kept for later re-enabling)
+// import {
+//   createRelaysSubscribeStateTool,
+//   createRelaysUnsubscribeTool,
+// } from './tools/subscriptions.js'
 
 const logger = getLogger().child({ module: 'server' })
 
@@ -58,7 +60,8 @@ export class CVMServer {
   private signer?: PrivateKeySigner
   private toolRegistry?: ToolRegistry
   private transportContext?: TransportContext
-  private notificationDelivery?: NotificationDeliveryService
+  // DISABLED: Subscription system
+  // private notificationDelivery?: NotificationDeliveryService
 
   // Core components (always required)
   private ingestionPool: RelayPoolAdapter
@@ -69,7 +72,8 @@ export class CVMServer {
 
   // Shared services
   private ingestionService: IngestionService
-  private subscriptionManager: SubscriptionManager
+  // DISABLED: Subscription system
+  // private subscriptionManager: SubscriptionManager
   private rateLimiter: RateLimiterService
   private security: SecurityService
   private metrics: MetricsService
@@ -109,7 +113,8 @@ export class CVMServer {
       24 * 3600,  // 24 hour historical window
       this.metrics  // Pass metrics for event recording
     )
-    this.subscriptionManager = new SubscriptionManager()
+    // DISABLED: Subscription system
+    // this.subscriptionManager = new SubscriptionManager()
 
     // Initialize CVM transport if enabled
     if (config.cvm?.enabled) {
@@ -179,11 +184,39 @@ export class CVMServer {
       allowedPublicKeys: cvmConfig.allowedPubkeys.length > 0 ? cvmConfig.allowedPubkeys : undefined,
     })
 
+<<<<<<< Updated upstream
     // Create notification delivery service
     this.notificationDelivery = new NotificationDeliveryService(
       this.subscriptionManager,
       this.transport
     )
+=======
+    // Wrap transport with CEP-8 payment gating if enabled
+    if (process.env.CVM_PAYMENTS_ENABLED === 'true') {
+      const nwcConnectionString = process.env.CVM_NWC_CONNECTION_STRING
+      if (!nwcConnectionString) {
+        throw new Error('CVM_PAYMENTS_ENABLED=true but CVM_NWC_CONNECTION_STRING is not set')
+      }
+
+      const nwcProcessor = new LnBolt11NwcPaymentProcessor({
+        nwcConnectionString,
+        relayHandler: this.transportPool!.toRelayHandler(),
+      })
+
+      this.transport = withServerPayments(this.transport, {
+        processors: [nwcProcessor],
+        pricedCapabilities,
+      })
+
+      logger.info({ pricedTools: pricedCapabilities.length }, 'CVM payment gating enabled (CEP-8)')
+    }
+
+    // DISABLED: Subscription system
+    // this.notificationDelivery = new NotificationDeliveryService(
+    //   this.subscriptionManager,
+    //   this.transport
+    // )
+>>>>>>> Stashed changes
 
     // Register tools
     verifyCriticalSchemas()
@@ -201,8 +234,8 @@ export class CVMServer {
   private initializeRESTServer(): void {
     logger.info('Initializing REST server')
 
-    // Create SSE delivery service for REST subscriptions
-    const sseDelivery = new SSEDeliveryService(this.subscriptionManager)
+    // DISABLED: Subscription system
+    // const sseDelivery = new SSEDeliveryService(this.subscriptionManager)
 
     this.restServer = new RestServer(
       {
@@ -218,8 +251,6 @@ export class CVMServer {
         core: this.core,
         metrics: this.metrics,
         security: this.security,
-        subscriptionManager: this.subscriptionManager,
-        sseDelivery,
         queryCache: this.queryCache,
         allowPolicyUpdate: this.config.rest.allowPolicyUpdate,
         getUptime: () => this.getUptime(),
@@ -402,29 +433,29 @@ export class CVMServer {
       { enabled: false }
     )
 
-    // Subscription tools (no caching, stateful operations)
-    registry.registerTool(
-      createRelaysSubscribeStateTool({
-        subscriptionManager: this.subscriptionManager,
-        getClientPubkey: () => this.transportContext!.getClientPubkey(),
-        requireAuth: ((): boolean => {
-          const env = process.env.CVM_SUBS_REQUIRE_AUTH
-          if (env !== undefined) {
-            const v = env.toLowerCase()
-            return !(v === 'false' || v === '0' || v === 'off')
-          }
-          return this.config.cvm?.auth.enabled ?? false
-        })(),
-      }),
-      { enabled: false }
-    )
-    registry.registerTool(
-      createRelaysUnsubscribeTool({
-        subscriptionManager: this.subscriptionManager,
-        getClientPubkey: () => this.transportContext!.getClientPubkey(),
-      }),
-      { enabled: false }
-    )
+    // DISABLED: Subscription tools (kept for later re-enabling)
+    // registry.registerTool(
+    //   createRelaysSubscribeStateTool({
+    //     subscriptionManager: this.subscriptionManager,
+    //     getClientPubkey: () => this.transportContext!.getClientPubkey(),
+    //     requireAuth: ((): boolean => {
+    //       const env = process.env.CVM_SUBS_REQUIRE_AUTH
+    //       if (env !== undefined) {
+    //         const v = env.toLowerCase()
+    //         return !(v === 'false' || v === '0' || v === 'off')
+    //       }
+    //       return this.config.cvm?.auth.enabled ?? false
+    //     })(),
+    //   }),
+    //   { enabled: false }
+    // )
+    // registry.registerTool(
+    //   createRelaysUnsubscribeTool({
+    //     subscriptionManager: this.subscriptionManager,
+    //     getClientPubkey: () => this.transportContext!.getClientPubkey(),
+    //   }),
+    //   { enabled: false }
+    // )
 
     // Register MCP handlers (tools/list and tools/call)
     registerToolset(this.mcpServer!, registry)
@@ -464,9 +495,9 @@ export class CVMServer {
         await this.mcpServer.connect(this.transport)
         logger.info({ durationMs: Date.now() - connectStartTime }, 'MCP server connected to transport')
 
-        // Start notification delivery (CVM-specific)
-        this.notificationDelivery?.start()
-        logger.info('CVM notification delivery started')
+        // DISABLED: Subscription system
+        // this.notificationDelivery?.start()
+        // logger.info('CVM notification delivery started')
       }
 
       // Start ingestion (always required)
@@ -506,11 +537,11 @@ export class CVMServer {
         this.aggregationTimer = undefined
       }
 
-      // Stop CVM notification delivery if running
-      if (this.notificationDelivery) {
-        this.notificationDelivery.stop()
-        logger.info('CVM notification delivery stopped')
-      }
+      // DISABLED: Subscription system
+      // if (this.notificationDelivery) {
+      //   this.notificationDelivery.stop()
+      //   logger.info('CVM notification delivery stopped')
+      // }
 
       // Stop ingestion (always running)
       await this.ingestionService.stop()
@@ -568,11 +599,11 @@ export class CVMServer {
           logger.debug({ evicted }, 'Expired cache entries evicted')
         }
 
-        // Process state changes for subscriptions
-        const allStates = this.core.query.relays.getAll()
-        for (const state of allStates) {
-          this.subscriptionManager.processStateChange(state)
-        }
+        // DISABLED: Subscription system
+        // const allStates = this.core.query.relays.getAll()
+        // for (const state of allStates) {
+        //   this.subscriptionManager.processStateChange(state)
+        // }
       } catch (err) {
         logger.error({ err }, 'Error during periodic aggregation')
       }
@@ -607,7 +638,7 @@ export class CVMServer {
       this.ingestionService.getStats(),
       coreStats as any,
       { getRelayCount: () => this.core.query.relays.getAll().length },
-      this.subscriptionManager.getStats(),
+      null, // DISABLED: subscriptionManager.getStats()
       this.core.query.monitors.getScores() as any,
       coreStats as any,
       this.security.getRateLimitStats()

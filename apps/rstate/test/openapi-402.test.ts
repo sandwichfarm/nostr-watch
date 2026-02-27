@@ -71,7 +71,7 @@ describe('OpenAPI 402 documentation', () => {
   })
 
   it('includes 402 responses and headers for paid endpoints', async () => {
-    const res = await app.inject({ method: 'GET', url: '/docs/json' })
+    const res = await app.inject({ method: 'GET', url: '/openapi.json' })
     expect(res.statusCode).toBe(200)
     const spec = JSON.parse(res.body)
 

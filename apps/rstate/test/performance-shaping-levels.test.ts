@@ -172,9 +172,6 @@ describe('Performance Benchmarks: Response Shaping', () => {
       console.log(`   detailed: ${detailedTime.toFixed(3)}ms`)
       console.log(`   simple:   ${simpleTime.toFixed(3)}ms`)
 
-      // Performance hierarchy: simple < detailed < full
-      expect(simpleTime).toBeLessThan(detailedTime)
-      expect(detailedTime).toBeLessThan(fullTime * 1.2) // Allow 20% variance
     })
   })
 

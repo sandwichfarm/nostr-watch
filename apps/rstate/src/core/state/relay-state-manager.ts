@@ -11,6 +11,7 @@ import { LabelIndexService } from '../index/label-index.js'
 import { GeoService } from '../geo/geo.js'
 import type { QueryCache } from '../cache/cache.js'
 import type { MonitorScoringService } from '../score/monitor-scoring.js'
+import { normalizeCountryCode } from '../agg/country.js'
 import { getLogger } from '../../utils/logger.js'
 
 const logger = getLogger().child({ module: 'relay-state-manager' })
@@ -69,24 +70,51 @@ export class RelayStateManager {
       // Add labels to state
       state.labels = this.labelIndex.getLabelsForRelay(relayUrl)
 
-      // Extract country from 'nip32.geo' labels and aggregate
-      if (state.labels && state.labels['nip32.geo']) {
-        const countryValues = state.labels['nip32.geo']
-        if (countryValues.length > 0) {
-          // For now, just take the first country (most common case is single country)
-          // In the future, we could aggregate multiple countries if needed
-          const countryCode = countryValues[0]
-          const contributingAuthors = observations
-            .filter(obs => obs.labels?.some(l => l.namespace === 'nip32.geo' && l.value === countryCode))
-            .map(obs => obs.author)
-
-          state.country = {
-            value: countryCode,
-            support: contributingAuthors.length / observations.length,
-            sampleSize: observations.length,
-            contributingAuthors: Array.from(new Set(contributingAuthors)),
-            lastUpdated: Date.now(),
+      // Extract country from observation labels, normalize to Alpha-2, majority-wins vote
+      const countryVotes: Array<{ code: string; author: string; timestamp: number }> = []
+      for (const obs of observations) {
+        if (!obs.labels) continue
+        for (const label of obs.labels) {
+          if (label.namespace === 'nip32.geo') {
+            countryVotes.push({
+              code: normalizeCountryCode(label.value),
+              author: obs.author,
+              timestamp: obs.created_at,
+            })
           }
+        }
+      }
+
+      if (countryVotes.length > 0) {
+        // Group by normalized code, count votes
+        const buckets = new Map<string, typeof countryVotes>()
+        for (const vote of countryVotes) {
+          if (!buckets.has(vote.code)) buckets.set(vote.code, [])
+          buckets.get(vote.code)!.push(vote)
+        }
+
+        // Pick majority; tiebreak by most recent observation
+        let bestCode = countryVotes[0].code
+        let bestCount = 0
+        let bestLatest = 0
+        for (const [code, votes] of buckets.entries()) {
+          const latest = Math.max(...votes.map(v => v.timestamp))
+          if (votes.length > bestCount || (votes.length === bestCount && latest > bestLatest)) {
+            bestCount = votes.length
+            bestLatest = latest
+            bestCode = code
+          }
+        }
+
+        const winners = buckets.get(bestCode)!
+        const contributingAuthors = Array.from(new Set(winners.map(v => v.author)))
+
+        state.country = {
+          value: bestCode,
+          support: winners.length / countryVotes.length,
+          sampleSize: countryVotes.length,
+          contributingAuthors,
+          lastUpdated: Date.now(),
         }
       }
 

@@ -123,6 +123,9 @@ export interface RelayState {
   // Country (if available from labels)
   country?: AggregatedValue<string>
 
+  // NIP-11 info document (most-recent-wins from observations)
+  nip11?: Record<string, any>
+
   // Meta
   updated_at: number
   contributingAuthors: string[]

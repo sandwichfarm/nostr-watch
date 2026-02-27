@@ -5,8 +5,9 @@
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
-import { NostrServerTransport, ApplesauceRelayPool, PrivateKeySigner, EncryptionMode } from '@contextvm/sdk'
-import { RelayPoolAdapter } from './sdk-adapters.js'
+import { NostrServerTransport, PrivateKeySigner, EncryptionMode, withServerPayments, LnBolt11NwcPaymentProcessor } from '@contextvm/sdk'
+import { pricedCapabilities } from './payments/cvm-pricing.js'
+import { ResilientRelayPool } from './resilient-relay-pool.js'
 import type { Config } from './config.js'
 import { getLogger } from './utils/logger.js'
 import { ToolRegistry, registerToolset, type TransportContext } from './mcp/tool-adapter.js'
@@ -54,14 +55,14 @@ export class CVMServer {
   // CVM transport components (optional - only if CVM enabled)
   private mcpServer?: Server
   private transport?: NostrServerTransport
-  private transportPool?: ApplesauceRelayPool
+  private transportPool?: ResilientRelayPool
   private signer?: PrivateKeySigner
   private toolRegistry?: ToolRegistry
   private transportContext?: TransportContext
   private notificationDelivery?: NotificationDeliveryService
 
   // Core components (always required)
-  private ingestionPool: RelayPoolAdapter
+  private ingestionPool: ResilientRelayPool
   private startTime: number = Date.now()
 
   // Core services
@@ -85,7 +86,7 @@ export class CVMServer {
     logger.info('Initializing RelayVM server')
 
     // Initialize ingestion pool (always required)
-    this.ingestionPool = new RelayPoolAdapter(new ApplesauceRelayPool(config.ingestRelays))
+    this.ingestionPool = new ResilientRelayPool(config.ingestRelays)
 
     // Initialize State Core (transport-agnostic)
     this.core = initStateCore({
@@ -135,7 +136,10 @@ export class CVMServer {
     logger.info('Initializing CVM transport')
 
     // Create CVM relay pool and signer
-    this.transportPool = new ApplesauceRelayPool(cvmConfig.cvmRelays)
+    if (!cvmConfig.serverKey) {
+      throw new Error('CVM_SERVER_NSEC is required but was empty — refusing to start with a random key')
+    }
+    this.transportPool = new ResilientRelayPool(cvmConfig.cvmRelays)
     this.signer = new PrivateKeySigner(cvmConfig.serverKey)
 
     // Create tool registry first (before transport context)
@@ -169,7 +173,7 @@ export class CVMServer {
     // Create Nostr transport
     this.transport = new NostrServerTransport({
       signer: this.signer,
-      relayHandler: this.transportPool,
+      relayHandler: this.transportPool.toRelayHandler(),
       encryptionMode: this.getEncryptionMode(cvmConfig.encryptionMode),
       serverInfo: {
         name: 'RelayVM',
@@ -178,6 +182,26 @@ export class CVMServer {
       isPublicServer: cvmConfig.allowedPubkeys.length === 0,
       allowedPublicKeys: cvmConfig.allowedPubkeys.length > 0 ? cvmConfig.allowedPubkeys : undefined,
     })
+
+    // Wrap transport with CEP-8 payment gating if enabled
+    if (process.env.CVM_PAYMENTS_ENABLED === 'true') {
+      const nwcConnectionString = process.env.CVM_NWC_CONNECTION_STRING
+      if (!nwcConnectionString) {
+        throw new Error('CVM_PAYMENTS_ENABLED=true but CVM_NWC_CONNECTION_STRING is not set')
+      }
+
+      const nwcProcessor = new LnBolt11NwcPaymentProcessor({
+        nwcConnectionString,
+        relayHandler: this.transportPool!.toRelayHandler(),
+      })
+
+      this.transport = withServerPayments(this.transport, {
+        processors: [nwcProcessor],
+        pricedCapabilities,
+      })
+
+      logger.info({ pricedTools: pricedCapabilities.length }, 'CVM payment gating enabled (CEP-8)')
+    }
 
     // Create notification delivery service
     this.notificationDelivery = new NotificationDeliveryService(
@@ -530,6 +554,12 @@ export class CVMServer {
       if (this.transport) {
         await this.transport.close()
         logger.info('CVM transport closed')
+      }
+
+      // Disconnect relay pools
+      await this.ingestionPool.disconnect()
+      if (this.transportPool) {
+        await this.transportPool.disconnect()
       }
 
       logger.info('RelayVM server stopped')

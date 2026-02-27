@@ -5,8 +5,17 @@
     "relays": {
       "type": "array",
       "items": {
-        "type": "object",
-        "description": "RelayState object with optional distance field"
+        "oneOf": [
+          {
+            "type": "string",
+            "description": "Relay URL (format=simple)"
+          },
+          {
+            "type": "object",
+            "description": "RelayState object with optional distance field",
+            "additionalProperties": true
+          }
+        ]
       }
     },
     "center": {

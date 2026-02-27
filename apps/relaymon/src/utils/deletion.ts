@@ -42,7 +42,8 @@ export class Kind5Event extends Event {
 
     const tags = [
       ["a", aTag],
-      ["k", "30166"] // Add k tag for the kind of event being deleted
+      ["k", "30166"], // Add k tag for the kind of event being deleted
+      ["client", "@nostrwatch/relaymon"],
     ];
 
     const event = {

@@ -67,7 +67,15 @@ export async function maybeAnnounce(config: Config, queueManager?: QueueManager)
     }
   );
 
-  announcer.generate();
+  const announceEvents = announcer.generate();
+
+  // Add client tag to all announcement events before signing
+  for (const ev of Object.values(announceEvents)) {
+    const generated = (ev as any)?.event ?? ev;
+    if (generated?.tags && Array.isArray(generated.tags)) {
+      generated.tags.push(['client', '@nostrwatch/relaymon']);
+    }
+  }
 
   try {
     await announcer.sign(sk);

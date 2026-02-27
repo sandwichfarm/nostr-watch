@@ -6,7 +6,7 @@
   "license": "MIT",
   "dependencies": {
     "@apidevtools/json-schema-ref-parser": "^11.7.2",
-    "ajv": "8.17.1",
+    "ajv": "8.18.0",
     "esbuild-yaml": "^1.2.0",
     "json-loader": "0.5.7",
     "quicktype": "23.0.170",

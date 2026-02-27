@@ -1,8 +1,10 @@
 import Deferred from 'promise-deferred';
 import Logger from "@nostrwatch/logger";
 
+type DeferredWithState<T = unknown> = InstanceType<typeof Deferred<T>> & { _state?: string };
+
 export class DeferredWrapper {
-  promises: Record<string, Record<string, InstanceType<typeof Deferred>>>; 
+  promises: Record<string, Record<string, DeferredWithState>>;
   timeout: any;
   $session: any;
   logger: Logger;
@@ -62,17 +64,17 @@ export class DeferredWrapper {
 
   create(key: string) {
     this.setup();
-    const deferred = new Deferred();
+    const deferred: DeferredWithState = new Deferred();
     deferred._state = 'pending';
     const origResolve = deferred.resolve.bind(deferred);
     const origReject = deferred.reject.bind(deferred);
-    deferred.resolve = (...args: any[]) => {
+    deferred.resolve = (value: any) => {
       deferred._state = 'fulfilled';
-      return origResolve(...args);
+      return origResolve(value);
     };
-    deferred.reject = (...args: any[]) => {
+    deferred.reject = (reason?: any) => {
       deferred._state = 'rejected';
-      return origReject(...args);
+      return origReject(reason);
     };
     this.promises[this.session][key] = deferred;
     return this.get(key);

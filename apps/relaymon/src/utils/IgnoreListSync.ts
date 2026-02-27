@@ -304,7 +304,10 @@ export class IgnoreListSync {
       const event: Partial<Event> = {
         kind: 10006,
         created_at: Math.floor(Date.now() / 1000),
-        tags: Array.from(this.localIgnoredRelays).map((url) => ["r", url]),
+        tags: [
+          ...Array.from(this.localIgnoredRelays).map((url) => ["r", url]),
+          ["client", "@nostrwatch/relaymon"],
+        ],
         content: "",
         pubkey,
       };

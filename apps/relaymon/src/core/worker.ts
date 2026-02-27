@@ -272,7 +272,8 @@ export class Worker {
         try {
           const event = new Kind30166(this.pubkey);
           const privkey = getPrivateKey();
-          event.generateEvent(result);
+          const generated = event.generateEvent(result);
+          generated.tags.push(['client', '@nostrwatch/relaymon']);
           const signedEvent = await event.signEvent(privkey);
           await this.publisher.publishEvent(signedEvent);
           this.logger.debug(`Published event for relay ${result.url}`);

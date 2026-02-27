@@ -47,6 +47,8 @@ export class Kind20166 extends Event {
       tags.push(['retry', String(data.retryCount)]);
     }
 
+    tags.push(['client', '@nostrwatch/relaymon']);
+
     logger.debug(`Generated ephemeral state change event for ${data.url}: ${data.operationalStatus}`);
 
     return tags;

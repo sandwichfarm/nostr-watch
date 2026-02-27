@@ -70,6 +70,8 @@ export class Kind1066 extends Event {
       logger.debug(`Generated offline delta event for ${data.url} with retry count ${retryCount}`);
     }
 
+    tags.push(['client', '@nostrwatch/relaymon']);
+
     return tags;
   }
 

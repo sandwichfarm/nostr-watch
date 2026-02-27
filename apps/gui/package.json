@@ -149,7 +149,7 @@
 		"lucide-react": "^0.474.0",
 		"lucide-svelte": "^0.462.0",
 		"marked": "^15.0.3",
-		"minimatch": "^10.0.1",
+		"minimatch": "^10.2.3",
 		"minisearch": "^7.1.0",
 		"nostr-tools": "^2.10.3",
 		"nostr-zap": "^1.2.0",

@@ -581,13 +581,19 @@ export class MonitorService extends Service {
     if(this.enabledMonitors.length) {
       return;
     }
-    // Use monitors with registrations, not requiring lastActive (which comes from check events)
-    // sortedMonitors requires lastActive > 0, but checks haven't loaded yet during bootstrap
     const monitorsWithRegistrations = Array.from(this.monitors.values())
       .filter(m => m?.registration?.checks?.length);
 
-    // Sort by priority or just take the first N
-    const sorted = monitorsWithRegistrations.sort((a, b) => (b.priority || 0) - (a.priority || 0));
+    // Prefer active monitors, then sort by number of checks
+    const sorted = monitorsWithRegistrations.sort((a, b) => {
+      // Active monitors first
+      if (a.active && !b.active) return -1;
+      if (!a.active && b.active) return 1;
+      // Then by check count
+      const aChecks = a.registration?.checks?.length ?? 0;
+      const bChecks = b.registration?.checks?.length ?? 0;
+      return bChecks - aChecks;
+    });
 
     for(let i=0; i < this.DEFAULT_ENABLED_MONITORS && i < sorted.length; i++) {
       try {

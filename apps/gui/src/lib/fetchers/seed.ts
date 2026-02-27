@@ -323,8 +323,6 @@ export const seedBuildData = async (): Promise<void> => {
       await new Promise(resolve => setTimeout(resolve,500))
 
       // Build MonitorCached array and store in StateManager
-      const DEFAULT_ENABLED_MONITORS = 5;
-
       // Sort monitors by number of checks (more checks = higher priority)
       const sortedMonitorEntries = Array.from(monitorEventsByPubkey.entries())
         .filter(([_, data]) => data.registration)
@@ -334,16 +332,17 @@ export const seedBuildData = async (): Promise<void> => {
           return bChecks - aChecks; // Descending by check count
         });
 
-      // Only enable the top 3 monitors by default (like maybeEnableMonitors)
-      // lastActive uses registration timestamp - network sync will update with actual check times
-      const monitorsCache = sortedMonitorEntries.map(([pubkey, data], index) => ({
+      // Don't pre-enable monitors in seed — seed data lacks check events to
+      // determine real activity.  Let bootstrap's maybeEnableMonitors() handle
+      // enabling after ensureMonitorsActive() sets real lastActive values.
+      const monitorsCache = sortedMonitorEntries.map(([pubkey, data]) => ({
         pubkey,
         registration: data.registration,
         profile: data.profile,
         relays: data.relays,
         priority: 0,
-        enabled: index < DEFAULT_ENABLED_MONITORS,
-        lastActive: data.registration?.created_at ?? -1,
+        enabled: false,
+        lastActive: -1,
       }));
 
       if (monitorsCache.length > 0) {

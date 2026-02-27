@@ -84,6 +84,7 @@ export class SchemaValidationService {
 
     async validate(request: SchemaValidationServiceRequest, hash?: string): Promise<SchemaValidationServiceResponse> {
         hash = hash ?? deterministicHash(request.json)
+        request.hash = hash
         this._subIds.add(hash)
         this.worker.postMessage(request)
         // console.log(`SchemaValidationService: validate request sent for ${hash}`)        

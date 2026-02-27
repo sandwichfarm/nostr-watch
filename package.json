@@ -32,7 +32,7 @@
     "esbuild": "^0.24.0",
     "gh-pages": "^6.2.0",
     "rimraf": "^6.0.1",
-    "rollup": "^4.27.4",
+    "rollup": "^3.30.0",
     "typescript": "^5.7.2",
     "webpack": "^5.96.1"
   },

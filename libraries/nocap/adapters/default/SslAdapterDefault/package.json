@@ -50,7 +50,7 @@
     "@vitest/ui": "0.34.6",
     "add": "^2.0.6",
     "rimraf": "^6.0.1",
-    "rollup": "^4.24.0",
+    "rollup": "^3.30.0",
     "rollup-plugin-copy": "^3.5.0",
     "rollup-plugin-polyfill-node": "^0.13.0",
     "rollup-plugin-terser": "^7.0.2",

@@ -45,7 +45,7 @@
     "@types/promise-deferred": "2.0.5",
     "@vitest/ui": "0.34.6",
     "node-polyfill-webpack-plugin": "4.0.0",
-    "rollup": "^4.24.0",
+    "rollup": "^3.30.0",
     "rollup-plugin-polyfill-node": "^0.13.0",
     "rollup-plugin-terser": "^7.0.2",
     "tsc-alias": "^1.8.10",

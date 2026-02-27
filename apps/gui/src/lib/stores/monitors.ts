@@ -435,6 +435,8 @@ if (typeof window !== "undefined") {
   }, 30000); // Refresh every 30 seconds
 }
 
+export const monitorsChecked: Writable<boolean> = writable(false);
+
 export const monitorRows = derived(
   [monitorsSorted, monitorRelayLivenessCounts, nip05s, statsAsOf],
   ([$monitorsSorted, $monitorRelayLivenessCounts, _nip05s, $statsAsOf]) => {
@@ -468,5 +470,13 @@ export const monitorRows = derived(
       row.likelyDead = liveness?.dead ?? 0
       return row;
     })
+  }
+);
+
+export const allEnabledMonitorsOffline: Readable<boolean> = derived(
+  monitorRows,
+  ($monitorRows) => {
+    const enabled = $monitorRows.filter(m => m.enabled);
+    return enabled.length > 0 && enabled.every(m => !m.active);
   }
 );

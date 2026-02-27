@@ -11,6 +11,7 @@
   import { loadModules, type ModuleKey, type Modules } from './layout.modules.js';
   import { startLeaderTabRpcServer, stopLeaderTabRpcServer } from '$lib/runtime/leader-tab-server';
   import HeaderComponent from '$lib/components/layout/Header.svelte';
+  import MonitorsBanner from '$lib/components/layout/MonitorsBanner.svelte';
 
 	  import { doBootstrap } from '$lib/stores/routines.js';
 	  import {
@@ -290,6 +291,7 @@
 	  {:else if showFollowerWaiting}
 	    <FollowerLoading />
 	  {:else if showContent}
+	    <MonitorsBanner />
 	    <div id="content-wrapper" class="block flow-root">
 	      <slot />
 	    </div>

@@ -6,6 +6,7 @@ import { backfillMonitorChecks, fetchDisabledMonitorsChecks, fetchMonitors, fetc
 import { instance, removeStaleChecksFromStore, seedFromCache } from "$utils/lifecycle";
 import { liveSync } from "$utils/live-sync";
 import { publishEventsToMemoryRelay } from "./events-helpers";
+import { monitorsChecked } from "./monitors";
 import { delay } from "@nostrwatch/utils";
 import type { IEvent } from "@nostrwatch/route66/models/Event";
 import { StateManager } from "@nostrwatch/route66";
@@ -172,7 +173,10 @@ export const dataRegisterInit = async () => {
         priority: 20,
         expiry: SYNC_MONITORS_EXPIRY,
         fn: fetchMonitors,
-        onComplete: publishEventsToMemoryRelay
+        onComplete: async (events) => {
+            monitorsChecked.set(true);
+            return publishEventsToMemoryRelay(events);
+        }
     });
 
     // Sync blocklists from monitors (kind 10006) - must run after monitors are loaded

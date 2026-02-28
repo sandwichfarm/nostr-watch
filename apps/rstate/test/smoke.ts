@@ -2,7 +2,7 @@
  * CVM Smoke Test (Client-side)
  *
  * Connects to the running CVM server over Nostr via MCP, lists tools,
- * calls health/ping, relays/list, relays/get_state, and performs a
+ * calls health/ping, relays/list, relays/state, and performs a
  * short-lived subscription.
  */
 
@@ -68,7 +68,7 @@ async function main() {
     const list = await client.callTool({ name: 'relays/list', arguments: { limit: 5 } })
     console.log('relays/list:', JSON.stringify(list, null, 2))
 
-    // Try relays/get_state on first item
+    // Try relays/state on first item
     let firstRelayUrl: string | undefined
     try {
       const parsed = (typeof list === 'string') ? JSON.parse(list) : list
@@ -77,30 +77,30 @@ async function main() {
     } catch {}
 
     if (firstRelayUrl) {
-      const state = await client.callTool({ name: 'relays/get_state', arguments: { relayUrl: firstRelayUrl } })
-      console.log('relays/get_state:', JSON.stringify(state, null, 2))
+      const state = await client.callTool({ name: 'relays/state', arguments: { relayUrl: firstRelayUrl } })
+      console.log('relays/state:', JSON.stringify(state, null, 2))
     } else {
       console.log('No relays returned from relays/list to query get_state.')
     }
 
     // Labels: discover namespaces and values, then exercise grouping/search
     try {
-      const allLabels = await client.callTool({ name: 'relays/list_labels', arguments: {} })
-      console.log('relays/list_labels:', JSON.stringify(allLabels, null, 2))
+      const allLabels = await client.callTool({ name: 'relays/labels/list', arguments: {} })
+      console.log('relays/labels/list:', JSON.stringify(allLabels, null, 2))
 
       const allLabelsObj = (typeof allLabels === 'string') ? JSON.parse(allLabels) : allLabels
       const namespaces: string[] = allLabelsObj?.namespaces || allLabelsObj?.content?.[0]?.json?.namespaces || []
       if (namespaces.length > 0) {
         const ns = namespaces[0]
-        const nsLabelsResp = await client.callTool({ name: 'relays/list_labels', arguments: { namespace: ns } })
-        console.log(`relays/list_labels (namespace=${ns}):`, JSON.stringify(nsLabelsResp, null, 2))
+        const nsLabelsResp = await client.callTool({ name: 'relays/labels/list', arguments: { namespace: ns } })
+        console.log(`relays/labels/list (namespace=${ns}):`, JSON.stringify(nsLabelsResp, null, 2))
 
         const nsLabelsObj = (typeof nsLabelsResp === 'string') ? JSON.parse(nsLabelsResp) : nsLabelsResp
         const values: string[] = nsLabelsObj?.labels?.[ns] || nsLabelsObj?.content?.[0]?.json?.labels?.[ns] || []
         if (values.length > 0) {
           const value = values[0]
-          const byLabel = await client.callTool({ name: 'relays/by_label', arguments: { namespace: ns, value, limit: 5 } })
-          console.log(`relays/by_label (${ns}:${value}):`, JSON.stringify(byLabel, null, 2))
+          const byLabel = await client.callTool({ name: 'relays/by/label', arguments: { namespace: ns, value, limit: 5 } })
+          console.log(`relays/by/label (${ns}:${value}):`, JSON.stringify(byLabel, null, 2))
 
           const searchWithLabel = await client.callTool({
             name: 'relays/search',
@@ -115,14 +115,14 @@ async function main() {
 
     // Groupings by NIP and country
     try {
-      const byNip = await client.callTool({ name: 'relays/by_nip', arguments: { nip: 11, minSupport: 0.3 } })
-      console.log('relays/by_nip:', JSON.stringify(byNip, null, 2))
+      const byNip = await client.callTool({ name: 'relays/by/nip', arguments: { nip: 11, minSupport: 0.3 } })
+      console.log('relays/by/nip:', JSON.stringify(byNip, null, 2))
     } catch (err) {
       console.warn('by_nip failed:', err)
     }
     try {
-      const byCountry = await client.callTool({ name: 'relays/by_country', arguments: {} })
-      console.log('relays/by_country:', JSON.stringify(byCountry, null, 2))
+      const byCountry = await client.callTool({ name: 'relays/by/country', arguments: {} })
+      console.log('relays/by/country:', JSON.stringify(byCountry, null, 2))
     } catch (err) {
       console.warn('by_country failed:', err)
     }
@@ -141,8 +141,8 @@ async function main() {
       console.warn('offline failed:', err)
     }
     try {
-      const dead = await client.callTool({ name: 'relays/dead_probably', arguments: { deadThresholdSeconds: 7 * 24 * 3600 } })
-      console.log('relays/dead_probably:', JSON.stringify(dead, null, 2))
+      const dead = await client.callTool({ name: 'relays/dead', arguments: { deadThresholdSeconds: 7 * 24 * 3600 } })
+      console.log('relays/dead:', JSON.stringify(dead, null, 2))
     } catch (err) {
       console.warn('dead_probably failed:', err)
     }

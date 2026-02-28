@@ -237,8 +237,8 @@ async function testMCP() {
     if (relaysArr.length > 0) {
       start = Date.now()
       const firstRelayUrl = relaysArr[0]?.relayUrl
-      const state = await client.callTool({ name: 'relays/get_state', arguments: { relayUrl: firstRelayUrl } })
-      recordTest('MCP: relays/get_state', !!state, Date.now() - start)
+      const state = await client.callTool({ name: 'relays/state', arguments: { relayUrl: firstRelayUrl } })
+      recordTest('MCP: relays/state', !!state, Date.now() - start)
     }
 
     // Search
@@ -248,13 +248,13 @@ async function testMCP() {
 
     // Labels
     start = Date.now()
-    const labels = await client.callTool({ name: 'relays/list_labels', arguments: {} })
-    recordTest('MCP: relays/list_labels', !!labels, Date.now() - start)
+    const labels = await client.callTool({ name: 'relays/labels/list', arguments: {} })
+    recordTest('MCP: relays/labels/list', !!labels, Date.now() - start)
 
     // By NIP
     start = Date.now()
-    const byNip = await client.callTool({ name: 'relays/by_nip', arguments: { nip: 1 } })
-    recordTest('MCP: relays/by_nip', !!byNip, Date.now() - start)
+    const byNip = await client.callTool({ name: 'relays/by/nip', arguments: { nip: 1 } })
+    recordTest('MCP: relays/by/nip', !!byNip, Date.now() - start)
 
     // Online relays
     start = Date.now()

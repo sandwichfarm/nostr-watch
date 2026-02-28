@@ -1,10 +1,38 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { readFileSync } from 'node:fs'
+import { loadPricing, type PricingEntry } from '../payments/pricing-loader.js'
 
 export function isFeatureEnabled(name: string): boolean {
   const v = process.env[name]
   if (!v) return false
   return v === '1' || v.toLowerCase() === 'true' || v.toLowerCase() === 'on'
+}
+
+/** Map canonical config names → REST route paths (only where they differ from /<name>) */
+const NAME_TO_ROUTE: Record<string, string> = {
+  'relays/list':        '/relays',
+  'monitors/get':       '/monitors/:pubkey',
+  'monitors/list':      '/monitors',
+}
+
+function buildPolicyJson(entries: PricingEntry[]): any {
+  const methods = (process.env.PAY_METHODS || 'L402,P2PK').split(',').map(s => s.trim())
+  const ttlSeconds = parseInt(process.env.PAY_TTL_SECONDS || '3600', 10)
+
+  const routes: Record<string, any> = {}
+  for (const e of entries) {
+    if (e.amount <= 0) continue
+    const routePath = NAME_TO_ROUTE[e.name] ?? `/${e.name}`
+    routes[routePath] = {
+      priceMsat: e.amount * 1000,
+      methods,
+    }
+  }
+
+  return {
+    defaults: { priceMsat: 0, methods, ttlSeconds },
+    routes,
+  }
 }
 
 let helper: any | null = null
@@ -13,10 +41,20 @@ async function initGateway(): Promise<any | null> {
   if (helper) return helper
   if (!isFeatureEnabled('FEATURE_402')) return null
 
-  // Load policy
-  const policyPath = process.env.PAY_PRICES_JSON
-  if (!policyPath) return null
-  const json = JSON.parse(readFileSync(policyPath, 'utf8'))
+  // Load policy from unified pricing config, or fall back to legacy JSON
+  let json: any
+  const basePath = process.env.PRICING_YAML
+  if (basePath) {
+    const overridePath = process.env.REST_PRICING_YAML
+    const entries = loadPricing(basePath, overridePath)
+    json = buildPolicyJson(entries)
+  } else {
+    // Legacy: direct JSON policy file
+    const legacyPath = process.env.PAY_PRICES_JSON
+    if (!legacyPath) return null
+    json = JSON.parse(readFileSync(legacyPath, 'utf8'))
+  }
+
   let mod: any
   try {
     mod = await import('nostrwatch-payments-gateway')

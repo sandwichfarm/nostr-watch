@@ -1,15 +1,41 @@
 /**
  * CVM Payment Pricing
  *
- * Defines which MCP tools require payment and their prices (CEP-8).
- * Tools not listed here are free (e.g. relays/list, health/ping, monitors/*).
+ * Loads unified pricing and maps canonical endpoint names to CEP-8
+ * PricedCapability format (with `method: 'tools/call'` and CVM tool names).
  */
 
 import type { PricedCapability } from '@contextvm/sdk'
+import { loadPricing, type PricingEntry } from './pricing-loader.js'
+import { getLogger } from '../utils/logger.js'
 
-export const pricedCapabilities: PricedCapability[] = [
-  { method: 'tools/call', name: 'relays/nearby', amount: 21, currencyUnit: 'sats', description: 'Geo-proximity relay search' },
-  { method: 'tools/call', name: 'relays/bbox', amount: 21, currencyUnit: 'sats', description: 'Bounding-box relay search' },
-  { method: 'tools/call', name: 'relays/search', amount: 5, currencyUnit: 'sats', description: 'Full-text relay search' },
-  { method: 'tools/call', name: 'relays/compare', amount: 15, currencyUnit: 'sats', description: 'Multi-relay comparison' },
-]
+const logger = getLogger().child({ module: 'cvm-pricing' })
+
+function toPricedCapability(entry: PricingEntry): PricedCapability {
+  return {
+    method: 'tools/call',
+    name: entry.name,
+    amount: entry.amount,
+    currencyUnit: entry.currencyUnit,
+    description: entry.description,
+  }
+}
+
+export function loadPricedCapabilities(): PricedCapability[] {
+  const basePath = process.env.PRICING_YAML
+  if (!basePath) {
+    logger.warn('PRICING_YAML not set — CVM payment gating has no priced capabilities')
+    return []
+  }
+
+  const overridePath = process.env.CVM_PRICING_YAML
+  const entries = loadPricing(basePath, overridePath)
+
+  // Only include entries with amount > 0 (free endpoints don't need gating)
+  const priced = entries
+    .filter(e => e.amount > 0)
+    .map(toPricedCapability)
+
+  logger.info({ count: priced.length, override: !!overridePath }, 'CVM priced capabilities loaded')
+  return priced
+}

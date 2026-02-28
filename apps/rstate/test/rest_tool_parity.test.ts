@@ -269,7 +269,7 @@ describe('REST vs Tool Parity (seeded dataset)', () => {
     expect((body.relays as any[]).map(r => r.relayUrl)).toEqual((toolOut.relays as any[]).map((r: any) => r.relayUrl))
   })
 
-  it('parity: relays/get_state', async () => {
+  it('parity: relays/state', async () => {
     const url = encodeURIComponent('wss://relay1.example.com')
     const res = await rest.getApp().inject({ method: 'GET', url: `/relays/state?relayUrl=${url}` })
     expect(res.statusCode).toBe(200)
@@ -292,7 +292,7 @@ describe('REST vs Tool Parity (seeded dataset)', () => {
     expect(restUrls).toEqual(toolUrls)
   })
 
-  it('parity: relays/by_label (nip32.geo=US)', async () => {
+  it('parity: relays/by/label (nip32.geo=US)', async () => {
     const res = await rest.getApp().inject({ method: 'GET', url: '/relays/by/label?namespace=nip32.geo&value=US' })
     expect(res.statusCode).toBe(200)
     const body = res.json() as any
@@ -304,7 +304,7 @@ describe('REST vs Tool Parity (seeded dataset)', () => {
     expect(restUrls).toEqual(toolUrls)
   })
 
-  it('parity: relays/by_nip', async () => {
+  it('parity: relays/by/nip', async () => {
     const res = await rest.getApp().inject({ method: 'GET', url: '/relays/by/nip?minSupport=0.0' })
     expect(res.statusCode).toBe(200)
     const body = res.json() as any
@@ -318,7 +318,7 @@ describe('REST vs Tool Parity (seeded dataset)', () => {
     }
   })
 
-  it('parity: relays/by_country', async () => {
+  it('parity: relays/by/country', async () => {
     const res = await rest.getApp().inject({ method: 'GET', url: '/relays/by/country' })
     expect(res.statusCode).toBe(200)
     const body = res.json() as any

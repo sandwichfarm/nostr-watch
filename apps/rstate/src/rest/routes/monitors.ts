@@ -6,7 +6,6 @@
 
 import type { FastifyInstance } from 'fastify'
 import type { RestContext } from '../server.js'
-import { getPaymentsPreHandler } from '../payments.js'
 import { getLogger } from '../../utils/logger.js'
 import { schemas } from '../schemas.js'
 
@@ -172,22 +171,12 @@ export async function registerMonitorRoutes(app: FastifyInstance, context: RestC
   })
 
   // GET /monitors/analytics - Get detailed analytics for all monitors
-  const paymentsPreHandler = await getPaymentsPreHandler()
   app.get<{
     Querystring: { limit?: number; offset?: number; includeRelayUrls?: boolean }
   }>('/monitors/analytics', {
     schema: {
       tags: ['monitors'],
       description: 'Get detailed reliability and coverage analytics for all monitors',
-      headers: {
-        type: 'object',
-        properties: {
-          authorization: {
-            type: 'string',
-            description: 'Authorization header for paid routes. Formats: "L402 <macaroon>:<preimage>" or "Cashu <token>"'
-          }
-        }
-      },
       querystring: {
         type: 'object',
         properties: {
@@ -198,18 +187,8 @@ export async function registerMonitorRoutes(app: FastifyInstance, context: RestC
       },
       response: {
         200: schemas.monitors.analyticsList,
-        402: {
-          description: 'Payment Required when pricing applies. Returns 402 challenge headers.',
-          type: 'object',
-          properties: { error: { type: 'string', example: 'Payment Required' } },
-          headers: {
-            'WWW-Authenticate': { description: 'L402 challenge', schema: { type: 'string' } },
-            'X-Cashu': { description: 'Cashu P2PK challenge', schema: { type: 'string' } }
-          }
-        },
       },
     },
-    preHandler: paymentsPreHandler ? [paymentsPreHandler] : undefined,
   }, async (request, reply) => {
     const { limit = 100, offset = 0, includeRelayUrls = false } = request.query
 

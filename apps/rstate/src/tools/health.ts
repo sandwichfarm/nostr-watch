@@ -21,6 +21,7 @@ interface HealthToolContext {
   metrics?: MetricsService
   getMetricsSnapshot?: () => any
   queryCache?: QueryCache
+  cvmEnabled?: boolean
 }
 
 /**
@@ -45,10 +46,13 @@ export function createHealthTool(context: HealthToolContext): CVMTool {
       const ready = context.getReady ? context.getReady() : false
 
       // Determine status based on connectivity
+      // Only consider transport relays when CVM is enabled
       let status: 'ok' | 'degraded' | 'error' = 'ok'
-      if (relayCount.transport === 0 && relayCount.ingestion === 0) {
+      const transportOk = !context.cvmEnabled || relayCount.transport > 0
+      const ingestionOk = relayCount.ingestion > 0
+      if (!transportOk && !ingestionOk) {
         status = 'error'
-      } else if (relayCount.transport === 0 || relayCount.ingestion === 0) {
+      } else if (!transportOk || !ingestionOk) {
         status = 'degraded'
       }
 

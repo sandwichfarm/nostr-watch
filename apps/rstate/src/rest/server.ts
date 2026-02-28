@@ -22,6 +22,7 @@ import { registerPolicyRoutes } from './routes/policy.js'
 // import { registerSubscriptionRoutes } from './routes/subscriptions.js'
 import { registerMetricsRoutes } from './routes/metrics.js'
 import { registerPaymentsHealthRoutes } from './routes/payments-health.js'
+import { getPaymentsPreHandler } from './payments.js'
 import { schemas } from './schemas.js'
 import { generateETag, etagMatches } from './etag.js'
 
@@ -60,6 +61,7 @@ export interface RestContext {
   getRelayCount: () => { transport: number; ingestion: number }
   getMetricsSnapshot: () => any
   getReady: () => boolean
+  cvmEnabled?: boolean
 }
 
 /**
@@ -408,14 +410,16 @@ export class RestServer {
       const cacheStats = this.context.queryCache.getStats()
 
       // Determine health status based on relay connectivity
+      // Only consider transport relays when CVM is enabled
       let status: 'ok' | 'degraded' | 'error'
-      const totalRelays = relayCount.transport + relayCount.ingestion
-      if (totalRelays === 0) {
-        status = 'error' // No relays connected
-      } else if (relayCount.transport === 0 || relayCount.ingestion === 0) {
-        status = 'degraded' // Missing transport or ingestion relays
+      const transportOk = !this.context.cvmEnabled || relayCount.transport > 0
+      const ingestionOk = relayCount.ingestion > 0
+      if (!transportOk && !ingestionOk) {
+        status = 'error'
+      } else if (!transportOk || !ingestionOk) {
+        status = 'degraded'
       } else {
-        status = 'ok' // All systems operational
+        status = 'ok'
       }
 
       return {
@@ -447,6 +451,12 @@ export class RestServer {
 
     // Health check - POST (for monitoring tools that use POST)
     this.app.post('/health/ping', { schema: healthPingSchema }, healthPingHandler)
+
+    // Apply payments pre-handler globally (pricing.yaml controls which routes are paid)
+    const paymentsPreHandler = await getPaymentsPreHandler()
+    if (paymentsPreHandler) {
+      this.app.addHook('preHandler', paymentsPreHandler)
+    }
 
     // Register route modules
     await registerRelayRoutes(this.app, this.context)

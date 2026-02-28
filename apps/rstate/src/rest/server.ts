@@ -18,9 +18,9 @@ import { RateLimiterService } from '../services/rate-limiter.js'
 import { getLogger } from '../utils/logger.js'
 import { registerRelayRoutes } from './routes/relays.js'
 import { registerMonitorRoutes } from './routes/monitors.js'
-import { registerPolicyRoutes } from './routes/policy.js'
+// import { registerPolicyRoutes } from './routes/policy.js'
 // import { registerSubscriptionRoutes } from './routes/subscriptions.js'
-import { registerMetricsRoutes } from './routes/metrics.js'
+// import { registerMetricsRoutes } from './routes/metrics.js'
 import { registerPaymentsHealthRoutes } from './routes/payments-health.js'
 import { getPaymentsPreHandler, NAME_TO_ROUTE } from './payments.js'
 import { loadPricing, type PricingEntry } from '../payments/pricing-loader.js'
@@ -73,6 +73,7 @@ export class RestServer {
   private context: RestContext
   private rateLimiter?: RateLimiterService
   private routesReady: Promise<void>
+  private paidRoutePaths: Set<string> = new Set()
 
   constructor(
     private config: RestServerConfig,
@@ -159,6 +160,7 @@ export class RestServer {
         for (const e of paidEntries) {
           const route = NAME_TO_ROUTE[e.name] ?? `/${e.name}`
           routePriceMap.set(route, e)
+          this.paidRoutePaths.add(route)
         }
         logger.info({ paidRoutes: paidEntries.length }, 'Loaded pricing for OpenAPI documentation')
       } catch (err) {
@@ -183,7 +185,8 @@ export class RestServer {
           { name: 'health', description: 'Health check endpoints' },
           { name: 'relays', description: 'Relay state queries' },
           { name: 'monitors', description: 'Monitor information' },
-          { name: 'policy', description: 'Policy management' },
+          // DISABLED: Policy routes
+          // { name: 'policy', description: 'Policy management' },
           // DISABLED: Subscription system
           // { name: 'subscriptions', description: 'Relay state subscriptions' },
         ],
@@ -276,14 +279,25 @@ export class RestServer {
       return
     }
 
-    // Expose OpenAPI JSON spec at /openapi.json
+    // Expose full OpenAPI JSON spec at /openapi.json
     this.app.get('/openapi.json', async () => {
       return this.app.swagger()
     })
 
-    // Expose OpenAPI YAML spec at /openapi.yaml
-    this.app.get('/openapi.yaml', async () => {
-      return this.app.swagger({ yaml: true })
+    // Expose payable-only OpenAPI spec at /openapi.payable.json
+    this.app.get('/openapi.payable.json', async () => {
+      const full = this.app.swagger() as any
+      const filtered: any = {
+        ...full,
+        paths: {},
+      }
+      // Only include paths that have a paid route
+      for (const [path, methods] of Object.entries(full.paths || {})) {
+        if (this.paidRoutePaths.has(path)) {
+          filtered.paths[path] = methods
+        }
+      }
+      return filtered
     })
 
     // Register Scalar UI at root path /
@@ -293,7 +307,7 @@ export class RestServer {
       const html = `<!DOCTYPE html>
 <html>
 <head>
-  <title>RelayVM API Documentation</title>
+  <title>nostr.watch API Documentation</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 </head>
@@ -332,7 +346,7 @@ export class RestServer {
 
       // Content Security Policy
       // Relaxed CSP for API docs at root, strict for API endpoints
-      const isDocsRoute = request.url === '/' || request.url === '/openapi.json' || request.url === '/openapi.yaml'
+      const isDocsRoute = request.url === '/' || request.url === '/openapi.json' || request.url === '/openapi.payable.json'
       if (isDocsRoute && this.config.enableSwagger) {
         // Allow Scalar API docs to load all required resources
         reply.header('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data: https:; font-src 'self' https://cdn.jsdelivr.net https://fonts.scalar.com; connect-src 'self'; frame-ancestors 'none'")
@@ -371,7 +385,6 @@ export class RestServer {
 
     // POST/PUT/DELETE have higher costs
     if (method === 'POST' || method === 'PUT') {
-      if (path.includes('/policy')) return 10 // Policy changes are expensive
       // DISABLED: Subscription system
       // if (path.includes('/subscriptions')) return 2 // Subscription creation
       return 2
@@ -556,11 +569,13 @@ export class RestServer {
     // Register route modules
     await registerRelayRoutes(this.app, this.context)
     await registerMonitorRoutes(this.app, this.context)
-    registerPolicyRoutes(this.app, this.context)
+    // DISABLED: Policy routes
+    // registerPolicyRoutes(this.app, this.context)
     // DISABLED: Subscription routes
     // registerSubscriptionRoutes(this.app, this.context)
     await registerPaymentsHealthRoutes(this.app, this.context)
-    await registerMetricsRoutes(this.app, this.context)
+    // DISABLED: Metrics routes
+    // await registerMetricsRoutes(this.app, this.context)
 
     logger.info('All routes registered')
   }

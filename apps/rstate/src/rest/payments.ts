@@ -83,6 +83,12 @@ async function initGateway(): Promise<any | null> {
         // ignore
       }
     }
+    // Use bundled proto descriptor as fallback when no proto dir/json path is configured
+    if (!descriptorJson && !lndProtoDir) {
+      try {
+        descriptorJson = mod.LND_LIGHTNING_MIN
+      } catch { /* ignore */ }
+    }
     if (lndGrpcHost && lndMac && (descriptorJson || lndProtoDir)) {
       lnd = new LndGrpcProvider({ host: lndGrpcHost, protoDir: lndProtoDir, tlsCertPath: lndTlsCert, macaroonHex: lndMac, descriptorJson })
     } else {

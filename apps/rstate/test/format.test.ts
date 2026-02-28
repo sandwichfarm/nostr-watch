@@ -345,7 +345,7 @@ describe('Response Format Comprehensive Tests', () => {
     })
   })
 
-  describe('ContextVM Tools: relays/get_state', () => {
+  describe('ContextVM Tools: relays/state', () => {
     let getStateTool: ReturnType<typeof createRelaysGetStateTool>
 
     beforeAll(() => {

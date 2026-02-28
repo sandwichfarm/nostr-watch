@@ -124,7 +124,7 @@ export function createRelaysListTool(ctx: RelayToolsContext): CVMTool {
  */
 export function createRelaysGetStateTool(ctx: RelayToolsContext): CVMTool {
   return {
-    name: 'relays/get_state',
+    name: 'relays/state',
     description: 'Get state for a specific relay (detailed format by default)',
     inputSchema: {
       type: 'object',
@@ -330,7 +330,7 @@ export function createRelaysBboxTool(ctx: RelayToolsContext): CVMTool {
  */
 export function createRelaysGetLabelsTool(ctx: RelayToolsContext): CVMTool {
   return {
-    name: 'relays/get_labels',
+    name: 'relays/labels',
     description: 'Get labels for a specific relay',
     inputSchema: {
       type: 'object',
@@ -358,7 +358,7 @@ export function createRelaysGetLabelsTool(ctx: RelayToolsContext): CVMTool {
  */
 export function createRelaysListLabelsTool(ctx: RelayToolsContext): CVMTool {
   return {
-    name: 'relays/list_labels',
+    name: 'relays/labels/list',
     description: 'List all available labels',
     inputSchema: {
       type: 'object',
@@ -395,7 +395,7 @@ export function createRelaysListLabelsTool(ctx: RelayToolsContext): CVMTool {
  */
 export function createRelaysByLabelTool(ctx: RelayToolsContext): CVMTool {
   return {
-    name: 'relays/by_label',
+    name: 'relays/by/label',
     description: 'Get relays with a specific label',
     inputSchema: {
       type: 'object',
@@ -441,7 +441,7 @@ export function createRelaysByLabelTool(ctx: RelayToolsContext): CVMTool {
  */
 export function createRelaysBySoftwareTool(ctx: RelayToolsContext): CVMTool {
   return {
-    name: 'relays/by_software',
+    name: 'relays/by/software',
     description: 'Group relays by software',
     inputSchema: {
       type: 'object',
@@ -469,7 +469,7 @@ export function createRelaysBySoftwareTool(ctx: RelayToolsContext): CVMTool {
  */
 export function createRelaysByNetworkTool(ctx: RelayToolsContext): CVMTool {
   return {
-    name: 'relays/by_network',
+    name: 'relays/by/network',
     description: 'Group relays by network',
     inputSchema: {
       type: 'object',
@@ -495,7 +495,7 @@ export function createRelaysByNetworkTool(ctx: RelayToolsContext): CVMTool {
  */
 export function createRelaysByNipTool(ctx: RelayToolsContext): CVMTool {
   return {
-    name: 'relays/by_nip',
+    name: 'relays/by/nip',
     description: 'Group relays by NIP support',
     inputSchema: {
       type: 'object',
@@ -535,7 +535,7 @@ export function createRelaysByNipTool(ctx: RelayToolsContext): CVMTool {
  */
 export function createRelaysByCountryTool(ctx: RelayToolsContext): CVMTool {
   return {
-    name: 'relays/by_country',
+    name: 'relays/by/country',
     description: 'Group relays by country',
     inputSchema: {
       type: 'object',
@@ -758,7 +758,7 @@ export function createRelaysOfflineTool(ctx: RelayToolsContext): CVMTool {
  */
 export function createRelaysDeadTool(ctx: RelayToolsContext): CVMTool {
   return {
-    name: 'relays/dead_probably',
+    name: 'relays/dead',
     description: 'List relays considered dead (not seen for a long time)',
     inputSchema: {
       type: 'object',

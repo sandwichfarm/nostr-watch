@@ -6,7 +6,7 @@
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import { NostrServerTransport, PrivateKeySigner, EncryptionMode, withServerPayments, LnBolt11NwcPaymentProcessor } from '@contextvm/sdk'
-import { pricedCapabilities } from './payments/cvm-pricing.js'
+import { loadPricedCapabilities } from './payments/cvm-pricing.js'
 import { ResilientRelayPool } from './resilient-relay-pool.js'
 import type { Config } from './config.js'
 import { getLogger } from './utils/logger.js'
@@ -199,6 +199,8 @@ export class CVMServer {
         nwcConnectionString,
         relayHandler: this.transportPool!.toRelayHandler(),
       })
+
+      const pricedCapabilities = loadPricedCapabilities()
 
       this.transport = withServerPayments(this.transport, {
         processors: [nwcProcessor],

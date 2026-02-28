@@ -22,7 +22,8 @@ import { registerPolicyRoutes } from './routes/policy.js'
 // import { registerSubscriptionRoutes } from './routes/subscriptions.js'
 import { registerMetricsRoutes } from './routes/metrics.js'
 import { registerPaymentsHealthRoutes } from './routes/payments-health.js'
-import { getPaymentsPreHandler } from './payments.js'
+import { getPaymentsPreHandler, NAME_TO_ROUTE } from './payments.js'
+import { loadPricing, type PricingEntry } from '../payments/pricing-loader.js'
 import { schemas } from './schemas.js'
 import { generateETag, etagMatches } from './etag.js'
 
@@ -145,10 +146,28 @@ export class RestServer {
       ? (process.env.NODE_ENV === 'production' ? 'Production API' : 'API Server')
       : 'Development server'
 
-    await this.app.register(swagger, {
+    // Load pricing entries for OpenAPI documentation
+    let paidEntries: PricingEntry[] = []
+    const routePriceMap = new Map<string, PricingEntry>()
+    const basePath = process.env.PRICING_YAML
+    if (basePath) {
+      try {
+        const entries = loadPricing(basePath, process.env.REST_PRICING_YAML)
+        paidEntries = entries.filter(e => e.amount > 0)
+        for (const e of paidEntries) {
+          const route = NAME_TO_ROUTE[e.name] ?? `/${e.name}`
+          routePriceMap.set(route, e)
+        }
+        logger.info({ paidRoutes: paidEntries.length }, 'Loaded pricing for OpenAPI documentation')
+      } catch (err) {
+        logger.warn({ err }, 'Failed to load pricing for OpenAPI documentation, skipping 402 schemas')
+      }
+    }
+
+    const swaggerOpts: any = {
       openapi: {
         info: {
-          title: 'RelayVM REST API',
+          title: 'nostr.watch API',
           description: 'HTTP REST interface to relay state aggregation',
           version: process.env.npm_package_version || '0.1.0',
         },
@@ -167,7 +186,81 @@ export class RestServer {
           // { name: 'subscriptions', description: 'Relay state subscriptions' },
         ],
       },
-    })
+    }
+
+    // Add pricing metadata and security schemes when paid routes exist
+    if (paidEntries.length > 0) {
+      swaggerOpts.openapi.info['x-pricing'] = {
+        currency: 'sats',
+        methods: ['L402', 'X-Cashu'],
+        endpoints: paidEntries.map(e => ({
+          path: NAME_TO_ROUTE[e.name] ?? `/${e.name}`,
+          amount: e.amount,
+          unit: e.currencyUnit,
+          description: e.description,
+        })),
+      }
+      swaggerOpts.openapi.components = {
+        securitySchemes: {
+          L402: {
+            type: 'apiKey',
+            in: 'header',
+            name: 'Authorization',
+            description: 'L402 macaroon:preimage authentication. Format: L402 <macaroon>:<preimage>',
+          },
+          'X-Cashu': {
+            type: 'apiKey',
+            in: 'header',
+            name: 'Authorization',
+            description: 'Cashu token payment. Format: Cashu <base64-token>',
+          },
+        },
+      }
+    }
+
+    await this.app.register(swagger, swaggerOpts)
+
+    // Inject 402 response schemas into paid routes via onRoute hook
+    if (routePriceMap.size > 0) {
+      const payment402Response = {
+        description: 'Payment Required',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object' as const,
+              properties: {
+                error: { type: 'string' as const, example: 'Payment Required' },
+              },
+            },
+          },
+        },
+        headers: {
+          'WWW-Authenticate': {
+            schema: { type: 'string' as const },
+            description: 'L402 challenge: L402 macaroon="<macaroon>", invoice="<bolt11>"',
+          },
+          'X-Cashu': {
+            schema: { type: 'string' as const },
+            description: 'Base64-encoded Cashu payment request with mint URL, amount, and P2PK pubkey',
+          },
+        },
+      }
+
+      this.app.addHook('onRoute', (routeOptions) => {
+        const entry = routePriceMap.get(routeOptions.url)
+        if (!entry) return
+
+        if (!routeOptions.schema) routeOptions.schema = {}
+        if (!routeOptions.schema.response) routeOptions.schema.response = {}
+
+        routeOptions.schema.response[402] = {
+          ...payment402Response,
+          description: `Payment Required — ${entry.amount} ${entry.currencyUnit}. ${entry.description}`,
+        }
+      })
+
+      logger.info({ routes: Array.from(routePriceMap.keys()) }, '402 response schemas will be injected into paid routes')
+    }
 
     logger.info('OpenAPI plugin registered')
   }

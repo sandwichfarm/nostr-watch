@@ -9,7 +9,7 @@ export function isFeatureEnabled(name: string): boolean {
 }
 
 /** Map canonical config names → REST route paths (only where they differ from /<name>) */
-const NAME_TO_ROUTE: Record<string, string> = {
+export const NAME_TO_ROUTE: Record<string, string> = {
   'relays/list':        '/relays',
   'monitors/get':       '/monitors/:pubkey',
   'monitors/list':      '/monitors',

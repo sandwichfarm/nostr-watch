@@ -255,6 +255,7 @@ export class CVMServer {
         getRelayCount: () => this.getRelayCount(),
         getMetricsSnapshot: () => this.getMetricsSnapshot(),
         getReady: () => this.getReady(),
+        cvmEnabled: !!this.config.cvm,
       }
     )
 
@@ -330,6 +331,7 @@ export class CVMServer {
         metrics: this.metrics,
         getMetricsSnapshot: () => this.getMetricsSnapshot(),
         queryCache: this.queryCache,
+        cvmEnabled: true,
       }),
       { enabled: false }
     )

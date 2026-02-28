@@ -6,7 +6,6 @@
 
 import type { FastifyInstance, FastifyReply } from 'fastify'
 import type { RestContext } from '../server.js'
-import { getPaymentsPreHandler } from '../payments.js'
 import { getLogger } from '../../utils/logger.js'
 import { compactRelayStates } from '../../utils/compact.js'
 import { toCompact, toCompactArray, type ResponseFormat, type ResponseShape, applyShapeList, applyShapeSingle } from '../../types/response-formats.js'
@@ -35,9 +34,6 @@ function resolveFormat(formatParam: string | undefined): ResponseShape {
  */
 export async function registerRelayRoutes(app: FastifyInstance, context: RestContext): Promise<void> {
   const { core } = context
-
-  // Initialize payments pre-handler (if payments enabled)
-  const paymentsPreHandler = await getPaymentsPreHandler()
 
   // GET /relays - List all relays (detailed by default)
   app.get<{
@@ -161,15 +157,6 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
     schema: {
       tags: ['relays'],
       description: 'Search relays with complex filters, pagination, and three-level response shaping',
-      headers: {
-        type: 'object',
-        properties: {
-          authorization: {
-            type: 'string',
-            description: 'Authorization header for paid routes. Formats: "L402 <macaroon>:<preimage>" or "Cashu <token>"'
-          }
-        }
-      },
       body: {
         type: 'object',
         properties: {
@@ -209,18 +196,8 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
       },
       response: {
         200: schemas.relays.list,
-        402: {
-          description: 'Payment Required when pricing applies. Returns 402 challenge headers.',
-          type: 'object',
-          properties: { error: { type: 'string', example: 'Payment Required' } },
-          headers: {
-            'WWW-Authenticate': { description: 'L402 challenge', schema: { type: 'string' } },
-            'X-Cashu': { description: 'Cashu P2PK challenge', schema: { type: 'string' } }
-          }
-        }
       },
     },
-    preHandler: paymentsPreHandler ? [paymentsPreHandler] : undefined,
   }, async (request, reply) => {
     const { limit = 100, offset = 0, format: reqFormat, ...filters } = request.body
 
@@ -598,16 +575,6 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
     schema: {
       tags: ['relays'],
       description: 'Compare multiple relays side-by-side',
-      // Document Authorization header for 402 flows (L402 and Cashu)
-      headers: {
-        type: 'object',
-        properties: {
-          authorization: {
-            type: 'string',
-            description: 'Authorization header. Formats: "L402 <macaroon>:<preimage>" or "Cashu <token>". Example: L402 eyJ...:abcdef | Cashu cashuBeyJ...'
-          },
-        },
-      },
       body: {
         type: 'object',
         properties: {
@@ -622,28 +589,8 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
       },
       response: {
         200: schemas.relays.compare,
-        402: {
-          description: 'Payment Required. Returns 402 challenge headers for supported methods.',
-          type: 'object',
-          properties: {
-            error: { type: 'string', example: 'Payment Required' },
-          },
-          headers: {
-            'WWW-Authenticate': {
-              description: 'L402 challenge with macaroon and BOLT11 invoice',
-              schema: { type: 'string' },
-              example: 'L402 macaroon="<base64url>", invoice="lnbc15000n1p..."',
-            },
-            'X-Cashu': {
-              description: 'Cashu P2PK base64 challenge payload',
-              schema: { type: 'string' },
-              example: 'eyJtaW50IjoiaHR0cHM6Ly9taW50LmV4YW1wbGUuY29tIiwiYW1vdW50TXNhdCI6NTAwMCwicDJwa1B1YmtleSI6Ij...'
-            },
-          },
-        },
       },
     },
-    preHandler: paymentsPreHandler ? [paymentsPreHandler] : undefined,
   }, async (request, reply) => {
     const { relayUrls } = request.body
 

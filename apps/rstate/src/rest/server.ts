@@ -125,6 +125,8 @@ export class RestServer {
     this.app.register(cors, {
       origin: this.config.corsOrigins === '*' ? '*' : this.config.corsOrigins,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Cashu'],
+      exposedHeaders: ['WWW-Authenticate', 'X-Cashu', 'X-RateLimit-Limit', 'X-RateLimit-Remaining'],
       credentials: true,
     })
 

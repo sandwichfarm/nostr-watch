@@ -242,6 +242,11 @@ export interface StateCore {
   evictOld(): number
 
   /**
+   * Get relay URLs that changed in the most recent computeAll() cycle
+   */
+  getChangedRelays(): string[]
+
+  /**
    * Invalidate cache and force recomputation
    */
   invalidateCache(): void
@@ -521,6 +526,10 @@ export function initStateCore(config: CoreConfig): StateCore {
     },
 
     stats,
+
+    getChangedRelays(): string[] {
+      return stateManager.getLastChangedRelays()
+    },
 
     evictOld(): number {
       return observationStore.evictOldObservations()

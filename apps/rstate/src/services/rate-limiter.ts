@@ -28,10 +28,23 @@ export const DEFAULT_RATE_LIMIT: RateLimitConfig = {
 export class RateLimiterService {
   private buckets: Map<string, TokenBucket> = new Map()
   private config: RateLimitConfig
+  private evictionInterval: ReturnType<typeof setInterval>
 
   constructor(config: RateLimitConfig = DEFAULT_RATE_LIMIT) {
     this.config = config
+    // Evict stale buckets every 5 minutes
+    this.evictionInterval = setInterval(() => this.evictStale(), 5 * 60 * 1000)
+    this.evictionInterval.unref()
     logger.info({ config }, 'Rate limiter initialized')
+  }
+
+  /**
+   * Stop the eviction interval and clean up
+   */
+  dispose(): void {
+    clearInterval(this.evictionInterval)
+    this.buckets.clear()
+    logger.info('Rate limiter disposed')
   }
 
   /**

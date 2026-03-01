@@ -1,6 +1,9 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { readFileSync } from 'node:fs'
 import { loadPricing, type PricingEntry } from '../payments/pricing-loader.js'
+import { getLogger } from '../utils/logger.js'
+
+const logger = getLogger().child({ module: 'payments' })
 
 export function isFeatureEnabled(name: string): boolean {
   const v = process.env[name]
@@ -117,6 +120,15 @@ async function initGateway(): Promise<any | null> {
   }
 
   const l402RootKeyHex = process.env.L402_ROOT_KEY
+  if (enableL402 && l402RootKeyHex) {
+    if (!/^[0-9a-fA-F]{64}$/.test(l402RootKeyHex)) {
+      logger.error('L402_ROOT_KEY is not a valid 64-character hex string; disabling L402')
+      lnd = undefined
+    }
+  } else if (enableL402 && !l402RootKeyHex) {
+    logger.error('L402_ROOT_KEY is not set; disabling L402')
+    lnd = undefined
+  }
 
   const metrics = new PromMetrics({ collectDefaults: true })
   const breaker = { l402: { failureThreshold: 3, cooldownMs: 30000 }, p2pk: { failureThreshold: 3, cooldownMs: 30000 } }
@@ -132,8 +144,7 @@ export async function getPaymentsPreHandler() {
   return async function preHandler(req: FastifyRequest, reply: FastifyReply) {
     try {
       // Resolve route key by path
-      const url = req.raw.url || req.url
-      const routeKey = url.split('?')[0] || ''
+      const routeKey = (req as any).routeOptions?.url || (req as any).routerPath || req.url.split('?')[0] || ''
 
       // If the route is free, do nothing
       const clientId = req.ip || (req.socket && (req.socket as any).remoteAddress) || 'unknown'

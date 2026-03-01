@@ -84,7 +84,7 @@ export class RestServer {
       logger: false, // Use our structured logger instead
       requestIdLogLabel: 'reqId',
       disableRequestLogging: false,
-      trustProxy: true,
+      trustProxy: '127.0.0.1',
       bodyLimit: 1048576, // 1MB max request body size
       connectionTimeout: 30000, // 30 second connection timeout
       keepAliveTimeout: 65000, // 65 seconds (longer than typical load balancers)
@@ -128,7 +128,7 @@ export class RestServer {
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'X-Cashu'],
       exposedHeaders: ['WWW-Authenticate', 'X-Cashu', 'X-RateLimit-Limit', 'X-RateLimit-Remaining'],
-      credentials: true,
+      credentials: this.config.corsOrigins !== '*',
     })
 
     logger.info('Core plugins registered')
@@ -537,12 +537,7 @@ export class RestServer {
         relayCount,
         observationCount: stats.observations.count,
         timestamp: Date.now(),
-        metrics: metricsSnapshot,
         ready: this.context.getReady(),
-        cache: {
-          ...cacheStats,
-          hitRatePercent: Math.round(cacheStats.hitRate * 100 * 100) / 100, // Round to 2 decimals
-        },
       }
     }
 
@@ -598,7 +593,6 @@ export class RestServer {
           error: {
             code: 'VALIDATION_ERROR',
             message: 'Invalid request parameters',
-            details: error.validation,
           },
         })
       }
@@ -630,7 +624,7 @@ export class RestServer {
       reply.status(404).send({
         error: {
           code: 'NOT_FOUND',
-          message: `Route ${request.method} ${request.url} not found`,
+          message: 'Not found',
         },
       })
     })
@@ -676,6 +670,7 @@ export class RestServer {
       // DISABLED: Subscription system
       // this.context.sseDelivery.stop()
 
+      this.rateLimiter?.dispose()
       await this.app.close()
       logger.info('REST server stopped')
     } catch (err) {

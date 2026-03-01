@@ -400,7 +400,7 @@ export class CVMServer {
     )
     registry.registerTool(
       createRelaysOfflineTool(toolsContext),
-      { enabled: true, cacheKeyFn: (p: any) => `availability:offline:${p.offlineSeenSeconds || 86400}:${p.offlineThresholdSeconds || 3600}:${filterHash(p.filters)}`, ttlSeconds: availabilityTtl }
+      { enabled: true, cacheKeyFn: (p: any) => `availability:offline:${p.offlineThresholdSeconds || 'auto'}:${p.deadThresholdSeconds || 604800}:${filterHash(p.filters)}`, ttlSeconds: availabilityTtl }
     )
     registry.registerTool(
       createRelaysDeadTool(toolsContext),

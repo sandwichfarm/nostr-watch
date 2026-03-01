@@ -683,11 +683,11 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
   }>('/relays/online', {
     schema: {
       tags: ['relays'],
-      description: 'Get currently online relays with optional label filtering',
+      description: 'Get currently online relays. A relay is online if it responded within the max monitor frequency window. Defaults derived from monitor frequencies.',
       body: {
         type: 'object',
         properties: {
-          onlineWindowSeconds: { type: 'number', minimum: 60 },
+          onlineWindowSeconds: { type: 'number', minimum: 60, description: 'Override the online window in seconds (default: max monitor frequency)' },
           network: { type: 'string' },
           labels: {
             type: 'array',
@@ -719,20 +719,20 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
   // POST /relays/offline - Get offline relays (supports label filtering)
   app.post<{
     Body: {
-      offlineSeenSeconds?: number
       offlineThresholdSeconds?: number
+      deadThresholdSeconds?: number
       network?: string
       labels?: { namespace: string; value: string }[]
     }
   }>('/relays/offline', {
     schema: {
       tags: ['relays'],
-      description: 'Get recently seen but currently offline relays with optional label filtering',
+      description: 'Get relays that are offline but not yet dead. Offline means monitors checked recently but the relay did not respond. Defaults derived from monitor frequencies.',
       body: {
         type: 'object',
         properties: {
-          offlineSeenSeconds: { type: 'number', minimum: 60 },
-          offlineThresholdSeconds: { type: 'number', minimum: 60 },
+          offlineThresholdSeconds: { type: 'number', minimum: 60, description: 'Seconds since lastOpenAt to consider offline (default: max monitor frequency)' },
+          deadThresholdSeconds: { type: 'number', minimum: 3600, description: 'Seconds since lastSeenAt beyond which relay is dead, not offline (default: 7 days)' },
           network: { type: 'string' },
           labels: {
             type: 'array',
@@ -752,11 +752,11 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
       },
     },
   }, async (request, reply) => {
-    const { offlineSeenSeconds, offlineThresholdSeconds, network, labels } = request.body
+    const { offlineThresholdSeconds, deadThresholdSeconds, network, labels } = request.body
     const filters = (network || labels) ? { network, labels } : undefined
     const relays = core.query.relays.offline({
-      offlineSeenSeconds,
       offlineThresholdSeconds,
+      deadThresholdSeconds,
       filters,
     })
     return { relays, total: relays.length }

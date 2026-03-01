@@ -245,8 +245,8 @@ export interface RelaysAvailabilityOnlineInput {
 }
 
 export interface RelaysAvailabilityOfflineInput {
-  offlineSeenSeconds?: number
   offlineThresholdSeconds?: number
+  deadThresholdSeconds?: number
   filters?: RelaysAvailabilityFilters
   limit?: number
   offset?: number

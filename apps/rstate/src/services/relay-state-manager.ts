@@ -214,21 +214,38 @@ export class RelayStateManager {
   }
 
   /**
+   * Get the maximum monitor frequency (longest interval between checks).
+   * This represents the worst-case time before all monitors have had a chance to check a relay.
+   * Falls back to policy.lookbackSeconds if no monitors are registered.
+   */
+  private getMaxMonitorFrequency(): number {
+    const monitors = this.observationStore.getAllMonitors()
+    if (monitors.length === 0) return this.policy.lookbackSeconds
+    return Math.max(...monitors.map(m => m.frequency))
+  }
+
+  /**
    * Availability queries
+   *
+   * Status model:
+   * - Online:  lastOpenAt >= now - maxMonitorFrequency (a monitor checked recently and it responded)
+   * - Offline: lastOpenAt < now - maxMonitorFrequency AND lastSeenAt >= now - deadThreshold
+   *            (monitors checked but it didn't respond, still within the dead window)
+   * - Dead:    lastSeenAt < now - deadThreshold (no monitor has seen it beyond the dead threshold)
    */
   getOnlineRelays(opts: { onlineWindowSeconds?: number; filters?: { network?: string; labels?: { namespace: string; value: string }[] } } = {}): string[] {
     const now = Math.floor(Date.now() / 1000)
-    const windowSec = opts.onlineWindowSeconds ?? this.policy.lookbackSeconds
+    const windowSec = opts.onlineWindowSeconds ?? this.getMaxMonitorFrequency()
     return this.filterRelaysBy(opts.filters).filter(r => (r.lastOpenAt ?? 0) >= (now - windowSec)).map(r => r.relayUrl)
   }
 
-  getOfflineRelays(opts: { offlineSeenSeconds?: number; offlineThresholdSeconds?: number; filters?: { network?: string; labels?: { namespace: string; value: string }[] } } = {}): string[] {
+  getOfflineRelays(opts: { offlineThresholdSeconds?: number; deadThresholdSeconds?: number; filters?: { network?: string; labels?: { namespace: string; value: string }[] } } = {}): string[] {
     const now = Math.floor(Date.now() / 1000)
-    const seenSec = opts.offlineSeenSeconds ?? 24 * 3600
-    const thresholdSec = opts.offlineThresholdSeconds ?? 3600
+    const offlineSec = opts.offlineThresholdSeconds ?? this.getMaxMonitorFrequency()
+    const deadSec = opts.deadThresholdSeconds ?? 7 * 24 * 3600
     return this.filterRelaysBy(opts.filters)
-      .filter(r => (r.lastSeenAt ?? 0) >= (now - seenSec))
-      .filter(r => (r.lastOpenAt ?? 0) < (now - thresholdSec))
+      .filter(r => (r.lastOpenAt ?? 0) < (now - offlineSec))
+      .filter(r => (r.lastSeenAt ?? 0) >= (now - deadSec))
       .map(r => r.relayUrl)
   }
 

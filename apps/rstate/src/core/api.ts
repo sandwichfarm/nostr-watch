@@ -56,8 +56,8 @@ export interface RelayQuery {
    * Get offline relays
    */
   offline(opts?: {
-    offlineSeenSeconds?: number
     offlineThresholdSeconds?: number
+    deadThresholdSeconds?: number
     filters?: { network?: string; labels?: { namespace: string; value: string }[] }
   }): string[]
 

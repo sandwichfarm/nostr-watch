@@ -342,8 +342,8 @@ describe('StateCore Parity Tests', () => {
 
     it('should identify offline relays', () => {
       const offline = core.query.relays.offline({
-        offlineSeenSeconds: 7200, // seen within 2 hours
         offlineThresholdSeconds: 7200, // no open in 2 hours (observations are ~1 hour old)
+        deadThresholdSeconds: 7 * 24 * 3600,
       })
 
       // relay3 was seen recently but has no open RTT (empty rtt object)

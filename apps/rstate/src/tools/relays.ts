@@ -717,12 +717,12 @@ export function createRelaysOnlineTool(ctx: RelayToolsContext): CVMTool {
 export function createRelaysOfflineTool(ctx: RelayToolsContext): CVMTool {
   return {
     name: 'relays/offline',
-    description: 'List relays considered offline (recently seen but no open within threshold)',
+    description: 'List relays considered offline (monitors checked but relay did not respond, not yet dead). Defaults derived from monitor frequencies.',
     inputSchema: {
       type: 'object',
       properties: {
-        offlineSeenSeconds: { type: 'number' },
-        offlineThresholdSeconds: { type: 'number' },
+        offlineThresholdSeconds: { type: 'number', description: 'Seconds since lastOpenAt to consider offline (default: max monitor frequency)' },
+        deadThresholdSeconds: { type: 'number', description: 'Seconds since lastSeenAt beyond which relay is dead, not offline (default: 7 days)' },
         filters: {
           type: 'object',
           properties: {
@@ -740,8 +740,8 @@ export function createRelaysOfflineTool(ctx: RelayToolsContext): CVMTool {
     outputSchema: loadSchema('relays-availability-output.json'),
     handler: async (params: RelaysAvailabilityOfflineInput): Promise<RelaysAvailabilityOutput> => {
       const urls = ctx.core.query.relays.offline({
-        offlineSeenSeconds: params.offlineSeenSeconds,
         offlineThresholdSeconds: params.offlineThresholdSeconds,
+        deadThresholdSeconds: params.deadThresholdSeconds,
         filters: params.filters,
       })
       const limit = params.limit ?? 100

@@ -135,7 +135,7 @@ async function main() {
       console.warn('online failed:', err)
     }
     try {
-      const offline = await client.callTool({ name: 'relays/offline', arguments: { offlineSeenSeconds: 86400, offlineThresholdSeconds: 3600 } })
+      const offline = await client.callTool({ name: 'relays/offline', arguments: { offlineThresholdSeconds: 3600, deadThresholdSeconds: 7 * 24 * 3600 } })
       console.log('relays/offline:', JSON.stringify(offline, null, 2))
     } catch (err) {
       console.warn('offline failed:', err)

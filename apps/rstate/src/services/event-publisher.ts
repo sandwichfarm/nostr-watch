@@ -10,12 +10,13 @@ import type { RelayState } from '../core/types/aggregation.js'
 import type { PublishSchedule } from '../config.js'
 import type { RelayDelta, OperationalStatus } from '../events/types.js'
 import { ResilientRelayPool } from '../resilient-relay-pool.js'
-import { createSigner, type EventSigner } from '../events/signing.js'
+import { createSigner, toHexKey, type EventSigner } from '../events/signing.js'
 import { detectDeltas, mergeDeltas } from '../events/delta-detector.js'
 import { buildKind1066Event } from '../events/builders/kind1066.js'
 import { buildKind20066Event } from '../events/builders/kind20066.js'
 import { buildKind1166Event } from '../events/builders/kind1166.js'
 import type { Kind1166Category } from '../events/types.js'
+import { AnnounceMonitor } from '@nostrwatch/announce'
 import { getLogger } from '../utils/logger.js'
 
 const logger = getLogger().child({ module: 'event-publisher' })
@@ -26,6 +27,11 @@ interface PublishingConfig {
   kind1066: { enabled: boolean; schedule: PublishSchedule }
   kind20066: { enabled: boolean }
   kind1166: { enabled: boolean; schedule: PublishSchedule }
+  announce: {
+    profile?: { name?: string; about?: string; picture?: string }
+    frequency: string
+    userDataRelays?: string[]
+  }
 }
 
 const SCHEDULE_INTERVALS: Record<PublishSchedule, number> = {
@@ -66,7 +72,40 @@ export class EventPublisherService {
     const now = Math.floor(Date.now() / 1000)
     this.lastKind1066Publish = this.alignToSchedule(now, this.config.kind1066.schedule)
     this.lastKind1166Publish = this.alignToSchedule(now, this.config.kind1166.schedule)
+
+    // Publish announce events (Kind 0, 10002, 10166) on startup
+    await this.publishAnnouncement()
+
     logger.info('EventPublisherService started')
+  }
+
+  private async publishAnnouncement(): Promise<void> {
+    try {
+      const hexSk = toHexKey(this.config.signingKey)
+
+      // Collect enabled kinds for k tags
+      const enabledKinds: number[] = []
+      if (this.config.kind1066.enabled) enabledKinds.push(1066)
+      if (this.config.kind20066.enabled) enabledKinds.push(20066)
+      if (this.config.kind1166.enabled) enabledKinds.push(1166)
+
+      const announcer = new AnnounceMonitor(this.signer.pubkey, {
+        kinds: enabledKinds,
+        frequency: this.config.announce.frequency,
+        relays: this.config.publishRelays,
+        userDataRelays: this.config.announce.userDataRelays,
+        profile: this.config.announce.profile ?? {},
+        checks: [],   // rstate is an aggregator, not a direct checker
+        networks: [], // monitors all networks
+      })
+
+      announcer.generate()
+      await announcer.sign(hexSk)
+      const ids = await announcer.publish()
+      logger.info({ eventIds: ids, kinds: enabledKinds }, 'Published announce events (Kind 0, 10002, 10166)')
+    } catch (err) {
+      logger.error({ err }, 'Failed to publish announce events')
+    }
   }
 
   async stop(): Promise<void> {

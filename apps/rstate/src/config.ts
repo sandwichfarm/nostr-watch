@@ -31,7 +31,7 @@ export interface Config {
   publishing?: {
     enabled: boolean
     publishRelays: string[]
-    signingKey: string  // nsec or hex
+    signingKey: string  // nsec or hex — PUBLISH_SIGNING_KEY, no CVM fallback
     kind1066: {
       enabled: boolean
       schedule: PublishSchedule
@@ -40,6 +40,11 @@ export interface Config {
     kind1166: {
       enabled: boolean
       schedule: PublishSchedule
+    }
+    announce: {
+      profile?: { name?: string; about?: string; picture?: string }
+      frequency: string
+      userDataRelays?: string[]
     }
   }
 
@@ -344,13 +349,22 @@ export function loadConfig(): Config {
     validateRelayUrls(publishRelays)
     validateLocalRelaysOnly(publishRelays, 'PUBLISH_RELAYS')
 
-    const signingKey = process.env.PUBLISH_SIGNING_KEY || process.env.CVM_SERVER_NSEC
+    const signingKey = process.env.PUBLISH_SIGNING_KEY
     if (!signingKey || signingKey.trim() === '') {
-      throw new Error('PUBLISH_SIGNING_KEY (or CVM_SERVER_NSEC as fallback) is required when PUBLISH_ENABLED=true')
+      throw new Error('PUBLISH_SIGNING_KEY is required when PUBLISH_ENABLED=true')
     }
 
     const kind1066Schedule = validatePublishSchedule(process.env.PUBLISH_KIND1066_SCHEDULE)
     const kind1166Schedule = validatePublishSchedule(process.env.PUBLISH_KIND1166_SCHEDULE)
+
+    // Announce config
+    const announceProfile: { name?: string; about?: string; picture?: string } = {}
+    if (process.env.PUBLISH_PROFILE_NAME) announceProfile.name = process.env.PUBLISH_PROFILE_NAME
+    if (process.env.PUBLISH_PROFILE_ABOUT) announceProfile.about = process.env.PUBLISH_PROFILE_ABOUT
+    if (process.env.PUBLISH_PROFILE_PICTURE) announceProfile.picture = process.env.PUBLISH_PROFILE_PICTURE
+
+    const announceFrequency = process.env.PUBLISH_FREQUENCY || '3600'
+    const announceUserDataRelays = parseList(process.env.PUBLISH_USER_DATA_RELAYS)
 
     publishingConfig = {
       enabled: true,
@@ -366,6 +380,11 @@ export function loadConfig(): Config {
       kind1166: {
         enabled: (process.env.PUBLISH_KIND1166_ENABLED ?? 'true').toLowerCase() !== 'false',
         schedule: kind1166Schedule,
+      },
+      announce: {
+        profile: Object.keys(announceProfile).length > 0 ? announceProfile : undefined,
+        frequency: announceFrequency,
+        userDataRelays: announceUserDataRelays.length > 0 ? announceUserDataRelays : undefined,
       },
     }
   }

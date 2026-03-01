@@ -35,7 +35,7 @@
   },
   "dependencies": {
     "applesauce-relay": "^4.0.0",
-    "@contextvm/sdk": "^0.4.14",
+    "@contextvm/sdk": "^0.6.2",
     "@fastify/cors": "^11.1.0",
     "@fastify/swagger": "^9.5.2",
     "@modelcontextprotocol/sdk": "^1.26.0",

@@ -76,9 +76,12 @@ export class MetricsService {
   private latencySamples: LatencySample[] = []
   private maxSamples: number = 10000
 
-  // Event counters
+  // Event counters (lifetime totals per kind)
   private eventCounts: Map<number, number> = new Map()
-  private eventCountWindow: number = 60 * 1000  // 1 minute window
+  private eventCountWindow: number = 60  // sliding window in seconds
+
+  // Sliding window: per-second event count buckets
+  private eventBuckets: { timestamp: number; count: number }[] = []
 
   // Timing metrics
   private lastAggregationTime: number = 0
@@ -111,6 +114,15 @@ export class MetricsService {
   recordEvent(kind: number): void {
     const count = this.eventCounts.get(kind) || 0
     this.eventCounts.set(kind, count + 1)
+
+    // Track in sliding window buckets
+    const now = Math.floor(Date.now() / 1000)
+    const last = this.eventBuckets[this.eventBuckets.length - 1]
+    if (last && last.timestamp === now) {
+      last.count++
+    } else {
+      this.eventBuckets.push({ timestamp: now, count: 1 })
+    }
   }
 
   /**
@@ -170,11 +182,26 @@ export class MetricsService {
    * Compute events per second
    */
   private computeEventsPerSecond(): number {
-    let total = 0
-    for (const count of this.eventCounts.values()) {
-      total += count
+    const now = Math.floor(Date.now() / 1000)
+    const cutoff = now - this.eventCountWindow
+
+    // Prune old buckets
+    while (this.eventBuckets.length > 0 && this.eventBuckets[0].timestamp <= cutoff) {
+      this.eventBuckets.shift()
     }
-    return total / (this.eventCountWindow / 1000)
+
+    // Sum events within the window
+    let total = 0
+    for (const bucket of this.eventBuckets) {
+      total += bucket.count
+    }
+
+    // Divide by actual elapsed time (capped at window size)
+    const oldest = this.eventBuckets[0]?.timestamp ?? now
+    const elapsed = Math.max(1, now - oldest)
+    const divisor = Math.min(elapsed, this.eventCountWindow)
+
+    return Math.round((total / divisor) * 100) / 100
   }
 
   /**

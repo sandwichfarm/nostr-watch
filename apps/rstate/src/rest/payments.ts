@@ -146,6 +146,9 @@ export async function getPaymentsPreHandler() {
       // Resolve route key by path
       const routeKey = (req as any).routeOptions?.url || (req as any).routerPath || req.url.split('?')[0] || ''
 
+      // Skip docs/meta routes
+      if (routeKey === '/' || routeKey.startsWith('/openapi.') || routeKey.startsWith('/health/')) return
+
       // If the route is free, do nothing
       const clientId = req.ip || (req.socket && (req.socket as any).remoteAddress) || 'unknown'
       const challenge = await gw.buildChallenge(routeKey, clientId)

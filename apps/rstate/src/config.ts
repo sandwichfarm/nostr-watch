@@ -11,6 +11,8 @@ export type EncryptionMode = 'OPTIONAL' | 'REQUIRED' | 'DISABLED'
 export type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal'
 export type LogDestination = 'stdout' | 'stderr' | 'file'
 
+export type PublishSchedule = 'hourly' | 'every30m' | 'every15m' | 'every5m'
+
 export interface Config {
   // CVM Server (Optional - only required if CVM transport is enabled)
   cvm?: {
@@ -22,6 +24,27 @@ export interface Config {
     auth: {
       enabled: boolean
       allowAny: boolean
+    }
+  }
+
+  // Event Publishing (Optional)
+  publishing?: {
+    enabled: boolean
+    publishRelays: string[]
+    signingKey: string  // nsec or hex — PUBLISH_SIGNING_KEY, no CVM fallback
+    kind1066: {
+      enabled: boolean
+      schedule: PublishSchedule
+    }
+    kind20066: { enabled: boolean }
+    kind1166: {
+      enabled: boolean
+      schedule: PublishSchedule
+    }
+    announce: {
+      profile?: { name?: string; about?: string; picture?: string }
+      frequency: string
+      userDataRelays?: string[]
     }
   }
 
@@ -129,6 +152,18 @@ function validateLogDestination(dest: string | undefined): LogDestination {
     throw new Error(`Invalid log destination: ${dest}. Must be one of: ${valid.join(', ')}`)
   }
   return lower as LogDestination
+}
+
+/**
+ * Validate publish schedule preset
+ */
+function validatePublishSchedule(value: string | undefined): PublishSchedule {
+  const valid: PublishSchedule[] = ['hourly', 'every30m', 'every15m', 'every5m']
+  const lower = (value || 'hourly').toLowerCase()
+  if (!valid.includes(lower as PublishSchedule)) {
+    throw new Error(`Invalid publish schedule: ${value}. Must be one of: ${valid.join(', ')}`)
+  }
+  return lower as PublishSchedule
 }
 
 /**
@@ -303,6 +338,57 @@ export function loadConfig(): Config {
     madScale: parseNumber(process.env.AGG_MAD_SCALE, DEFAULT_POLICY.madScale),
   }
 
+  // Event Publishing
+  const publishEnabled = (process.env.PUBLISH_ENABLED ?? 'false').toLowerCase() === 'true'
+  let publishingConfig: Config['publishing'] | undefined
+  if (publishEnabled) {
+    const publishRelays = parseList(process.env.PUBLISH_RELAYS)
+    if (publishRelays.length === 0) {
+      throw new Error('PUBLISH_RELAYS is required when PUBLISH_ENABLED=true (comma-separated wss:// URLs)')
+    }
+    validateRelayUrls(publishRelays)
+    validateLocalRelaysOnly(publishRelays, 'PUBLISH_RELAYS')
+
+    const signingKey = process.env.PUBLISH_SIGNING_KEY
+    if (!signingKey || signingKey.trim() === '') {
+      throw new Error('PUBLISH_SIGNING_KEY is required when PUBLISH_ENABLED=true')
+    }
+
+    const kind1066Schedule = validatePublishSchedule(process.env.PUBLISH_KIND1066_SCHEDULE)
+    const kind1166Schedule = validatePublishSchedule(process.env.PUBLISH_KIND1166_SCHEDULE)
+
+    // Announce config
+    const announceProfile: { name?: string; about?: string; picture?: string } = {}
+    if (process.env.PUBLISH_PROFILE_NAME) announceProfile.name = process.env.PUBLISH_PROFILE_NAME
+    if (process.env.PUBLISH_PROFILE_ABOUT) announceProfile.about = process.env.PUBLISH_PROFILE_ABOUT
+    if (process.env.PUBLISH_PROFILE_PICTURE) announceProfile.picture = process.env.PUBLISH_PROFILE_PICTURE
+
+    const announceFrequency = process.env.PUBLISH_FREQUENCY || '3600'
+    const announceUserDataRelays = parseList(process.env.PUBLISH_USER_DATA_RELAYS)
+
+    publishingConfig = {
+      enabled: true,
+      publishRelays,
+      signingKey: signingKey.trim(),
+      kind1066: {
+        enabled: (process.env.PUBLISH_KIND1066_ENABLED ?? 'true').toLowerCase() !== 'false',
+        schedule: kind1066Schedule,
+      },
+      kind20066: {
+        enabled: (process.env.PUBLISH_KIND20066_ENABLED ?? 'true').toLowerCase() !== 'false',
+      },
+      kind1166: {
+        enabled: (process.env.PUBLISH_KIND1166_ENABLED ?? 'true').toLowerCase() !== 'false',
+        schedule: kind1166Schedule,
+      },
+      announce: {
+        profile: Object.keys(announceProfile).length > 0 ? announceProfile : undefined,
+        frequency: announceFrequency,
+        userDataRelays: announceUserDataRelays.length > 0 ? announceUserDataRelays : undefined,
+      },
+    }
+  }
+
   // Cache
   const cacheMaxSize = parseNumber(process.env.CACHE_MAX_SIZE, 10000)
   const cacheTtlSeconds = parseNumber(process.env.CACHE_TTL_SECONDS, 60)
@@ -331,6 +417,7 @@ export function loadConfig(): Config {
       file: logFile,
     },
     aggregation,
+    publishing: publishingConfig,
     cache: {
       maxSize: cacheMaxSize,
       ttlSeconds: cacheTtlSeconds,

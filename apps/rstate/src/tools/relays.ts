@@ -37,7 +37,7 @@ import type {
 } from '../types/tool-schemas.js'
 import type { StateCore } from '../core/index.js'
 import { getLogger } from '../utils/logger.js'
-import { toCompactArray, type ResponseFormat, type ResponseShape, applyShapeList, applyShapeSingle } from '../types/response-formats.js'
+import { type ResponseShape, applyShapeList, applyShapeSingle } from '../types/response-formats.js'
 import { loadSchema } from '../utils/schema-loader.js'
 import { normalizeRelayUrl } from '../utils/url.js'
 
@@ -309,9 +309,9 @@ export function createRelaysBboxTool(ctx: RelayToolsContext): CVMTool {
       const total = inBbox.length
       let limited: any = inBbox.slice(0, limit)
 
-      // Apply compact mode if requested
+      // Apply compact mode if requested (legacy — maps to 'simple' shape)
       if (compact) {
-        limited = compactRelayStates(limited as any) as any
+        limited = applyShapeList(limited, 'simple') as any
       }
 
       logger.info({ bbox: params, found: total, compact }, 'Bbox query requested')

@@ -14,7 +14,7 @@ const logger = getLogger().child({ module: 'rest-policy' })
  * Register policy routes
  */
 export function registerPolicyRoutes(app: FastifyInstance, context: RestContext): void {
-  const { core, security, allowPolicyUpdate } = context
+  const { core, allowPolicyUpdate } = context
 
   // GET /policy - Get current policy
   app.get('/policy', {
@@ -22,7 +22,7 @@ export function registerPolicyRoutes(app: FastifyInstance, context: RestContext)
       tags: ['policy'],
       description: 'Get current aggregation policy',
     },
-  }, async (request, reply) => {
+  }, async (_request, _reply) => {
     const policy = core.query.policy.get()
     return { policy }
   })

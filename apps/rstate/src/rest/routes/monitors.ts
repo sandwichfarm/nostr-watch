@@ -88,7 +88,7 @@ export async function registerMonitorRoutes(app: FastifyInstance, context: RestC
         200: schemas.monitors.list,
       },
     },
-  }, async (request, reply) => {
+  }, async (request, _reply) => {
     const { limit = 50, offset = 0 } = request.query
 
     const allMonitors = core.query.monitors.getAll()
@@ -189,7 +189,7 @@ export async function registerMonitorRoutes(app: FastifyInstance, context: RestC
         200: schemas.monitors.analyticsList,
       },
     },
-  }, async (request, reply) => {
+  }, async (request, _reply) => {
     const { limit = 100, offset = 0, includeRelayUrls = false } = request.query
 
     const all = core.query.monitors.getAllAnalytics()

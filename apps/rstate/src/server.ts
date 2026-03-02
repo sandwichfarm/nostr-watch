@@ -61,7 +61,7 @@ export class CVMServer {
   private transportPool?: ResilientRelayPool
   private signer?: PrivateKeySigner
   private toolRegistry?: ToolRegistry
-  private transportContext?: TransportContext
+  private _transportContext?: TransportContext
   // DISABLED: Subscription system
   // private notificationDelivery?: NotificationDeliveryService
 
@@ -168,7 +168,7 @@ export class CVMServer {
     })
 
     // Store transport context reference for subscription tools
-    this.transportContext = {
+    this._transportContext = {
       getClientPubkey: () => this.toolRegistry!.getCurrentClientPubkey(),
     }
 

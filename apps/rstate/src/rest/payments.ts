@@ -60,6 +60,7 @@ async function initGateway(): Promise<any | null> {
 
   let mod: any
   try {
+    // @ts-expect-error optional dependency — not always installed
     mod = await import('nostrwatch-payments-gateway')
   } catch (e) {
     // payments-gateway not installed; disable gating

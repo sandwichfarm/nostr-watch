@@ -4,11 +4,10 @@
  * HTTP endpoints for relay state queries
  */
 
-import type { FastifyInstance, FastifyReply } from 'fastify'
+import type { FastifyInstance } from 'fastify'
 import type { RestContext } from '../server.js'
 import { getLogger } from '../../utils/logger.js'
-import { compactRelayStates } from '../../utils/compact.js'
-import { toCompact, toCompactArray, type ResponseFormat, type ResponseShape, applyShapeList, applyShapeSingle } from '../../types/response-formats.js'
+import { type ResponseShape, applyShapeList, applyShapeSingle } from '../../types/response-formats.js'
 import { schemas } from '../schemas.js'
 import { normalizeRelayUrl } from '../../utils/url.js'
 
@@ -62,7 +61,7 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
         200: schemas.relays.list,
       },
     },
-  }, async (request, reply) => {
+  }, async (request, _reply) => {
     const { limit = 50, offset = 0, sortBy = 'url', sortOrder = 'asc' } = request.query
 
     // Resolve format
@@ -198,7 +197,7 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
         200: schemas.relays.list,
       },
     },
-  }, async (request, reply) => {
+  }, async (request, _reply) => {
     const { limit = 100, offset = 0, format: reqFormat, ...filters } = request.body
 
     // Resolve format
@@ -242,7 +241,7 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
         200: schemas.relays.nearby,
       },
     },
-  }, async (request, reply) => {
+  }, async (request, _reply) => {
     const { lat, lon, radius = 100 } = request.query
 
     // Resolve format
@@ -288,7 +287,7 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
         200: schemas.relays.bbox,
       },
     },
-  }, async (request, reply) => {
+  }, async (request, _reply) => {
     const query = request.query as any
     const sw = { lat: query['sw.lat'], lon: query['sw.lon'] }
     const ne = { lat: query['ne.lat'], lon: query['ne.lon'] }
@@ -330,7 +329,7 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
         200: schemas.relays.getLabels,
       },
     },
-  }, async (request, reply) => {
+  }, async (request, _reply) => {
     const { relayUrl, namespace } = request.query
     const labels = core.query.relays.getLabels(relayUrl)
 
@@ -408,7 +407,7 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
         200: schemas.relays.byLabel,
       },
     },
-  }, async (request, reply) => {
+  }, async (request, _reply) => {
     const { namespace, value, limit = 100, offset = 0 } = request.query
 
     // Resolve format
@@ -449,7 +448,7 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
         200: schemas.relays.bySoftware,
       },
     },
-  }, async (request, reply) => {
+  }, async (request, _reply) => {
     const { family } = request.query
     const grouped = core.query.relays.bySoftware()
 
@@ -469,7 +468,7 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
         200: schemas.relays.byNetwork,
       },
     },
-  }, async (request, reply) => {
+  }, async (_request, _reply) => {
     const grouped = core.query.relays.byNetwork()
     // Transform Record<string, string[]> to array format expected by schema
     const groups = Object.entries(grouped).map(([network, relays]) => ({
@@ -591,7 +590,7 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
         200: schemas.relays.compare,
       },
     },
-  }, async (request, reply) => {
+  }, async (request, _reply) => {
     const { relayUrls } = request.body
 
     // Normalize relay URLs
@@ -706,7 +705,7 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
         200: schemas.relays.availability,
       },
     },
-  }, async (request, reply) => {
+  }, async (request, _reply) => {
     const { onlineWindowSeconds, network, labels } = request.body
     const filters = (network || labels) ? { network, labels } : undefined
     const relays = core.query.relays.online({
@@ -751,7 +750,7 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
         200: schemas.relays.availability,
       },
     },
-  }, async (request, reply) => {
+  }, async (request, _reply) => {
     const { offlineThresholdSeconds, deadThresholdSeconds, network, labels } = request.body
     const filters = (network || labels) ? { network, labels } : undefined
     const relays = core.query.relays.offline({
@@ -795,7 +794,7 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
         200: schemas.relays.availability,
       },
     },
-  }, async (request, reply) => {
+  }, async (request, _reply) => {
     const { deadThresholdSeconds, network, labels } = request.body
     const filters = (network || labels) ? { network, labels } : undefined
     const relays = core.query.relays.dead({

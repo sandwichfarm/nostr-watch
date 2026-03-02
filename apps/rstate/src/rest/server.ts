@@ -7,7 +7,7 @@
 import Fastify, { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
 import cors from '@fastify/cors'
 import swagger from '@fastify/swagger'
-import apiReference from '@scalar/fastify-api-reference'
+// scalar API reference loaded via CDN in HTML template, not imported directly
 import type { StateCore } from '../core/index.js'
 import type { MetricsService } from '../services/metrics.js'
 import type { SecurityService } from '../services/security.js'
@@ -256,9 +256,9 @@ export class RestServer {
         if (!entry) return
 
         if (!routeOptions.schema) routeOptions.schema = {}
-        if (!routeOptions.schema.response) routeOptions.schema.response = {}
+        if (!(routeOptions.schema as any).response) (routeOptions.schema as any).response = {}
 
-        routeOptions.schema.response[402] = {
+        ((routeOptions.schema as any).response as Record<number, any>)[402] = {
           ...payment402Response,
           description: `Payment Required — ${entry.amount} ${entry.currencyUnit}. ${entry.description}`,
         }
@@ -301,7 +301,7 @@ export class RestServer {
     })
 
     // Register Scalar UI at root path /
-    this.app.get('/', async (request, reply) => {
+    this.app.get('/', async (_request, reply) => {
       // Use relative URL (without leading slash) so it works behind reverse proxy
       // When served at /v2/, this will resolve to /v2/openapi.json
       const html = `<!DOCTYPE html>
@@ -450,7 +450,7 @@ export class RestServer {
    */
   private setupRequestLogging(): void {
     this.app.addHook('onResponse', async (request: FastifyRequest, reply: FastifyReply) => {
-      const latency = reply.getResponseTime()
+      const latency = (reply as any).getResponseTime?.() ?? reply.elapsedTime ?? 0
       const clientIp = request.ip || request.socket.remoteAddress || 'unknown'
       const userAgent = request.headers['user-agent'] || 'unknown'
 
@@ -514,8 +514,8 @@ export class RestServer {
     const healthPingHandler = async (_request: any, _reply: any) => {
       const stats = this.context.core.stats.get()
       const relayCount = this.context.getRelayCount()
-      const metricsSnapshot = this.context.getMetricsSnapshot()
-      const cacheStats = this.context.queryCache.getStats()
+      this.context.getMetricsSnapshot()
+      this.context.queryCache.getStats()
 
       // Determine health status based on relay connectivity
       // Only consider transport relays when CVM is enabled
@@ -579,7 +579,7 @@ export class RestServer {
    * Setup global error handling
    */
   private setupErrorHandling(): void {
-    this.app.setErrorHandler((error, request, reply) => {
+    this.app.setErrorHandler((error: any, request, reply) => {
       logger.error({
         err: error,
         method: request.method,
@@ -620,7 +620,7 @@ export class RestServer {
     })
 
     // 404 handler
-    this.app.setNotFoundHandler((request, reply) => {
+    this.app.setNotFoundHandler((_request, reply) => {
       reply.status(404).send({
         error: {
           code: 'NOT_FOUND',

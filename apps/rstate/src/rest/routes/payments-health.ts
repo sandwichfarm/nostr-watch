@@ -28,6 +28,7 @@ export async function registerPaymentsHealthRoutes(app: FastifyInstance, _contex
     const res: any = { featureEnabled: feature, healthy: false, methods: { l402: false, p2pk: false } };
     if (!feature) return res;
     try {
+      // @ts-expect-error optional dependency — not always installed
       const gw = await import('nostrwatch-payments-gateway');
       const { checkLndGrpc, checkLndRest } = gw as any;
       // Check L402 (LND) availability

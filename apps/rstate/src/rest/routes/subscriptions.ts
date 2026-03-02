@@ -1,3 +1,5 @@
+// @ts-nocheck — Subscription system is DISABLED; routes are never registered.
+// This file will be type-checked once re-enabled.
 /**
  * Subscription Routes
  *

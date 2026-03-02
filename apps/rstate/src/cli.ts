@@ -10,6 +10,17 @@ const args = process.argv.slice(2)
 const command = args[0]
 
 /**
+ * Parse --config <path> from args
+ */
+function parseConfigFlag(): string | undefined {
+  const idx = args.indexOf('--config')
+  if (idx !== -1 && idx + 1 < args.length) {
+    return args[idx + 1]
+  }
+  return undefined
+}
+
+/**
  * Display usage information
  */
 function showUsage() {
@@ -20,8 +31,8 @@ Usage:
   relayvm <command> [options]
 
 Commands:
-  config:validate       Validate configuration from .env file
-  config:show           Show current configuration (sanitized)
+  config:validate       Validate configuration [--config <path>]
+  config:show           Show current configuration (sanitized) [--config <path>]
   health                Check server health
   cache:stats           Show cache statistics
   relay:test <url>      Test relay connectivity
@@ -47,8 +58,11 @@ async function validateConfig() {
   console.log('Validating RelayVM configuration...\n')
 
   try {
-    const { getConfig } = await import('./config.js')
-    const config = getConfig()
+    const { getConfig, getConfigSource } = await import('./config.js')
+    const configPath = parseConfigFlag()
+    const config = getConfig(configPath)
+    const source = getConfigSource()
+    console.log(`Config source: ${source}\n`)
 
     const errors: string[] = []
     const warnings: string[] = []
@@ -166,10 +180,12 @@ async function validateConfig() {
  */
 async function showConfig() {
   try {
-    const { getConfig } = await import('./config.js')
-    const config = getConfig()
+    const { getConfig, getConfigSource } = await import('./config.js')
+    const configPath = parseConfigFlag()
+    const config = getConfig(configPath)
 
     console.log('RelayVM Configuration:\n')
+    console.log(`Config source: ${getConfigSource()}\n`)
 
     console.log('Transports:')
     if (config.cvm?.enabled) {

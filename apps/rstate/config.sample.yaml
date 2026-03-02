@@ -1,0 +1,77 @@
+# rstate configuration
+#
+# YAML is the primary config source. Environment variables override YAML values
+# when explicitly set (useful for secrets and container deployments).
+#
+# Config file path: set CONFIG_FILE env var or pass --config <path> to CLI.
+# Default: ./config.yaml
+
+logLevel: info
+
+cvm:
+  enabled: true
+  relays:
+    - 'ws://localhost:6969'
+  encryptionMode: OPTIONAL
+  allowedPubkeys: []
+  auth:
+    enabled: true
+    allowAny: false
+
+ingestRelays:
+  - 'wss://history.nostr.watch'
+
+rest:
+  enabled: false
+  host: 127.0.0.1
+  port: 3000
+  corsOrigins:
+    - 'http://localhost:3000'
+  enableSwagger: true
+  allowPolicyUpdate: false
+  rateLimit:
+    enabled: true
+    requestsPerSecond: 10
+    maxBurst: 100
+
+aggregation:
+  lookbackSeconds: 21600
+  quorum: 0.5
+  labelQuorum: 0.3
+  madScale: 3.0
+
+cache:
+  maxSize: 10000
+  ttlSeconds: 60
+
+log:
+  enabled: true
+  level: info
+  destination: stdout
+
+publishing:
+  enabled: false
+  relays:
+    - 'wss://relay.nostr.watch'
+  # signingKey: loaded from env PUBLISH_SIGNING_KEY (do not put secrets in this file)
+  kind1066:
+    enabled: true
+    schedule: hourly
+  kind20066:
+    enabled: true
+  kind1166:
+    enabled: true
+    schedule: hourly
+  announce:
+    frequency: '3600'
+    userDataRelays:
+      - 'wss://purplepag.es'
+      - 'wss://user.kindpag.es'
+    profile:
+      name: My Rstate
+      about: NIP-66 relay aggregator
+      # picture: https://example.com/avatar.png
+      # nip05: rstate@nostr.watch
+      # lud16: rstate@getalby.com
+      # website: https://nostr.watch
+      # ... any key here gets serialized into Kind 0 content

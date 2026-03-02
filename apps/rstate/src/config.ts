@@ -1,9 +1,12 @@
 /**
  * Configuration System
  *
- * Loads and validates configuration from environment variables
+ * Loads configuration from YAML file with environment variable overrides.
+ * Falls back to pure env-var mode when no YAML file is present.
  */
 
+import fs from 'node:fs'
+import { parse } from 'yaml'
 import type { AggregationPolicy } from './types/aggregation.js'
 import { DEFAULT_POLICY } from './types/aggregation.js'
 
@@ -42,7 +45,7 @@ export interface Config {
       schedule: PublishSchedule
     }
     announce: {
-      profile?: { name?: string; about?: string; picture?: string }
+      profile?: Record<string, unknown>
       frequency: string
       userDataRelays?: string[]
     }
@@ -83,6 +86,29 @@ export interface Config {
     maxSize: number
     ttlSeconds: number
   }
+}
+
+/** Tracks where the config was loaded from */
+let configSource: string = 'env-only'
+
+/**
+ * Get the source of the loaded config (YAML file path or "env-only")
+ */
+export function getConfigSource(): string {
+  return configSource
+}
+
+/**
+ * Load and parse a YAML config file. Returns undefined if file does not exist.
+ */
+function loadYamlConfig(path: string): Record<string, unknown> | undefined {
+  if (!fs.existsSync(path)) return undefined
+  const raw = fs.readFileSync(path, 'utf-8')
+  const parsed = parse(raw)
+  if (parsed == null || typeof parsed !== 'object') {
+    throw new Error(`Config file ${path} did not parse to an object`)
+  }
+  return parsed as Record<string, unknown>
 }
 
 /**
@@ -246,10 +272,386 @@ function validateLocalRelaysOnly(relays: string[], env: string): void {
   }
 }
 
+// Helper: coerce a YAML value to boolean (matches env-var parsing conventions)
+function toBool(value: unknown, defaultValue: boolean): boolean {
+  if (value === undefined || value === null) return defaultValue
+  if (typeof value === 'boolean') return value
+  return String(value).toLowerCase() === 'true'
+}
+
+// Helper: coerce YAML value to string array
+function toStringArray(value: unknown): string[] | undefined {
+  if (value === undefined || value === null) return undefined
+  if (Array.isArray(value)) return value.map(String)
+  if (typeof value === 'string') return parseList(value)
+  return undefined
+}
+
+// Helper: coerce YAML value to number
+function toNumber(value: unknown, defaultValue: number): number {
+  if (value === undefined || value === null) return defaultValue
+  const n = Number(value)
+  return isNaN(n) ? defaultValue : n
+}
+
 /**
- * Load configuration from environment
+ * Build env overrides object from explicitly set environment variables.
+ * Only includes values for env vars that are actually defined.
  */
-export function loadConfig(): Config {
+function buildEnvOverrides(): Record<string, unknown> {
+  const env = process.env
+  const o: Record<string, unknown> = {}
+
+  // CVM
+  if (env.CVM_ENABLED !== undefined) o.cvmEnabled = env.CVM_ENABLED.toLowerCase() === 'true'
+  if (env.CVM_RELAYS !== undefined) o.cvmRelays = parseList(env.CVM_RELAYS)
+  if (env.CVM_SERVER_NSEC !== undefined) o.cvmServerKey = env.CVM_SERVER_NSEC
+  if (env.CVM_ENCRYPTION_MODE !== undefined) o.cvmEncryptionMode = env.CVM_ENCRYPTION_MODE
+  if (env.CVM_ALLOWED_PUBKEYS !== undefined) o.cvmAllowedPubkeys = parseList(env.CVM_ALLOWED_PUBKEYS)
+  if (env.CVM_AUTH_ENABLED !== undefined) o.cvmAuthEnabled = env.CVM_AUTH_ENABLED.toLowerCase() !== 'false'
+  if (env.CVM_AUTH_ALLOW_ANY !== undefined) o.cvmAuthAllowAny = env.CVM_AUTH_ALLOW_ANY.toLowerCase() === 'true'
+
+  // REST
+  if (env.REST_ENABLED !== undefined) o.restEnabled = env.REST_ENABLED.toLowerCase() === 'true'
+  if (env.REST_HOST !== undefined) o.restHost = env.REST_HOST
+  if (env.REST_PORT !== undefined) o.restPort = parseNumber(env.REST_PORT, 3000)
+  if (env.API_BASE_URL !== undefined) o.restApiBaseUrl = env.API_BASE_URL
+  if (env.REST_CORS_ORIGINS !== undefined) {
+    o.restCorsOrigins = env.REST_CORS_ORIGINS === '*' ? '*' : parseList(env.REST_CORS_ORIGINS)
+  }
+  if (env.REST_ENABLE_SWAGGER !== undefined) o.restEnableSwagger = env.REST_ENABLE_SWAGGER.toLowerCase() === 'true'
+  if (env.REST_ALLOW_POLICY_UPDATE !== undefined) o.restAllowPolicyUpdate = env.REST_ALLOW_POLICY_UPDATE.toLowerCase() === 'true'
+  if (env.REST_RATE_LIMIT_ENABLED !== undefined) o.restRateLimitEnabled = env.REST_RATE_LIMIT_ENABLED.toLowerCase() === 'true'
+  if (env.REST_RATE_LIMIT_RPS !== undefined) o.restRateLimitRps = parseNumber(env.REST_RATE_LIMIT_RPS, 10)
+  if (env.REST_RATE_LIMIT_BURST !== undefined) o.restRateLimitBurst = parseNumber(env.REST_RATE_LIMIT_BURST, 100)
+
+  // Ingestion
+  if (env.INGEST_RELAYS !== undefined) o.ingestRelays = parseList(env.INGEST_RELAYS)
+
+  // Log
+  if (env.LOG_ENABLED !== undefined) o.logEnabled = env.LOG_ENABLED !== 'false'
+  if (env.LOG_LEVEL !== undefined) o.logLevel = env.LOG_LEVEL
+  if (env.LOG_DESTINATION !== undefined) o.logDestination = env.LOG_DESTINATION
+  if (env.LOG_FILE !== undefined) o.logFile = env.LOG_FILE
+
+  // Aggregation
+  if (env.AGG_LOOKBACK_SECONDS !== undefined) o.aggLookbackSeconds = parseNumber(env.AGG_LOOKBACK_SECONDS, DEFAULT_POLICY.lookbackSeconds)
+  if (env.AGG_QUORUM !== undefined) o.aggQuorum = parseNumber(env.AGG_QUORUM, DEFAULT_POLICY.quorum)
+  if (env.AGG_LABEL_QUORUM !== undefined) o.aggLabelQuorum = parseNumber(env.AGG_LABEL_QUORUM, DEFAULT_POLICY.labelQuorum)
+  if (env.AGG_MAD_SCALE !== undefined) o.aggMadScale = parseNumber(env.AGG_MAD_SCALE, DEFAULT_POLICY.madScale)
+
+  // Cache
+  if (env.CACHE_MAX_SIZE !== undefined) o.cacheMaxSize = parseNumber(env.CACHE_MAX_SIZE, 10000)
+  if (env.CACHE_TTL_SECONDS !== undefined) o.cacheTtlSeconds = parseNumber(env.CACHE_TTL_SECONDS, 60)
+
+  // Publishing
+  if (env.PUBLISH_ENABLED !== undefined) o.publishEnabled = env.PUBLISH_ENABLED.toLowerCase() === 'true'
+  if (env.PUBLISH_RELAYS !== undefined) o.publishRelays = parseList(env.PUBLISH_RELAYS)
+  if (env.PUBLISH_SIGNING_KEY !== undefined) o.publishSigningKey = env.PUBLISH_SIGNING_KEY
+  if (env.PUBLISH_KIND1066_ENABLED !== undefined) o.publishKind1066Enabled = env.PUBLISH_KIND1066_ENABLED.toLowerCase() !== 'false'
+  if (env.PUBLISH_KIND1066_SCHEDULE !== undefined) o.publishKind1066Schedule = env.PUBLISH_KIND1066_SCHEDULE
+  if (env.PUBLISH_KIND20066_ENABLED !== undefined) o.publishKind20066Enabled = env.PUBLISH_KIND20066_ENABLED.toLowerCase() !== 'false'
+  if (env.PUBLISH_KIND1166_ENABLED !== undefined) o.publishKind1166Enabled = env.PUBLISH_KIND1166_ENABLED.toLowerCase() !== 'false'
+  if (env.PUBLISH_KIND1166_SCHEDULE !== undefined) o.publishKind1166Schedule = env.PUBLISH_KIND1166_SCHEDULE
+  if (env.PUBLISH_FREQUENCY !== undefined) o.publishFrequency = env.PUBLISH_FREQUENCY
+  if (env.PUBLISH_USER_DATA_RELAYS !== undefined) o.publishUserDataRelays = parseList(env.PUBLISH_USER_DATA_RELAYS)
+  if (env.PUBLISH_PROFILE_NAME !== undefined) o.publishProfileName = env.PUBLISH_PROFILE_NAME
+  if (env.PUBLISH_PROFILE_ABOUT !== undefined) o.publishProfileAbout = env.PUBLISH_PROFILE_ABOUT
+  if (env.PUBLISH_PROFILE_PICTURE !== undefined) o.publishProfilePicture = env.PUBLISH_PROFILE_PICTURE
+
+  return o
+}
+
+/**
+ * Load configuration from YAML file + env overrides, or pure env vars as fallback.
+ */
+export function loadConfig(configFilePath?: string): Config {
+  const yamlPath = configFilePath || process.env.CONFIG_FILE || './config.yaml'
+  const yaml = loadYamlConfig(yamlPath)
+  const envOverrides = buildEnvOverrides()
+
+  if (yaml) {
+    configSource = yamlPath
+    return buildConfigFromYaml(yaml, envOverrides)
+  }
+
+  configSource = 'env-only'
+  return buildConfigFromEnv()
+}
+
+/**
+ * Build Config from a parsed YAML object with env overrides applied on top.
+ */
+function buildConfigFromYaml(yaml: Record<string, unknown>, env: Record<string, unknown>): Config {
+  // --- CVM ---
+  const cvmYaml = (yaml.cvm ?? {}) as Record<string, unknown>
+  const cvmEnabled = env.cvmEnabled !== undefined
+    ? env.cvmEnabled as boolean
+    : toBool(cvmYaml.enabled, true)
+
+  // --- REST ---
+  const restYaml = (yaml.rest ?? {}) as Record<string, unknown>
+  const restRateLimitYaml = (restYaml.rateLimit ?? {}) as Record<string, unknown>
+  const restEnabled = env.restEnabled !== undefined
+    ? env.restEnabled as boolean
+    : toBool(restYaml.enabled, false)
+
+  // Validate at least one transport
+  if (!cvmEnabled && !restEnabled) {
+    throw new Error(
+      'At least one transport must be enabled: cvm.enabled or rest.enabled\n' +
+      'Set cvm.enabled: true for Nostr MCP transport, or rest.enabled: true for HTTP REST API'
+    )
+  }
+
+  // --- CVM Config ---
+  let cvmConfig: Config['cvm'] | undefined
+  if (cvmEnabled) {
+    const cvmRelays = (env.cvmRelays as string[] | undefined)
+      ?? toStringArray(cvmYaml.relays)
+      ?? []
+    if (cvmRelays.length === 0) {
+      throw new Error('cvm.relays is required when cvm is enabled (array of ws:// URLs)')
+    }
+    validateRelayUrls(cvmRelays)
+    validateLocalRelaysOnly(cvmRelays, 'cvm.relays')
+
+    const serverKey = (env.cvmServerKey as string | undefined) ?? (cvmYaml.serverKey as string | undefined)
+    const validatedKey = validatePrivateKey(serverKey)
+
+    const encryptionMode = validateEncryptionMode(
+      (env.cvmEncryptionMode as string | undefined) ?? (cvmYaml.encryptionMode as string | undefined)
+    )
+
+    const allowedPubkeys = (env.cvmAllowedPubkeys as string[] | undefined)
+      ?? toStringArray(cvmYaml.allowedPubkeys)
+      ?? []
+
+    const cvmAuthYaml = (cvmYaml.auth ?? {}) as Record<string, unknown>
+    const authEnabled = env.cvmAuthEnabled !== undefined
+      ? env.cvmAuthEnabled as boolean
+      : toBool(cvmAuthYaml.enabled, true)
+    const authAllowAny = env.cvmAuthAllowAny !== undefined
+      ? env.cvmAuthAllowAny as boolean
+      : toBool(cvmAuthYaml.allowAny, false)
+
+    cvmConfig = {
+      enabled: true,
+      cvmRelays,
+      serverKey: validatedKey,
+      encryptionMode,
+      allowedPubkeys,
+      auth: { enabled: authEnabled, allowAny: authAllowAny },
+    }
+  }
+
+  // --- Ingestion ---
+  const ingestRelays = (env.ingestRelays as string[] | undefined)
+    ?? toStringArray(yaml.ingestRelays)
+    ?? []
+  if (ingestRelays.length === 0) {
+    throw new Error('ingestRelays is required (array of wss:// URLs)')
+  }
+  validateRelayUrls(ingestRelays)
+
+  // --- Logging ---
+  const logYaml = (yaml.log ?? {}) as Record<string, unknown>
+  const logEnabled = env.logEnabled !== undefined
+    ? env.logEnabled as boolean
+    : toBool(logYaml.enabled, true)
+  const logLevel = validateLogLevel(
+    (env.logLevel as string | undefined) ?? (logYaml.level as string | undefined)
+  )
+  const logDestination = validateLogDestination(
+    (env.logDestination as string | undefined) ?? (logYaml.destination as string | undefined)
+  )
+  const logFile = (env.logFile as string | undefined) ?? (logYaml.file as string | undefined)
+  if (logDestination === 'file' && !logFile) {
+    throw new Error('log.file is required when log.destination is "file"')
+  }
+
+  // --- REST Config ---
+  const restHost = (env.restHost as string | undefined) ?? (restYaml.host as string | undefined) ?? '127.0.0.1'
+  const restPort = env.restPort !== undefined
+    ? env.restPort as number
+    : toNumber(restYaml.port, 3000)
+  const restApiBaseUrl = (env.restApiBaseUrl as string | undefined)
+    ?? (restYaml.apiBaseUrl as string | undefined)
+    ?? (process.env.NODE_ENV === 'production' ? 'https://api.nostr.watch' : undefined)
+
+  let restCorsOrigins: string[] | '*'
+  if (env.restCorsOrigins !== undefined) {
+    restCorsOrigins = env.restCorsOrigins as string[] | '*'
+  } else if (restYaml.corsOrigins !== undefined) {
+    if (restYaml.corsOrigins === '*') {
+      restCorsOrigins = '*'
+    } else {
+      restCorsOrigins = toStringArray(restYaml.corsOrigins) ?? ['http://localhost:3000']
+    }
+  } else {
+    restCorsOrigins = ['http://localhost:3000']
+  }
+
+  const restEnableSwagger = env.restEnableSwagger !== undefined
+    ? env.restEnableSwagger as boolean
+    : toBool(restYaml.enableSwagger, true)
+  const restAllowPolicyUpdate = env.restAllowPolicyUpdate !== undefined
+    ? env.restAllowPolicyUpdate as boolean
+    : toBool(restYaml.allowPolicyUpdate, false)
+  const restRateLimitEnabled = env.restRateLimitEnabled !== undefined
+    ? env.restRateLimitEnabled as boolean
+    : toBool(restRateLimitYaml.enabled, true)
+  const restRateLimitRps = env.restRateLimitRps !== undefined
+    ? env.restRateLimitRps as number
+    : toNumber(restRateLimitYaml.requestsPerSecond, 10)
+  const restRateLimitBurst = env.restRateLimitBurst !== undefined
+    ? env.restRateLimitBurst as number
+    : toNumber(restRateLimitYaml.maxBurst, 100)
+
+  // --- Aggregation ---
+  const aggYaml = (yaml.aggregation ?? {}) as Record<string, unknown>
+  const aggregation: AggregationPolicy = {
+    ...DEFAULT_POLICY,
+    lookbackSeconds: env.aggLookbackSeconds !== undefined
+      ? env.aggLookbackSeconds as number
+      : toNumber(aggYaml.lookbackSeconds, DEFAULT_POLICY.lookbackSeconds),
+    quorum: env.aggQuorum !== undefined
+      ? env.aggQuorum as number
+      : toNumber(aggYaml.quorum, DEFAULT_POLICY.quorum),
+    labelQuorum: env.aggLabelQuorum !== undefined
+      ? env.aggLabelQuorum as number
+      : toNumber(aggYaml.labelQuorum, DEFAULT_POLICY.labelQuorum),
+    madScale: env.aggMadScale !== undefined
+      ? env.aggMadScale as number
+      : toNumber(aggYaml.madScale, DEFAULT_POLICY.madScale),
+  }
+
+  // --- Cache ---
+  const cacheYaml = (yaml.cache ?? {}) as Record<string, unknown>
+  const cacheMaxSize = env.cacheMaxSize !== undefined
+    ? env.cacheMaxSize as number
+    : toNumber(cacheYaml.maxSize, 10000)
+  const cacheTtlSeconds = env.cacheTtlSeconds !== undefined
+    ? env.cacheTtlSeconds as number
+    : toNumber(cacheYaml.ttlSeconds, 60)
+
+  // --- Publishing ---
+  const pubYaml = (yaml.publishing ?? {}) as Record<string, unknown>
+  const publishEnabled = env.publishEnabled !== undefined
+    ? env.publishEnabled as boolean
+    : toBool(pubYaml.enabled, false)
+
+  let publishingConfig: Config['publishing'] | undefined
+  if (publishEnabled) {
+    const publishRelays = (env.publishRelays as string[] | undefined)
+      ?? toStringArray(pubYaml.relays)
+      ?? []
+    if (publishRelays.length === 0) {
+      throw new Error('publishing.relays is required when publishing is enabled')
+    }
+    validateRelayUrls(publishRelays)
+    validateLocalRelaysOnly(publishRelays, 'publishing.relays')
+
+    const signingKey = (env.publishSigningKey as string | undefined)
+      ?? (pubYaml.signingKey as string | undefined)
+    if (!signingKey || signingKey.trim() === '') {
+      throw new Error('PUBLISH_SIGNING_KEY env var is required when publishing is enabled')
+    }
+
+    const kind1066Yaml = (pubYaml.kind1066 ?? {}) as Record<string, unknown>
+    const kind20066Yaml = (pubYaml.kind20066 ?? {}) as Record<string, unknown>
+    const kind1166Yaml = (pubYaml.kind1166 ?? {}) as Record<string, unknown>
+    const announceYaml = (pubYaml.announce ?? {}) as Record<string, unknown>
+
+    const kind1066Enabled = env.publishKind1066Enabled !== undefined
+      ? env.publishKind1066Enabled as boolean
+      : toBool(kind1066Yaml.enabled, true)
+    const kind1066Schedule = validatePublishSchedule(
+      (env.publishKind1066Schedule as string | undefined) ?? (kind1066Yaml.schedule as string | undefined)
+    )
+
+    const kind20066Enabled = env.publishKind20066Enabled !== undefined
+      ? env.publishKind20066Enabled as boolean
+      : toBool(kind20066Yaml.enabled, true)
+
+    const kind1166Enabled = env.publishKind1166Enabled !== undefined
+      ? env.publishKind1166Enabled as boolean
+      : toBool(kind1166Yaml.enabled, true)
+    const kind1166Schedule = validatePublishSchedule(
+      (env.publishKind1166Schedule as string | undefined) ?? (kind1166Yaml.schedule as string | undefined)
+    )
+
+    // Announce config — profile is free-form from YAML, env vars add/override specific keys
+    let profile: Record<string, unknown> | undefined = announceYaml.profile != null
+      ? { ...(announceYaml.profile as Record<string, unknown>) }
+      : undefined
+
+    // Apply env overrides for the three legacy profile env vars
+    if (env.publishProfileName !== undefined || env.publishProfileAbout !== undefined || env.publishProfilePicture !== undefined) {
+      profile = profile ?? {}
+      if (env.publishProfileName !== undefined) profile.name = env.publishProfileName
+      if (env.publishProfileAbout !== undefined) profile.about = env.publishProfileAbout
+      if (env.publishProfilePicture !== undefined) profile.picture = env.publishProfilePicture
+    }
+
+    const announceFrequency = (env.publishFrequency as string | undefined)
+      ?? (announceYaml.frequency != null ? String(announceYaml.frequency) : '3600')
+
+    const announceUserDataRelays = (env.publishUserDataRelays as string[] | undefined)
+      ?? toStringArray(announceYaml.userDataRelays)
+
+    publishingConfig = {
+      enabled: true,
+      publishRelays,
+      signingKey: signingKey.trim(),
+      kind1066: { enabled: kind1066Enabled, schedule: kind1066Schedule },
+      kind20066: { enabled: kind20066Enabled },
+      kind1166: { enabled: kind1166Enabled, schedule: kind1166Schedule },
+      announce: {
+        profile: profile && Object.keys(profile).length > 0 ? profile : undefined,
+        frequency: announceFrequency,
+        userDataRelays: announceUserDataRelays && announceUserDataRelays.length > 0
+          ? announceUserDataRelays : undefined,
+      },
+    }
+  }
+
+  return {
+    cvm: cvmConfig,
+    rest: {
+      enabled: restEnabled,
+      host: restHost,
+      port: restPort,
+      apiBaseUrl: restApiBaseUrl,
+      corsOrigins: restCorsOrigins,
+      enableSwagger: restEnableSwagger,
+      allowPolicyUpdate: restAllowPolicyUpdate,
+      rateLimit: {
+        enabled: restRateLimitEnabled,
+        requestsPerSecond: restRateLimitRps,
+        maxBurst: restRateLimitBurst,
+      },
+    },
+    ingestRelays,
+    log: {
+      enabled: logEnabled,
+      level: logLevel,
+      destination: logDestination,
+      file: logFile,
+    },
+    aggregation,
+    publishing: publishingConfig,
+    cache: {
+      maxSize: cacheMaxSize,
+      ttlSeconds: cacheTtlSeconds,
+    },
+  }
+}
+
+/**
+ * Build Config from environment variables only (original behavior, backwards compatible).
+ */
+function buildConfigFromEnv(): Config {
   // Transport configuration
   const cvmEnabled = (process.env.CVM_ENABLED ?? 'true').toLowerCase() === 'true'
   const restEnabled = (process.env.REST_ENABLED ?? 'false').toLowerCase() === 'true'
@@ -358,7 +760,7 @@ export function loadConfig(): Config {
     const kind1166Schedule = validatePublishSchedule(process.env.PUBLISH_KIND1166_SCHEDULE)
 
     // Announce config
-    const announceProfile: { name?: string; about?: string; picture?: string } = {}
+    const announceProfile: Record<string, unknown> = {}
     if (process.env.PUBLISH_PROFILE_NAME) announceProfile.name = process.env.PUBLISH_PROFILE_NAME
     if (process.env.PUBLISH_PROFILE_ABOUT) announceProfile.about = process.env.PUBLISH_PROFILE_ABOUT
     if (process.env.PUBLISH_PROFILE_PICTURE) announceProfile.picture = process.env.PUBLISH_PROFILE_PICTURE
@@ -433,9 +835,9 @@ let configInstance: Config | null = null
 /**
  * Get config singleton
  */
-export function getConfig(): Config {
+export function getConfig(configFilePath?: string): Config {
   if (!configInstance) {
-    configInstance = loadConfig()
+    configInstance = loadConfig(configFilePath)
   }
   return configInstance
 }
@@ -445,4 +847,5 @@ export function getConfig(): Config {
  */
 export function resetConfig(): void {
   configInstance = null
+  configSource = 'env-only'
 }

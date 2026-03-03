@@ -98,7 +98,7 @@ export class EventPublisherService {
         checks: [],   // rstate is an aggregator, not a direct checker
         networks: [], // monitors all networks
       })
-
+      
       const announceEvents = announcer.generate()
 
       // Add client tag to all announcement events before signing

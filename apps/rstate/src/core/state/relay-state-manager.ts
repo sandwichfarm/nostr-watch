@@ -20,6 +20,7 @@ export class RelayStateManager {
   private stateCache: Map<string, RelayState> = new Map()
   private lastComputeTime: number = 0
   private scoringService?: MonitorScoringService
+  private lastChangedRelays: string[] = []
 
   constructor(
     private observationStore: ObservationStore,
@@ -157,6 +158,7 @@ export class RelayStateManager {
     }
 
     this.stateCache = newCache
+    this.lastChangedRelays = changedRelays
     this.lastComputeTime = Date.now()
 
     const duration = Date.now() - start
@@ -237,6 +239,13 @@ export class RelayStateManager {
     logger.debug({
       changedRelays: changedRelays.length,
     }, 'Selectively invalidated affected caches')
+  }
+
+  /**
+   * Get relay URLs that changed in the last computeAllStates() call
+   */
+  getLastChangedRelays(): string[] {
+    return this.lastChangedRelays
   }
 
   /**

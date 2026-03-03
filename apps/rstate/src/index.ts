@@ -16,11 +16,22 @@ if (typeof globalThis.WebSocket === 'undefined') {
   globalThis.WebSocket = WebSocket
 }
 
-import { getConfig } from './config.js'
+import { getConfig, getConfigSource } from './config.js'
 import { getLogger } from './utils/logger.js'
 import { CVMServer } from './server.js'
 
 const logger = getLogger().child({ module: 'main' })
+
+/**
+ * Parse --config <path> from process.argv
+ */
+function parseConfigArg(): string | undefined {
+  const idx = process.argv.indexOf('--config')
+  if (idx !== -1 && idx + 1 < process.argv.length) {
+    return process.argv[idx + 1]
+  }
+  return undefined
+}
 
 /**
  * Main function
@@ -32,8 +43,9 @@ async function main(): Promise<void> {
 
   try {
     // Load configuration
-    const config = getConfig()
-    logger.info('Configuration loaded')
+    const configPath = parseConfigArg()
+    const config = getConfig(configPath)
+    logger.info({ source: getConfigSource() }, 'Configuration loaded')
 
     // Create server
     server = new CVMServer(config)

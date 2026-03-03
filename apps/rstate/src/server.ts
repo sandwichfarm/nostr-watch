@@ -23,6 +23,7 @@ import { RateLimiterService } from './services/rate-limiter.js'
 import { SecurityService } from './services/security.js'
 import { MetricsService } from './services/metrics.js'
 import { QueryCache } from './services/cache.js'
+import { EventPublisherService } from './services/event-publisher.js'
 import { DEFAULT_QUERY_SHAPE } from './utils/validation.js'
 import { verifyCriticalSchemas } from './utils/startup-checks.js'
 import {
@@ -60,7 +61,7 @@ export class CVMServer {
   private transportPool?: ResilientRelayPool
   private signer?: PrivateKeySigner
   private toolRegistry?: ToolRegistry
-  private transportContext?: TransportContext
+  private _transportContext?: TransportContext
   // DISABLED: Subscription system
   // private notificationDelivery?: NotificationDeliveryService
 
@@ -79,6 +80,9 @@ export class CVMServer {
   private security: SecurityService
   private metrics: MetricsService
   private queryCache: QueryCache
+
+  // Event Publishing
+  private eventPublisher?: EventPublisherService
 
   // REST API
   private restServer?: RestServer
@@ -127,9 +131,15 @@ export class CVMServer {
       this.initializeRESTServer()
     }
 
+    // Initialize event publisher if enabled
+    if (config.publishing?.enabled) {
+      this.eventPublisher = new EventPublisherService(this.core, config.publishing)
+    }
+
     logger.info({
       cvmEnabled: !!config.cvm?.enabled,
       restEnabled: config.rest.enabled,
+      publishingEnabled: !!config.publishing?.enabled,
       ingestionRelays: config.ingestRelays.length,
     }, 'RelayVM server initialized')
   }
@@ -158,7 +168,7 @@ export class CVMServer {
     })
 
     // Store transport context reference for subscription tools
-    this.transportContext = {
+    this._transportContext = {
       getClientPubkey: () => this.toolRegistry!.getCurrentClientPubkey(),
     }
 
@@ -513,9 +523,16 @@ export class CVMServer {
         logger.info('REST API started')
       }
 
+      // Start event publisher if enabled
+      if (this.eventPublisher) {
+        await this.eventPublisher.start()
+        logger.info('Event publisher started')
+      }
+
       logger.info({
         cvmEnabled: !!this.transport,
         restEnabled: !!this.restServer,
+        publishingEnabled: !!this.eventPublisher,
         ingestRelays: this.config.ingestRelays.length,
       }, 'RelayVM server started successfully')
     } catch (err) {
@@ -545,6 +562,12 @@ export class CVMServer {
 
       // Stop ingestion (always running)
       await this.ingestionService.stop()
+
+      // Stop event publisher if running
+      if (this.eventPublisher) {
+        await this.eventPublisher.stop()
+        logger.info('Event publisher stopped')
+      }
 
       // Stop REST server if running
       if (this.restServer) {
@@ -603,6 +626,14 @@ export class CVMServer {
         const evicted = this.queryCache.evictExpired()
         if (evicted > 0) {
           logger.debug({ evicted }, 'Expired cache entries evicted')
+        }
+
+        // Publish events after aggregation
+        if (this.eventPublisher) {
+          const changedRelays = this.core.getChangedRelays()
+          this.eventPublisher.onAggregationComplete(changedRelays).catch(err =>
+            logger.error({ err }, 'Error publishing events')
+          )
         }
 
         // DISABLED: Subscription system

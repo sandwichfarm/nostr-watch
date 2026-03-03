@@ -9,6 +9,7 @@ export async function registerMetricsRoutes(app: FastifyInstance, _context: Rest
     }
   }, async (_req, reply) => {
     try {
+      // @ts-expect-error optional dependency — not always installed
       const mod: any = await import('nostrwatch-payments-gateway');
       if (mod && mod.promRegister && typeof mod.promRegister.metrics === 'function') {
         const text = await mod.promRegister.metrics();

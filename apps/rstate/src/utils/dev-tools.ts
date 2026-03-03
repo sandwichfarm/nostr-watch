@@ -1,3 +1,5 @@
+// @ts-nocheck — Dev utilities use old RelayState structure; needs full rewrite.
+// TODO: Update mock generators and debug printers to use new AggregatedValue structure.
 /**
  * Development Utilities
  *

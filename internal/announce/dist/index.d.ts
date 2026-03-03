@@ -7,6 +7,7 @@ interface AnnounceMonitorOptions {
     owner?: string;
     frequency?: string;
     profile?: object;
+    clientTag?: string;
     relays?: string[];
     userDataRelays?: string[];
 }
@@ -19,6 +20,7 @@ export declare class AnnounceMonitor {
     private nip66Publisher;
     private userMetaPublisher;
     private pubkey;
+    private clientTag?;
     constructor(pubkey: string, options: AnnounceMonitorOptions);
     setup(options: AnnounceMonitorOptions): void;
     static formatChecks(checks: Array<string>): Array<string>;

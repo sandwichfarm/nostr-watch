@@ -18,6 +18,7 @@ interface AnnounceMonitorOptions {
   owner?: string;
   frequency?: string;
   profile?: object;
+  clientTag?: string;
 
   relays?: string[];
   userDataRelays?: string[];
@@ -28,10 +29,11 @@ export class AnnounceMonitor {
   public monReg?: any;
   public monRelays: string[] = [];
   public userDataRelays: string[] = [];
-  public monProfile: any;   
+  public monProfile: any;
   private nip66Publisher: Publisher;
   private userMetaPublisher: Publisher;
   private pubkey: string | null = null;
+  private clientTag?: string;
 
   constructor(pubkey: string, options: AnnounceMonitorOptions) {
     log.debug(`announce::constructor(): ${pubkey}`)
@@ -51,7 +53,10 @@ export class AnnounceMonitor {
       frequency = '',
       profile = {},
       relays = [],
+      clientTag,
     } = options;
+
+    this.clientTag = clientTag;
 
     this.userDataRelays = options.userDataRelays ||  [ 'wss://purplepag.es', 'wss://user.kindpag.es' ]
 
@@ -103,10 +108,19 @@ export class AnnounceMonitor {
       this.events["10002"] = $monRelays
     }
     
-    const $monProfile = new Kind0(this.pubkey) 
+    const $monProfile = new Kind0(this.pubkey)
     if(Object.keys(this.monProfile).length) {
       $monProfile.generateEvent({...this.monProfile})
       this.events["0"] = $monProfile
+    }
+
+    if (this.clientTag) {
+      for (const ev of Object.values(this.events)) {
+        const generated = (ev as any)?.event ?? ev
+        if (generated?.tags && Array.isArray(generated.tags)) {
+          generated.tags.push(['client', this.clientTag])
+        }
+      }
     }
 
     return this.events

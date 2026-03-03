@@ -5,7 +5,8 @@ import { getLogger, setGlobalLogLevel } from "../utils/logger.ts";
 import { delay } from "npm:@nostrwatch/utils";
 import { db, getExpiredRelays } from "npm:@nostrwatch/db";
 import { maybeAnnounce } from "../utils/announce.ts";
-import { getPublicKey, nip19 } from "npm:nostr-tools";
+import { getPublicKey } from "npm:nostr-tools";
+import { tryNsecToHex } from "npm:@nostrwatch/utils";
 import { RetryManager } from "../utils/retryManager.ts";
 import { formatCompactStats, showStatus } from "./status.ts";
 import { deleteRelayCheckEvent, setDeletionPublishSuppressed } from "../utils/deletion.ts";
@@ -27,28 +28,7 @@ import type { KumaPusher } from "../health/kuma.ts";
  * @returns hex-encoded private key string, or empty string on error
  */
 export function getPrivateKey(): string {
-  const key = Deno.env.get("RELAYMON_NSEC");
-  if (!key) return "";
-
-  // Check if it's nsec format (starts with "nsec1")
-  if (key.startsWith("nsec1")) {
-    try {
-      const decoded = nip19.decode(key);
-      if (decoded.type === "nsec") {
-        return decoded.data as string;
-      }
-      return "";
-    } catch {
-      return "";
-    }
-  }
-
-  // Otherwise treat as raw hex (64 characters)
-  if (key.length === 64 && /^[0-9a-f]+$/i.test(key)) {
-    return key;
-  }
-
-  return "";
+  return tryNsecToHex(Deno.env.get("RELAYMON_NSEC"));
 }
 
 /**

@@ -5,24 +5,26 @@
  * Tags: [r, url], [O, status]?, [rtt-open, ms]?, [delta-tags...]?, [client, @nostr-watch/rstate]
  */
 
-import type { UnsignedEvent } from 'nostr-tools/pure'
 import type { Kind1066Data, RelayDelta, OperationalStatus } from '../types.js'
+import { buildBaseEvent, relayTag, statusTag, rttOpenTag } from '@nostrwatch/publisher'
+import type { UnsignedEvent } from 'nostr-tools/pure'
 
 const KIND = 1066
+const CLIENT_TAG = '@nostrwatch/rstate'
 
 export function buildKind1066Event(data: Kind1066Data, pubkey: string = ''): UnsignedEvent {
   const tags: string[][] = [
-    ['r', data.relayUrl],
+    relayTag(data.relayUrl),
   ]
 
   // Add operational status for transitions
   if (data.status === 'up' || data.status === 'down') {
-    tags.push(['O', mapStatus(data.status)])
+    tags.push(statusTag(mapStatus(data.status)))
   }
 
   // Add RTT if online
   if (data.rttOpen !== undefined) {
-    tags.push(['rtt-open', String(Math.round(data.rttOpen))])
+    tags.push(rttOpenTag(data.rttOpen))
   }
 
   // Add delta tags
@@ -30,15 +32,7 @@ export function buildKind1066Event(data: Kind1066Data, pubkey: string = ''): Uns
     tags.push(...deltaTags(delta))
   }
 
-  tags.push(['client', '@nostr-watch/rstate'])
-
-  return {
-    kind: KIND,
-    pubkey,
-    created_at: Math.floor(Date.now() / 1000),
-    tags,
-    content: '',
-  }
+  return buildBaseEvent({ kind: KIND, pubkey, tags, clientTag: CLIENT_TAG })
 }
 
 function mapStatus(status: OperationalStatus): string {

@@ -5,28 +5,22 @@
  * Tags: [r, url], [O, "down"|"up"], [rtt-open, ms]?, [client, @nostr-watch/rstate]
  */
 
-import type { UnsignedEvent } from 'nostr-tools/pure'
 import type { Kind20066Data } from '../types.js'
+import { buildBaseEvent, relayTag, statusTag, rttOpenTag } from '@nostrwatch/publisher'
+import type { UnsignedEvent } from 'nostr-tools/pure'
 
 const KIND = 20066
+const CLIENT_TAG = '@nostrwatch/rstate'
 
 export function buildKind20066Event(data: Kind20066Data, pubkey: string = ''): UnsignedEvent {
   const tags: string[][] = [
-    ['r', data.relayUrl],
-    ['O', data.transition === 'up' ? 'online' : 'offline'],
+    relayTag(data.relayUrl),
+    statusTag(data.transition === 'up' ? 'online' : 'offline'),
   ]
 
   if (data.rttOpen !== undefined) {
-    tags.push(['rtt-open', String(Math.round(data.rttOpen))])
+    tags.push(rttOpenTag(data.rttOpen))
   }
 
-  tags.push(['client', '@nostr-watch/rstate'])
-
-  return {
-    kind: KIND,
-    pubkey,
-    created_at: Math.floor(Date.now() / 1000),
-    tags,
-    content: '',
-  }
+  return buildBaseEvent({ kind: KIND, pubkey, tags, clientTag: CLIENT_TAG })
 }

@@ -5,10 +5,12 @@
  * Tags: [category, key, value] triplets + [client, @nostr-watch/rstate]
  */
 
-import type { UnsignedEvent } from 'nostr-tools/pure'
 import type { Kind1166Data } from '../types.js'
+import { buildBaseEvent } from '@nostrwatch/publisher'
+import type { UnsignedEvent } from 'nostr-tools/pure'
 
 const KIND = 1166
+const CLIENT_TAG = '@nostrwatch/rstate'
 
 export function buildKind1166Event(data: Kind1166Data, pubkey: string = ''): UnsignedEvent {
   const tags: string[][] = []
@@ -17,13 +19,5 @@ export function buildKind1166Event(data: Kind1166Data, pubkey: string = ''): Uns
     tags.push([entry.category, entry.key, entry.value])
   }
 
-  tags.push(['client', '@nostr-watch/rstate'])
-
-  return {
-    kind: KIND,
-    pubkey,
-    created_at: Math.floor(Date.now() / 1000),
-    tags,
-    content: '',
-  }
+  return buildBaseEvent({ kind: KIND, pubkey, tags, clientTag: CLIENT_TAG })
 }

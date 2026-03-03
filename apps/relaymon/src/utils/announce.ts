@@ -63,19 +63,12 @@ export async function maybeAnnounce(config: Config, queueManager?: QueueManager)
       timeouts,
       frequency,
       checks,
-      relays
+      relays,
+      clientTag: '@nostrwatch/relaymon',
     }
   );
 
-  const announceEvents = announcer.generate();
-
-  // Add client tag to all announcement events before signing
-  for (const ev of Object.values(announceEvents)) {
-    const generated = (ev as any)?.event ?? ev;
-    if (generated?.tags && Array.isArray(generated.tags)) {
-      generated.tags.push(['client', '@nostrwatch/relaymon']);
-    }
-  }
+  announcer.generate();
 
   try {
     await announcer.sign(sk);

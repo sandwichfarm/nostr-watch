@@ -15,7 +15,7 @@ import type {
  * Parse operational status from event tags
  */
 export function parseOperationalStatus(event: DeltaEvent): OperationalStatus | undefined {
-  const oTag = event.tags.find(t => t[0] === 'O');
+  const oTag = event.tags.find(t => t[0] === 'status' || t[0] === 'O');
   if (!oTag || !oTag[1]) return undefined;
 
   const status = oTag[1];
@@ -97,7 +97,7 @@ export function parseDeltas(event: DeltaEvent): ParsedDelta[] {
   const deltas: ParsedDelta[] = [];
 
   // Metadata tags to skip
-  const metadataTags = new Set(['r', 'O', 'T', 'rtt-open', 'retry']);
+  const metadataTags = new Set(['r', 'status', 'O', 'T', 'rtt-open', 'retry']);
 
   for (const tag of event.tags) {
     const [key, value] = tag;

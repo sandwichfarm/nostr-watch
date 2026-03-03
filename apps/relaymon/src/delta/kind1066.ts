@@ -39,8 +39,8 @@ export class Kind1066 extends Event {
 
     // Add operational status tag if this is a state transition
     if (data.operationalStatus) {
-      tags.push(['O', data.operationalStatus]);
-      logger.debug(`Added operational status tag: O:${data.operationalStatus}`);
+      tags.push(['status', data.operationalStatus]);
+      logger.debug(`Added operational status tag: status:${data.operationalStatus}`);
     }
 
     // Add period tags (T tags) if provided - cascading from shortest to longest

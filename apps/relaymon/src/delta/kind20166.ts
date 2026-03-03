@@ -35,7 +35,7 @@ export class Kind20166 extends Event {
     tags.push(['r', data.url]);
 
     // Operational status (required for this event type)
-    tags.push(['O', data.operationalStatus]);
+    tags.push(['status', data.operationalStatus]);
 
     // Add RTT if online
     if (data.online && data.rttOpen !== undefined && data.rttOpen > 0) {

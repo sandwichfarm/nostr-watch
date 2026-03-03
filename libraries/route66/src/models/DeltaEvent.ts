@@ -75,7 +75,7 @@ export class DeltaEvent extends NostrEvent implements IEvent {
    * Only present when status changes
    */
   get operationalStatus(): OperationalStatus | null {
-    const status = this.tags.find((tag: NostrTag) => tag[0] === 'O')?.[1];
+    const status = this.tags.find((tag: NostrTag) => tag[0] === 'status' || tag[0] === 'O')?.[1];
     if (status === 'init' || status === 'up' || status === 'down') {
       return status;
     }

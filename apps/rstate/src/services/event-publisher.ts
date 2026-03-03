@@ -98,8 +98,17 @@ export class EventPublisherService {
         checks: [],   // rstate is an aggregator, not a direct checker
         networks: [], // monitors all networks
       })
+      
+      const announceEvents = announcer.generate()
 
-      announcer.generate()
+      // Add client tag to all announcement events before signing
+      for (const ev of Object.values(announceEvents)) {
+        const generated = (ev as any)?.event ?? ev;
+        if (generated?.tags && Array.isArray(generated.tags)) {
+          generated.tags.push(['client', '@nostrwatch/rstate']);
+        }
+      }
+
       await announcer.sign(hexSk)
       const ids = await announcer.publish()
       logger.info({ eventIds: ids, kinds: enabledKinds }, 'Published announce events (Kind 0, 10002, 10166)')

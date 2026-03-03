@@ -10,4 +10,6 @@ export * from './string';
 export * from './time';
 export * from './url';
 export * from './rng'
+export * from './keys';
+export * from './signing';
 export * from './logger';

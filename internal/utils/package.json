@@ -39,6 +39,8 @@
     "tslib": "^2.7.0"
   },
   "devDependencies": {
+    "@noble/hashes": "1.5.0",
+    "nostr-tools": "2.11.0",
     "@rollup/plugin-alias": "5.1.1",
     "@rollup/plugin-commonjs": "28.0.0",
     "@rollup/plugin-node-resolve": "15.3.0",
@@ -68,6 +70,14 @@
   "files": [
     "dist/**/*"
   ],
+  "peerDependencies": {
+    "nostr-tools": ">=2.0.0",
+    "@noble/hashes": ">=1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "nostr-tools": { "optional": true },
+    "@noble/hashes": { "optional": true }
+  },
   "engines": {
     "node": ">=14.0.0"
   }

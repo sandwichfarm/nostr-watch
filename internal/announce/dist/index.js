@@ -12,6 +12,7 @@ export class AnnounceMonitor {
     nip66Publisher;
     userMetaPublisher;
     pubkey = null;
+    clientTag;
     constructor(pubkey, options) {
         log.debug(`announce::constructor(): ${pubkey}`);
         this.setup(options);
@@ -20,7 +21,8 @@ export class AnnounceMonitor {
         this.userMetaPublisher = new Publisher(pubkey, this.userDataRelays);
     }
     setup(options) {
-        const { geo = {}, timeouts = {}, networks = {}, checks = [], owner = '', frequency = '', profile = {}, relays = [], } = options;
+        const { geo = {}, timeouts = {}, networks = {}, checks = [], owner = '', frequency = '', profile = {}, relays = [], clientTag, } = options;
+        this.clientTag = clientTag;
         this.userDataRelays = options.userDataRelays || ['wss://purplepag.es', 'wss://user.kindpag.es'];
         this.monReg = {};
         if (typeof frequency !== "string")
@@ -72,6 +74,14 @@ export class AnnounceMonitor {
         if (Object.keys(this.monProfile).length) {
             $monProfile.generateEvent({ ...this.monProfile });
             this.events["0"] = $monProfile;
+        }
+        if (this.clientTag) {
+            for (const ev of Object.values(this.events)) {
+                const generated = ev?.event ?? ev;
+                if (generated?.tags && Array.isArray(generated.tags)) {
+                    generated.tags.push(['client', this.clientTag]);
+                }
+            }
         }
         return this.events;
     }

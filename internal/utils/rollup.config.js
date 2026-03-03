@@ -87,7 +87,7 @@ export default [
       entryFileNames: '[name].cjs.js',
       exports: 'named',
     },
-    external: ['fs/promises', 'node:module'],
+    external: ['fs/promises', 'node:module', /^nostr-tools/, /^@noble\/hashes/],
     plugins: [
       ...commonPlugins,
       ...serverPlugins,
@@ -109,7 +109,7 @@ export default [
       entryFileNames: '[name].esm.js',
       exports: 'auto',
     },
-    external: ['fs/promises', 'node:module'],
+    external: ['fs/promises', 'node:module', /^nostr-tools/, /^@noble\/hashes/],
     plugins: [
       ...commonPlugins,
       ...serverPlugins,

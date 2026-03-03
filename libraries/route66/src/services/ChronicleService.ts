@@ -389,7 +389,7 @@ export class ChronicleService extends Service {
         if (options.statusOnly) {
           events = events.filter((e) =>
             Array.isArray(e.tags) &&
-            e.tags.some((t: any[]) => t?.[0] === 'O' && (t?.[1] === 'init' || t?.[1] === 'up' || t?.[1] === 'down'))
+            e.tags.some((t: any[]) => (t?.[0] === 'status' || t?.[0] === 'O') && (t?.[1] === 'init' || t?.[1] === 'up' || t?.[1] === 'down'))
           );
         }
         if (options.periods && options.periods.length > 0) {

@@ -6,7 +6,7 @@ type DeltaEventLike = {
   tags?: Array<string[]>;
 };
 
-const METADATA_TAGS = new Set(['r', 'O', 'T', 'rtt-open', 'retry']);
+const METADATA_TAGS = new Set(['r', 'status', 'O', 'T', 'rtt-open', 'retry']);
 
 function parseDeltaTag(tag: string[]): DeltaBlotterItem | null {
   const rawKey = tag?.[0];

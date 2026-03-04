@@ -1,419 +1,255 @@
 # @nostrwatch/relay-charts
 
-> Chart adapters for visualizing relay data from @nostrwatch/relay-chronicle
+Relay metric visualization with pluggable charting library adapters.
 
-Create beautiful, interactive charts from Nostr relay monitoring data using your preferred charting library.
+[![npm version](https://img.shields.io/npm/v/@nostrwatch/relay-charts?style=flat-square&label=npm)](https://www.npmjs.com/package/@nostrwatch/relay-charts)
+[![License](https://img.shields.io/github/license/sandwichfarm/nostr-watch?style=flat-square)](LICENSE)
+[![Status](https://img.shields.io/badge/status-alpha-orange?style=flat-square)](https://github.com/sandwichfarm/nostr-watch)
+[![Runtime](https://img.shields.io/badge/runtime-browser-blue?style=flat-square)](https://github.com/sandwichfarm/nostr-watch)
 
-## Features
+## Overview
 
-- **🔌 Adapter System** - Pluggable architecture for different charting libraries
-- **🌲 Tree-Shakable** - Only bundle the adapter you use
-- **📊 Multiple Chart Types** - Time series, timelines, state transitions
-- **🎨 Themeable** - Light and dark mode support
-- **⚡ Peer Dependencies** - No bloat - bring your own charting library
+`@nostrwatch/relay-charts` generates charts from Nostr relay (a WebSocket server that stores and forwards events) monitoring data — uptime, latency, NIP (Nostr Implementation Possibility) support changes — using Chart.js, Apache ECharts, or Recharts as the rendering backend. It implements a `ChartAdapter` interface so the same data pipeline produces configuration objects suitable for any of the three supported charting libraries. Data is sourced from `@nostrwatch/relay-chronicle`, which reconstructs relay state history from [NIP-66](https://github.com/nostr-protocol/nips/blob/master/66.md) kind 1066 delta events. Adapters are tree-shakable — only the adapter you import is bundled.
 
-## Supported Adapters
+## Prerequisites
 
-| Adapter | Library | Best For | Type |
-|---------|---------|----------|------|
-| **Chart.js** | [Chart.js](https://www.chartjs.org/) | Simple, performant canvas charts | Canvas |
-| **ECharts** | [Apache ECharts](https://echarts.apache.org/) | Complex, feature-rich visualizations | Canvas/SVG |
-| **Recharts** | [Recharts](https://recharts.org/) | React applications | React/SVG |
+Node.js >=20 and pnpm >=9.
+
+Install one charting library peer dependency:
+
+- `chart.js >=4` for the Chart.js adapter
+- `echarts >=5` for the Apache ECharts adapter
+- `recharts >=2` for the Recharts adapter
 
 ## Installation
 
-```bash
-npm install @nostrwatch/relay-charts @nostrwatch/relay-chronicle
+```sh
+pnpm add @nostrwatch/relay-charts @nostrwatch/relay-chronicle
+```
 
-# Install your preferred charting library (peer dependency)
-npm install chart.js        # For Chart.js adapter
-npm install echarts         # For ECharts adapter
-npm install recharts        # For Recharts adapter
+Then add your charting library:
+
+```sh
+pnpm add chart.js        # Chart.js adapter
+pnpm add echarts         # ECharts adapter
+pnpm add recharts        # Recharts adapter (React)
+```
+
+Or with npm:
+
+```sh
+npm install @nostrwatch/relay-charts @nostrwatch/relay-chronicle chart.js
 ```
 
 ## Quick Start
 
-### Chart.js Adapter
+Create an uptime timeline chart using the Chart.js adapter:
 
-```typescript
-import { createChartJsAdapter } from '@nostrwatch/relay-charts/chartjs';
-import { liveness, uptimeHistory } from '@nostrwatch/relay-chronicle';
-import Chart from 'chart.js/auto';
+```ts
+import {createChartJsAdapter} from '@nostrwatch/relay-charts/chartjs'
+import {uptimeHistory} from '@nostrwatch/relay-chronicle'
+import Chart from 'chart.js/auto'
 
-// Make Chart.js available globally
-globalThis.Chart = Chart;
+globalThis.Chart = Chart
 
-// Create adapter
-const adapter = createChartJsAdapter();
+const adapter = createChartJsAdapter()
+const storage = /* your EventStorage implementation */
+const periods = await uptimeHistory(storage, 'wss://relay.damus.io')
 
-// Get data from relay-chronicle
-const storage = /* your storage implementation */;
-const periods = await uptimeHistory(storage, 'wss://relay.example.com');
-
-// Create chart configuration
 const config = adapter.createTimelineChart(periods, {
   theme: 'dark',
-  title: 'Relay Uptime Timeline',
-  showTooltip: true,
-});
+  title: 'Relay Uptime Timeline'
+})
 
-// Initialize chart
-const container = document.getElementById('chart');
-const chart = adapter.initialize(container, config);
+const container = document.getElementById('chart') as HTMLElement
+adapter.initialize(container, config)
 ```
 
-### ECharts Adapter
+## API
 
-```typescript
-import { createEChartsAdapter } from '@nostrwatch/relay-charts/echarts';
-import { changeHistory } from '@nostrwatch/relay-chronicle';
-import * as echarts from 'echarts';
+### Adapter factories
 
-// Make ECharts available globally
-globalThis.echarts = echarts;
+Import the adapter factory for your charting library from its sub-path export. Do not import from the main entry — this ensures only your chosen adapter is bundled.
 
-// Create adapter
-const adapter = createEChartsAdapter();
-
-// Get data from relay-chronicle
-const storage = /* your storage implementation */;
-const changes = await changeHistory(storage, 'wss://relay.example.com', 'supported_nips');
-
-// Transform to time series
-import { transformChangeHistory } from '@nostrwatch/relay-charts';
-const timeSeries = transformChangeHistory(changes);
-
-// Create chart
-const config = adapter.createTimeSeriesChart(timeSeries, {
-  theme: 'light',
-  title: 'NIP Support Changes',
-  animation: true,
-});
-
-// Initialize
-const container = document.getElementById('chart');
-const chart = adapter.initialize(container, config);
+```ts
+import {createChartJsAdapter} from '@nostrwatch/relay-charts/chartjs'
+import {createEChartsAdapter} from '@nostrwatch/relay-charts/echarts'
+import {createRechartsAdapter} from '@nostrwatch/relay-charts/recharts'
 ```
 
-### Recharts Adapter (React)
+Each factory returns an object that implements `ChartAdapter`.
 
-```tsx
-import { createRechartsAdapter } from '@nostrwatch/relay-charts/recharts';
-import { extractRttTimeSeries } from '@nostrwatch/relay-charts';
-import { uptimeHistory } from '@nostrwatch/relay-chronicle';
-import {
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-} from 'recharts';
+### `ChartAdapter` interface
 
-function RelayRttChart({ relay }: { relay: string }) {
-  const [config, setConfig] = useState(null);
+All adapters implement this interface:
 
-  useEffect(() => {
-    async function loadData() {
-      const adapter = createRechartsAdapter();
-      const storage = /* your storage */;
-      const periods = await uptimeHistory(storage, relay);
-      const rttData = extractRttTimeSeries(periods);
-
-      const chartConfig = adapter.createTimeSeriesChart(rttData, {
-        title: 'RTT Over Time',
-        theme: 'light',
-      });
-
-      setConfig(chartConfig);
-    }
-
-    loadData();
-  }, [relay]);
-
-  if (!config) return <div>Loading...</div>;
-
-  return (
-    <ResponsiveContainer {...config.containerProps}>
-      <AreaChart data={config.data} margin={config.margin}>
-        {config.components.CartesianGrid && (
-          <CartesianGrid {...config.components.CartesianGrid} />
-        )}
-        <XAxis {...config.components.XAxis} />
-        <YAxis {...config.components.YAxis} />
-        {config.components.Tooltip && <Tooltip {...config.components.Tooltip} />}
-        {config.components.Legend && <Legend {...config.components.Legend} />}
-        {config.components.Area?.map((areaProps, i) => (
-          <Area key={i} {...areaProps} />
-        ))}
-      </AreaChart>
-    </ResponsiveContainer>
-  );
+```ts
+interface ChartAdapter<TConfig, TInstance> {
+  readonly name: string
+  createTimeSeriesChart(data: TimeSeriesPoint[], options?: ChartOptions): TConfig
+  createTimelineChart(data: UptimePeriod[], options?: ChartOptions): TConfig
+  createStateChart(data: StateChange[], options?: ChartOptions): TConfig
+  createChart(chartData: ChartData, options?: ChartOptions): TConfig
+  initialize?(container: HTMLElement, config: TConfig): TInstance
+  update?(instance: TInstance, chartData: ChartData, options?: ChartOptions): void
+  destroy?(instance: TInstance): void
 }
 ```
 
-## Chart Types
+**`createTimeSeriesChart(data, options?)`** — Renders continuous values over time (RTT, latency). Expects `TimeSeriesPoint[]`.
 
-### Time Series Charts
+**`createTimelineChart(data, options?)`** — Renders uptime/downtime periods as a timeline. Expects `UptimePeriod[]` from `relay-chronicle`.
 
-Display continuous values over time (RTT, metric changes, etc.)
+**`createStateChart(data, options?)`** — Renders field value changes over time (software version, ASN). Expects `StateChange[]`.
 
-```typescript
-const config = adapter.createTimeSeriesChart(
-  [
-    { timestamp: 1699000000, value: 145, label: 'RTT' },
-    { timestamp: 1699000030, value: 152, label: 'RTT' },
-    { timestamp: 1699000060, value: 138, label: 'RTT' },
-  ],
-  {
-    title: 'Response Time',
-    showGrid: true,
-    theme: 'dark',
-  }
-);
+**`initialize(container, config)`** — Mounts the chart to a DOM element. Returns the chart instance (type varies by adapter).
+
+**`destroy(instance)`** — Cleans up a mounted chart instance.
+
+### Data types
+
+```ts
+interface TimeSeriesPoint {
+  timestamp: number  // Unix timestamp
+  value: number
+  label?: string
+}
+
+interface UptimePeriod {
+  start: number      // Unix timestamp
+  end: number | null // null if ongoing
+  online: boolean
+  rtt?: number
+}
+
+interface StateChange {
+  timestamp: number  // Unix timestamp
+  from: any
+  to: any
+  field: string
+}
 ```
 
-### Timeline Charts
+### `ChartOptions`
 
-Visualize uptime/downtime periods
+All adapters accept a common options object:
 
-```typescript
-const config = adapter.createTimelineChart(
-  [
-    { start: 1699000000, end: 1699003600, online: true, rtt: 145 },
-    { start: 1699003600, end: 1699007200, online: false },
-    { start: 1699007200, end: null, online: true, rtt: 152 },
-  ],
-  {
-    title: 'Uptime Timeline',
-    colors: {
-      online: '#10b981',
-      offline: '#ef4444',
-    },
+```ts
+interface ChartOptions {
+  width?: number
+  height?: number
+  title?: string
+  theme?: 'light' | 'dark'
+  colors?: {
+    online?: string
+    offline?: string
+    primary?: string
+    secondary?: string
+    background?: string
+    text?: string
   }
-);
+  timeRange?: {start?: number; end?: number}
+  showLegend?: boolean
+  showGrid?: boolean
+  showTooltip?: boolean
+  animation?: boolean
+  responsive?: boolean
+}
 ```
 
-### State Change Charts
+### Utility functions
 
-Track field value changes over time
+Transform and aggregate relay-chronicle data before passing to an adapter:
 
-```typescript
-const config = adapter.createStateChart(
-  [
-    { timestamp: 1699000000, from: null, to: 'v2.0.0', field: 'software' },
-    { timestamp: 1699003600, from: 'v2.0.0', to: 'v2.1.0', field: 'software' },
-  ],
-  {
-    title: 'Software Version Changes',
-  }
-);
-```
-
-## Utilities
-
-### Transform relay-chronicle data to chart formats
-
-```typescript
+```ts
 import {
   transformUptimeHistory,
   transformChangeHistory,
-  transformStateChanges,
   extractRttTimeSeries,
   calculateUptimePercentage,
   aggregateTimeSeries,
-  filterByTimeRange,
-} from '@nostrwatch/relay-charts';
-
-// Extract RTT from uptime periods
-const rttData = extractRttTimeSeries(periods);
-
-// Calculate uptime percentage
-const uptime = calculateUptimePercentage(periods, {
-  start: Date.now() / 1000 - 86400, // Last 24 hours
-  end: Date.now() / 1000,
-});
-
-// Aggregate time series into hourly buckets
-const hourlyAvg = aggregateTimeSeries(timeSeries, 3600, 'avg');
-
-// Filter by time range
-const filtered = filterByTimeRange(
-  timeSeries,
-  Date.now() / 1000 - 86400, // start
-  Date.now() / 1000          // end
-);
+  filterByTimeRange
+} from '@nostrwatch/relay-charts'
 ```
 
-## Chart Options
+| Function | Description |
+|----------|-------------|
+| `extractRttTimeSeries(periods)` | Extracts RTT values from `UptimePeriod[]` as `TimeSeriesPoint[]` |
+| `calculateUptimePercentage(periods, range)` | Returns uptime percentage over a given time range |
+| `aggregateTimeSeries(series, bucketSecs, method)` | Downsamples a series into time buckets (`'avg'`, `'max'`, `'min'`) |
+| `filterByTimeRange(series, start, end)` | Filters a series to a unix timestamp range |
+| `transformUptimeHistory(periods)` | Converts `UptimePeriod[]` to the adapter-ready `ChartData` format |
+| `transformChangeHistory(changes)` | Converts `ChangeInfo[]` to `TimeSeriesPoint[]` |
 
-All adapters support a common set of options:
+### TypeScript exports
 
-```typescript
-interface ChartOptions {
-  width?: number;           // Chart width
-  height?: number;          // Chart height
-  title?: string;           // Chart title
-  theme?: 'light' | 'dark'; // Color theme
-  colors?: {                // Custom colors
-    online?: string;
-    offline?: string;
-    primary?: string;
-    secondary?: string;
-    background?: string;
-    text?: string;
-  };
-  timeRange?: {             // Time range filter
-    start?: number;
-    end?: number;
-  };
-  showLegend?: boolean;     // Show/hide legend
-  showGrid?: boolean;       // Show/hide grid
-  showTooltip?: boolean;    // Show/hide tooltip
-  animation?: boolean;      // Enable/disable animation
-  responsive?: boolean;     // Responsive sizing
-}
-```
-
-## Adapter Interface
-
-All adapters implement the `ChartAdapter` interface:
-
-```typescript
-interface ChartAdapter<TChartConfig, TChartInstance> {
-  readonly name: string;
-
-  createTimeSeriesChart(
-    data: TimeSeriesPoint[],
-    options?: ChartOptions
-  ): TChartConfig;
-
-  createTimelineChart(
-    data: UptimePeriod[],
-    options?: ChartOptions
-  ): TChartConfig;
-
-  createStateChart(
-    data: StateChange[],
-    options?: ChartOptions
-  ): TChartConfig;
-
-  createChart(
-    chartData: ChartData,
-    options?: ChartOptions
-  ): TChartConfig;
-
-  initialize?(
-    container: HTMLElement,
-    config: TChartConfig
-  ): TChartInstance;
-
-  update?(
-    instance: TChartInstance,
-    chartData: ChartData,
-    options?: ChartOptions
-  ): void;
-
-  destroy?(instance: TChartInstance): void;
-}
-```
-
-## Creating Custom Adapters
-
-You can create your own adapter for any charting library:
-
-```typescript
-import type { ChartAdapter } from '@nostrwatch/relay-charts';
-
-class MyCustomAdapter implements ChartAdapter<MyChartConfig, MyChartInstance> {
-  readonly name = 'mychart';
-
-  createTimeSeriesChart(data, options) {
-    // Transform data to your library's format
-    return {
-      // Your chart configuration
-    };
-  }
-
-  createTimelineChart(data, options) {
-    // ...
-  }
-
-  createStateChart(data, options) {
-    // ...
-  }
-
-  createChart(chartData, options) {
-    switch (chartData.type) {
-      case 'timeseries':
-        return this.createTimeSeriesChart(chartData.data, options);
-      // ...
-    }
-  }
-
-  initialize(container, config) {
-    // Initialize your chart library
-    return myChartLib.create(container, config);
-  }
-
-  update(instance, chartData, options) {
-    // Update chart with new data
-  }
-
-  destroy(instance) {
-    // Clean up
-  }
-}
-```
-
-## Examples
-
-See the `examples/` directory for complete working examples:
-
-- `chartjs-vanilla.html` - Chart.js in vanilla JavaScript
-- `echarts-node.ts` - ECharts server-side rendering
-- `recharts-react.tsx` - Recharts in a React application
-
-## Tree-Shaking
-
-This library is designed for optimal tree-shaking. Only import the adapters you use:
-
-```typescript
-// ✅ Good - only bundles Chart.js adapter
-import { createChartJsAdapter } from '@nostrwatch/relay-charts/chartjs';
-
-// ❌ Bad - might bundle all adapters (depending on bundler)
-import { createChartJsAdapter } from '@nostrwatch/relay-charts';
-```
-
-## TypeScript
-
-Full TypeScript support with type definitions for all adapters:
-
-```typescript
+```ts
 import type {
   ChartAdapter,
   ChartData,
   ChartOptions,
   TimeSeriesPoint,
   UptimePeriod,
-  StateChange,
-} from '@nostrwatch/relay-charts';
+  StateChange
+} from '@nostrwatch/relay-charts'
 
-import type { ChartJsConfig } from '@nostrwatch/relay-charts/chartjs';
-import type { EChartsConfig } from '@nostrwatch/relay-charts/echarts';
-import type { RechartsConfig } from '@nostrwatch/relay-charts/recharts';
+import type {ChartJsConfig} from '@nostrwatch/relay-charts/chartjs'
+import type {EChartsConfig} from '@nostrwatch/relay-charts/echarts'
+import type {RechartsConfig} from '@nostrwatch/relay-charts/recharts'
 ```
+
+### Creating a custom adapter
+
+Implement `ChartAdapter` to support any charting library:
+
+```ts
+import type {ChartAdapter, ChartData, ChartOptions} from '@nostrwatch/relay-charts'
+
+class MyAdapter implements ChartAdapter<MyConfig, MyInstance> {
+  readonly name = 'mycharts'
+
+  createTimeSeriesChart(data: TimeSeriesPoint[], options?: ChartOptions): MyConfig {
+    return {/* transform data to your library's format */}
+  }
+
+  createTimelineChart(data: UptimePeriod[], options?: ChartOptions): MyConfig {
+    return {/* ... */}
+  }
+
+  createStateChart(data: StateChange[], options?: ChartOptions): MyConfig {
+    return {/* ... */}
+  }
+
+  createChart(chartData: ChartData, options?: ChartOptions): MyConfig {
+    if (chartData.type === 'timeseries') return this.createTimeSeriesChart(chartData.data, options)
+    if (chartData.type === 'timeline') return this.createTimelineChart(chartData.data, options)
+    return this.createStateChart(chartData.data, options)
+  }
+
+  initialize(container: HTMLElement, config: MyConfig): MyInstance {
+    return myLib.mount(container, config)
+  }
+
+  destroy(instance: MyInstance): void {
+    instance.dispose()
+  }
+}
+```
+
+## Known Limitations
+
+No known limitations at this time.
+
+## Agent Skills
+
+No agent skills defined yet for this package.
+
+## Related Packages
+
+- [`@nostrwatch/relay-chronicle`](../relay-chronicle/README.md) — data source; relay-charts consumes `UptimePeriod[]` and `ChangeInfo[]` produced by relay-chronicle
+- [`@nostrwatch/route66`](../route66/README.md) — persistent relay state management that wraps relay-chronicle
+- [`apps/gui`](../../apps/gui/README.md) — primary consumer; the nostr-watch GUI uses relay-charts for relay monitoring dashboards
 
 ## License
 
-MIT
-
-## Related
-
-- [@nostrwatch/relay-chronicle](https://github.com/sandwichfarm/nostr-watch/tree/main/libraries/relay-chronicle) - Core relay history library
-- [Chart.js](https://www.chartjs.org/) - Simple, flexible charting
-- [Apache ECharts](https://echarts.apache.org/) - Powerful visualization library
-- [Recharts](https://recharts.org/) - Composable React charts
+[MIT](../../LICENSE)

@@ -352,23 +352,6 @@ The compiled binary will be created at `./dist/relaymon-dbcheck` and can be run 
 
 ## Docker
 
-<<<<<<< Updated upstream
-RelayMon is available as Docker images or can be built locally. There are two variants:
-
-- **Basic**: Clearnet-only monitoring
-- **Unified**: Full-stack with transparent Tor and I2P routing
-
-### Docker Compose Files
-
-All compose files are in `apps/relaymon/.docker/`:
-
-| File | Variant | Source |
-|---|---|---|
-| `docker-compose.yml` | Basic | Docker Hub (`nostrwatch/relaymon:basic`) |
-| `docker-compose.unified.yml` | Unified (tor, i2p) | Docker Hub (`nostrwatch/relaymon:unified`) |
-| `docker-compose.build.yml` | Basic | Local build (`Dockerfile.basic`) |
-| `docker-compose.build-unified.yml` | Unified (tor, i2p) | Local build (`Dockerfile.unified`) |
-=======
 RelayMon ships two Docker variants:
 
 - **Clearnet** — monitors relays over the regular internet
@@ -392,36 +375,10 @@ All compose files live in `.docker/`:
 | `docker-compose.multinet.yml` | Multinet | Docker Hub |
 | `docker-compose.build.yml` | Clearnet | Local build |
 | `docker-compose.build-multinet.yml` | Multinet | Local build |
->>>>>>> Stashed changes
 
 ### Running with Docker Compose
 
 ```bash
-<<<<<<< Updated upstream
-# Basic (Docker Hub)
-docker compose -f apps/relaymon/.docker/docker-compose.yml up -d
-
-# Unified with Tor/I2P (Docker Hub)
-docker compose -f apps/relaymon/.docker/docker-compose.unified.yml up -d
-
-# Local build (basic)
-docker compose -f apps/relaymon/.docker/docker-compose.build.yml up -d --build
-
-# Local build (unified)
-docker compose -f apps/relaymon/.docker/docker-compose.build-unified.yml up -d --build
-```
-
-### Container Architecture
-
-**Basic** runs a single relaymon container for clearnet relays.
-
-**Unified** includes:
-- **relaymon**: The main container with transparent network routing
-- **tor-proxy**: Tor SOCKS proxy for `.onion` domain routing
-- **i2pd**: I2P router for `.i2p` domain routing
-
-All network routing happens transparently at the system level. When RelayMon connects to a relay, `.onion` domains go through Tor, `.i2p` domains go through I2P, and regular domains use direct connections.
-=======
 # Clearnet (from Docker Hub)
 docker compose -f apps/relaymon/.docker/docker-compose.yml up -d
 
@@ -451,7 +408,6 @@ The multinet variant includes additional containers for network routing:
 - **i2pd** — I2P router for `.i2p` addresses
 
 Traffic is routed transparently based on domain type without any application code changes.
->>>>>>> Stashed changes
 
 ### Checking Container Logs
 
@@ -461,11 +417,7 @@ docker logs relaymon
 
 ### Configuration
 
-<<<<<<< Updated upstream
-Customize RelayMon through `config.yaml`. For the unified variant, include all network types:
-=======
 Customize RelayMon through `config.yaml`. For multinet, include all network types:
->>>>>>> Stashed changes
 
 ```yaml
 relaymon:

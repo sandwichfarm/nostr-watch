@@ -2,11 +2,7 @@ services:
   relaymon:
     build:
       context: ../../..
-<<<<<<< Updated upstream
-      dockerfile: ./apps/relaymon/.docker/Dockerfile.basic
-=======
       dockerfile: ./apps/relaymon/.docker/Dockerfile.clearnet
->>>>>>> Stashed changes
       no_cache: true
     container_name: relaymon
     restart: unless-stopped

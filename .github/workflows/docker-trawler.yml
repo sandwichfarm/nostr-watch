@@ -1,4 +1,4 @@
-name: Publish relaymon Docker images
+name: Publish trawler Docker images
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ on:
         type: string
   push:
     tags:
-      - 'relaymon-v*'
+      - 'trawler-v*'
 
 jobs:
   docker:
@@ -24,9 +24,9 @@ jobs:
           if [[ -n "${{ inputs.tag }}" ]]; then
             VERSION="${{ inputs.tag }}"
           elif [[ "${{ github.ref_type }}" == "tag" ]]; then
-            VERSION="${GITHUB_REF_NAME#relaymon-v}"
+            VERSION="${GITHUB_REF_NAME#trawler-v}"
           else
-            VERSION="$(jq -r '.version' apps/relaymon/deno.json)"
+            VERSION="$(jq -r '.version' apps/trawler/deno.json)"
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
@@ -39,26 +39,15 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build & push multinet image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: apps/relaymon/.docker/Dockerfile.multinet
-          push: true
-          platforms: linux/amd64
-          tags: |
-            nostrwatch/relaymon:latest
-            nostrwatch/relaymon:multinet
-            nostrwatch/relaymon:${{ steps.version.outputs.version }}
-            nostrwatch/relaymon:${{ steps.version.outputs.version }}-multinet
-
       - name: Build & push clearnet image
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: apps/relaymon/.docker/Dockerfile.clearnet
+          file: apps/trawler/.docker/Dockerfile.clearnet
           push: true
           platforms: linux/amd64
           tags: |
-            nostrwatch/relaymon:clearnet
-            nostrwatch/relaymon:${{ steps.version.outputs.version }}-clearnet
+            nostrwatch/trawler:latest
+            nostrwatch/trawler:clearnet
+            nostrwatch/trawler:${{ steps.version.outputs.version }}
+            nostrwatch/trawler:${{ steps.version.outputs.version }}-clearnet

@@ -18,7 +18,11 @@ data/*
 
 # ignore custom docker compose files, leave the defaults
 .docker/*.yml
-.docker/*.yaml 
+.docker/*.yaml
 !.docker/docker-compose.yml
+!.docker/docker-compose.unified.yml
+!.docker/docker-compose.build.yml
+!.docker/docker-compose.build-unified.yml
 !.docker/Dockerfile.unified
+!.docker/Dockerfile.basic
 

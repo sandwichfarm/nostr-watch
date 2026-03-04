@@ -46,6 +46,10 @@ Recent decisions affecting current work:
 - [Init]: markdownlint-cli2 for README linting; lychee for link checking in CI
 - [Init]: Existing apps/gui/scripts/deploy-bunny.mjs to be adapted for docs deployment
 - [Init]: LIMIT-01 and LIMIT-02 (Known Limitations pattern, deprecation stubs) anchored to Phase 1 styleguide so all package phases inherit the pattern
+- [01-01]: MD043 with wildcards chosen over custom markdownlint rule — built-in, no implementation cost, sufficient for required-section enforcement
+- [01-01]: Globs scoped to libraries/apps/internal package READMEs only — prevents linting .planning/ and docs/ pages against package-README ruleset
+- [01-01]: Required MD043 anchors: Overview, Installation, Quick Start, Known Limitations, License — wildcards absorb optional sections
+- [01-01]: Deprecation stubs use blockquote banner with no badges — deprecated packages get minimal stubs, not full READMEs
 - [01-02]: Used vitepress dev docs + srcDir='..' to keep .vitepress inside docs/ while scanning repo root
 - [01-02]: Wildcard rewrite docs/:path(.*) handles all docs pages without per-file rewrites
 - [01-02]: PackageIndex defaults nostrwatch.status to alpha if absent — packages update metadata in later phases
@@ -63,6 +67,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-04T17:07:51Z
-Stopped at: Completed 01-foundation/01-02-PLAN.md — VitePress site configured
+Last session: 2026-03-04T17:09:14Z
+Stopped at: Completed 01-foundation/01-01-PLAN.md — README styleguide and markdownlint-cli2 config created
 Resume file: .planning/phases/01-foundation/01-03-PLAN.md

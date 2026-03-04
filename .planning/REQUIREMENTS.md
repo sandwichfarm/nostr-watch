@@ -9,10 +9,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Foundation
 
-- [ ] **FOUND-01**: README styleguide defines consistent section order (header, badges, overview, prerequisites, install, usage, API, config, agent skills, related packages, contributing, license)
-- [ ] **FOUND-02**: README styleguide defines badge standards (build status, version, license, runtime support)
-- [ ] **FOUND-03**: README styleguide defines code example format (language tags, import style, realistic minimal examples)
-- [ ] **FOUND-04**: README styleguide defines tone/voice guide (audience assumptions, level of explanation, writing style)
+- [x] **FOUND-01**: README styleguide defines consistent section order (header, badges, overview, prerequisites, install, usage, API, config, agent skills, related packages, contributing, license)
+- [x] **FOUND-02**: README styleguide defines badge standards (build status, version, license, runtime support)
+- [x] **FOUND-03**: README styleguide defines code example format (language tags, import style, realistic minimal examples)
+- [x] **FOUND-04**: README styleguide defines tone/voice guide (audience assumptions, level of explanation, writing style)
 - [ ] **FOUND-05**: CI enforcement validates README format via markdownlint-cli2 in GitHub Actions
 - [ ] **FOUND-06**: CI enforcement validates links via lychee link checker in GitHub Actions
 - [x] **FOUND-07**: VitePress configuration aggregates all package docs into unified site with search and navigation
@@ -63,8 +63,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Known Limitations
 
-- [ ] **LIMIT-01**: Each README surfaces relevant issues from CONCERNS.md in a "Known Limitations" section
-- [ ] **LIMIT-02**: Deprecated packages have prominent deprecation notice with link to replacement
+- [x] **LIMIT-01**: Each README surfaces relevant issues from CONCERNS.md in a "Known Limitations" section
+- [x] **LIMIT-02**: Deprecated packages have prominent deprecation notice with link to replacement
 
 ### Claude Code Skills
 
@@ -113,16 +113,16 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FOUND-01 | Phase 1 | Pending |
-| FOUND-02 | Phase 1 | Pending |
-| FOUND-03 | Phase 1 | Pending |
-| FOUND-04 | Phase 1 | Pending |
+| FOUND-01 | Phase 1 | Complete |
+| FOUND-02 | Phase 1 | Complete |
+| FOUND-03 | Phase 1 | Complete |
+| FOUND-04 | Phase 1 | Complete |
 | FOUND-05 | Phase 1 | Pending |
 | FOUND-06 | Phase 1 | Pending |
 | FOUND-07 | Phase 1 | Complete |
 | FOUND-08 | Phase 1 | Complete |
-| LIMIT-01 | Phase 1 | Pending |
-| LIMIT-02 | Phase 1 | Pending |
+| LIMIT-01 | Phase 1 | Complete |
+| LIMIT-02 | Phase 1 | Complete |
 | INT-01 | Phase 2 | Pending |
 | INT-02 | Phase 2 | Pending |
 | INT-03 | Phase 2 | Pending |

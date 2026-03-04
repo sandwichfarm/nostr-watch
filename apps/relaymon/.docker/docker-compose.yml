@@ -1,6 +1,10 @@
 services:
   relaymon:
+<<<<<<< Updated upstream
     image: nostrwatch/relaymon:basic
+=======
+    image: nostrwatch/relaymon:clearnet
+>>>>>>> Stashed changes
     container_name: relaymon
     restart: unless-stopped
     volumes:

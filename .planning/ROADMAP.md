@@ -64,7 +64,7 @@ Plans:
   3. A developer can read the nocap README and understand what an adapter is, what interface it must implement, and how to register it — without reading source
   4. The NIP-66 library README explains the protocol's event kinds and data model clearly enough that a developer unfamiliar with NIP-66 understands what the library validates
   5. Libraries with entries in CONCERNS.md have accurate "Known Limitations" sections
-**Plans:** 7 plans
+**Plans:** 5/7 plans executed
 
 Plans:
 - [ ] 03-01-PLAN.md — Protocol/validation layer: nostrings, nip66, schemata, schemata-js-ajv
@@ -135,7 +135,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Complete   | 2026-03-04 |
 | 2. Internal Package READMEs | 3/3 | Complete   | 2026-03-04 |
-| 3. Library Package READMEs | 0/7 | Not started | - |
+| 3. Library Package READMEs | 5/7 | In Progress|  |
 | 4. App Package READMEs | 0/4 | Not started | - |
 | 5. Claude Code Skills | 0/5 | Not started | - |
 | 6. Deployment and CI Pipeline | 0/2 | Not started | - |

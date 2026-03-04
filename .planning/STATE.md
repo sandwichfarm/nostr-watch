@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-04T20:09:31.393Z"
+last_updated: "2026-03-04T23:12:42.380Z"
 progress:
-  total_phases: 2
+  total_phases: 3
   completed_phases: 2
-  total_plans: 7
-  completed_plans: 7
+  total_plans: 14
+  completed_plans: 12
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-04)
 
 **Core value:** Every package in the monorepo has clear, consistent, useful documentation that serves both human developers and AI agents working on the codebase.
-**Current focus:** Phase 2 — Internal Package READMEs
+**Current focus:** Phase 3 — Library Package READMEs
 
 ## Current Position
 
-Phase: 2 of 6 (Internal Package READMEs)
-Plan: 3 of 4 in current phase — 02-03 COMPLETE
-Status: Phase 2 in progress — 02-01, 02-02, 02-03 done; ready for 02-04
-Last activity: 2026-03-04 — nwcache deprecation stub, redis BullMQ dashboard README, seed full TypeScript rewrite (six seeding sources)
+Phase: 3 of 6 (Library Package READMEs)
+Plan: 4 of 5 in current phase — 03-04 COMPLETE
+Status: Phase 3 in progress — 03-01, 03-02, 03-03, 03-04 done; ready for 03-05
+Last activity: 2026-03-04 — route66 README with two-dimensional adapter pattern, StateManager / ChronicleService / MonitorService APIs, all three CONCERNS.md Known Limitations
 
-Progress: [████░░░░░░] 27%
+Progress: [████░░░░░░] 30%
 
 ## Performance Metrics
 
@@ -42,9 +42,10 @@ Progress: [████░░░░░░] 27%
 |-------|-------|-------|----------|
 | 01-foundation | 4 | ~11 min | ~2.75 min |
 | 02-internal-package-readmes | 3 | ~8 min | ~2.7 min |
+| 03-library-package-readmes | 3 | ~8 min | ~2.7 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-04 (5 min), 02-01 (6 min), 02-02 (2 min), 02-03 (2 min)
+- Last 5 plans: 02-02 (2 min), 02-03 (2 min), 03-01 (est.), 03-02 (est.), 03-03 (2 min)
 - Trend: Fast execution
 
 *Updated after each plan completion*
@@ -82,6 +83,20 @@ Recent decisions affecting current work:
 - [02-03]: Deprecation stub must include all MD043-required sections even though styleguide template omits them — both constraints satisfied simultaneously
 - [02-03]: internal/redis is a BullMQ queue monitoring dashboard (not just a Redis client wrapper) — documented based on actual index.js behavior
 - [02-03]: seed README rewritten from scratch; existing README had valuable content but wrong structure (missing Overview/Quick Start/Known Limitations, JavaScript not TypeScript)
+- [03-02]: nocap-route66 gets full README (not deprecation stub) because it has real source; supersession by internal/publisher noted in Known Limitations
+- [03-02]: Kind10166 documented even though not exported from package index — accurately reflects source state
+- [03-02]: Kind0 documented as commented-out stub, not omitted — honest about current source state
+- [03-03]: nocap README documents IResultData.status and IResultData.data fields inline alongside IResult — avoids cross-referencing ResultValidator source
+- [03-03]: SSL browser limitation documented in Known Limitations from Base.ts can_check() logic — no CONCERNS.md entry but real behavioral boundary
+- [03-03]: Geo-depends-on-DNS behavior documented from ensure_check_dependencies() source — critical for users who request geo without dns
+- [03-04]: Route66 constructor takes IAdaptersArgument directly ({cacheAdapter, websocketAdapter}), not useAdapters() method — research doc was inaccurate; source is authoritative
+- [03-04]: ICacheAdapter has CLOSE() and WIPE() methods beyond what research documented — always read the actual interface file
+- [03-04]: StateManager is a pure static class — documented as static API not instance API
+- [03-04]: cache NostrToolsAdapter does not exist on disk — only NostrSqliteAdapter (cache) and NostrToolsAdapter (websocket)
+- [Phase 03-06]: worker-relay README fixed MD001 violation — original started with H2, rewritten with H1 heading
+- [Phase 03-06]: negentropy README corrects NIP identification — implements NIP-77 (Negentropy) not NIP-49 (Private Key Encryption)
+- [Phase 03-06]: negentropy README replaces all yarn install commands with pnpm per monorepo convention
+- [Phase 03-06]: idb/kit/sanitize/transform deprecation stubs include all MD043-required sections (same pattern as Phase 2 nwcache stub)
 
 ### Pending Todos
 
@@ -90,11 +105,11 @@ None yet.
 ### Blockers/Concerns
 
 - [Research flag] Phase 5 (Skills): Skill description evaluation methodology is not settled; test each skill with 5+ natural language phrasings before shipping
-- [Research flag] Phase 3 (Library READMEs): nocap, route66, publisher adapter patterns need codebase deep-read before docs can be written accurately
+- [Research flag] Phase 3 (Library READMEs): route66 adapter patterns need codebase deep-read before docs can be written accurately (nocap now complete)
 - [Research gap] VitePress rewrites + relative image paths: validate early in Phase 1 with a real example (e.g., libraries/auditor uses .assets/ relative paths)
 
 ## Session Continuity
 
-Last session: 2026-03-04T20:03:32Z
-Stopped at: Completed 02-internal-package-readmes/02-03-PLAN.md — nwcache deprecation stub, redis BullMQ dashboard README, seed full TypeScript rewrite; all pass markdownlint-cli2
-Resume file: .planning/phases/02-internal-package-readmes/02-04-PLAN.md
+Last session: 2026-03-04T23:10:59Z
+Stopped at: Completed 03-library-package-readmes/03-04-PLAN.md — route66 README with adapter pattern, StateManager / ChronicleService APIs, all three CONCERNS.md Known Limitations
+Resume file: .planning/phases/03-library-package-readmes/03-05-PLAN.md

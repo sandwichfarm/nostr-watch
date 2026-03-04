@@ -59,7 +59,6 @@ export function createPolicySetTool(ctx: PolicyToolsContext): CVMTool {
           type: 'object',
           properties: {
             windowStrategy: { type: 'string', enum: ['global', 'per-author'] },
-            lookbackSeconds: { type: 'number' },
             quorum: { type: 'number' },
             labelQuorum: { type: 'number' },
             madScale: { type: 'number' },

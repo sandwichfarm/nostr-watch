@@ -34,24 +34,25 @@
     "docker:stop": "docker-compose down"
   },
   "dependencies": {
-    "applesauce-relay": "^4.0.0",
     "@contextvm/sdk": "^0.6.2",
     "@fastify/cors": "^11.1.0",
     "@fastify/swagger": "^9.5.2",
     "@modelcontextprotocol/sdk": "^1.26.0",
     "@noble/hashes": "^1.5.0",
     "@noble/secp256k1": "^2.1.0",
+    "@nostrwatch/announce": "workspace:*",
+    "@nostrwatch/publisher": "workspace:*",
+    "@nostrwatch/utils": "workspace:*",
     "@scalar/fastify-api-reference": "^1.29.6",
     "ajv": "^8.17.1",
+    "applesauce-relay": "^4.0.0",
     "dotenv": "^17.2.3",
     "fastify": "^5.7.3",
+    "nostr-tools": "^2.11.0",
     "pino": "^9.5.0",
     "pino-pretty": "^13.0.0",
-    "nostr-tools": "^2.11.0",
     "ws": "^8.18.0",
-    "yaml": "^2.4.5",
-    "@nostrwatch/announce": "workspace:*",
-    "@nostrwatch/publisher": "workspace:*"
+    "yaml": "^2.4.5"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

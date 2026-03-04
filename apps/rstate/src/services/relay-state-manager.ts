@@ -216,11 +216,11 @@ export class RelayStateManager {
   /**
    * Get the maximum monitor frequency (longest interval between checks).
    * This represents the worst-case time before all monitors have had a chance to check a relay.
-   * Falls back to policy.lookbackSeconds if no monitors are registered.
+   * Falls back to 3600s (1 hour) if no monitors are registered.
    */
   private getMaxMonitorFrequency(): number {
     const monitors = this.observationStore.getAllMonitors()
-    if (monitors.length === 0) return this.policy.lookbackSeconds
+    if (monitors.length === 0) return 3600
     return Math.max(...monitors.map(m => m.frequency))
   }
 

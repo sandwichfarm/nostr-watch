@@ -30,7 +30,6 @@ export function registerPolicyRoutes(app: FastifyInstance, context: RestContext)
   // POST /policy - Update policy (requires auth)
   app.post<{
     Body: {
-      lookbackSeconds?: number
       quorum?: number
       labelQuorum?: number
       madScale?: number
@@ -42,7 +41,6 @@ export function registerPolicyRoutes(app: FastifyInstance, context: RestContext)
       body: {
         type: 'object',
         properties: {
-          lookbackSeconds: { type: 'number', minimum: 60 },
           quorum: { type: 'number', minimum: 0, maximum: 1 },
           labelQuorum: { type: 'number', minimum: 0, maximum: 1 },
           madScale: { type: 'number', minimum: 0 },

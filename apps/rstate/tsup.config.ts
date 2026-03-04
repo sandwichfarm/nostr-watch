@@ -16,6 +16,7 @@ export default defineConfig({
   minify: false,
   target: 'node20',
   platform: 'node',
+  noExternal: [/^@nostrwatch\//],
   onSuccess: async () => {
     // Copy all JSON schemas to dist (if schemas directory exists)
     const srcDir = 'src/schemas'

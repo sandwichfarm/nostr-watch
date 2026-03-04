@@ -255,8 +255,8 @@ export class RestServer {
         const entry = routePriceMap.get(routeOptions.url)
         if (!entry) return
 
-        if (!routeOptions.schema) routeOptions.schema = {}
-        if (!(routeOptions.schema as any).response) (routeOptions.schema as any).response = {}
+        if (!routeOptions.schema) routeOptions.schema = {};
+        if (!(routeOptions.schema as any).response) (routeOptions.schema as any).response = {};
 
         ((routeOptions.schema as any).response as Record<number, any>)[402] = {
           ...payment402Response,

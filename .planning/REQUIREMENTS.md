@@ -36,18 +36,18 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **LIB-03**: README.md for libraries/auditor following styleguide (Nostr event validation)
 - [ ] **LIB-04**: README.md for libraries/schemata following styleguide (JSON Schema definitions)
 - [ ] **LIB-05**: README.md for libraries/schemata-js-ajv following styleguide (AJV validation)
-- [ ] **LIB-06**: README.md for libraries/relay-charts following styleguide (relay metric visualization)
-- [ ] **LIB-07**: README.md for libraries/relay-chronicle following styleguide (relay event history)
-- [ ] **LIB-08**: README.md for libraries/nostrawl following styleguide (queue-based web crawler)
-- [ ] **LIB-09**: README.md for libraries/db following styleguide (database client abstractions)
-- [ ] **LIB-10**: README.md for libraries/idb following styleguide (IndexedDB wrapper)
-- [ ] **LIB-11**: README.md for libraries/websocket following styleguide (WebSocket connection management)
+- [x] **LIB-06**: README.md for libraries/relay-charts following styleguide (relay metric visualization)
+- [x] **LIB-07**: README.md for libraries/relay-chronicle following styleguide (relay event history)
+- [x] **LIB-08**: README.md for libraries/nostrawl following styleguide (queue-based web crawler)
+- [x] **LIB-09**: README.md for libraries/db following styleguide (database client abstractions)
+- [x] **LIB-10**: README.md for libraries/idb following styleguide (IndexedDB wrapper)
+- [x] **LIB-11**: README.md for libraries/websocket following styleguide (WebSocket connection management)
 - [ ] **LIB-12**: README.md for libraries/nip66 following styleguide (NIP-66 relay check protocol)
 - [ ] **LIB-13**: README.md for libraries/nostrings following styleguide (relay URL validation)
-- [ ] **LIB-14**: README.md for libraries/memory-relay following styleguide (in-memory relay)
-- [ ] **LIB-15**: README.md for libraries/negentropy following styleguide (NIP-49 support)
-- [ ] **LIB-16**: README.md for libraries/worker-relay following styleguide (web worker relay)
-- [ ] **LIB-17**: README.md for libraries/uptime-kuma-monitor following styleguide (uptime monitoring)
+- [x] **LIB-14**: README.md for libraries/memory-relay following styleguide (in-memory relay)
+- [x] **LIB-15**: README.md for libraries/negentropy following styleguide (NIP-49 support)
+- [x] **LIB-16**: README.md for libraries/worker-relay following styleguide (web worker relay)
+- [x] **LIB-17**: README.md for libraries/uptime-kuma-monitor following styleguide (uptime monitoring)
 
 ### Internal Package READMEs
 
@@ -137,18 +137,18 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LIB-03 | Phase 3 | Complete |
 | LIB-04 | Phase 3 | Pending |
 | LIB-05 | Phase 3 | Pending |
-| LIB-06 | Phase 3 | Pending |
-| LIB-07 | Phase 3 | Pending |
-| LIB-08 | Phase 3 | Pending |
-| LIB-09 | Phase 3 | Pending |
-| LIB-10 | Phase 3 | Pending |
-| LIB-11 | Phase 3 | Pending |
+| LIB-06 | Phase 3 | Complete |
+| LIB-07 | Phase 3 | Complete |
+| LIB-08 | Phase 3 | Complete |
+| LIB-09 | Phase 3 | Complete |
+| LIB-10 | Phase 3 | Complete |
+| LIB-11 | Phase 3 | Complete |
 | LIB-12 | Phase 3 | Pending |
 | LIB-13 | Phase 3 | Pending |
-| LIB-14 | Phase 3 | Pending |
-| LIB-15 | Phase 3 | Pending |
-| LIB-16 | Phase 3 | Pending |
-| LIB-17 | Phase 3 | Pending |
+| LIB-14 | Phase 3 | Complete |
+| LIB-15 | Phase 3 | Complete |
+| LIB-16 | Phase 3 | Complete |
+| LIB-17 | Phase 3 | Complete |
 | APP-01 | Phase 4 | Pending |
 | APP-02 | Phase 4 | Pending |
 | APP-03 | Phase 4 | Pending |

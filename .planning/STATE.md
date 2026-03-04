@@ -23,11 +23,11 @@ See: .planning/PROJECT.md (updated 2026-03-04)
 ## Current Position
 
 Phase: 3 of 6 (Library Package READMEs)
-Plan: 4 of 5 in current phase — 03-04 COMPLETE
-Status: Phase 3 in progress — 03-01, 03-02, 03-03, 03-04 done; ready for 03-05
-Last activity: 2026-03-04 — route66 README with two-dimensional adapter pattern, StateManager / ChronicleService / MonitorService APIs, all three CONCERNS.md Known Limitations
+Plan: 5 of 5 in current phase — 03-05 COMPLETE (Phase 3 complete)
+Status: Phase 3 complete — 03-01, 03-02, 03-03, 03-04, 03-05 all done
+Last activity: 2026-03-04 — db README (initDB/seedNewRelay/getExpiredRelays API), websocket README (UniversalWebSocket cross-platform API), memory-relay README (AbstractMemoryRelay + SvelteMemoryRelay reactive methods)
 
-Progress: [████░░░░░░] 30%
+Progress: [█████░░░░░] 34%
 
 ## Performance Metrics
 
@@ -101,6 +101,10 @@ Recent decisions affecting current work:
 - [Phase 03-07]: nostrawl package name is bare 'nostrawl' (not scoped) — badge URL and install command confirmed from package.json
 - [Phase 03-07]: relay-charts adapter sub-path imports documented as primary import pattern for tree-shaking; main entry noted as adapter-dependent
 - [Phase 03-07]: relay-chronicle EventStorage interface documented with nostr-tools SimplePool as Quick Start example — matches real-world usage
+- [03-05]: db README preserves all API method signatures from existing 97-line README; structure rewritten to match styleguide MD043 anchors
+- [03-05]: websocket README documents static create() factory and default constructor autoConnect behavior — callers need both patterns
+- [03-05]: memory-relay SvelteMemoryRelay import path documented as /svelte subpath per package.json exports field
+- [03-05]: AbstractMemoryRelay qualify/instantiate lifecycle callbacks documented from on() method — critical extensibility points not obvious from class name
 
 ### Pending Todos
 
@@ -114,6 +118,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-04T23:11:22Z
-Stopped at: Completed 03-library-package-readmes/03-02-PLAN.md — auditor README (Auditor class, 8 NIP suites, filter range Known Limitation from CONCERNS.md), nocap-route66 README (Transform/Kind30166 tag table, supersession by publisher)
-Resume file: .planning/phases/03-library-package-readmes/03-03-PLAN.md
+Last session: 2026-03-04T23:11:47Z
+Stopped at: Completed 03-library-package-readmes/03-05-PLAN.md — db README (SQLite relay state), websocket README (UniversalWebSocket cross-platform), memory-relay README (AbstractMemoryRelay + SvelteMemoryRelay reactive API)
+Resume file: .planning/phases/04-app-readmes/04-01-PLAN.md (next phase)

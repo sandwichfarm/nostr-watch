@@ -1,111 +1,120 @@
 # @nostrwatch/nostrings
 
-An opinionated TypeScript library for sanitizing, validating, and normalizing fuzzy strings from nostr. 
+Relay URL sanitization, validation, normalization, and deduplication for the Nostr protocol.
 
-## Features
+[![npm version](https://img.shields.io/npm/v/@nostrwatch/nostrings?style=flat-square&label=npm)](https://www.npmjs.com/package/@nostrwatch/nostrings)
+[![License](https://img.shields.io/github/license/sandwichfarm/nostr-watch?style=flat-square)](LICENSE)
+[![Status](https://img.shields.io/badge/status-alpha-orange?style=flat-square)](https://github.com/sandwichfarm/nostr-watch)
+[![Runtime](https://img.shields.io/badge/runtime-node%20%7C%20browser-blue?style=flat-square)](https://github.com/sandwichfarm/nostr-watch)
 
-- WebSocket relay URLs (`ws://`, `wss://`)
-  - **Sanitize URLs**: Removes unnecessary characters, fragments, trailing dots, and slashes.
-  - **Validate URLs**: Ensures that relay URLs meet specific conditions (valid WebSocket protocol, no local IPs, etc.).
-  - **Normalize URLs**: Strips unnecessary URL components like search and hash parameters.
-  - **Deduplication**: Removes duplicate relay URLs after sanitization and normalization.
-  
+## Overview
+
+`@nostrwatch/nostrings` cleans, validates, normalizes, and deduplicates relay URLs for the Nostr protocol. A relay is a WebSocket server that stores and forwards Nostr events; relay URLs must conform to `wss://` or `ws://` format and must not point to local or reserved IP ranges. This library provides four composable operations — sanitize, qualify, normalize, and dedup — that handle messy real-world relay URL inputs from user input, scraped lists, and network data.
+
+The `sanitize` function runs all four operations in a single call and is the recommended entry point for most use cases.
 
 ## Installation
 
-Install via npm or yarn:
-
-```bash
-npm install @nostrwatch/relay-sanitizer
+```sh
+pnpm add @nostrwatch/nostrings
 ```
 
-or
+Or with npm:
 
-```bash
-yarn add @nostrwatch/relay-sanitizer
+```sh
+npm install @nostrwatch/nostrings
 ```
 
-## Usage
+## Quick Start
 
-### Basic Example
+```ts
+import {sanitize, normalize} from '@nostrwatch/nostrings'
 
-```typescript
-import { sanitize } from '@nostrwatch/relay-sanitizer';
-
-const relays = [
-  'wss://RELAY.EXAMPLE.COM./#ok',
-  '  wss://RELAY.EXAMPLE.COM ',
+const raw = [
+  '  WSS://RELAY.DAMUS.IO/#fragment  ',
+  'wss://nos.lol',
   'ws://localhost',
-  'ws://192.168.1.1'
-  'gm'
-];
+  'wss://nos.lol'
+]
 
-const sanitizedRelays = sanitize(relays);
-
-console.log(sanitizedRelays);
-// Output: ['wss://relay.example.com']
+const clean = sanitize(raw)
+console.log(clean)
+// ['wss://relay.damus.io/', 'wss://nos.lol/']
 ```
 
-## Opinions
+## API
 
-- Websocket URL
-  - There is no such thing as perfect regex for a URL.
-  - When dealing with data at scale, `localhost` and local/lan reserved IP ranges are not URLs
-  - Relies on `URL().toString()` for normalization. 
-  - `hash` and `searchParams` are removed. 
-  - `(blob_hash)` is always removed.
-  - Relays are not unique to hostname, paths can be different relays. 
-  - Alternative protocols like `i2p` and `tor` are considered valid. 
-  - `tlds` are not validated. 
+### `sanitize(relays, rules?)`
 
-### API
+```ts
+sanitize(relays: string[], rules?: RuleSet): string[] | void
+```
 
-#### `sanitize(relays: string[]): string[] | void`
+Runs the full pipeline on an array of relay URLs: splits comma-separated entries, sanitizes each URL, filters with `qualifyRelayUrl`, applies optional custom discriminators and mutators, normalizes, and deduplicates. Returns the cleaned array, or `void` if the input is empty.
 
-Sanitizes and normalizes an array of relay URLs, removing duplicates.
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `relays` | `string[]` | Raw relay URLs to process |
+| `rules` | `RuleSet` (optional) | Custom discriminators (filter functions) and mutators (transform functions) |
 
-- **relays**: An array of relay URLs.
-- **Returns**: An array of sanitized and valid relay URLs, or `void` if the input is empty.
+### `qualify(relay)`
 
-#### `maybeSplitRelayList(relays: string[]): string[]`
+```ts
+qualifyRelayUrl(relay: string): boolean
+```
 
-Splits URLs by commas if multiple relays are provided in a single string.
+Returns `true` if the URL passes all qualification checks: starts with `wss://` or `ws://`, is not a local or reserved IP, is not localhost, and has no embedded protocol strings. Returns `false` otherwise. Uses a pessimistic invalidation pattern — any failure disqualifies the URL.
 
-- **relays**: An array of relay URLs.
-- **Returns**: An array of individual relay URLs.
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `relay` | `string` | A single relay URL string |
 
-#### `sanitizeRelayUrl(relay: string): string`
+### `normalize(relay)`
 
-Sanitizes a single relay URL by removing unwanted characters and normalizing it.
+```ts
+normalizeRelayUrl(relay: string): string
+```
 
-- **relay**: A single relay URL string.
-- **Returns**: A sanitized and normalized relay URL string.
+Strips the `hash`, `search`, and `username` components from a relay URL using the browser-native `URL` API. Returns the canonical form, or an empty string if the URL cannot be parsed.
 
-#### `qualifyRelayUrl(relay: string): boolean`
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `relay` | `string` | A single relay URL string |
 
-Validates whether the relay URL meets the required conditions (valid protocol, no local IPs, etc.).
+### `dedup(relays)`
 
-- **relay**: A single relay URL string.
-- **Returns**: `true` if valid, `false` otherwise.
+```ts
+dedup(relays: string[]): string[]
+```
 
-#### `normalizeRelayUrl(relay: string): string`
+Removes duplicate URLs from an array using a `Set`. Returns a new array with unique entries only.
 
-Normalizes a single relay URL by stripping out hash and search parameters.
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `relays` | `string[]` | Array of relay URLs, possibly with duplicates |
 
-- **relay**: A single relay URL string.
-- **Returns**: A normalized relay URL string or an empty string if invalid.
+### Additional exports
 
-#### `dedup(relays: string[]): string[]`
+- `sanitizeRelayUrl(relay: string): string` — sanitizes a single URL (lowercase, trim, remove fragments, trailing slashes, and blob hashes)
+- `maybeSplitRelayList(relays: string[]): string[]` — splits comma-separated relay strings into individual entries
+- `normalizeRelayUrls(relays: string[]): string[]` — normalizes an array of relay URLs
+- `normalizeRelayUrlAcc(acc: string[], relay: string): string[]` — reducer form of `normalizeRelayUrl` for use with `Array.reduce`
+- `isLocal(url: string): boolean` — returns `true` if the URL is a local file path or network path
+- `isLocalNet(url: string): boolean` — returns `true` if the URL hostname is in a reserved IP range (127.x, 10.x, 192.168.x, 172.16-31.x)
 
-Removes duplicate URLs from the array.
+## Known Limitations
 
-- **relays**: An array of relay URLs.
-- **Returns**: A deduplicated array of relay URLs.
+No known limitations at this time.
 
-## Logging
+## Agent Skills
 
-This library uses the `@nostrwatch/logger` package for logging debug and warning messages.
+No agent skills defined yet for this package.
+
+## Related Packages
+
+- [`@nostrwatch/nocap`](../nocap/README.md) — relay capability checker that uses nostrings for URL validation before connecting
+- [`@nostrwatch/route66`](../route66/README.md) — relay aggregation and state management; passes relay URLs through nostrings before storage
 
 ## License
 
-MIT License.
+[MIT](../../LICENSE)

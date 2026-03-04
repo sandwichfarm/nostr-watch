@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-04T17:44:51.721Z"
+last_updated: "2026-03-04T20:05:02.747Z"
 progress:
-  total_phases: 1
-  completed_phases: 1
-  total_plans: 4
-  completed_plans: 4
+  total_phases: 2
+  completed_phases: 2
+  total_plans: 7
+  completed_plans: 7
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-04)
 
 **Core value:** Every package in the monorepo has clear, consistent, useful documentation that serves both human developers and AI agents working on the codebase.
-**Current focus:** Phase 1 — Foundation
+**Current focus:** Phase 2 — Internal Package READMEs
 
 ## Current Position
 
-Phase: 1 of 6 (Foundation)
-Plan: 4 of 4 in current phase — Phase 1 COMPLETE
-Status: Phase 1 complete — all 4 plans done; ready for Phase 2
-Last activity: 2026-03-04 — markdownlint-cli2 added to devDependencies; VitePress data loader now discovers all 38 package directories; FOUND-05 and FOUND-08 gaps closed
+Phase: 2 of 6 (Internal Package READMEs)
+Plan: 1 of N in current phase — 02-01 COMPLETE
+Status: Phase 2 in progress — 02-01 done; internal/utils, internal/logger, internal/kinds READMEs written
+Last activity: 2026-03-04 — Three markdownlint-passing READMEs for utils, logger, kinds
 
-Progress: [██░░░░░░░░] 17%
+Progress: [███░░░░░░░] 20%
 
 ## Performance Metrics
 
@@ -41,12 +41,14 @@ Progress: [██░░░░░░░░] 17%
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-foundation | 4 | ~11 min | ~2.75 min |
+| 02-internal-package-readmes | 1 | ~6 min | ~6 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (2 min), 01-02 (2 min), 01-03 (2 min), 01-04 (5 min)
+- Last 5 plans: 01-01 (2 min), 01-02 (2 min), 01-03 (2 min), 01-04 (5 min), 02-01 (6 min)
 - Trend: Fast execution
 
 *Updated after each plan completion*
+| Phase 02-internal-package-readmes P02 | 2 | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -72,6 +74,12 @@ Recent decisions affecting current work:
 - [01-03]: Link check scope extends to docs/**/*.md beyond lint:docs script — link checking VitePress pages is CI-only
 - [Phase 01-foundation]: Directory glob {apps,libraries,internal}/*/ chosen over package.json glob to ensure all directories discovered regardless of manifest presence
 - [Phase 01-foundation]: fs.existsSync gates package.json reads in data loader — directories without manifest fall back to slug name, empty metadata, alpha status
+- [02-01]: logger README documents Winston (not Pino) — package.json confirms Winston is the actual dependency
+- [02-01]: logger Known Limitations surfaces console.log bypass concern from CONCERNS.md rather than "no known limitations"
+- [02-01]: utils API covers 5 of ~15 modules (keys, signing, arrays, URL, browser) per actual import patterns in consuming libraries
+- [02-01]: kinds Quick Start contains one-sentence note (no code block) to satisfy MD043 without fabricating non-functional examples
+- [Phase 02-internal-package-readmes]: publisher README documents both language tag validation AND console.log concerns from CONCERNS.md as separate Known Limitations
+- [Phase 02-internal-package-readmes]: controlflow Known Limitations left as 'none' — no CONCERNS.md entries, no source TODOs found
 
 ### Pending Todos
 
@@ -85,6 +93,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-04T17:43:56Z
-Stopped at: Completed 01-foundation/01-04-PLAN.md — markdownlint-cli2 added, VitePress data loader discovers all 38 package directories; Phase 1 fully complete
-Resume file: .planning/phases/02-*/02-01-PLAN.md
+Last session: 2026-03-04T20:08:00Z
+Stopped at: Completed 02-internal-package-readmes/02-01-PLAN.md — utils, logger, kinds READMEs written; all pass markdownlint-cli2
+Resume file: .planning/phases/02-internal-package-readmes/02-02-PLAN.md

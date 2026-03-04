@@ -51,14 +51,14 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Internal Package READMEs
 
-- [ ] **INT-01**: README.md for internal/utils following styleguide (shared utility functions)
-- [ ] **INT-02**: README.md for internal/publisher following styleguide (event publishing with adapters)
-- [ ] **INT-03**: README.md for internal/logger following styleguide (structured logging)
-- [ ] **INT-04**: README.md for internal/announce following styleguide (announcement system)
+- [x] **INT-01**: README.md for internal/utils following styleguide (shared utility functions)
+- [x] **INT-02**: README.md for internal/publisher following styleguide (event publishing with adapters)
+- [x] **INT-03**: README.md for internal/logger following styleguide (structured logging)
+- [x] **INT-04**: README.md for internal/announce following styleguide (announcement system)
 - [ ] **INT-05**: README.md for internal/nwcache following styleguide (caching layer)
 - [ ] **INT-06**: README.md for internal/redis following styleguide (Redis integration)
-- [ ] **INT-07**: README.md for internal/controlflow following styleguide (control flow utilities)
-- [ ] **INT-08**: README.md for internal/kinds following styleguide (Nostr event kind registry)
+- [x] **INT-07**: README.md for internal/controlflow following styleguide (control flow utilities)
+- [x] **INT-08**: README.md for internal/kinds following styleguide (Nostr event kind registry)
 - [ ] **INT-09**: README.md for internal/seed following styleguide (seed data management)
 
 ### Known Limitations
@@ -123,14 +123,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FOUND-08 | Phase 1 | Complete |
 | LIMIT-01 | Phase 1 | Complete |
 | LIMIT-02 | Phase 1 | Complete |
-| INT-01 | Phase 2 | Pending |
-| INT-02 | Phase 2 | Pending |
-| INT-03 | Phase 2 | Pending |
-| INT-04 | Phase 2 | Pending |
+| INT-01 | Phase 2 | Complete |
+| INT-02 | Phase 2 | Complete |
+| INT-03 | Phase 2 | Complete |
+| INT-04 | Phase 2 | Complete |
 | INT-05 | Phase 2 | Pending |
 | INT-06 | Phase 2 | Pending |
-| INT-07 | Phase 2 | Pending |
-| INT-08 | Phase 2 | Pending |
+| INT-07 | Phase 2 | Complete |
+| INT-08 | Phase 2 | Complete |
 | INT-09 | Phase 2 | Pending |
 | LIB-01 | Phase 3 | Pending |
 | LIB-02 | Phase 3 | Pending |

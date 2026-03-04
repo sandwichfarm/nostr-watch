@@ -13,7 +13,7 @@ Six phases build the complete nostr-watch developer documentation system. Founda
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - README styleguide, CI enforcement, VitePress config, and documentation standards that all later phases depend on (completed 2026-03-04)
-- [ ] **Phase 2: Internal Package READMEs** - README.md for all 9 internal/ packages following styleguide
+- [x] **Phase 2: Internal Package READMEs** - README.md for all 9 internal/ packages following styleguide (completed 2026-03-04)
 - [ ] **Phase 3: Library Package READMEs** - README.md for all 17 libraries/ packages including adapter-pattern documentation
 - [ ] **Phase 4: App Package READMEs** - README.md for all 8 apps/ packages with deprecation stubs where applicable
 - [ ] **Phase 5: Claude Code Skills** - Monorepo operation, adapter creation, NIP-66, and debugging skills written against stable READMEs
@@ -47,7 +47,7 @@ Plans:
   2. Every internal/ README passes the markdownlint-cli2 CI check without modification
   3. The VitePress site renders a route for each internal/ package with its README as the index page
   4. Packages with entries in CONCERNS.md have a "Known Limitations" section that accurately describes those concerns
-**Plans:** 3 plans
+**Plans:** 3/3 plans complete
 
 Plans:
 - [ ] 02-01: Write READMEs for internal/utils, internal/logger, internal/kinds (simplest utilities)
@@ -132,7 +132,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Complete   | 2026-03-04 |
-| 2. Internal Package READMEs | 0/3 | Not started | - |
+| 2. Internal Package READMEs | 3/3 | Complete   | 2026-03-04 |
 | 3. Library Package READMEs | 0/5 | Not started | - |
 | 4. App Package READMEs | 0/4 | Not started | - |
 | 5. Claude Code Skills | 0/5 | Not started | - |

@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-03-04)
 ## Current Position
 
 Phase: 1 of 6 (Foundation)
-Plan: 0 of 3 in current phase
-Status: Planned — ready to execute
-Last activity: 2026-03-04 — Roadmap created; 51 requirements mapped to 6 phases
+Plan: 2 of 3 in current phase
+Status: In Progress — plan 01-02 complete, plan 01-03 pending
+Last activity: 2026-03-04 — VitePress site configured with rewrites, card index, data loader, content pages
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█░░░░░░░░░] 10%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 0
-- Average duration: -
-- Total execution time: 0 hours
+- Total plans completed: 2
+- Average duration: ~2 min
+- Total execution time: ~4 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 01-foundation | 2 | ~4 min | ~2 min |
 
 **Recent Trend:**
-- Last 5 plans: none yet
-- Trend: -
+- Last 5 plans: 01-01 (2 min), 01-02 (2 min)
+- Trend: Fast execution
 
 *Updated after each plan completion*
 
@@ -46,6 +46,10 @@ Recent decisions affecting current work:
 - [Init]: markdownlint-cli2 for README linting; lychee for link checking in CI
 - [Init]: Existing apps/gui/scripts/deploy-bunny.mjs to be adapted for docs deployment
 - [Init]: LIMIT-01 and LIMIT-02 (Known Limitations pattern, deprecation stubs) anchored to Phase 1 styleguide so all package phases inherit the pattern
+- [01-02]: Used vitepress dev docs + srcDir='..' to keep .vitepress inside docs/ while scanning repo root
+- [01-02]: Wildcard rewrite docs/:path(.*) handles all docs pages without per-file rewrites
+- [01-02]: PackageIndex defaults nostrwatch.status to alpha if absent — packages update metadata in later phases
+- [01-02]: Sidebar built from actual disk scan (includes kit, nocap-route66, sanitize, transform not in STRUCTURE.md)
 
 ### Pending Todos
 
@@ -59,6 +63,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-04
-Stopped at: Phase 1 planned (3 plans, 2 waves, verification passed) — ready to run /gsd:execute-phase 1
-Resume file: .planning/phases/01-foundation/
+Last session: 2026-03-04T17:07:51Z
+Stopped at: Completed 01-foundation/01-02-PLAN.md — VitePress site configured
+Resume file: .planning/phases/01-foundation/01-03-PLAN.md

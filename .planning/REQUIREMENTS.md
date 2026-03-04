@@ -15,8 +15,8 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **FOUND-04**: README styleguide defines tone/voice guide (audience assumptions, level of explanation, writing style)
 - [ ] **FOUND-05**: CI enforcement validates README format via markdownlint-cli2 in GitHub Actions
 - [ ] **FOUND-06**: CI enforcement validates links via lychee link checker in GitHub Actions
-- [ ] **FOUND-07**: VitePress configuration aggregates all package docs into unified site with search and navigation
-- [ ] **FOUND-08**: Package discovery index page lists all 30+ packages with type, status, one-line description, and link
+- [x] **FOUND-07**: VitePress configuration aggregates all package docs into unified site with search and navigation
+- [x] **FOUND-08**: Package discovery index page lists all 30+ packages with type, status, one-line description, and link
 
 ### App READMEs
 
@@ -119,8 +119,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FOUND-04 | Phase 1 | Pending |
 | FOUND-05 | Phase 1 | Pending |
 | FOUND-06 | Phase 1 | Pending |
-| FOUND-07 | Phase 1 | Pending |
-| FOUND-08 | Phase 1 | Pending |
+| FOUND-07 | Phase 1 | Complete |
+| FOUND-08 | Phase 1 | Complete |
 | LIMIT-01 | Phase 1 | Pending |
 | LIMIT-02 | Phase 1 | Pending |
 | INT-01 | Phase 2 | Pending |

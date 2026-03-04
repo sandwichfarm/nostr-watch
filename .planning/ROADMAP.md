@@ -47,7 +47,7 @@ Plans:
   2. Every internal/ README passes the markdownlint-cli2 CI check without modification
   3. The VitePress site renders a route for each internal/ package with its README as the index page
   4. Packages with entries in CONCERNS.md have a "Known Limitations" section that accurately describes those concerns
-**Plans**: TBD
+**Plans:** 3 plans
 
 Plans:
 - [ ] 02-01: Write READMEs for internal/utils, internal/logger, internal/kinds (simplest utilities)

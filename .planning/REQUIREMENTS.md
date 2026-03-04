@@ -55,11 +55,11 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **INT-02**: README.md for internal/publisher following styleguide (event publishing with adapters)
 - [x] **INT-03**: README.md for internal/logger following styleguide (structured logging)
 - [x] **INT-04**: README.md for internal/announce following styleguide (announcement system)
-- [ ] **INT-05**: README.md for internal/nwcache following styleguide (caching layer)
-- [ ] **INT-06**: README.md for internal/redis following styleguide (Redis integration)
+- [x] **INT-05**: README.md for internal/nwcache following styleguide (caching layer)
+- [x] **INT-06**: README.md for internal/redis following styleguide (Redis integration)
 - [x] **INT-07**: README.md for internal/controlflow following styleguide (control flow utilities)
 - [x] **INT-08**: README.md for internal/kinds following styleguide (Nostr event kind registry)
-- [ ] **INT-09**: README.md for internal/seed following styleguide (seed data management)
+- [x] **INT-09**: README.md for internal/seed following styleguide (seed data management)
 
 ### Known Limitations
 
@@ -127,11 +127,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INT-02 | Phase 2 | Complete |
 | INT-03 | Phase 2 | Complete |
 | INT-04 | Phase 2 | Complete |
-| INT-05 | Phase 2 | Pending |
-| INT-06 | Phase 2 | Pending |
+| INT-05 | Phase 2 | Complete |
+| INT-06 | Phase 2 | Complete |
 | INT-07 | Phase 2 | Complete |
 | INT-08 | Phase 2 | Complete |
-| INT-09 | Phase 2 | Pending |
+| INT-09 | Phase 2 | Complete |
 | LIB-01 | Phase 3 | Pending |
 | LIB-02 | Phase 3 | Pending |
 | LIB-03 | Phase 3 | Pending |

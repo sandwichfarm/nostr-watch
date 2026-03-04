@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: unknown
-last_updated: "2026-03-04T20:05:02.747Z"
+status: in-progress
+last_updated: "2026-03-04T20:03:32Z"
 progress:
-  total_phases: 2
-  completed_phases: 2
-  total_plans: 7
-  completed_plans: 7
+  total_phases: 6
+  completed_phases: 1
+  total_plans: 8
+  completed_plans: 8
 ---
 
 # Project State
@@ -23,32 +23,31 @@ See: .planning/PROJECT.md (updated 2026-03-04)
 ## Current Position
 
 Phase: 2 of 6 (Internal Package READMEs)
-Plan: 1 of N in current phase — 02-01 COMPLETE
-Status: Phase 2 in progress — 02-01 done; internal/utils, internal/logger, internal/kinds READMEs written
-Last activity: 2026-03-04 — Three markdownlint-passing READMEs for utils, logger, kinds
+Plan: 3 of 4 in current phase — 02-03 COMPLETE
+Status: Phase 2 in progress — 02-01, 02-02, 02-03 done; ready for 02-04
+Last activity: 2026-03-04 — nwcache deprecation stub, redis BullMQ dashboard README, seed full TypeScript rewrite (six seeding sources)
 
-Progress: [███░░░░░░░] 20%
+Progress: [████░░░░░░] 27%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
+- Total plans completed: 8
 - Average duration: ~2 min
-- Total execution time: ~11 min
+- Total execution time: ~19 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-foundation | 4 | ~11 min | ~2.75 min |
-| 02-internal-package-readmes | 1 | ~6 min | ~6 min |
+| 02-internal-package-readmes | 3 | ~8 min | ~2.7 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (2 min), 01-02 (2 min), 01-03 (2 min), 01-04 (5 min), 02-01 (6 min)
+- Last 5 plans: 01-04 (5 min), 02-01 (6 min), 02-02 (2 min), 02-03 (2 min)
 - Trend: Fast execution
 
 *Updated after each plan completion*
-| Phase 02-internal-package-readmes P02 | 2 | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -80,6 +79,9 @@ Recent decisions affecting current work:
 - [02-01]: kinds Quick Start contains one-sentence note (no code block) to satisfy MD043 without fabricating non-functional examples
 - [Phase 02-internal-package-readmes]: publisher README documents both language tag validation AND console.log concerns from CONCERNS.md as separate Known Limitations
 - [Phase 02-internal-package-readmes]: controlflow Known Limitations left as 'none' — no CONCERNS.md entries, no source TODOs found
+- [02-03]: Deprecation stub must include all MD043-required sections even though styleguide template omits them — both constraints satisfied simultaneously
+- [02-03]: internal/redis is a BullMQ queue monitoring dashboard (not just a Redis client wrapper) — documented based on actual index.js behavior
+- [02-03]: seed README rewritten from scratch; existing README had valuable content but wrong structure (missing Overview/Quick Start/Known Limitations, JavaScript not TypeScript)
 
 ### Pending Todos
 
@@ -93,6 +95,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-04T20:08:00Z
-Stopped at: Completed 02-internal-package-readmes/02-01-PLAN.md — utils, logger, kinds READMEs written; all pass markdownlint-cli2
-Resume file: .planning/phases/02-internal-package-readmes/02-02-PLAN.md
+Last session: 2026-03-04T20:03:32Z
+Stopped at: Completed 02-internal-package-readmes/02-03-PLAN.md — nwcache deprecation stub, redis BullMQ dashboard README, seed full TypeScript rewrite; all pass markdownlint-cli2
+Resume file: .planning/phases/02-internal-package-readmes/02-04-PLAN.md

@@ -33,7 +33,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **LIB-01**: README.md for libraries/nocap following styleguide (adapter-based relay capability discovery)
 - [x] **LIB-02**: README.md for libraries/route66 following styleguide (relay aggregation + state management)
-- [ ] **LIB-03**: README.md for libraries/auditor following styleguide (Nostr event validation)
+- [x] **LIB-03**: README.md for libraries/auditor following styleguide (Nostr event validation)
 - [ ] **LIB-04**: README.md for libraries/schemata following styleguide (JSON Schema definitions)
 - [ ] **LIB-05**: README.md for libraries/schemata-js-ajv following styleguide (AJV validation)
 - [ ] **LIB-06**: README.md for libraries/relay-charts following styleguide (relay metric visualization)
@@ -134,7 +134,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INT-09 | Phase 2 | Complete |
 | LIB-01 | Phase 3 | Complete |
 | LIB-02 | Phase 3 | Complete |
-| LIB-03 | Phase 3 | Pending |
+| LIB-03 | Phase 3 | Complete |
 | LIB-04 | Phase 3 | Pending |
 | LIB-05 | Phase 3 | Pending |
 | LIB-06 | Phase 3 | Pending |

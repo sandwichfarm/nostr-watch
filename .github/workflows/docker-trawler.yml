@@ -39,15 +39,13 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build & push clearnet image
+      - name: Build & push trawler image
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: apps/trawler/.docker/Dockerfile.clearnet
+          file: apps/trawler/.docker/Dockerfile
           push: true
           platforms: linux/amd64
           tags: |
             nostrwatch/trawler:latest
-            nostrwatch/trawler:clearnet
             nostrwatch/trawler:${{ steps.version.outputs.version }}
-            nostrwatch/trawler:${{ steps.version.outputs.version }}-clearnet

@@ -1,15 +1,16 @@
 services:
   relaymon:
-    image: nostrwatch/relaymon:clearnet
+    image: nostrwatch/relaymon:latest
     container_name: relaymon
     restart: unless-stopped
     volumes:
-      - ../data:/opt/data
-      - ../.docker.env:/app/.env
-      - ../.docker.env:/app/nostr-watch/apps/relaymon/.env
-      - ../config.docker.yaml:/opt/config.yaml
-      - ../data/relays.db:/opt/relays.db
+      - ./data:/opt/data
+      - ./relaymon.env:/app/.env
+      - ./relaymon.env:/app/nostr-watch/apps/relaymon/.env
+      - ./relaymon-config.yaml:/opt/config.yaml
+      - ./data/relays.db:/opt/relays.db
     environment:
+      - RELAYMON_MODE=clearnet
       - RELAYMON_CONFIG_PATH=/opt/config.yaml
       - RELAYMON_DB_PATH=/opt/relays.db
       - RELAYMON_SKIP_PID_CHECK=true
@@ -17,14 +18,14 @@ services:
       - "host.docker.internal:host-gateway"
 
   trawler:
-    image: nostrwatch/trawler:clearnet
+    image: nostrwatch/trawler:latest
     container_name: trawler
     restart: unless-stopped
     volumes:
-      - ../../trawler/.docker.env:/app/.env
-      - ../../trawler/.docker.env:/app/nostr-watch/apps/trawler/.env
-      - ../../trawler/config.docker.yaml:/app/nostr-watch/apps/trawler/config.yaml
-      - ../data/relays.db:/opt/relays.db
+      - ./trawler.env:/app/.env
+      - ./trawler.env:/app/nostr-watch/apps/trawler/.env
+      - ./trawler-config.yaml:/app/nostr-watch/apps/trawler/config.yaml
+      - ./data/relays.db:/opt/relays.db
     environment:
       - TRAWLER_CONFIG_PATH=/app/nostr-watch/apps/trawler/config.yaml
       - TRAWLER_DB_PATH=/opt/relays.db

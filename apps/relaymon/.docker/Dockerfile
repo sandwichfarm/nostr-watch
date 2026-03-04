@@ -2,7 +2,7 @@ FROM --platform=linux/amd64 debian:bullseye-slim
 
 WORKDIR /app
 
-# Install Deno and runtime dependencies
+# Install all dependencies (superset of clearnet + multinet)
 RUN apt-get update && apt-get install -y \
     ca-certificates \
     curl \
@@ -44,19 +44,23 @@ ENV PATH="${GOPATH}/bin:${PATH}"
 RUN git clone https://github.com/sandwichfarm/hedproxy.git && \
     cd hedproxy && \
     go build -o /usr/local/bin/hedproxy . && \
-    chmod +x /usr/local/bin/hedproxy
+    chmod +x /usr/local/bin/hedproxy && \
+    cd / && \
+    rm -rf /hedproxy /root/go /usr/local/go
 
 # Create data directory
 RUN mkdir -p /app/data
 
-# Create scripts directory
-RUN mkdir -p /usr/local/bin
-
 # Copy entrypoint script
 COPY apps/relaymon/.docker/scripts/entrypoint.sh /usr/local/bin/entrypoint.sh
-
-# Make scripts executable
 RUN chmod +x /usr/local/bin/entrypoint.sh
+
+# Copy default proxy configs (used in multinet mode)
+COPY apps/relaymon/.docker/config/danted.conf /etc/danted.conf
+COPY apps/relaymon/.docker/config/proxychains.conf /etc/proxychains.conf
+
+# Default to clearnet mode
+ENV RELAYMON_MODE=clearnet
 
 # First, copy only the deno.lock file (if it exists) to cache dependencies
 WORKDIR /app/nostr-watch
@@ -69,5 +73,4 @@ COPY . .
 WORKDIR /app/nostr-watch/apps/relaymon
 RUN deno cache --reload --no-remote index.ts || echo "Dependency caching failed, will try at runtime"
 
-# Use our simplified entrypoint script
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

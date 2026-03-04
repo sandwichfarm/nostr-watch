@@ -403,10 +403,9 @@ export class CVMServer {
     // Availability tools (short TTL caching)
     const availabilityTtl = 30 // seconds
     const filterHash = (filters: any) => (filters ? JSON.stringify(filters) : 'none')
-    const defaultLookback = this.core.query.policy.get().lookbackSeconds
     registry.registerTool(
       createRelaysOnlineTool(toolsContext),
-      { enabled: true, cacheKeyFn: (p: any) => `availability:online:${p.onlineWindowSeconds || defaultLookback}:${filterHash(p.filters)}`, ttlSeconds: availabilityTtl }
+      { enabled: true, cacheKeyFn: (p: any) => `availability:online:${p.onlineWindowSeconds || 'auto'}:${filterHash(p.filters)}`, ttlSeconds: availabilityTtl }
     )
     registry.registerTool(
       createRelaysOfflineTool(toolsContext),

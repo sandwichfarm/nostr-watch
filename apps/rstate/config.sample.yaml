@@ -35,7 +35,6 @@ rest:
     maxBurst: 100
 
 aggregation:
-  lookbackSeconds: 21600
   quorum: 0.5
   labelQuorum: 0.3
   madScale: 3.0

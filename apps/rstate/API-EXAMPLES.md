@@ -197,7 +197,6 @@ curl -X PUT http://localhost:3000/policy \
   -H "Content-Type: application/json" \
   -H "Authorization: Nostr BASE64_AUTH_EVENT" \
   -d '{
-    "lookbackSeconds": 10800,
     "quorum": 0.6,
     "labelQuorum": 0.4
   }'

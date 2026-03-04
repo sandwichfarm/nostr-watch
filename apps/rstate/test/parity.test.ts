@@ -403,7 +403,6 @@ describe('StateCore Parity Tests', () => {
       const policy = core.query.policy.get()
 
       expect(policy).toBeDefined()
-      expect(policy.lookbackSeconds).toBe(DEFAULT_POLICY.lookbackSeconds)
       expect(policy.quorum).toBe(DEFAULT_POLICY.quorum)
     })
 

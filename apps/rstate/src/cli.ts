@@ -97,10 +97,6 @@ async function validateConfig() {
     }
 
     // Check numeric ranges
-    if (config.aggregation.lookbackSeconds < 300) {
-      warnings.push(`AGG_LOOKBACK_SECONDS is very short: ${config.aggregation.lookbackSeconds}s (minimum recommended: 300s)`)
-    }
-
     if (config.aggregation.quorum < 0 || config.aggregation.quorum > 1) {
       errors.push(`AGG_QUORUM must be between 0 and 1, got: ${config.aggregation.quorum}`)
     }
@@ -150,7 +146,6 @@ async function validateConfig() {
         console.log(`  REST API: disabled`)
       }
       console.log(`  Ingestion relays: ${config.ingestRelays.length}`)
-      console.log(`  Lookback window: ${config.aggregation.lookbackSeconds}s (${Math.round(config.aggregation.lookbackSeconds / 3600)}h)`)
       console.log(`  Cache: ${config.cache.maxSize} entries, ${config.cache.ttlSeconds}s TTL`)
       return 0
     }
@@ -208,7 +203,6 @@ async function showConfig() {
     config.ingestRelays.forEach(relay => console.log(`    - ${relay}`))
 
     console.log('\nAggregation Policy:')
-    console.log(`  Lookback: ${config.aggregation.lookbackSeconds}s (${Math.round(config.aggregation.lookbackSeconds / 3600)}h)`)
     console.log(`  Quorum: ${config.aggregation.quorum}`)
     console.log(`  Label Quorum: ${config.aggregation.labelQuorum}`)
     console.log(`  MAD Scale: ${config.aggregation.madScale}`)

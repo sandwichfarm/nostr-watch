@@ -113,13 +113,68 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (populated by roadmapper) | | |
+| FOUND-01 | Phase 1 | Pending |
+| FOUND-02 | Phase 1 | Pending |
+| FOUND-03 | Phase 1 | Pending |
+| FOUND-04 | Phase 1 | Pending |
+| FOUND-05 | Phase 1 | Pending |
+| FOUND-06 | Phase 1 | Pending |
+| FOUND-07 | Phase 1 | Pending |
+| FOUND-08 | Phase 1 | Pending |
+| LIMIT-01 | Phase 1 | Pending |
+| LIMIT-02 | Phase 1 | Pending |
+| INT-01 | Phase 2 | Pending |
+| INT-02 | Phase 2 | Pending |
+| INT-03 | Phase 2 | Pending |
+| INT-04 | Phase 2 | Pending |
+| INT-05 | Phase 2 | Pending |
+| INT-06 | Phase 2 | Pending |
+| INT-07 | Phase 2 | Pending |
+| INT-08 | Phase 2 | Pending |
+| INT-09 | Phase 2 | Pending |
+| LIB-01 | Phase 3 | Pending |
+| LIB-02 | Phase 3 | Pending |
+| LIB-03 | Phase 3 | Pending |
+| LIB-04 | Phase 3 | Pending |
+| LIB-05 | Phase 3 | Pending |
+| LIB-06 | Phase 3 | Pending |
+| LIB-07 | Phase 3 | Pending |
+| LIB-08 | Phase 3 | Pending |
+| LIB-09 | Phase 3 | Pending |
+| LIB-10 | Phase 3 | Pending |
+| LIB-11 | Phase 3 | Pending |
+| LIB-12 | Phase 3 | Pending |
+| LIB-13 | Phase 3 | Pending |
+| LIB-14 | Phase 3 | Pending |
+| LIB-15 | Phase 3 | Pending |
+| LIB-16 | Phase 3 | Pending |
+| LIB-17 | Phase 3 | Pending |
+| APP-01 | Phase 4 | Pending |
+| APP-02 | Phase 4 | Pending |
+| APP-03 | Phase 4 | Pending |
+| APP-04 | Phase 4 | Pending |
+| APP-05 | Phase 4 | Pending |
+| APP-06 | Phase 4 | Pending |
+| APP-07 | Phase 4 | Pending |
+| APP-08 | Phase 4 | Pending |
+| SKILL-01 | Phase 5 | Pending |
+| SKILL-02 | Phase 5 | Pending |
+| SKILL-03 | Phase 5 | Pending |
+| SKILL-04 | Phase 5 | Pending |
+| SKILL-05 | Phase 5 | Pending |
+| SKILL-06 | Phase 5 | Pending |
+| SKILL-07 | Phase 5 | Pending |
+| SKILL-08 | Phase 5 | Pending |
+| SKILL-09 | Phase 5 | Pending |
+| DEPLOY-01 | Phase 6 | Pending |
+| DEPLOY-02 | Phase 6 | Pending |
+| DEPLOY-03 | Phase 6 | Pending |
 
 **Coverage:**
 - v1 requirements: 51 total
-- Mapped to phases: 0
-- Unmapped: 51
+- Mapped to phases: 51
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-04*
-*Last updated: 2026-03-04 after initial definition*
+*Last updated: 2026-03-04 after roadmap creation*

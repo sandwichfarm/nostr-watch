@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-04T23:13:00.428Z"
+last_updated: "2026-03-04T23:13:05.179Z"
 progress:
   total_phases: 3
   completed_phases: 3
@@ -98,6 +98,9 @@ Recent decisions affecting current work:
 - [Phase 03-06]: negentropy README corrects NIP identification — implements NIP-77 (Negentropy) not NIP-49 (Private Key Encryption)
 - [Phase 03-06]: negentropy README replaces all yarn install commands with pnpm per monorepo convention
 - [Phase 03-06]: idb/kit/sanitize/transform deprecation stubs include all MD043-required sections (same pattern as Phase 2 nwcache stub)
+- [Phase 03-07]: nostrawl package name is bare 'nostrawl' (not scoped) — badge URL and install command confirmed from package.json
+- [Phase 03-07]: relay-charts adapter sub-path imports documented as primary import pattern for tree-shaking; main entry noted as adapter-dependent
+- [Phase 03-07]: relay-chronicle EventStorage interface documented with nostr-tools SimplePool as Quick Start example — matches real-world usage
 
 ### Pending Todos
 

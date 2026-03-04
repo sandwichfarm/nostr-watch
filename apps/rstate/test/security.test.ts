@@ -15,7 +15,6 @@ describe('Security Tests', () => {
     core = initStateCore({
       aggregation: {
         windowStrategy: 'global',
-        lookbackSeconds: 21600,
         quorum: 0.5,
         labelQuorum: 0.3,
         madScale: 3,

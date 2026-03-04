@@ -122,6 +122,9 @@ export class EventPublisherService {
     const stateMap = new Map<string, RelayState>()
     for (const s of allStates) stateMap.set(s.relayUrl, s)
 
+    // Compute online set once (avoids iterating all states per-relay)
+    const onlineSet = new Set(this.core.query.relays.online())
+
     // Process changed relays: detect deltas and transitions
     for (const url of changedRelays) {
       const curr = stateMap.get(url)
@@ -139,7 +142,7 @@ export class EventPublisherService {
 
       // Detect operational transitions
       const wasOnline = this.operationalStatuses.get(url)
-      const isOnline = this.isRelayOnline(curr)
+      const isOnline = onlineSet.has(url)
       const currentStatus: 'online' | 'offline' = isOnline ? 'online' : 'offline'
 
       if (wasOnline !== undefined && wasOnline !== currentStatus) {
@@ -166,9 +169,9 @@ export class EventPublisherService {
     }
 
     // Initialize states for relays we haven't seen before
-    for (const [url, state] of stateMap) {
+    for (const [url] of stateMap) {
       if (!this.operationalStatuses.has(url)) {
-        this.operationalStatuses.set(url, this.isRelayOnline(state) ? 'online' : 'offline')
+        this.operationalStatuses.set(url, onlineSet.has(url) ? 'online' : 'offline')
       }
     }
 
@@ -316,15 +319,6 @@ export class EventPublisherService {
     } catch (err) {
       logger.error({ err }, 'Failed to publish Kind 1166 snapshot')
     }
-  }
-
-  private isRelayOnline(state: RelayState): boolean {
-    // A relay is online if it has a recent lastOpenAt
-    if (!state.lastOpenAt) return false
-    const now = Math.floor(Date.now() / 1000)
-    // Use a 2x lookback window as generous threshold
-    const threshold = this.core.query.policy.get().lookbackSeconds
-    return (now - state.lastOpenAt) < threshold
   }
 
   private getOperationalStatus(url: string): OperationalStatus {

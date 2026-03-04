@@ -8,7 +8,6 @@
 export interface AggregationPolicy {
   // Window strategy
   windowStrategy: 'global' | 'per-author'
-  lookbackSeconds: number  // default: 21600 (6 hours)
 
   // Quorum thresholds
   quorum: number           // min support ratio for booleans (0-1)
@@ -37,7 +36,6 @@ export interface AggregationPolicy {
  */
 export const DEFAULT_POLICY: AggregationPolicy = {
   windowStrategy: 'global',
-  lookbackSeconds: 21600,
   quorum: 0.5,
   labelQuorum: 0.3,
   madScale: 3.0,

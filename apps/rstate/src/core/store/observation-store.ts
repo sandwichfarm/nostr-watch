@@ -128,20 +128,17 @@ export class ObservationStore {
   }
 
   /**
-   * Get all observations for a relay within the lookback window
+   * Get all observations for a relay (returns all retained observations)
    */
-  getObservations(relayUrl: string, now: number = Date.now()): RelayObservation[] {
+  getObservations(relayUrl: string): RelayObservation[] {
     const relayMap = this.observations.get(relayUrl)
     if (!relayMap) return []
 
-    const cutoff = now / 1000 - this.policy.lookbackSeconds
     const observations: RelayObservation[] = []
 
     for (const authorObs of relayMap.values()) {
       for (const obs of authorObs) {
-        if (obs.created_at >= cutoff) {
-          observations.push(obs)
-        }
+        observations.push(obs)
       }
     }
 
@@ -151,16 +148,14 @@ export class ObservationStore {
   /**
    * Get observations for a relay from a specific author
    */
-  getObservationsByAuthor(relayUrl: string, author: string, now: number = Date.now()): RelayObservation[] {
+  getObservationsByAuthor(relayUrl: string, author: string): RelayObservation[] {
     const relayMap = this.observations.get(relayUrl)
     if (!relayMap) return []
 
     const authorObs = relayMap.get(author)
     if (!authorObs) return []
 
-    const cutoff = now / 1000 - this.policy.lookbackSeconds
-
-    return authorObs.filter((obs) => obs.created_at >= cutoff)
+    return [...authorObs]
   }
 
   /**
@@ -198,10 +193,21 @@ export class ObservationStore {
   }
 
   /**
-   * Evict old observations outside the lookback window
+   * Get dynamic retention seconds based on monitor frequencies.
+   * Uses 3x the slowest monitor's frequency (floor 1h, fallback 24h when no monitors).
+   */
+  private getRetentionSeconds(): number {
+    const monitors = this.getAllMonitors()
+    if (monitors.length === 0) return 86400 // 24h fallback when no monitors yet
+    const maxFreq = Math.max(...monitors.map(m => m.frequency))
+    return Math.max(maxFreq * 3, 3600) // 3× slowest monitor, floor 1h
+  }
+
+  /**
+   * Evict old observations outside the dynamic retention window
    */
   evictOldObservations(now: number = Date.now()): number {
-    const cutoff = now / 1000 - this.policy.lookbackSeconds
+    const cutoff = now / 1000 - this.getRetentionSeconds()
     let evicted = 0
 
     for (const [relayUrl, relayMap] of this.observations.entries()) {

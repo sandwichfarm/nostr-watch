@@ -19,8 +19,10 @@ try {
   
   // Pass the configuration to the trawl function
   const trawlOptions = {
-    dbPath: config?.trawler?.db?.path,
-    enableWAL: config?.trawler?.db?.enableWAL,
+    dbPath: Deno.env.get('TRAWLER_DB_PATH') || config?.trawler?.db?.path,
+    enableWAL: Deno.env.get('TRAWLER_DB_WAL') !== undefined
+      ? Deno.env.get('TRAWLER_DB_WAL') !== 'false'
+      : config?.trawler?.db?.enableWAL,
     nostrawlOptions: {
       relaysPerBatch: config?.trawler?.relaysPerBatch || 10,
       adapterOptions: {

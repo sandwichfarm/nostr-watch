@@ -26,6 +26,23 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
+  trawler:
+    image: nostrwatch/trawler:clearnet
+    container_name: trawler
+    restart: unless-stopped
+    volumes:
+      - ../../trawler/.docker.env:/app/.env
+      - ../../trawler/.docker.env:/app/nostr-watch/apps/trawler/.env
+      - ../../trawler/config.docker.yaml:/app/nostr-watch/apps/trawler/config.yaml
+      - ../data/relays.db:/opt/relays.db
+    environment:
+      - TRAWLER_CONFIG_PATH=/app/nostr-watch/apps/trawler/config.yaml
+      - TRAWLER_DB_PATH=/opt/relays.db
+    networks:
+      - relaymon-net
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
   tor-proxy:
     image: chriswayg/tor-alpine:latest
     container_name: tor-proxy

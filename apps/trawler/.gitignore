@@ -13,3 +13,7 @@ config*
 *.db-wal
 *.db-lock
 *.db-journal
+
+# this is ignored in root by default
+!.docker
+!.docker/Dockerfile.clearnet

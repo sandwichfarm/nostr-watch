@@ -12,5 +12,9 @@ services:
       - ../.docker.env:/app/nostr-watch/apps/relaymon/.env
       - ../config.docker.yaml:/opt/config.yaml
       - ../data/relays.db:/opt/relays.db
+    environment:
+      - RELAYMON_CONFIG_PATH=/opt/config.yaml
+      - RELAYMON_DB_PATH=/opt/relays.db
+      - RELAYMON_SKIP_PID_CHECK=true
     extra_hosts:
       - "host.docker.internal:host-gateway"

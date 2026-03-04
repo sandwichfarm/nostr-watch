@@ -1,6 +1,9 @@
 services:
   relaymon:
-    image: nostrwatch/relaymon:multinet
+    build:
+      context: ../../..
+      dockerfile: ./apps/relaymon/.docker/Dockerfile.multinet
+      no_cache: true
     container_name: relaymon
     restart: unless-stopped
     volumes:
@@ -23,6 +26,26 @@ services:
       - RELAYMON_CONFIG_PATH=/opt/config.yaml
       - RELAYMON_DB_PATH=/opt/relays.db
       - RELAYMON_SKIP_PID_CHECK=true
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  trawler:
+    build:
+      context: ../../..
+      dockerfile: ./apps/trawler/.docker/Dockerfile.clearnet
+      no_cache: true
+    container_name: trawler
+    restart: unless-stopped
+    volumes:
+      - ../../trawler/.docker.env:/app/.env
+      - ../../trawler/.docker.env:/app/nostr-watch/apps/trawler/.env
+      - ../../trawler/config.docker.yaml:/app/nostr-watch/apps/trawler/config.yaml
+      - ../data/relays.db:/opt/relays.db
+    environment:
+      - TRAWLER_CONFIG_PATH=/app/nostr-watch/apps/trawler/config.yaml
+      - TRAWLER_DB_PATH=/opt/relays.db
+    networks:
+      - relaymon-net
     extra_hosts:
       - "host.docker.internal:host-gateway"
 

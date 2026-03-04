@@ -23,5 +23,9 @@ data/*
 !.docker/docker-compose.multinet.yml
 !.docker/docker-compose.build.yml
 !.docker/docker-compose.build-multinet.yml
+!.docker/docker-compose.clearnet-suite.yml
+!.docker/docker-compose.multinet-suite.yml
+!.docker/docker-compose.build-clearnet-suite.yml
+!.docker/docker-compose.build-multinet-suite.yml
 !.docker/Dockerfile.clearnet
 !.docker/Dockerfile.multinet

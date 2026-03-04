@@ -1,98 +1,170 @@
-> alpha af
-
 # @nostrwatch/auditor
 
-A framework to test relays against their advertised supported NIPs. (name pending)
+Nostr relay auditor — runs NIP conformance tests against any relay.
 
-**Features**
-- Minimal boilerplate
-- Familiar testing patterns
-- Overloads for more advanced testing cases
-- Nip Support detection via NIP-11
-- Live data Sampler for more accurate test results. 
+[![npm version](https://img.shields.io/npm/v/@nostrwatch/auditor?style=flat-square&label=npm)](https://www.npmjs.com/package/@nostrwatch/auditor)
+[![License](https://img.shields.io/github/license/sandwichfarm/nostr-watch?style=flat-square)](LICENSE)
+[![Status](https://img.shields.io/badge/status-alpha-orange?style=flat-square)](https://github.com/sandwichfarm/nostr-watch)
+[![Runtime](https://img.shields.io/badge/runtime-node%20%7C%20browser-blue?style=flat-square)](https://github.com/sandwichfarm/nostr-watch)
 
+## Overview
 
-![@nostrwatch/auditor console screenshot](.assets/output.png)
+`@nostrwatch/auditor` tests Nostr relays (WebSocket servers that store and forward signed events) for protocol conformance. Given a relay URL, it runs a battery of NIP (Nostr Implementation Possibility — numbered protocol specifications) test suites and returns a structured result indicating which NIPs the relay supports correctly. Use it to benchmark new relays, validate relay upgrades, or power relay-health dashboards.
 
-# Basic usage
+Auditor is a library — it runs tests but does not store results. Pair it with `@nostrwatch/route66` for persistent relay monitoring or `@nostrwatch/nocap` for low-level relay connection checks.
 
-Test detected NIPs (will also test NIP-11 against schema)
+## Installation
 
-```js
-import { Auditor } from "@nostrwatch/auditor"
-
-const relay = "wss://relay.damus.io"
-const audit = new Auditor(options)
-await audit.detectSupportedNips(relay)
-const results = await audit.test(relay)
+```sh
+pnpm add @nostrwatch/auditor
 ```
 
-Test only NIP-50
-```js
-import Auditor from "@nostrwatch/auditor"
+Or with npm:
 
-const relay = "wss://relay.damus.io"
-const audit = new Auditor(options)
-audit.addSuite('Nip50') 
-audit.removeSuite('Nip01') //Nip01 runs by default.
-const results = audit.test(relay)
+```sh
+npm install @nostrwatch/auditor
 ```
 
-If you do not detect nips or add any Suites, NIP-01 will run by default
-```js
-import Auditor from "@nostrwatch/auditor"
+## Quick Start
 
-const relay = "wss://relay.damus.io"
-const audit = new Auditor(options)
-const results = audit.test(relay)
-//runs NIP-01 suite
+```ts
+import {Auditor} from '@nostrwatch/auditor'
+
+const auditor = new Auditor({nips: new Set(['Nip01', 'Nip11'])})
+await auditor.detectSupportedNips('wss://relay.damus.io')
+const result = await auditor.test('wss://relay.damus.io')
+console.log(result)
+// { relay: 'wss://relay.damus.io', pass: true, passrate: 0.875, suites: {...} }
 ```
 
-_**`not yet implemnented`**_ Load your own suite or overload a built-in suite with your own. (overloading individuals tests in a suite is not yet supported)
-```js
-import Auditor from "@nostrwatch/auditor"
-import Nip01 from from "./my-nip01-test.js"
+## API
 
-const relay = "wss://relay.damus.io"
-const audit = new Auditor(options)
-audit.loadSuite(Nip01)
-audit.addSuite('Nip50') 
-const results = audit.test(relay)
+### `Auditor`
+
+```ts
+class Auditor {
+  constructor(conf?: IAuditorConf)
+  detectSupportedNips(relay: string): Promise<void>
+  test(relay: string): Promise<IAuditorResult>
+  run(relay: string): Promise<IAuditorResult>
+  addSuite(suite: string, options?: any): void
+  removeSuite(suite: string): void
+  abort(): void
+  get result(): IAuditorResult
+  get suites(): Set<string>
+}
 ```
 
-# Contribute
+**`constructor(conf?)`**
 
-## Writing a Suite 
+Creates a new `Auditor` instance. If no configuration is passed, the `Nip01` suite runs by default.
 
-```js
-//TODO: More complicated to demonstrate because of conventions.
-//...and using the Nip01 Suite as an example here is horrible because it's
-//inevitably the most complex.
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `nips` | `Set<string>` | `new Set(['Nip01'])` | Suite names to run (e.g., `'Nip01'`, `'Nip11'`) |
+| `options` | `Record<string, any>` | `{}` | Per-suite options keyed by suite name |
+
+**`detectSupportedNips(relay)`**
+
+Fetches the relay's NIP-11 info document and adds matching NIP suites to the configured suite set. Call this before `test()` to automatically test only the NIPs the relay claims to support.
+
+**`test(relay)`**
+
+Runs all configured NIP suites against the relay URL and returns an `IAuditorResult`. Equivalent to `run()`.
+
+**`run(relay)`**
+
+Alias for `test()`.
+
+**`addSuite(suite, options?)`**
+
+Adds a NIP suite by name. Suite names use the format `'NipXX'` (e.g., `'Nip42'`). Only suites with known test manifests are added; unknown names are silently ignored.
+
+**`removeSuite(suite)`**
+
+Removes a NIP suite from the configured set.
+
+**`abort()`**
+
+Emits an abort signal to all active suites. Use when you need to cancel an in-progress test run.
+
+### `IAuditorConf`
+
+```ts
+interface IAuditorConf {
+  nips: Set<string>
+  options: Record<string, any>
+}
 ```
 
-## Writing a Suite's Test 
-Simple example of a suite test. Suite Tests are intended to be compact with explicit purposes. 
-```js
-import { ISuite } from '#base/Suite.js';
-import { ISuiteTest, SuiteTest } from '#base/SuiteTest.js';
+### `IAuditorResult`
 
-import { INip01Filter } from '../interfaces/index.js';
+```ts
+interface IAuditorResult {
+  relay: string
+  pass: boolean
+  passrate: number
+  reason: string
+  suites: Record<string, ISuiteResult>
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `relay` | `string` | The relay URL that was tested |
+| `pass` | `boolean` | `true` if all non-skipped suites passed |
+| `passrate` | `number` | Fraction of non-skipped suites that passed (0–1) |
+| `suites` | `Record<string, ISuiteResult>` | Per-suite results keyed by suite name |
+
+### Supported NIP Suites
+
+| Suite name | NIP | Description |
+|------------|-----|-------------|
+| `Nip01` | NIP-01 | Basic relay protocol (filters, subscriptions, event publishing) |
+| `Nip02` | NIP-02 | Contact list events |
+| `Nip11` | NIP-11 | Relay information document |
+| `Nip22` | NIP-22 | Comment events |
+| `Nip42` | NIP-42 | Authentication of clients to relays |
+| `Nip50` | NIP-50 | Search capability |
+| `Nip65` | NIP-65 | Relay list metadata |
+| `Nip77` | NIP-77 | Negentropy syncing |
+
+### SuiteTest pattern
+
+Individual NIP tests extend `SuiteTest` and implement a `test()` method that uses a `behavior` assertion helper:
+
+```ts
+import {SuiteTest, type ISuiteTest} from '@nostrwatch/auditor'
 
 export class FilterLimit extends SuiteTest implements ISuiteTest {
-  readonly slug: string = 'FilterLimit';
-  maxEvents: number = 10;
+  readonly slug: string = 'FilterLimit'
   limit: number = 1
 
-  get filters(): INip01Filter[] {
-    return [{ limit: this.limit }]
+  get filters() {
+    return [{limit: this.limit}]
   }
 
-  test({behavior}){
-    behavior.toEqual(this.totalEvents, this.limit, 'returned correct number of events');
-    behavior.toBeOk(this.totalEvents > 0, 'returned at least one event');
-    behavior.toBeOk(!(this.totalEvents > this.limit), 'did not return too many events');
+  test({behavior}) {
+    behavior.toEqual(this.totalEvents, this.limit, 'returned correct number of events')
+    behavior.toBeOk(this.totalEvents > 0, 'returned at least one event')
   }
 }
-
-export default FilterLimit;
 ```
+
+## Known Limitations
+
+- **Incomplete filter range testing:** Ambiguity handling in filter range selection is unimplemented (TODO in `FilterRange.ts`). Filter range selection for timestamp-based queries may produce incorrect ranges in edge cases. No workaround is available at this time. See [CONCERNS.md — Incomplete Filter Range Testing](../../.planning/codebase/CONCERNS.md#incomplete-filter-range-testing).
+
+## Agent Skills
+
+No agent skills defined yet for this package.
+
+## Related Packages
+
+- [`@nostrwatch/nocap`](../nocap/README.md) — low-level relay connection primitives; auditor builds on nocap adapters internally
+- [`@nostrwatch/nip66`](../nip66/README.md) — NIP-66 event types; audit results can be published as NIP-66 relay status events
+- [`@nostrwatch/route66`](../route66/README.md) — persistent relay monitoring that uses auditor for health checks
+
+## License
+
+[MIT](../../LICENSE)

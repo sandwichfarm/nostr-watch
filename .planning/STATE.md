@@ -10,27 +10,27 @@ See: .planning/PROJECT.md (updated 2026-03-04)
 ## Current Position
 
 Phase: 1 of 6 (Foundation)
-Plan: 2 of 3 in current phase
-Status: In Progress — plan 01-02 complete, plan 01-03 pending
-Last activity: 2026-03-04 — VitePress site configured with rewrites, card index, data loader, content pages
+Plan: 3 of 3 in current phase — Phase 1 COMPLETE
+Status: Phase 1 complete — all 3 plans done; ready for Phase 2
+Last activity: 2026-03-04 — GitHub Actions docs-lint workflow and lychee exclusion list created; CI enforcement for Markdown quality in place
 
-Progress: [█░░░░░░░░░] 10%
+Progress: [██░░░░░░░░] 17%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
+- Total plans completed: 3
 - Average duration: ~2 min
-- Total execution time: ~4 min
+- Total execution time: ~6 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-foundation | 2 | ~4 min | ~2 min |
+| 01-foundation | 3 | ~6 min | ~2 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (2 min), 01-02 (2 min)
+- Last 5 plans: 01-01 (2 min), 01-02 (2 min), 01-03 (2 min)
 - Trend: Fast execution
 
 *Updated after each plan completion*
@@ -54,6 +54,9 @@ Recent decisions affecting current work:
 - [01-02]: Wildcard rewrite docs/:path(.*) handles all docs pages without per-file rewrites
 - [01-02]: PackageIndex defaults nostrwatch.status to alpha if absent — packages update metadata in later phases
 - [01-02]: Sidebar built from actual disk scan (includes kit, nocap-route66, sanitize, transform not in STRUCTURE.md)
+- [01-03]: continue-on-error conditional on event_name != pull_request makes CI warn-only on main push but blocking on PRs
+- [01-03]: lychee fail conditional mirrors same PR-blocking/main-warn-only pattern; lychee cache keyed on hashFiles('**/*.md')
+- [01-03]: Link check scope extends to docs/**/*.md beyond lint:docs script — link checking VitePress pages is CI-only
 
 ### Pending Todos
 
@@ -67,6 +70,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-04T17:09:14Z
-Stopped at: Completed 01-foundation/01-01-PLAN.md — README styleguide and markdownlint-cli2 config created
-Resume file: .planning/phases/01-foundation/01-03-PLAN.md
+Last session: 2026-03-04T17:13:30Z
+Stopped at: Completed 01-foundation/01-03-PLAN.md — docs-lint CI workflow and lychee exclusion list created; Phase 1 complete
+Resume file: .planning/phases/02-*/02-01-PLAN.md

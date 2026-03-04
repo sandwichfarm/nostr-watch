@@ -396,8 +396,8 @@ export async function main() {
     console.log("PID check skipped (running in container mode)");
   }
 
-  // Parse config path from arguments
-  let configPath = "./config.yaml";
+  // Parse config path: env var → CLI arg → default
+  let configPath = Deno.env.get('RELAYMON_CONFIG_PATH') || "./config.yaml";
   const configArgIndex = Math.max(args.indexOf("-c"), args.indexOf("--config"));
   if (configArgIndex !== -1 && configArgIndex < args.length - 1) {
     configPath = args[configArgIndex + 1];
@@ -421,6 +421,18 @@ export async function main() {
   // Load hostname blocklist
   await loadHostnameBlocklist();
   logger.info("Loaded hostname blocklist");
+
+  // Env var overrides for db config
+  const envDbPath = Deno.env.get('RELAYMON_DB_PATH');
+  if (envDbPath) {
+    config.db = config.db || {};
+    config.db.path = envDbPath;
+  }
+  const envDbWal = Deno.env.get('RELAYMON_DB_WAL');
+  if (envDbWal !== undefined) {
+    config.db = config.db || {};
+    config.db.enableWAL = envDbWal !== 'false';
+  }
 
   // Initialize database
   if (config.db?.path) {

@@ -352,48 +352,62 @@ The compiled binary will be created at `./dist/relaymon-dbcheck` and can be run 
 
 ## Docker
 
-RelayMon is available as Docker images or can be built locally. There are two variants:
+RelayMon ships two Docker variants:
 
-- **Basic**: Clearnet-only monitoring
-- **Unified**: Full-stack with transparent Tor and I2P routing
+- **Clearnet** — monitors relays over the regular internet
+- **Multinet** — monitors relays across clearnet, Tor (`.onion`), and I2P (`.i2p`) with transparent proxy routing
 
-### Docker Compose Files
+### Docker Image Tags
 
-All compose files are in `apps/relaymon/.docker/`:
+| Tag | Description |
+|---|---|
+| `nostrwatch/relaymon:clearnet` | Clearnet only |
+| `nostrwatch/relaymon:multinet` | Clearnet + Tor + I2P |
+| `nostrwatch/relaymon:latest` | Alias for `clearnet` |
+
+### Compose Files
+
+All compose files live in `.docker/`:
 
 | File | Variant | Source |
 |---|---|---|
-| `docker-compose.yml` | Basic | Docker Hub (`nostrwatch/relaymon:basic`) |
-| `docker-compose.unified.yml` | Unified (tor, i2p) | Docker Hub (`nostrwatch/relaymon:unified`) |
-| `docker-compose.build.yml` | Basic | Local build (`Dockerfile.basic`) |
-| `docker-compose.build-unified.yml` | Unified (tor, i2p) | Local build (`Dockerfile.unified`) |
+| `docker-compose.yml` | Clearnet | Docker Hub |
+| `docker-compose.multinet.yml` | Multinet | Docker Hub |
+| `docker-compose.build.yml` | Clearnet | Local build |
+| `docker-compose.build-multinet.yml` | Multinet | Local build |
 
 ### Running with Docker Compose
 
 ```bash
-# Basic (Docker Hub)
+# Clearnet (from Docker Hub)
 docker compose -f apps/relaymon/.docker/docker-compose.yml up -d
 
-# Unified with Tor/I2P (Docker Hub)
-docker compose -f apps/relaymon/.docker/docker-compose.unified.yml up -d
+# Multinet (from Docker Hub)
+docker compose -f apps/relaymon/.docker/docker-compose.multinet.yml up -d
 
-# Local build (basic)
-docker compose -f apps/relaymon/.docker/docker-compose.build.yml up -d --build
+# Clearnet (local build)
+docker compose -f apps/relaymon/.docker/docker-compose.build.yml up -d
 
-# Local build (unified)
-docker compose -f apps/relaymon/.docker/docker-compose.build-unified.yml up -d --build
+# Multinet (local build)
+docker compose -f apps/relaymon/.docker/docker-compose.build-multinet.yml up -d
 ```
 
-### Container Architecture
+Or use the npm scripts from the project root:
 
-**Basic** runs a single relaymon container for clearnet relays.
+```bash
+pnpm docker:build@relaymon            # build clearnet
+pnpm docker:build-multinet@relaymon   # build multinet
+```
 
-**Unified** includes:
-- **relaymon**: The main container with transparent network routing
-- **tor-proxy**: Tor SOCKS proxy for `.onion` domain routing
-- **i2pd**: I2P router for `.i2p` domain routing
+### Multinet Architecture
 
-All network routing happens transparently at the system level. When RelayMon connects to a relay, `.onion` domains go through Tor, `.i2p` domains go through I2P, and regular domains use direct connections.
+The multinet variant includes additional containers for network routing:
+
+- **relaymon** — main monitoring container with transparent proxy routing
+- **tor-proxy** — Tor SOCKS proxy for `.onion` addresses
+- **i2pd** — I2P router for `.i2p` addresses
+
+Traffic is routed transparently based on domain type without any application code changes.
 
 ### Checking Container Logs
 
@@ -403,7 +417,7 @@ docker logs relaymon
 
 ### Configuration
 
-Customize RelayMon through `config.yaml`. For the unified variant, include all network types:
+Customize RelayMon through `config.yaml`. For multinet, include all network types:
 
 ```yaml
 relaymon:
@@ -415,8 +429,6 @@ relaymon:
 
 ### Troubleshooting
 
-If you encounter build issues:
-
-1. Make sure you're building from the project root (where the libraries/ and internal/ directories are located)
-2. Check the Docker build logs for any dependency errors
-3. The no_cache setting should prevent caching issues, but you can also run `docker builder prune -f` to clear all build caches
+1. Build from the project root (where `libraries/` and `internal/` directories are located)
+2. Check Docker build logs for dependency errors
+3. Run `docker builder prune -f` to clear build caches if needed

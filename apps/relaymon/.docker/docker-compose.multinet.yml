@@ -1,9 +1,6 @@
 services:
   relaymon:
-    build:
-      context: ../../..
-      dockerfile: ./apps/relaymon/.docker/Dockerfile.unified
-      no_cache: true
+    image: nostrwatch/relaymon:multinet
     container_name: relaymon
     restart: unless-stopped
     volumes:
@@ -22,6 +19,10 @@ services:
     cap_add:
       - NET_ADMIN
       - NET_RAW
+    environment:
+      - RELAYMON_CONFIG_PATH=/opt/config.yaml
+      - RELAYMON_DB_PATH=/opt/relays.db
+      - RELAYMON_SKIP_PID_CHECK=true
     extra_hosts:
       - "host.docker.internal:host-gateway"
 

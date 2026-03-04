@@ -3,7 +3,7 @@ config.yaml
 *.env*
 node_modules
 *.db
-*.db-journal    
+*.db-journal
 **/*.db
 
 logs
@@ -20,9 +20,12 @@ data/*
 .docker/*.yml
 .docker/*.yaml
 !.docker/docker-compose.yml
-!.docker/docker-compose.unified.yml
+!.docker/docker-compose.multinet.yml
 !.docker/docker-compose.build.yml
-!.docker/docker-compose.build-unified.yml
-!.docker/Dockerfile.unified
-!.docker/Dockerfile.basic
-
+!.docker/docker-compose.build-multinet.yml
+!.docker/docker-compose.clearnet-suite.yml
+!.docker/docker-compose.multinet-suite.yml
+!.docker/docker-compose.build-clearnet-suite.yml
+!.docker/docker-compose.build-multinet-suite.yml
+!.docker/Dockerfile.clearnet
+!.docker/Dockerfile.multinet

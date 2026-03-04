@@ -34,16 +34,16 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **LIB-01**: README.md for libraries/nocap following styleguide (adapter-based relay capability discovery)
 - [x] **LIB-02**: README.md for libraries/route66 following styleguide (relay aggregation + state management)
 - [x] **LIB-03**: README.md for libraries/auditor following styleguide (Nostr event validation)
-- [ ] **LIB-04**: README.md for libraries/schemata following styleguide (JSON Schema definitions)
-- [ ] **LIB-05**: README.md for libraries/schemata-js-ajv following styleguide (AJV validation)
+- [x] **LIB-04**: README.md for libraries/schemata following styleguide (JSON Schema definitions)
+- [x] **LIB-05**: README.md for libraries/schemata-js-ajv following styleguide (AJV validation)
 - [x] **LIB-06**: README.md for libraries/relay-charts following styleguide (relay metric visualization)
 - [x] **LIB-07**: README.md for libraries/relay-chronicle following styleguide (relay event history)
 - [x] **LIB-08**: README.md for libraries/nostrawl following styleguide (queue-based web crawler)
 - [x] **LIB-09**: README.md for libraries/db following styleguide (database client abstractions)
 - [x] **LIB-10**: README.md for libraries/idb following styleguide (IndexedDB wrapper)
 - [x] **LIB-11**: README.md for libraries/websocket following styleguide (WebSocket connection management)
-- [ ] **LIB-12**: README.md for libraries/nip66 following styleguide (NIP-66 relay check protocol)
-- [ ] **LIB-13**: README.md for libraries/nostrings following styleguide (relay URL validation)
+- [x] **LIB-12**: README.md for libraries/nip66 following styleguide (NIP-66 relay check protocol)
+- [x] **LIB-13**: README.md for libraries/nostrings following styleguide (relay URL validation)
 - [x] **LIB-14**: README.md for libraries/memory-relay following styleguide (in-memory relay)
 - [x] **LIB-15**: README.md for libraries/negentropy following styleguide (NIP-49 support)
 - [x] **LIB-16**: README.md for libraries/worker-relay following styleguide (web worker relay)
@@ -135,16 +135,16 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LIB-01 | Phase 3 | Complete |
 | LIB-02 | Phase 3 | Complete |
 | LIB-03 | Phase 3 | Complete |
-| LIB-04 | Phase 3 | Pending |
-| LIB-05 | Phase 3 | Pending |
+| LIB-04 | Phase 3 | Complete |
+| LIB-05 | Phase 3 | Complete |
 | LIB-06 | Phase 3 | Complete |
 | LIB-07 | Phase 3 | Complete |
 | LIB-08 | Phase 3 | Complete |
 | LIB-09 | Phase 3 | Complete |
 | LIB-10 | Phase 3 | Complete |
 | LIB-11 | Phase 3 | Complete |
-| LIB-12 | Phase 3 | Pending |
-| LIB-13 | Phase 3 | Pending |
+| LIB-12 | Phase 3 | Complete |
+| LIB-13 | Phase 3 | Complete |
 | LIB-14 | Phase 3 | Complete |
 | LIB-15 | Phase 3 | Complete |
 | LIB-16 | Phase 3 | Complete |

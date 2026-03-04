@@ -335,7 +335,6 @@ function buildEnvOverrides(): Record<string, unknown> {
   if (env.LOG_FILE !== undefined) o.logFile = env.LOG_FILE
 
   // Aggregation
-  if (env.AGG_LOOKBACK_SECONDS !== undefined) o.aggLookbackSeconds = parseNumber(env.AGG_LOOKBACK_SECONDS, DEFAULT_POLICY.lookbackSeconds)
   if (env.AGG_QUORUM !== undefined) o.aggQuorum = parseNumber(env.AGG_QUORUM, DEFAULT_POLICY.quorum)
   if (env.AGG_LABEL_QUORUM !== undefined) o.aggLabelQuorum = parseNumber(env.AGG_LABEL_QUORUM, DEFAULT_POLICY.labelQuorum)
   if (env.AGG_MAD_SCALE !== undefined) o.aggMadScale = parseNumber(env.AGG_MAD_SCALE, DEFAULT_POLICY.madScale)
@@ -512,9 +511,6 @@ function buildConfigFromYaml(yaml: Record<string, unknown>, env: Record<string, 
   const aggYaml = (yaml.aggregation ?? {}) as Record<string, unknown>
   const aggregation: AggregationPolicy = {
     ...DEFAULT_POLICY,
-    lookbackSeconds: env.aggLookbackSeconds !== undefined
-      ? env.aggLookbackSeconds as number
-      : toNumber(aggYaml.lookbackSeconds, DEFAULT_POLICY.lookbackSeconds),
     quorum: env.aggQuorum !== undefined
       ? env.aggQuorum as number
       : toNumber(aggYaml.quorum, DEFAULT_POLICY.quorum),
@@ -734,7 +730,6 @@ function buildConfigFromEnv(): Config {
   // Aggregation policy
   const aggregation: AggregationPolicy = {
     ...DEFAULT_POLICY,
-    lookbackSeconds: parseNumber(process.env.AGG_LOOKBACK_SECONDS, DEFAULT_POLICY.lookbackSeconds),
     quorum: parseNumber(process.env.AGG_QUORUM, DEFAULT_POLICY.quorum),
     labelQuorum: parseNumber(process.env.AGG_LABEL_QUORUM, DEFAULT_POLICY.labelQuorum),
     madScale: parseNumber(process.env.AGG_MAD_SCALE, DEFAULT_POLICY.madScale),

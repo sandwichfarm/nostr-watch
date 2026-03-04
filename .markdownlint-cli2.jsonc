@@ -1,0 +1,85 @@
+{
+  // markdownlint-cli2 configuration for @nostrwatch monorepo package READMEs
+  // Enforces the README styleguide defined in docs/styleguide/README.md
+  // Run locally: pnpm lint:docs
+  // Enforced in CI: .github/workflows/docs-lint.yml
+  "config": {
+    // Start from the full default ruleset and selectively override
+    "default": true,
+
+    // MD013: Line length — disabled. README prose naturally exceeds 80 chars;
+    // enforcing this creates noisy, unreadable diffs with no benefit.
+    "MD013": false,
+
+    // MD034: Bare URLs — disabled. Badge service URLs (shields.io, img.shields.io)
+    // and relay URLs (wss://) appear bare in READMEs and are intentional.
+    "MD034": false,
+
+    // MD040: Fenced code blocks must have a language tag.
+    // Enforces the styleguide requirement: every ``` block needs ts, js, sh, json, etc.
+    "MD040": true,
+
+    // MD001: Heading levels must increment by one. Prevents skipping from H1 to H3.
+    "MD001": true,
+
+    // MD022: Headings must be surrounded by blank lines. Improves readability.
+    "MD022": true,
+
+    // MD024: No duplicate headings — siblings_only mode allows the same heading
+    // text in different sections (e.g., multiple "Options" subsections under
+    // different H2 parents), but not duplicate H2-level headings.
+    "MD024": {"siblings_only": true},
+
+    // MD043: Required headings — enforces that package READMEs contain the
+    // required sections in the correct order as defined by the styleguide.
+    //
+    // Required section order:
+    //   H1 (any text — package title)
+    //   ## Overview
+    //   ## Installation
+    //   ## Quick Start
+    //   ## Known Limitations
+    //   ## License
+    //
+    // The "*" wildcard allows zero or more optional sections between required ones.
+    // This means sections like Prerequisites, API, Configuration, Agent Skills,
+    // and Related Packages may appear in any position between the required anchors.
+    //
+    // Note: MD043 validates that required headings appear in order; it does NOT
+    // flag extra headings in wrong positions — the wildcard absorbs optional sections.
+    // match_case: false allows "## overview" to satisfy "## Overview".
+    "MD043": {
+      "headings": [
+        "*",
+        "## Overview",
+        "*",
+        "## Installation",
+        "*",
+        "## Quick Start",
+        "*",
+        "## Known Limitations",
+        "*",
+        "## License"
+      ],
+      "match_case": false
+    }
+  },
+
+  // Scope linting to package READMEs only.
+  // This avoids applying package-README rules to docs/ pages, .planning/ documents,
+  // scripts, and other non-README markdown files which may have different structures.
+  "globs": [
+    "libraries/*/README.md",
+    "apps/*/README.md",
+    "internal/*/README.md"
+  ],
+
+  // Explicitly ignore files that should not be linted against these rules.
+  "ignores": [
+    // Dependencies — must always be excluded
+    "node_modules/**",
+    // Changelogs have non-conforming heading structures (version numbers as headings,
+    // repeated "Added"/"Changed"/"Fixed" headings across versions)
+    "**/CHANGELOG.md"
+  ]
+}

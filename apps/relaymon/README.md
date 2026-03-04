@@ -352,53 +352,50 @@ The compiled binary will be created at `./dist/relaymon-dbcheck` and can be run 
 
 ## Docker
 
-RelayMon can be run in Docker with automatic routing for different network types (clearnet, Tor, I2P, and Lokinet). The Docker setup automatically handles routing WebSocket connections through the appropriate network proxy based on the domain type.
+RelayMon is available as Docker images or can be built locally. There are two variants:
+
+- **Basic**: Clearnet-only monitoring
+- **Unified**: Full-stack with transparent Tor and I2P routing
+
+### Docker Compose Files
+
+All compose files are in `apps/relaymon/.docker/`:
+
+| File | Variant | Source |
+|---|---|---|
+| `docker-compose.yml` | Basic | Docker Hub (`nostrwatch/relaymon:basic`) |
+| `docker-compose.unified.yml` | Unified (tor, i2p) | Docker Hub (`nostrwatch/relaymon:unified`) |
+| `docker-compose.build.yml` | Basic | Local build (`Dockerfile.basic`) |
+| `docker-compose.build-unified.yml` | Unified (tor, i2p) | Local build (`Dockerfile.unified`) |
 
 ### Running with Docker Compose
 
-The Docker setup compiles the RelayMon binary directly inside the container, ensuring proper compatibility with the Linux environment. The compilation happens automatically during the Docker build process. Build caching is disabled by default to ensure clean builds.
-
-To build and run with Docker Compose:
-
 ```bash
-# From the project root directory
+# Basic (Docker Hub)
 docker compose -f apps/relaymon/.docker/docker-compose.yml up -d
 
-# Or if you're already in the apps/relaymon directory
-cd apps/relaymon
-docker compose -f .docker/docker-compose.yml up -d
+# Unified with Tor/I2P (Docker Hub)
+docker compose -f apps/relaymon/.docker/docker-compose.unified.yml up -d
+
+# Local build (basic)
+docker compose -f apps/relaymon/.docker/docker-compose.build.yml up -d --build
+
+# Local build (unified)
+docker compose -f apps/relaymon/.docker/docker-compose.build-unified.yml up -d --build
 ```
-
-If you want to force a rebuild (though the no_cache option should already prevent caching):
-
-```bash
-docker compose -f apps/relaymon/.docker/docker-compose.yml up -d --build
-```
-
-### How It Works
-
-The Docker setup uses a multi-stage build process:
-1. First stage installs Deno and compiles the application in a Linux environment
-2. Second stage creates a minimal runtime container with just the compiled binary and necessary dependencies
-3. Network routing is handled by separate containers for Tor and I2P
 
 ### Container Architecture
 
-The Docker setup includes:
+**Basic** runs a single relaymon container for clearnet relays.
 
-- **relaymon**: The main container that runs RelayMon with transparent network routing
-- **tor-proxy**: A Tor proxy container for `.onion` domain routing
-- **i2pd**: An I2P router container for `.i2p` domain routing
+**Unified** includes:
+- **relaymon**: The main container with transparent network routing
+- **tor-proxy**: Tor SOCKS proxy for `.onion` domain routing
+- **i2pd**: I2P router for `.i2p` domain routing
 
-All network routing happens transparently at the system level, without requiring any changes to the RelayMon application code. When RelayMon attempts to connect to a relay:
-
-- `.onion` domains automatically go through the Tor proxy
-- `.i2p` domains automatically go through the I2P router
-- Regular domains use direct connections
+All network routing happens transparently at the system level. When RelayMon connects to a relay, `.onion` domains go through Tor, `.i2p` domains go through I2P, and regular domains use direct connections.
 
 ### Checking Container Logs
-
-To view logs from the RelayMon container:
 
 ```bash
 docker logs relaymon
@@ -406,7 +403,7 @@ docker logs relaymon
 
 ### Configuration
 
-You can customize the RelayMon configuration as usual through the `config.yaml` file. Make sure to include all the network types you want to monitor:
+Customize RelayMon through `config.yaml`. For the unified variant, include all network types:
 
 ```yaml
 relaymon:

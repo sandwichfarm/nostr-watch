@@ -1,0 +1,60 @@
+services:
+  relaymon:
+    image: nostrwatch/relaymon:unified
+    container_name: relaymon
+    restart: unless-stopped
+    volumes:
+      - ../data:/opt/data
+      - ../.docker.env:/app/.env
+      - ../.docker.env:/app/nostr-watch/apps/relaymon/.env
+      - ../config.docker.yaml:/opt/config.yaml
+      - ../data/relays.db:/opt/relays.db
+      - ./config/danted.conf:/etc/danted.conf
+      - ./config/proxychains.conf:/etc/proxychains.conf
+    networks:
+      - relaymon-net
+    depends_on:
+      - tor-proxy
+      - i2pd
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  tor-proxy:
+    image: chriswayg/tor-alpine:latest
+    container_name: tor-proxy
+    restart: unless-stopped
+    volumes:
+      - ./config/torrc:/etc/tor/torrc
+    networks:
+      - relaymon-net
+    ports:
+      - "9050:9050"
+      - "9051:9051"
+
+  i2pd:
+    image: purplei2p/i2pd:latest
+    container_name: i2pd
+    restart: unless-stopped
+    volumes:
+      - i2pd-data:/home/i2pd/data
+    ports:
+      - "4444:4444"
+      - "4447:4447"
+    networks:
+      - relaymon-net
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "4444"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  relaymon-net:
+    driver: bridge
+
+volumes:
+  i2pd-data:
+    driver: local

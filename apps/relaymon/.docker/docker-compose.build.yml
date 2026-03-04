@@ -1,6 +1,9 @@
 services:
   relaymon:
-    image: nostrwatch/relaymon:basic
+    build:
+      context: ../../..
+      dockerfile: ./apps/relaymon/.docker/Dockerfile.basic
+      no_cache: true
     container_name: relaymon
     restart: unless-stopped
     volumes:

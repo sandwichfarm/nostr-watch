@@ -1,0 +1,56 @@
+name: Docs Lint
+
+on:
+  pull_request:
+    paths:
+      - '**/*.md'
+  push:
+    branches:
+      - main
+    paths:
+      - '**/*.md'
+
+jobs:
+  markdownlint:
+    name: Markdown Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lint Markdown
+        uses: DavidAnson/markdownlint-cli2-action@v22
+        with:
+          globs: |
+            libraries/*/README.md
+            apps/*/README.md
+            internal/*/README.md
+        continue-on-error: ${{ github.event_name != 'pull_request' }}
+
+  linkcheck:
+    name: Link Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache lychee
+        uses: actions/cache@v4
+        with:
+          path: .lychee.cache
+          key: lychee-${{ hashFiles('**/*.md') }}
+          restore-keys: lychee-
+
+      - name: Check links
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: >-
+            --cache
+            --max-cache-age 1d
+            --github-token ${{ secrets.GITHUB_TOKEN }}
+            'libraries/*/README.md'
+            'apps/*/README.md'
+            'internal/*/README.md'
+            'docs/**/*.md'
+          format: markdown
+          output: ./lychee/results.md
+          fail: ${{ github.event_name == 'pull_request' }}
+          token: ${{ secrets.GITHUB_TOKEN }}

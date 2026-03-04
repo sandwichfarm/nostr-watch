@@ -1,0 +1,7 @@
+# Relay URLs — may be offline, used in code examples
+^wss://
+# Badge services — rate-limit frequently
+^https://img\.shields\.io
+^https://badge\.fury\.io
+# npm — sometimes flaky in CI
+^https://www\.npmjs\.com/package/

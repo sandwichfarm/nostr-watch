@@ -64,14 +64,16 @@ Plans:
   3. A developer can read the nocap README and understand what an adapter is, what interface it must implement, and how to register it — without reading source
   4. The NIP-66 library README explains the protocol's event kinds and data model clearly enough that a developer unfamiliar with NIP-66 understands what the library validates
   5. Libraries with entries in CONCERNS.md have accurate "Known Limitations" sections
-**Plans**: TBD
+**Plans:** 7 plans
 
 Plans:
-- [ ] 03-01: Write READMEs for libraries/nostrings, libraries/nip66, libraries/schemata, libraries/schemata-js-ajv, libraries/auditor (protocol/validation layer)
-- [ ] 03-02: Write READMEs for libraries/nocap (adapter pattern — primary extension mechanism)
-- [ ] 03-03: Write READMEs for libraries/route66 (state management adapter pattern)
-- [ ] 03-04: Write READMEs for libraries/db, libraries/idb, libraries/websocket, libraries/memory-relay, libraries/worker-relay, libraries/negentropy (infrastructure layer)
-- [ ] 03-05: Write READMEs for libraries/nostrawl, libraries/relay-charts, libraries/relay-chronicle, libraries/uptime-kuma-monitor (application-layer utilities)
+- [ ] 03-01-PLAN.md — Protocol/validation layer: nostrings, nip66, schemata, schemata-js-ajv
+- [ ] 03-02-PLAN.md — Auditor and nocap-route66 (NIP conformance + event transformation)
+- [ ] 03-03-PLAN.md — nocap (gold-standard adapter pattern documentation)
+- [ ] 03-04-PLAN.md — route66 (dual adapter pattern: cache + websocket)
+- [ ] 03-05-PLAN.md — Infrastructure: db, websocket, memory-relay
+- [ ] 03-06-PLAN.md — worker-relay, negentropy, deprecation stubs (idb, kit, sanitize, transform)
+- [ ] 03-07-PLAN.md — Application utilities: nostrawl, relay-charts, relay-chronicle, uptime-kuma-monitor
 
 ### Phase 4: App Package READMEs
 **Goal**: Every apps/ package has a conforming README.md or deprecation stub; deprecated apps clearly direct users to the replacement; Known Limitations sections reflect actual codebase state
@@ -133,7 +135,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Complete   | 2026-03-04 |
 | 2. Internal Package READMEs | 3/3 | Complete   | 2026-03-04 |
-| 3. Library Package READMEs | 0/5 | Not started | - |
+| 3. Library Package READMEs | 0/7 | Not started | - |
 | 4. App Package READMEs | 0/4 | Not started | - |
 | 5. Claude Code Skills | 0/5 | Not started | - |
 | 6. Deployment and CI Pipeline | 0/2 | Not started | - |

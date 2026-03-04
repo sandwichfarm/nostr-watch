@@ -1,0 +1,32 @@
+services:
+  gluetun:
+    image: qmcgaw/gluetun
+    container_name: gluetun
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    env_file:
+      - ./.env.gluetun
+    environment:
+      - VPN_SERVICE_PROVIDER=mullvad
+    restart: unless-stopped
+
+  relaymon:
+    image: nostrwatch/relaymon:latest
+    container_name: relaymon
+    network_mode: "container:gluetun"
+    restart: unless-stopped
+    volumes:
+      - ./data:/opt/data
+      - ./.env:/app/.env
+      - ./.env:/app/nostr-watch/apps/relaymon/.env
+      - ./config.yaml:/opt/config.yaml
+      - ./data/relays.db:/opt/relays.db
+    environment:
+      - RELAYMON_MODE=clearnet
+      - RELAYMON_CONFIG_PATH=/opt/config.yaml
+      - RELAYMON_DB_PATH=/opt/relays.db
+      - RELAYMON_SKIP_PID_CHECK=true
+    depends_on:
+      - gluetun

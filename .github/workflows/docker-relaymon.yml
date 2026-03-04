@@ -39,26 +39,13 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build & push multinet image
+      - name: Build & push relaymon image
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: apps/relaymon/.docker/Dockerfile.multinet
+          file: apps/relaymon/.docker/Dockerfile
           push: true
           platforms: linux/amd64
           tags: |
             nostrwatch/relaymon:latest
-            nostrwatch/relaymon:multinet
             nostrwatch/relaymon:${{ steps.version.outputs.version }}
-            nostrwatch/relaymon:${{ steps.version.outputs.version }}-multinet
-
-      - name: Build & push clearnet image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: apps/relaymon/.docker/Dockerfile.clearnet
-          push: true
-          platforms: linux/amd64
-          tags: |
-            nostrwatch/relaymon:clearnet
-            nostrwatch/relaymon:${{ steps.version.outputs.version }}-clearnet

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "Starting RelayMon with hedproxy..."
+echo "Starting RelayMon..."
 
 # --- Parse command-line arguments first ---
 VERIFY_ONLY=false
@@ -13,6 +13,18 @@ for arg in "$@"; do
     APP_ARGS+=("$arg")
   fi
 done
+
+# --- Mode Selection ---
+RELAYMON_MODE="${RELAYMON_MODE:-clearnet}"
+
+if [ "$RELAYMON_MODE" = "clearnet" ]; then
+  echo "Starting RelayMon in clearnet mode..."
+  export RELAYMON_SKIP_PID_CHECK=true
+  cd /app/nostr-watch/apps/relaymon
+  exec deno run --env-file=/app/.env --allow-all --unstable-sloppy-imports index.ts -c /opt/config.yaml "${APP_ARGS[@]}"
+fi
+
+echo "Starting RelayMon in multinet mode with hedproxy..."
 
 # --- Configuration ---
 TOR_PROXY_HOST="tor-proxy"

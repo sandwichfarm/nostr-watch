@@ -26,7 +26,7 @@ jobs:
           elif [[ "${{ github.ref_type }}" == "tag" ]]; then
             VERSION="${GITHUB_REF_NAME#trawler-v}"
           else
-            VERSION="$(jq -r '.version' apps/trawler/deno.json)"
+            VERSION="$(grep -oP '"version"\s*:\s*"\K[^"]+' apps/trawler/deno.json)"
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 

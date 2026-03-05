@@ -20,10 +20,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### App READMEs
 
-- [ ] **APP-01**: README.md for apps/gui following styleguide (Svelte/SvelteKit relay dashboard)
-- [ ] **APP-02**: README.md for apps/rstate following styleguide (ContextVM relay state machine + REST API)
-- [ ] **APP-03**: README.md for apps/trawler following styleguide (Deno relay data crawler)
-- [ ] **APP-04**: README.md for apps/relaymon following styleguide (relay health monitoring)
+- [x] **APP-01**: README.md for apps/gui following styleguide (Svelte/SvelteKit relay dashboard)
+- [x] **APP-02**: README.md for apps/rstate following styleguide (ContextVM relay state machine + REST API)
+- [x] **APP-03**: README.md for apps/trawler following styleguide (Deno relay data crawler)
+- [x] **APP-04**: README.md for apps/relaymon following styleguide (relay health monitoring)
 - [x] **APP-05**: README.md for apps/purist following styleguide (data transformation utilities)
 - [x] **APP-06**: Deprecation stub README for apps/nocapd (legacy daemon, link to replacement)
 - [x] **APP-07**: README.md for apps/docker-stacks following styleguide (Docker Compose definitions)
@@ -149,10 +149,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LIB-15 | Phase 3 | Complete |
 | LIB-16 | Phase 3 | Complete |
 | LIB-17 | Phase 3 | Complete |
-| APP-01 | Phase 4 | Pending |
-| APP-02 | Phase 4 | Pending |
-| APP-03 | Phase 4 | Pending |
-| APP-04 | Phase 4 | Pending |
+| APP-01 | Phase 4 | Complete |
+| APP-02 | Phase 4 | Complete |
+| APP-03 | Phase 4 | Complete |
+| APP-04 | Phase 4 | Complete |
 | APP-05 | Phase 4 | Complete |
 | APP-06 | Phase 4 | Complete |
 | APP-07 | Phase 4 | Complete |

@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-05T09:21:44.863Z"
+last_updated: "2026-03-05T09:21:50.912Z"
 progress:
   total_phases: 4
   completed_phases: 4
@@ -117,6 +117,9 @@ Recent decisions affecting current work:
 - [Phase 04]: [04-01]: rstate package name uses @nostr-watch/rstate (hyphen in scope) unlike all other @nostrwatch/ packages — documented accurately from package.json
 - [Phase 04-app-package-readmes]: purist uses scope badge (not npm version) — no package.json exists; Known Limitations notes absent source with no workaround
 - [Phase 04-app-package-readmes]: docker-stacks Available Stacks table lists all 5 variants — Installation uses sh + ls only, not npm/pnpm (Docker Compose infra)
+- [Phase 04-app-package-readmes]: trawler README written from scratch — existing was a 6-line stub with no usable content
+- [Phase 04-app-package-readmes]: relaymon README restructured from near-complete existing content to MD043 order; Docker section preserved from existing
+- [Phase 04-app-package-readmes]: Both Deno apps (trawler, relaymon) use scope badge not npm version badge — neither is published to npm
 
 ### Pending Todos
 

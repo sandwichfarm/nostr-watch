@@ -25,9 +25,9 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **APP-03**: README.md for apps/trawler following styleguide (Deno relay data crawler)
 - [ ] **APP-04**: README.md for apps/relaymon following styleguide (relay health monitoring)
 - [x] **APP-05**: README.md for apps/purist following styleguide (data transformation utilities)
-- [ ] **APP-06**: Deprecation stub README for apps/nocapd (legacy daemon, link to replacement)
+- [x] **APP-06**: Deprecation stub README for apps/nocapd (legacy daemon, link to replacement)
 - [x] **APP-07**: README.md for apps/docker-stacks following styleguide (Docker Compose definitions)
-- [ ] **APP-08**: README.md or deprecation stub for apps/umon following styleguide (experimental monitoring)
+- [x] **APP-08**: README.md or deprecation stub for apps/umon following styleguide (experimental monitoring)
 
 ### Library READMEs
 
@@ -154,9 +154,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | APP-03 | Phase 4 | Pending |
 | APP-04 | Phase 4 | Pending |
 | APP-05 | Phase 4 | Complete |
-| APP-06 | Phase 4 | Pending |
+| APP-06 | Phase 4 | Complete |
 | APP-07 | Phase 4 | Complete |
-| APP-08 | Phase 4 | Pending |
+| APP-08 | Phase 4 | Complete |
 | SKILL-01 | Phase 5 | Pending |
 | SKILL-02 | Phase 5 | Pending |
 | SKILL-03 | Phase 5 | Pending |

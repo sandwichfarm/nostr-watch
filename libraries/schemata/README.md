@@ -1,52 +1,94 @@
-```
-Note: This package will be migrated to nostrability/schemata once all events that @nostrwatch tests have a schema specified.
-```
-
 # @nostrwatch/schemata
 
-A template for simplifying the validation of nostr events, their attributes and their respective tags using JSON-Schema standards. 
+JSON Schema definitions for Nostr protocol data structures.
 
-## Related
-- [`@nostrwatch/schemata-js-ajv`](https://github.com/sandwichfarm/nostr-watch/tree/next/libraries/schemata-js-ajv) - Typescript library for validating nostr events, depends on this package.
+[![npm version](https://img.shields.io/npm/v/@nostrwatch/schemata?style=flat-square&label=npm)](https://www.npmjs.com/package/@nostrwatch/schemata)
+[![License](https://img.shields.io/github/license/sandwichfarm/nostr-watch?style=flat-square)](LICENSE)
+[![Status](https://img.shields.io/badge/status-alpha-orange?style=flat-square)](https://github.com/sandwichfarm/nostr-watch)
 
-## Usage 
-1. Download ZIP file (all languages) or include package (js only for now)
-2. Validate `.json` schemas against nostr events. 
+## Overview
 
-## Use in your own pipline 
-You shouldn't. You should write a wrapper or use one that already exists. Wrappers **must** use the following typings.
-```
-type NSchemaResult [ boolean, NSchemaMessage[] ]
-interface NSchemaMessage {
-    level: "info" | "warning" | "error" 
-    message: string
-} 
-```
+`@nostrwatch/schemata` provides JSON Schema definitions for Nostr protocol data structures including events (the signed JSON objects that form the basis of Nostr communication), NIP-11 relay info documents, and protocol messages. A schema (a JSON Schema document) describes the shape and constraints of a data structure so it can be validated programmatically.
 
-And provide the following interface: 
-```
-validate(event: NostrEvent): NSchemaResult
-validateMany(events: NostrEvent[]): NSchemaResult[]
+> **Migration notice:** This package is migrating to [`@nostrability/schemata`](https://www.npmjs.com/package/@nostrability/schemata) under a separate npm organization. New projects should use `@nostrability/schemata` directly. `@nostrwatch/schemata-js-ajv` already depends on `@nostrability/schemata` rather than this package.
+
+The schemas are defined in YAML format under `nips/nip-XX/` and compiled to JSON at build time. Schemas exist for NIPs 01, 02, 11, 18, 22, 40, and 65.
+
+## Installation
+
+```sh
+pnpm add @nostrwatch/schemata
 ```
 
-## Contribute
+Or with npm:
 
-### Setup 
-1. Fork the repo.
-2. `npm/yarn/pnpm install` 
-3. `npm/yarn/pnpm build`
-4. `npm/yarn/pnpm test`
+```sh
+npm install @nostrwatch/schemata
+```
 
-## Writing Schemas
-Familiarize yourself with the aliases section and the file structure.
-1. Create a new directory for your NIP, and a directory for each kind.
-...this is going to be annoying to write, so it should probbaly be automated. 
+For new projects, prefer the successor package:
 
-## FS Conventions
-This toolkit uses path conventions for build and testing schemata. 
+```sh
+pnpm add @nostrability/schemata
+```
 
-`nips/nip-XY/kind-N/schema.yaml` 
+## Quick Start
 
-Kinds are assumed to belong to a NIP, but if you are working with an experimental kind, you won't have a NIP. For these situations, simply place the kind into a nipless "nipless" 
+The compiled schemas are available as JSON after running the build. Use them with any JSON Schema validator:
 
-`nips/nipless/kind-X`
+```ts
+import Ajv from 'ajv'
+import schema from '@nostrwatch/schemata/dist/schema.json'
+
+const ajv = new Ajv()
+const validate = ajv.compile(schema)
+
+const event = {
+  kind: 1,
+  content: 'Hello from Nostr',
+  created_at: Math.floor(Date.now() / 1000),
+  tags: [],
+  pubkey: '<32-byte-hex-pubkey>',
+  id: '<32-byte-hex-id>',
+  sig: '<64-byte-hex-sig>'
+}
+
+const valid = validate(event)
+console.log(valid) // true or false
+```
+
+For a ready-to-use validation wrapper with AJV, see [`@nostrwatch/schemata-js-ajv`](../schemata-js-ajv/README.md).
+
+## API
+
+The compiled output at `dist/schema.json` and `dist/schema.content.json` are the primary artifacts. The schema source is organized by NIP:
+
+| NIP | Schema file | Covers |
+|-----|-------------|--------|
+| NIP-01 | `nips/nip-01/` | Base event structure, kinds 0 and 1, protocol messages, unsigned notes |
+| NIP-11 | `nips/nip-11/` | Relay information document (`RelayInformationDocument`) |
+| NIP-02 | `nips/nip-02/` | Contact list events |
+| NIP-22 | `nips/nip-22/` | Comment events |
+| NIP-40 | `nips/nip-40/` | Expiration events |
+| NIP-65 | `nips/nip-65/` | Relay list metadata |
+| NIP-18 | `nips/nip-18/` | Reposts |
+
+The build script compiles YAML sources to `dist/schema.json` (event schemas) and `dist/schema.content.json` (content schemas). The `quicktype` tool generates typed outputs for Rust, Python, Swift, Kotlin, Java, Go, TypeScript, and JavaScript from these JSON schemas.
+
+## Known Limitations
+
+- **In-progress migration:** This package is moving to `@nostrability/schemata`. The migration is underway; `@nostrwatch/schemata-js-ajv` already uses the new package. This package will remain available until all consumers migrate.
+- **Build process required:** Schemas are not available in raw form from the npm package — the YAML sources must be compiled via `pnpm build`. The dist files are included in the published package.
+
+## Agent Skills
+
+No agent skills defined yet for this package.
+
+## Related Packages
+
+- [`@nostrwatch/schemata-js-ajv`](../schemata-js-ajv/README.md) — AJV-powered validation functions built on `@nostrability/schemata` (the successor to this package)
+- [`@nostrability/schemata`](https://www.npmjs.com/package/@nostrability/schemata) — the migration target for this package; prefer this for new projects
+
+## License
+
+[MIT](../../LICENSE)

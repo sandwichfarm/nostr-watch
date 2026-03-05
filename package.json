@@ -4,6 +4,10 @@
   "version": "0.3.0",
   "scripts": {
     "build": "pnpm -r build",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs",
+    "lint:docs": "markdownlint-cli2 'libraries/*/README.md' 'apps/*/README.md' 'internal/*/README.md'",
     "preinstall": "npx only-allow pnpm",
     "prerelease": "./scripts/prerelease.sh",
     "release": "pnpm run prerelease && ./scripts/release.sh",
@@ -34,10 +38,12 @@
   "devDependencies": {
     "@changesets/cli": "2.27.11",
     "esbuild": "^0.25.0",
+    "markdownlint-cli2": "^0.17.0",
     "gh-pages": "^6.2.0",
     "rimraf": "^6.0.1",
     "rollup": "^4.59.0",
     "typescript": "^5.7.2",
+    "vitepress": "^1.6.4",
     "webpack": "^5.104.1"
   },
   "resolutions": {

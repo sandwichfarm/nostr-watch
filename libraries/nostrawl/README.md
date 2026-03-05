@@ -1,95 +1,139 @@
 # nostrawl
 
-> Trawl [/trɔːl/]: 1. an act of fishing with a trawl net or seine. 2. a thorough search.
+Queue-based Nostr relay web crawler with PQueue and BullMQ adapters.
 
-A tool for persistently fetching and processing filtered events from [nostr](https://github.com/nostr-protocol/) relays.
+[![npm version](https://img.shields.io/npm/v/nostrawl?style=flat-square&label=npm)](https://www.npmjs.com/package/nostrawl)
+[![License](https://img.shields.io/github/license/sandwichfarm/nostr-watch?style=flat-square)](LICENSE)
+[![Status](https://img.shields.io/badge/status-alpha-orange?style=flat-square)](https://github.com/sandwichfarm/nostr-watch)
+[![Runtime](https://img.shields.io/badge/runtime-node-blue?style=flat-square)](https://github.com/sandwichfarm/nostr-watch)
 
-`nostrawl` wraps `nostr-fetch` and implements queue adapters for processing nostr events with persistent caching.
+## Overview
 
-## Features
+`nostrawl` wraps `nostr-fetch` with pluggable queue adapters for controlled, rate-limited crawling of Nostr relay (a WebSocket server that stores and forwards events) data. Given a list of relay URLs and a Nostr filter (a query object specifying event kinds, authors, or time ranges), `nostrawl` distributes fetch jobs across in-memory (PQueue) or Redis-backed (BullMQ) queues, deduplicates events via LMDB cache, and emits each new event to registered listeners. It is designed for persistent, long-running crawl processes that must survive restarts without reprocessing previously seen events.
 
-- Multiple queue adapters (in-memory or Redis-based)
-- Persistent LMDB caching
-- Configurable event filtering
-- Event validation and parsing
-- Progress tracking and event handling
-- Automatic retry and reconnection
+## Prerequisites
+
+Node.js >=20 and pnpm >=9.
+
+For BullMQ adapter: a running Redis instance (tested with Redis 7+).
 
 ## Installation
 
-```bash
-npm install @nostrwatch/nostrawl
-# or
-pnpm install @nostrwatch/nostrawl
-# or
-yarn add @nostrwatch/nostrawl
+```sh
+pnpm add nostrawl
+```
+
+Or with npm:
+
+```sh
+npm install nostrawl
 ```
 
 ## Quick Start
 
-```javascript
-import { nostrawl } from '@nostrwatch/nostrawl';
+```ts
+import {nostrawl} from 'nostrawl'
 
-// Create a trawler with PQueue adapter
-const trawler = nostrawl({
-  adapter: 'pqueue',
-  adapterOptions: { concurrency: 2 },
-  filters: { kinds: [1] },  // Get text notes
-  relays: [
-    'wss://relay.damus.io',
-    'wss://nostr.fmt.wiz.biz'
-  ]
-});
+const trawler = nostrawl(
+  ['wss://relay.damus.io', 'wss://nos.lol'],
+  {
+    filters: {kinds: [1]},
+    cache: {enabled: true, path: './cache'},
+    logLevel: 'info'
+  }
+)
 
-// Handle events
 trawler.on('event', (event) => {
-  console.log(`Received event: ${event.id}`);
-});
+  console.log('received event:', event.id)
+})
 
-// Track progress
 trawler.on('progress', (progress) => {
-  console.log(`Found ${progress.found} events, rejected ${progress.rejected}`);
-});
+  console.log(`relay ${progress.relay}: found=${progress.found} rejected=${progress.rejected}`)
+})
 
-// Start trawling
-trawler.run();
+await trawler.run()
 ```
 
-## Available Adapters
+## API
 
-- **PQueueAdapter**: In-memory queue for single-process environments
-- **BullMQAdapter**: Redis-based queue for distributed processing
+### `nostrawl(relays, options?)`
 
-## Running Examples
-
-The examples directory contains sample code for both queue adapters:
-
-```bash
-# Run PQueue basic example
-pnpm example:pqueue:basic
-
-# Run PQueue advanced example
-pnpm example:pqueue:advanced
-
-# Run BullMQ example (requires Docker)
-pnpm example:bullmq
+```ts
+function nostrawl(relays: string[], options?: Partial<TrawlerOptions>): PQueueAdapter
 ```
 
-See [examples documentation](./examples/README.md) for details.
+Creates and initializes a trawler using the PQueue adapter. Returns the adapter instance, which extends `EventEmitter`.
 
-## Documentation
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `relays` | `string[]` | Array of relay WebSocket URLs to crawl |
+| `options` | `Partial<TrawlerOptions>` | Optional configuration — see options table below |
 
-- [PQueue Adapter Documentation](./examples/pqueue/README.md)
-- [BullMQ Adapter Documentation](./examples/bullmq/README.md)
+### `TrawlerOptions`
 
-## Running Tests
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `filters` | `Record<string, any>` | `{}` | Nostr filter object passed to `nostr-fetch` |
+| `since` | `number \| Record<string, number>` | `0` | Unix timestamp; per-relay timestamps accepted |
+| `adapter` | `'pqueue' \| 'bullmq'` | `'pqueue'` | Queue backend. BullMQ requires Redis |
+| `relaysPerBatch` | `number` | `3` | Number of relays processed concurrently per job |
+| `repeatWhenComplete` | `boolean` | `true` | Restart crawl after all relays finish |
+| `restDuration` | `number` | `1000` | Milliseconds to wait before restarting (if repeat enabled) |
+| `progressEvery` | `number` | `5000` | Minimum ms between progress events per relay |
+| `cache.enabled` | `boolean` | `true` | Deduplicate events using LMDB cache |
+| `cache.path` | `string` | `'./cache'` | Directory path for LMDB cache |
+| `logLevel` | `LogLevel` | `'info'` | Logging verbosity |
+| `validator` | `(trawler, event) => boolean` | — | Return `false` to reject an event before emitting |
+| `parser` | `(trawler, event, job) => Promise<void>` | — | Legacy per-event callback; prefer `on('event', ...)` |
 
-```bash
-pnpm test           # Run tests once
-pnpm test:watch     # Run tests in watch mode
-pnpm test:coverage  # Run tests with coverage
+### Events
+
+The returned adapter extends `EventEmitter`. Register listeners before calling `run()`.
+
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `'event'` | `Event` | Emitted for each new, validated event |
+| `'progress'` | `Progress` | Emitted periodically with per-relay counters |
+| `'error'` | `Error` | Emitted when a relay fetch fails |
+
+### `Progress`
+
+```ts
+interface Progress {
+  relay: string
+  found: number
+  rejected: number
+  total: number
+  last_timestamp: number
+  highest_timestamp: number
+  lowest_timestamp: number
+}
 ```
+
+### `PQueueAdapterOptions`
+
+Extends `TrawlerOptions` with PQueue-specific settings:
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `concurrency` | `number` | `1` | Maximum concurrent jobs |
+| `timeout` | `number` | `undefined` | Per-job timeout in ms; `undefined` disables timeout |
+| `intervalCap` | `number` | — | Maximum jobs per interval |
+| `interval` | `number` | `0` | Rate-limiting interval in ms |
+
+## Known Limitations
+
+No known limitations at this time.
+
+## Agent Skills
+
+No agent skills defined yet for this package.
+
+## Related Packages
+
+- [`@nostrwatch/route66`](../route66/README.md) — persistent relay state management; the primary consumer of crawled events
+- [`apps/trawler`](../../apps/trawler/README.md) — reference application that uses `nostrawl` for continuous relay crawling
 
 ## License
 
-MIT
+[MIT](../../LICENSE)

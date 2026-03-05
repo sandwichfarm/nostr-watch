@@ -1,58 +1,70 @@
 # @nostrwatch/gui
 
-Client-side SvelteKit interface for nostr.watch, focused on browsing, testing, and researching Nostr relays via the nostr.watch NIP-66 monitor network. SSR is disabled and the app builds to a static bundle.
+SvelteKit dashboard for monitoring and exploring Nostr relays.
+
+[![npm version](https://img.shields.io/npm/v/@nostrwatch/gui?style=flat-square&label=npm)](https://www.npmjs.com/package/@nostrwatch/gui)
+[![License](https://img.shields.io/github/license/sandwichfarm/nostr-watch?style=flat-square)](LICENSE)
+[![Status](https://img.shields.io/badge/status-alpha-orange?style=flat-square)](https://github.com/sandwichfarm/nostr-watch)
+[![Runtime](https://img.shields.io/badge/runtime-browser-blue?style=flat-square)](https://github.com/sandwichfarm/nostr-watch)
+
+## Overview
+
+Web-based dashboard for browsing, testing, and researching Nostr relays (WebSocket servers that store and forward events). Built with SvelteKit 2.5 and Svelte 5 with SSR disabled and a static adapter — the entire application runs in the browser. Uses IndexedDB (via Dexie) for client-side storage and connects to the nostr-watch relay network for real-time relay data aggregated from NIP-66 (relay monitoring specification) monitors.
+
+## Prerequisites
+
+- Node.js >=22 (Volta pins 22.15.0)
+- pnpm >=8
+
+No environment variables are required. `@nostrwatch/gui` is a client-only app — runtime configuration is available through the in-app Preferences page (cache wipe, monitor management).
 
 ## Installation
-- Requirements: Node 20+ (Volta pins 22.15.0) and pnpm 8+ (the repo enforces pnpm via `only-allow`).
-- Clone the monorepo and install from the root so workspace dependencies such as `@nostrwatch/route66`, `@nostrwatch/nocap`, and the worker packages are linked correctly:
-  ```bash
-  git clone https://github.com/sandwichfarm/nostr-watch.git
-  cd nostr-watch
-  pnpm install
-  ```
-  Optional: `pnpm dev:setup` will link local workspace builds the way the author develops.
 
-## Usage
-- Start the dev server (Vite/SvelteKit, HMR, port 5173 by default):
-  ```bash
-  pnpm --filter @nostrwatch/gui dev
-  ```
-- Production build (uses `vite.production.js`, outputs to `apps/gui/dist`):
-  ```bash
-  pnpm --filter @nostrwatch/gui build
-  ```
-- Preview the built bundle:
-  ```bash
-  pnpm --filter @nostrwatch/gui preview
-  ```
-- Checks and tooling:
-  ```bash
-  pnpm --filter @nostrwatch/gui test     # vitest
-  pnpm --filter @nostrwatch/gui check    # svelte-check
-  pnpm --filter @nostrwatch/gui lint     # prettier --check
-  pnpm --filter @nostrwatch/gui format   # prettier --write
-  ```
+```sh
+# From monorepo root
+pnpm install
+```
 
-## Features
-- Relay catalog with fast filtering, saved table preferences, and map support powered by the monitor network’s aggregated checks.
-- Relay detail pages built from configurable cards (general info, fees, operator, insights, checks, RTT, uptime, issues, similar relays).
-- Monitor management to enable/disable monitors and spot coverage gaps or bandwidth-heavy setups.
-- Operator view summarizing relay operators and their published metadata.
-- NIP-66 event viewer (`/note/[id]`) that decodes NIP-19 identifiers or raw ids and shows the originating monitor and related relay data.
-- Desktop-first experience; mobile devices are intentionally shown an unsupported notice.
+Workspace dependencies (`@nostrwatch/route66`, `@nostrwatch/nocap`, `@nostrwatch/worker-relay`, and others) are linked automatically by pnpm workspaces.
 
-## Project Layout
-- `src/routes` — SvelteKit routes for the landing page, relay catalog and detail pages, monitors, operators, note viewer, preferences, and the mobile/unsupported fallbacks.
-- `src/lib/components` — UI pieces such as data tables/views, cards, layout, dialogs, and partials used across pages.
-- `src/lib/stores` — App state derived from the nostr.watch worker stack (`@nostrwatch/route66`, cache adapters, monitors, checks, relay metadata).
-- `src/lib/utils` — Lifecycle helpers, routing helpers, and bootstrap logic for wiring the Route66 instance and data register.
-- `service-workers` and `static` — Static assets; service workers are explicitly unregistered on insecure contexts.
-- `svelte.config.js`, `vite.config.ts`, `vite.production.js`, `tailwind.config.ts` — Build, prerender, and styling configuration (static adapter with prerendered entries, COOP/COEP headers in dev).
+## Quick Start
 
-## Development Notes
-- The app is client-only (`ssr = false`) and uses the static adapter with a prerender list; runtime data is fetched from monitors and caches via WebSocket/IndexedDB.
-- Workspace packages are required; running commands from within `apps/gui` without the monorepo context will miss the internal dependencies.
-- Use the Preferences page to wipe local cache/state if relay data appears stale; warnings on the Monitors page call out under- or over-provisioned monitor counts.
+```sh
+# Start development server (port 5173)
+pnpm --filter @nostrwatch/gui dev
+
+# Production build
+pnpm --filter @nostrwatch/gui build
+
+# Preview built bundle
+pnpm --filter @nostrwatch/gui preview
+```
+
+## Configuration
+
+No environment variables. Runtime configuration is available through the in-app Preferences page — use it to wipe local cache, manage monitors, or adjust display settings. Vite build configuration is at `vite.config.ts` (dev) and `vite.production.js` (production builds).
+
+## Known Limitations
+
+- **GUI Table Configuration Separation:** Built-in config is not separated from user config in `apps/gui/src/lib/components/data-view/table/utils.ts` (line 30). User customizations cannot cleanly override or extend built-in table column configurations; there is no supported override mechanism. No workaround available at this time. See [CONCERNS.md — GUI Table Configuration Separation](../../.planning/codebase/CONCERNS.md#gui-table-configuration-separation).
+
+- **Worker-based Computation Fallback Issues:** `dimensions-worker-manager.ts` (lines 189, 200) falls back silently to legacy stores when workers fail, with no telemetry tracking fallback frequency or performance impact. Slow or failing hardware may degrade performance without any visible indicator. See [CONCERNS.md — Worker-based Computation Fallback Issues](../../.planning/codebase/CONCERNS.md#worker-based-computation-fallback-issues).
+
+- **GUI Store Initialization Race Conditions:** Multiple stores in `seed.ts` and `nip11s.ts` depend on StateManager initialization timing. Race conditions are possible on slow hardware or under heavy load, potentially leaving the app in an inconsistent state on startup. See [CONCERNS.md — GUI Store Initialization Race Conditions](../../.planning/codebase/CONCERNS.md#gui-store-initialization-race-conditions).
+
+## Agent Skills
+
+No agent skills defined yet for this package.
+
+## Related Packages
+
+- [`@nostrwatch/route66`](../../libraries/route66/README.md) — relay monitoring state manager; gui uses Route66 as its primary data layer
+- [`@nostrwatch/nocap`](../../libraries/nocap/README.md) — low-level relay connection primitives
+- [`@nostrwatch/worker-relay`](../../libraries/worker-relay/README.md) — in-browser relay worker used by gui for background processing
+- [`@nostrwatch/relay-charts`](../../libraries/relay-charts/README.md) — chart adapters for relay data visualization
+- [`@nostrwatch/relay-chronicle`](../../libraries/relay-chronicle/README.md) — NIP-66 relay state composition used to build timeline views
+- [`@nostrwatch/utils`](../../internal/utils/README.md) — shared utilities used across the monorepo
 
 ## License
-MIT, see `LICENSE`.
+
+[MIT](../../LICENSE)

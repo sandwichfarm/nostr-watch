@@ -1,85 +1,31 @@
-> ⚠️ @nostrwatch/nocapd is deprecated. Do not use it. It has been replaced by [@nostrwatch/relaymon](https://github.com/sandwichfarm/nostr-watch/tree/next/apps/relaymon)
+# @nostrwatch/nocapd
 
-# nocapd 
+> **DEPRECATED** -- This package has been replaced by [@nostrwatch/relaymon](../relaymon/README.md). No further updates will be made here.
 
-deamon that monitors nostr relays discovered by `trawler`. s
+## Overview
 
-# config 
-```yaml
-publisher: 
-  to_relays: #which relays to publish NIP-66 events to.
-    - 'wss://relay.nostr.watch'
+`nocapd` was an early relay monitoring daemon that checked Nostr relay (WebSocket servers that store and forward events) health on a polling schedule. It has been deprecated and replaced by `relaymon`. No new features or fixes will be made to this package.
 
-nocapd: 
-  loglevel: info 
+## Installation
 
-  networks:  #which networks to monitor
-    - clearnet
+N/A -- this package is deprecated. See [@nostrwatch/relaymon](../relaymon/README.md).
 
-  retry: 
-    expiry: [ #backoff
-      { max: 3, delay: 1000 * 60 * 60 * 1},
-      { max: 4, delay: 1000 * 60 * 60 * 2},
-      { max: 5, delay: 1000 * 60 * 60 * 3},
-      { max: 20, delay: 1000 * 60 * 60 * 6 },
-      { max: 50, delay: 1000 * 60 * 60 * 24 },
-      { max: 54, delay: 1000 * 60 * 60 * 24 * 7 }
-    ]
+## Quick Start
 
-  seed: #where to find relays to check
-    sources:
-      - events 
-    options:
-        events:
-          interval: 15m
-          relays: 
-            - 'wss://relay.nostr.watch'
-          pubkeys:
-            - '6cd206fb5517a77497b53a4c64219fd8b5bce845231ecd271e74a96b03afdcda'
-          
-  checks: 
-    enabled:
-      - all
-    options: 
-      enabled: true 
-      expires: 1h
-      interval: 1m
-      priority: 10
-      timeout: {
-        open: 15000,
-        read: 15000,
-        write: 15000,
-        dns: 3000,
-        geo: 3000,
-        info: 6000,
-        ssl: 3000,
-      }
-      max: "Math.ceil(relays.length/60)"
+N/A -- this package is deprecated. See [@nostrwatch/relaymon](../relaymon/README.md).
 
-  bullmq:
-    worker: 
-      concurrency: 1
-```
+## Why deprecated
 
-# .env
-```shell
-NWCACHE_PATH="/path/to/lmdb.mdb" #the .mdb will be created if it doesn't exist on first boot, but the rest of the path does need to exist.
+`nocapd` was an early relay monitoring daemon that checked relay health on a polling schedule. It has been replaced by `relaymon`, which provides a more robust and configurable monitoring loop, better database integration, and improved NIP-66 event publishing. `nocapd` is no longer maintained.
 
-DAEMON_PUBKEY="" #nostr pubkey hex
-DAEMON_PRIVKEY="" #nostr private key
+## Migrating
 
-# NOCAP: AdapterGeoDefault
-IP_API_KEY="" #needed for AdapterGeoDefault in nocap
+Use [`@nostrwatch/relaymon`](../relaymon/README.md) instead. Configuration format has changed -- see the relaymon README for the new environment variable schema.
 
-#REDIS
-REDIS_HOST="localhost"
-REDIS_PORT=6379
-REDIS_DB=0
-REDIS_PASSWORD=""
-REDIS_LOGLEVEL="warning"
-```
+## Known Limitations
 
-# boot
-```shell
-yarn launch
-```
+N/A -- this package is deprecated.
+
+## License
+
+[MIT](../../LICENSE)

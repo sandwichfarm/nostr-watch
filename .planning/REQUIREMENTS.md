@@ -16,7 +16,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **FOUND-05**: CI enforcement validates README format via markdownlint-cli2 in GitHub Actions
 - [x] **FOUND-06**: CI enforcement validates links via lychee link checker in GitHub Actions
 - [x] **FOUND-07**: VitePress configuration aggregates all package docs into unified site with search and navigation
-- [x] **FOUND-08**: Package discovery index page lists all 30+ packages with type, status, one-line description, and link
+- [ ] **FOUND-08**: Package discovery index page lists all 30+ packages with type, status, one-line description, and link
 
 ### App READMEs
 
@@ -59,12 +59,12 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **INT-06**: README.md for internal/redis following styleguide (Redis integration)
 - [x] **INT-07**: README.md for internal/controlflow following styleguide (control flow utilities)
 - [x] **INT-08**: README.md for internal/kinds following styleguide (Nostr event kind registry)
-- [x] **INT-09**: README.md for internal/seed following styleguide (seed data management)
+- [ ] **INT-09**: README.md for internal/seed following styleguide (seed data management)
 
 ### Known Limitations
 
-- [x] **LIMIT-01**: Each README surfaces relevant issues from CONCERNS.md in a "Known Limitations" section
-- [x] **LIMIT-02**: Deprecated packages have prominent deprecation notice with link to replacement
+- [ ] **LIMIT-01**: Each README surfaces relevant issues from CONCERNS.md in a "Known Limitations" section
+- [ ] **LIMIT-02**: Deprecated packages have prominent deprecation notice with link to replacement
 
 ### Claude Code Skills
 
@@ -120,9 +120,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FOUND-05 | Phase 1 | Complete |
 | FOUND-06 | Phase 1 | Complete |
 | FOUND-07 | Phase 1 | Complete |
-| FOUND-08 | Phase 1 | Complete |
-| LIMIT-01 | Phase 1 | Complete |
-| LIMIT-02 | Phase 1 | Complete |
+| FOUND-08 | Phase 4.1 | Pending |
+| LIMIT-01 | Phase 4.1 | Pending |
+| LIMIT-02 | Phase 4.1 | Pending |
 | INT-01 | Phase 2 | Complete |
 | INT-02 | Phase 2 | Complete |
 | INT-03 | Phase 2 | Complete |
@@ -131,7 +131,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INT-06 | Phase 2 | Complete |
 | INT-07 | Phase 2 | Complete |
 | INT-08 | Phase 2 | Complete |
-| INT-09 | Phase 2 | Complete |
+| INT-09 | Phase 4.1 | Pending |
 | LIB-01 | Phase 3 | Complete |
 | LIB-02 | Phase 3 | Complete |
 | LIB-03 | Phase 3 | Complete |

@@ -16,6 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Internal Package READMEs** - README.md for all 9 internal/ packages following styleguide (completed 2026-03-04)
 - [x] **Phase 3: Library Package READMEs** - README.md for all 17 libraries/ packages including adapter-pattern documentation (completed 2026-03-04)
 - [x] **Phase 4: App Package READMEs** - README.md for all 8 apps/ packages with deprecation stubs where applicable (completed 2026-03-05)
+- [ ] **Phase 4.1: Tech Debt Cleanup** - INSERTED — Fix broken link (CI blocker), add CONCERNS.md subheadings for anchor resolution, add nostrwatch package.json metadata
 - [ ] **Phase 5: Claude Code Skills** - Monorepo operation, adapter creation, NIP-66, and debugging skills written against stable READMEs
 - [ ] **Phase 6: Deployment and CI Pipeline** - VitePress build pipeline, Bunny CDN deploy script, and GitHub Actions workflow
 
@@ -93,6 +94,20 @@ Plans:
 - [ ] 04-03: Write READMEs for apps/purist, apps/docker-stacks (utilities and infra)
 - [ ] 04-04: Write deprecation stub for apps/nocapd; write README or stub for apps/umon
 
+### Phase 4.1: Tech Debt Cleanup
+**Goal**: Close all integration gaps and broken flows identified by the v1.0 milestone audit — fix the CI-blocking broken link, make CONCERNS.md anchor fragments resolvable, and activate PackageIndex metadata rendering
+**Depends on**: Phase 4
+**Requirements**: INT-09, LIMIT-01, FOUND-08, LIMIT-02
+**Gap Closure**: Closes gaps from v1.0 milestone audit
+**Success Criteria** (what must be TRUE):
+  1. `internal/seed/README.md` link to db package resolves correctly (lychee passes)
+  2. All 7 CONCERNS.md anchor fragments in route66, auditor, gui, rstate, relaymon READMEs resolve to actual `###` subheadings in CONCERNS.md
+  3. `apps/nocapd/package.json` has `"nostrwatch": { "deprecated": true }` and PackageIndex renders it as deprecated
+**Plans**: TBD
+
+Plans:
+- [ ] 04.1-01: Fix broken link in internal/seed/README.md, add ### subheadings to CONCERNS.md, add nostrwatch metadata to package.json files
+
 ### Phase 5: Claude Code Skills
 **Goal**: Claude Code agents working in this codebase can find and execute skills for all common operations — monorepo management, adapter creation, NIP-66, and debugging — without reading source code; every README's Agent Skills section links to the relevant skills
 **Depends on**: Phase 4
@@ -129,7 +144,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 4.1 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -137,5 +152,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Internal Package READMEs | 3/3 | Complete   | 2026-03-04 |
 | 3. Library Package READMEs | 7/7 | Complete   | 2026-03-04 |
 | 4. App Package READMEs | 4/4 | Complete   | 2026-03-05 |
+| 4.1 Tech Debt Cleanup | 0/1 | Not started | - |
 | 5. Claude Code Skills | 0/5 | Not started | - |
 | 6. Deployment and CI Pipeline | 0/2 | Not started | - |

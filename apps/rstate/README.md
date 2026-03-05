@@ -111,11 +111,11 @@ See `config.sample.yaml` for a complete example with all available options.
 
 ## Known Limitations
 
-- **SDK Stub Dependencies:** `sdk-stubs.ts` contains `MockRelayPool` and `MockSigner` with fake signatures — `MockSigner` returns a hardcoded `'mock_signature'` instead of real cryptographic output. Production deployments must replace these stubs with real ContextVM SDK classes (`ApplesauceRelayPool` and `PrivateKeySigner`). See [CONCERNS.md — SDK Stub Dependencies](.planning/codebase/CONCERNS.md#sdk-stub-dependencies).
+- **SDK Stub Dependencies:** `sdk-stubs.ts` contains `MockRelayPool` and `MockSigner` with fake signatures — `MockSigner` returns a hardcoded `'mock_signature'` instead of real cryptographic output. Production deployments must replace these stubs with real ContextVM SDK classes (`ApplesauceRelayPool` and `PrivateKeySigner`). See [CONCERNS.md — SDK Stub Dependencies](../../.planning/codebase/CONCERNS.md#sdk-stub-dependencies).
 
-- **Outdated Development Utilities:** `dev-tools.ts` uses `@ts-nocheck` and references the old `RelayState` structure that no longer matches the current `AggregatedValue` shape. Dev utilities cannot be reliably used for debugging current data shapes. See [CONCERNS.md — Outdated Development Utilities](.planning/codebase/CONCERNS.md#outdated-development-utilities).
+- **Outdated Development Utilities:** `dev-tools.ts` uses `@ts-nocheck` and references the old `RelayState` structure that no longer matches the current `AggregatedValue` shape. Dev utilities cannot be reliably used for debugging current data shapes. See [CONCERNS.md — Outdated Development Utilities](../../.planning/codebase/CONCERNS.md#outdated-development-utilities).
 
-- **Console.log in Scoring:** `monitor-scoring.ts` has unconditional `console.log` calls at lines 38, 47, and 52 that fire on every `computeAllScores()` invocation. These will spam production logs at any log level. Replace with a gated logger as a workaround. See [CONCERNS.md — Monitor Coverage Calculation Debug Logging](.planning/codebase/CONCERNS.md#monitor-coverage-calculation-debug-logging).
+- **Console.log in Scoring:** `monitor-scoring.ts` has unconditional `console.log` calls at lines 38, 47, and 52 that fire on every `computeAllScores()` invocation. These will spam production logs at any log level. Replace with a gated logger as a workaround. See [CONCERNS.md — Monitor Coverage Calculation Debug Logging](../../.planning/codebase/CONCERNS.md#monitor-coverage-calculation-debug-logging).
 
 ## Agent Skills
 

@@ -164,9 +164,9 @@ queue:
 
 ## Known Limitations
 
-- **Relay URL filtering with pipe character:** `daemon.ts` (lines 234–239) logs relay URLs containing the `|` character but does not properly clean or reject them. This is a hotfix-level workaround for a structural URL validation gap at ingestion. As a workaround, remove malformed relay entries from the database directly via the SQLite CLI. See [CONCERNS.md — Relay URL Filtering with Pipe Character](.planning/codebase/CONCERNS.md#known-bugs).
+- **Relay URL filtering with pipe character:** `daemon.ts` (lines 234–239) logs relay URLs containing the `|` character but does not properly clean or reject them. This is a hotfix-level workaround for a structural URL validation gap at ingestion. As a workaround, remove malformed relay entries from the database directly via the SQLite CLI. See [CONCERNS.md — Relay URL Filtering with Pipe Character](../../.planning/codebase/CONCERNS.md#known-bugs).
 
-- **Database inspection function incomplete:** `interactive/index.ts` (lines 31–88) has a `debugInspectDatabase` function that logs start and end markers but contains no actual SQL inspection queries — they are missing or commented out. Use the SQLite CLI directly to inspect the database. See [CONCERNS.md — Database Inspection Function Incomplete](.planning/codebase/CONCERNS.md#known-bugs).
+- **Database inspection function incomplete:** `interactive/index.ts` (lines 31–88) has a `debugInspectDatabase` function that logs start and end markers but contains no actual SQL inspection queries — they are missing or commented out. Use the SQLite CLI directly to inspect the database. See [CONCERNS.md — Database Inspection Function Incomplete](../../.planning/codebase/CONCERNS.md#known-bugs).
 
 ## Agent Skills
 

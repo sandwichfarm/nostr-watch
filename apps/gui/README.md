@@ -46,11 +46,11 @@ No environment variables. Runtime configuration is available through the in-app 
 
 ## Known Limitations
 
-- **GUI Table Configuration Separation:** Built-in config is not separated from user config in `apps/gui/src/lib/components/data-view/table/utils.ts` (line 30). User customizations cannot cleanly override or extend built-in table column configurations; there is no supported override mechanism. No workaround available at this time. See [CONCERNS.md — GUI Table Configuration Separation](.planning/codebase/CONCERNS.md#gui-table-configuration-separation).
+- **GUI Table Configuration Separation:** Built-in config is not separated from user config in `apps/gui/src/lib/components/data-view/table/utils.ts` (line 30). User customizations cannot cleanly override or extend built-in table column configurations; there is no supported override mechanism. No workaround available at this time. See [CONCERNS.md — GUI Table Configuration Separation](../../.planning/codebase/CONCERNS.md#gui-table-configuration-separation).
 
-- **Worker-based Computation Fallback Issues:** `dimensions-worker-manager.ts` (lines 189, 200) falls back silently to legacy stores when workers fail, with no telemetry tracking fallback frequency or performance impact. Slow or failing hardware may degrade performance without any visible indicator. See [CONCERNS.md — Worker-based Computation Fallback Issues](.planning/codebase/CONCERNS.md#worker-based-computation-fallback-issues).
+- **Worker-based Computation Fallback Issues:** `dimensions-worker-manager.ts` (lines 189, 200) falls back silently to legacy stores when workers fail, with no telemetry tracking fallback frequency or performance impact. Slow or failing hardware may degrade performance without any visible indicator. See [CONCERNS.md — Worker-based Computation Fallback Issues](../../.planning/codebase/CONCERNS.md#worker-based-computation-fallback-issues).
 
-- **GUI Store Initialization Race Conditions:** Multiple stores in `seed.ts` and `nip11s.ts` depend on StateManager initialization timing. Race conditions are possible on slow hardware or under heavy load, potentially leaving the app in an inconsistent state on startup. See [CONCERNS.md — GUI Store Initialization Race Conditions](.planning/codebase/CONCERNS.md#gui-store-initialization-race-conditions).
+- **GUI Store Initialization Race Conditions:** Multiple stores in `seed.ts` and `nip11s.ts` depend on StateManager initialization timing. Race conditions are possible on slow hardware or under heavy load, potentially leaving the app in an inconsistent state on startup. See [CONCERNS.md — GUI Store Initialization Race Conditions](../../.planning/codebase/CONCERNS.md#gui-store-initialization-race-conditions).
 
 ## Agent Skills
 

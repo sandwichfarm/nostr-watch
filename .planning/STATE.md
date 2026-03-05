@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-04T23:19:47.299Z"
+last_updated: "2026-03-05T09:21:44.863Z"
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 14
-  completed_plans: 14
+  total_phases: 4
+  completed_phases: 4
+  total_plans: 18
+  completed_plans: 18
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-04)
 
 **Core value:** Every package in the monorepo has clear, consistent, useful documentation that serves both human developers and AI agents working on the codebase.
-**Current focus:** Phase 3 — Library Package READMEs
+**Current focus:** Phase 4 — App Package READMEs
 
 ## Current Position
 
-Phase: 3 of 6 (Library Package READMEs)
-Plan: 7 of 7 in current phase — 03-07 COMPLETE (Phase 3 complete)
-Status: Phase 3 COMPLETE — all 7 plans done (03-01 through 03-07)
-Last activity: 2026-03-04 — nostrawl queue crawler, relay-charts ChartAdapter system, relay-chronicle NIP-66 state composition, @nostrwatch/kuma uptime monitor READMEs
+Phase: 4 of 6 (App Package READMEs)
+Plan: 4 of 4 in current phase — 04-04 COMPLETE
+Status: Phase 4 plan 04-04 COMPLETE (nocapd deprecation stub, umon browser extension README)
+Last activity: 2026-03-05 — nocapd MD043-compliant deprecation stub redirecting to relaymon; umon Manifest V3 browser extension README from scratch
 
-Progress: [█████░░░░░] 34%
+Progress: [████████░░] 78%
 
 ## Performance Metrics
 
@@ -50,6 +50,9 @@ Progress: [█████░░░░░] 34%
 
 *Updated after each plan completion*
 | Phase 03 P07 | 12 | 3 tasks | 4 files |
+| Phase 04 P01 | 2 | 2 tasks | 2 files |
+| Phase 04-app-package-readmes P03 | 5 | 2 tasks | 2 files |
+| Phase 04-app-package-readmes P02 | 2 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -105,6 +108,15 @@ Recent decisions affecting current work:
 - [03-05]: websocket README documents static create() factory and default constructor autoConnect behavior — callers need both patterns
 - [03-05]: memory-relay SvelteMemoryRelay import path documented as /svelte subpath per package.json exports field
 - [03-05]: AbstractMemoryRelay qualify/instantiate lifecycle callbacks documented from on() method — critical extensibility points not obvious from class name
+- [04-04]: nocapd relative link uses ../relaymon/README.md (apps/ sibling directories) not ../../apps/relaymon/README.md from styleguide example (wrong base path)
+- [04-04]: umon package name confirmed as @nostrwatch/umon from package.json (not @nicfab/umon as plan flagged to verify)
+- [04-04]: umon uses scope badge instead of npm version badge -- browser extension not published to npm
+- [Phase 04]: gui README documents no env vars — client-only app with runtime config via Preferences UI
+- [Phase 04]: rstate README summarizes API into 14-row endpoint table instead of copying full 50+ endpoint list
+- [Phase 04]: rstate badge URL encodes slash as %2F for hyphenated scope @nostr-watch/rstate
+- [Phase 04]: [04-01]: rstate package name uses @nostr-watch/rstate (hyphen in scope) unlike all other @nostrwatch/ packages — documented accurately from package.json
+- [Phase 04-app-package-readmes]: purist uses scope badge (not npm version) — no package.json exists; Known Limitations notes absent source with no workaround
+- [Phase 04-app-package-readmes]: docker-stacks Available Stacks table lists all 5 variants — Installation uses sh + ls only, not npm/pnpm (Docker Compose infra)
 
 ### Pending Todos
 
@@ -118,6 +130,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-04T23:11:59Z
-Stopped at: Completed 03-library-package-readmes/03-07-PLAN.md — nostrawl queue crawler, relay-charts ChartAdapter system, relay-chronicle NIP-66 state composition, @nostrwatch/kuma uptime monitor; Phase 3 complete
-Resume file: .planning/phases/04-app-readmes/04-01-PLAN.md (next phase)
+Last session: 2026-03-05T09:20:03Z
+Stopped at: Completed 04-app-package-readmes/04-04-PLAN.md -- nocapd deprecation stub and umon browser extension README
+Resume file: .planning/phases/04-app-package-readmes/04-01-PLAN.md (remaining Phase 4 plans: 04-01 through 04-03)

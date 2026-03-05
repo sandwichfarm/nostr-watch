@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Foundation** - README styleguide, CI enforcement, VitePress config, and documentation standards that all later phases depend on (completed 2026-03-04)
 - [x] **Phase 2: Internal Package READMEs** - README.md for all 9 internal/ packages following styleguide (completed 2026-03-04)
 - [x] **Phase 3: Library Package READMEs** - README.md for all 17 libraries/ packages including adapter-pattern documentation (completed 2026-03-04)
-- [ ] **Phase 4: App Package READMEs** - README.md for all 8 apps/ packages with deprecation stubs where applicable
+- [x] **Phase 4: App Package READMEs** - README.md for all 8 apps/ packages with deprecation stubs where applicable (completed 2026-03-05)
 - [ ] **Phase 5: Claude Code Skills** - Monorepo operation, adapter creation, NIP-66, and debugging skills written against stable READMEs
 - [ ] **Phase 6: Deployment and CI Pipeline** - VitePress build pipeline, Bunny CDN deploy script, and GitHub Actions workflow
 
@@ -136,6 +136,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 1. Foundation | 4/4 | Complete   | 2026-03-04 |
 | 2. Internal Package READMEs | 3/3 | Complete   | 2026-03-04 |
 | 3. Library Package READMEs | 7/7 | Complete   | 2026-03-04 |
-| 4. App Package READMEs | 0/4 | Not started | - |
+| 4. App Package READMEs | 4/4 | Complete   | 2026-03-05 |
 | 5. Claude Code Skills | 0/5 | Not started | - |
 | 6. Deployment and CI Pipeline | 0/2 | Not started | - |

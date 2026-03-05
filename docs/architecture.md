@@ -77,5 +77,5 @@ See each package's README for migration instructions.
 
 ## Further Reading
 
-- [All Packages](/packages/) — Full package list with descriptions and status
-- [Getting Started](/getting-started) — Set up the dev environment
+- [All Packages](./packages/) — Full package list with descriptions and status
+- [Getting Started](./getting-started.md) — Set up the dev environment

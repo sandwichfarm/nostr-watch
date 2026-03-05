@@ -9,7 +9,7 @@ In-browser Nostr relay running in a Web Worker with SQLite-wasm storage and OPFS
 
 ## Overview
 
-`@nostrwatch/worker-relay` runs a full Nostr relay (a WebSocket server that stores and forwards signed JSON events) inside a browser Web Worker — an isolated background thread that keeps the relay off the main UI thread. Event storage is handled by `sqlite-wasm`, a WebAssembly build of SQLite, with persistence backed by OPFS (Origin Private File System), a browser-native file system API that survives page reloads. The package also adds [NIP-119](https://github.com/nostr-protocol/nips/blob/master/119.md) (AND-filter tag queries) support on top of the standard relay functionality.
+`@nostrwatch/worker-relay` runs a full Nostr relay (a WebSocket server that stores and forwards signed JSON events) inside a browser Web Worker — an isolated background thread that keeps the relay off the main UI thread. Event storage is handled by `sqlite-wasm`, a WebAssembly build of SQLite, with persistence backed by OPFS (Origin Private File System), a browser-native file system API that survives page reloads. The package also adds NIP-119 (AND-filter tag queries) support on top of the standard relay functionality.
 
 `WorkerRelayInterface` is the main class callers use. It communicates with the worker via a message-passing RPC layer, so all methods are async and return Promises.
 

@@ -8,9 +8,9 @@ Developer documentation for the @nostrwatch monorepo — a suite of tools for mo
 
 ## Quick Links
 
-- [Architecture Overview](/architecture) — How the monorepo is structured and how packages relate
-- [Getting Started](/getting-started) — Set up your dev environment and common workflows
-- [All Packages](/packages/) — Browse all 30+ packages by type
+- [Architecture Overview](./architecture.md) — How the monorepo is structured and how packages relate
+- [Getting Started](./getting-started.md) — Set up your dev environment and common workflows
+- [All Packages](./packages/) — Browse all 30+ packages by type
 
 ## What is nostr-watch?
 

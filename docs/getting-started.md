@@ -77,5 +77,5 @@ Cross-package imports use `@nostrwatch/*` scoped names, resolved automatically b
 
 ## Next Steps
 
-- [Architecture Overview](/architecture) — Understand how packages relate
-- [All Packages](/packages/) — Browse the full package catalog
+- [Architecture Overview](./architecture.md) — Understand how packages relate
+- [All Packages](./packages/) — Browse the full package catalog

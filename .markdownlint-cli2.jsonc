@@ -15,6 +15,11 @@
     // and relay URLs (wss://) appear bare in READMEs and are intentional.
     "MD034": false,
 
+    // MD060: Table column style — disabled. markdownlint v0.40.0 introduced this rule
+    // which enforces consistent table pipe spacing. Our tables use mixed styles
+    // (compact delimiters, spaced data rows) which is readable and intentional.
+    "MD060": false,
+
     // MD040: Fenced code blocks must have a language tag.
     // Enforces the styleguide requirement: every ``` block needs ts, js, sh, json, etc.
     "MD040": true,

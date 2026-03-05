@@ -5,3 +5,9 @@
 ^https://badge\.fury\.io
 # npm — sometimes flaky in CI
 ^https://www\.npmjs\.com/package/
+# Root-relative doc site links — resolved by VitePress, not valid as filesystem paths
+^/architecture
+^/getting-started
+^/packages
+# localhost dev server — not available in CI
+^http://localhost

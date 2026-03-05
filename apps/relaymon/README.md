@@ -175,7 +175,7 @@ No agent skills defined yet for this package.
 ## Related Packages
 
 - [`@nostrwatch/nocap`](../../libraries/nocap/README.md) — relay check primitives used for all health checks
-- [`@nostrwatch/db`](../../internal/db/README.md) — SQLite database abstraction layer
+- [`@nostrwatch/db`](../../libraries/db/README.md) — SQLite database abstraction layer
 - [`@nostrwatch/logger`](../../internal/logger/README.md) — structured logging
 - [`@nostrwatch/announce`](../../internal/announce/README.md) — monitor profile and relay list announcement
 - [`@nostrwatch/publisher`](../../internal/publisher/README.md) — NIP-66 event publishing

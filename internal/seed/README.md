@@ -164,7 +164,7 @@ No agent skills defined yet for this package.
 ## Related Packages
 
 - [`@nostrwatch/relaymon`](../../apps/relaymon/README.md) — primary consumer of `RelaySeeder`; uses it to bootstrap the relay list before starting health checks
-- [`@nostrwatch/db`](../../internal/db/README.md) — provides the SQLite database that the `db` and `cache` seed sources read from
+- [`@nostrwatch/db`](../../libraries/db/README.md) — provides the SQLite database that the `db` and `cache` seed sources read from
 - [`@nostrwatch/utils`](../../internal/utils/README.md) — provides `parseRelayNetwork` used to detect relay network type during filtering
 
 ## License

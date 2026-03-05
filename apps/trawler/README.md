@@ -104,7 +104,7 @@ No agent skills defined yet for this package.
 
 - [`nostrawl`](https://github.com/sandwichfarm/nostrawl) — the crawling engine used internally by trawler
 - [`@nostrwatch/nocap`](../../libraries/nocap/README.md) — low-level relay check primitives
-- [`@nostrwatch/db`](../../internal/db/README.md) — database abstraction layer for SQLite persistence
+- [`@nostrwatch/db`](../../libraries/db/README.md) — database abstraction layer for SQLite persistence
 - [`@nostrwatch/logger`](../../internal/logger/README.md) — structured logging
 - [`@nostrwatch/publisher`](../../internal/publisher/README.md) — NIP-66 event publishing
 - [`@nostrwatch/announce`](../../internal/announce/README.md) — monitor announcement publishing

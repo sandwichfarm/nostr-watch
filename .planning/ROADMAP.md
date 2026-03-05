@@ -85,7 +85,7 @@ Plans:
   3. A developer opening apps/nocapd README immediately sees a prominent deprecation notice with a link to the replacement
   4. A developer reading any active app README understands how to run it locally, what environment variables it requires, and what other packages it depends on
   5. Apps with CONCERNS.md entries have accurate "Known Limitations" sections that describe known tech debt
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
 - [ ] 04-01: Write READMEs for apps/gui, apps/rstate (most complex apps — SvelteKit dashboard and ContextVM state machine)

@@ -1,0 +1,17 @@
+{
+  "bunkerPubkey": "9bbabc5e36297b6f7d15dd21b90ef85b2f1cb80e15c37fcc0c7f6c05acfd0019",
+  "relays": [
+    "wss://nos.lol",
+    "wss://relay.nsite.lol",
+    "wss://relay.primal.net",
+    "wss://relay.damus.io"
+  ],
+  "servers": [
+    "https://blssm.us",
+    "https://cdn.hzrd149.com",
+    "https://cdn.sovbit.host"
+  ],
+  "id": "docs",
+  "title": "nostr.watch docs",
+  "description": "nostr.watch source code documentation"
+}

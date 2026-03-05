@@ -9,3 +9,4 @@ apps/**/config.yaml
 apps/**/config.docker.yaml
 
 apps/**/.docker/config/*
+!apps/relaymon/.docker/config/*

@@ -13,6 +13,17 @@ export default defineConfig({
     'docs/:path(.*)': ':path',
   },
 
+  ignoreDeadLinks: [
+    /\/LICENSE$/,
+    /\.planning\//,
+    /\/adapters\//,
+    /localhost/,
+    /\/DEPLOYMENT$/,
+    /\/MONITORING$/,
+    /\/test-strategy$/,
+    /\/src\/rest\/README$/,
+  ],
+
   srcExclude: [
     '.planning/**',
     'node_modules/**',

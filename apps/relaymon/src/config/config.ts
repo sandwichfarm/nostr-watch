@@ -108,6 +108,16 @@ function processConfigTimeValues(config: Config, parentPath = ""): void {
     );
   }
 
+  // Process announce frequency
+  if (config.announce?.frequency) {
+    const path = `${parentPath}.announce.frequency`;
+    const originalValue = config.announce.frequency;
+    config.announce.frequency = timeString(config.announce.frequency);
+    if (typeof originalValue === "string") {
+      originalTimeValues.set(path, originalValue);
+    }
+  }
+
   // Process health config time values
   if (config.health?.kuma?.intervalMs) {
     const path = `${parentPath}.health.kuma.intervalMs`;

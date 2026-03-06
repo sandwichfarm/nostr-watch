@@ -24,10 +24,10 @@ export async function maybeAnnounce(config: Config, queueManager?: QueueManager)
   // }
   
   const { info: profile, owner, geo } = config?.monitor
-  const { userMetaRelays } = config?.announce || []
+  const { userMetaRelays } = config?.announce || {}
   const { relays:outboxRelays } = config?.publisher;
-  const { networks } = config.relaymon || []
-  const { expires, timeout: timeouts } = config.relaymon?.checks?.options || {}
+  const { networks } = config.relaymon || {}
+  const { timeout: timeouts } = config.relaymon?.checks?.options || {}
   const checks = config.relaymon?.checks?.enabled || []
 
   if(outboxRelays?.length) {
@@ -38,9 +38,13 @@ export async function maybeAnnounce(config: Config, queueManager?: QueueManager)
     userMetaRelays.forEach( (relay:string) => relaySet.add(relay) )
   }
 
-  if(!expires) throw new Error("Announce frequency is not set")
+  // Use announce.frequency from config, default to 1 day
+  const DEFAULT_ANNOUNCE_FREQUENCY_MS = 86400000; // 1d
+  const announceFrequencyMs = config.announce?.frequency
+    ? (typeof config.announce.frequency === "number" ? config.announce.frequency : timeString(config.announce.frequency))
+    : DEFAULT_ANNOUNCE_FREQUENCY_MS;
 
-  const frequency = (Math.round(timeString(expires)/1000)).toString()
+  const frequency = (Math.round(announceFrequencyMs / 1000)).toString()
 
   const sk = getPrivateKey();
 

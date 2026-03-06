@@ -202,6 +202,7 @@ export interface DbConfig {
 }
 
 export interface AnnounceConfig {
+  frequency?: number | string;
   userMetaRelays?: string[];
   nip66Relays?: string[];
 }

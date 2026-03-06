@@ -41,22 +41,96 @@ HEDPROXY_PORT="12345"
 # Disable PID check in Docker environment
 export RELAYMON_SKIP_PID_CHECK=true
 
-# --- Wait for Proxies ---
-wait_for_service() {
+# --- Wait for Proxies (bootstrap-aware) ---
+TOR_BOOTSTRAP_TIMEOUT="${TOR_BOOTSTRAP_TIMEOUT:-180}"
+I2P_BOOTSTRAP_TIMEOUT="${I2P_BOOTSTRAP_TIMEOUT:-300}"
+
+wait_for_tor_ready() {
   local host=$1
   local port=$2
-  local name=$3
-  echo "Waiting for $name service at $host:$port..."
-  until nc -z $host $port; do
-    echo "Waiting for $name ($host:$port)..."
+
+  # Phase 1: Wait for port to open
+  echo "Waiting for Tor to bootstrap..."
+  echo "  Phase 1: Waiting for SOCKS port $host:$port..."
+  until nc -z $host $port 2>/dev/null; do
     sleep 2
   done
-  echo "$name service is available."
+  echo "  Tor SOCKS port is open."
+
+  # Phase 2: Verify actual Tor connectivity
+  echo "  Phase 2: Verifying Tor circuit readiness (timeout: ${TOR_BOOTSTRAP_TIMEOUT}s)..."
+  local test_domain="duckduckgogg42xjoc72x3sjasowoarfbgcmvfimaftt6twagswzczad.onion"
+  local elapsed=0
+  local wait_interval=10
+
+  while [ $elapsed -lt $TOR_BOOTSTRAP_TIMEOUT ]; do
+    if curl --socks5-hostname "$host:$port" -s --head --connect-timeout 15 "http://$test_domain" > /dev/null 2>&1; then
+      echo "  Tor circuits are ready (took ${elapsed}s)."
+      return 0
+    fi
+    echo "  Tor not ready yet (${elapsed}s/${TOR_BOOTSTRAP_TIMEOUT}s), retrying in ${wait_interval}s..."
+    sleep $wait_interval
+    elapsed=$((elapsed + wait_interval))
+    # Increase backoff after first minute
+    if [ $elapsed -ge 60 ] && [ $wait_interval -lt 20 ]; then
+      wait_interval=20
+    fi
+  done
+
+  echo "  WARNING: Tor bootstrap timeout after ${TOR_BOOTSTRAP_TIMEOUT}s - circuits may not be ready."
+  if [ "${REQUIRE_NETWORK_CONNECTIVITY}" = "true" ]; then
+    echo "  REQUIRE_NETWORK_CONNECTIVITY is set, aborting."
+    exit 1
+  fi
+  echo "  Continuing anyway..."
+  return 1
+}
+
+wait_for_i2p_ready() {
+  local host=$1
+  local port=$2
+
+  # Phase 1: Wait for SAM port to open
+  echo "Waiting for I2P to bootstrap..."
+  echo "  Phase 1: Waiting for SAM port $host:$port..."
+  until nc -z $host $port 2>/dev/null; do
+    sleep 2
+  done
+  echo "  I2P SAM port is open."
+
+  # Phase 2: Verify SAM bridge readiness with HELLO handshake
+  echo "  Phase 2: Verifying I2P SAM readiness (timeout: ${I2P_BOOTSTRAP_TIMEOUT}s)..."
+  local elapsed=0
+  local wait_interval=15
+
+  while [ $elapsed -lt $I2P_BOOTSTRAP_TIMEOUT ]; do
+    local sam_response
+    sam_response=$(echo "HELLO VERSION" | nc -w 5 "$host" "$port" 2>/dev/null || true)
+    if echo "$sam_response" | grep -q "HELLO REPLY RESULT=OK"; then
+      echo "  I2P SAM bridge is ready (took ${elapsed}s)."
+      return 0
+    fi
+    echo "  I2P SAM not ready yet (${elapsed}s/${I2P_BOOTSTRAP_TIMEOUT}s), retrying in ${wait_interval}s..."
+    sleep $wait_interval
+    elapsed=$((elapsed + wait_interval))
+    # Increase backoff after two minutes
+    if [ $elapsed -ge 120 ] && [ $wait_interval -lt 30 ]; then
+      wait_interval=30
+    fi
+  done
+
+  echo "  WARNING: I2P bootstrap timeout after ${I2P_BOOTSTRAP_TIMEOUT}s - tunnels may not be ready."
+  if [ "${REQUIRE_NETWORK_CONNECTIVITY}" = "true" ]; then
+    echo "  REQUIRE_NETWORK_CONNECTIVITY is set, aborting."
+    exit 1
+  fi
+  echo "  Continuing anyway..."
+  return 1
 }
 
 echo "Waiting for proxy services..."
-wait_for_service $TOR_PROXY_HOST $TOR_SOCKS_PORT "Tor Proxy"
-wait_for_service $I2P_PROXY_HOST $I2P_SAM_PORT "I2P SAM Bridge"
+wait_for_tor_ready $TOR_PROXY_HOST $TOR_SOCKS_PORT
+wait_for_i2p_ready $I2P_PROXY_HOST $I2P_SAM_PORT
 
 # Uncomment if lokinet is enabled in docker-compose
 # wait_for_service $LOKINET_PROXY_HOST $LOKINET_SOCKS_PORT "Lokinet Proxy"
@@ -70,7 +144,7 @@ if [ "$VERIFY_ONLY" = "false" ]; then
   unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY all_proxy ALL_PROXY
 
   # Cache dependencies
-  deno cache --no-lock --reload index.ts || echo "Some dependency caching failed, continuing anyway"
+  deno cache --no-lock index.ts || echo "Some dependency caching failed, continuing anyway"
 fi
 
 # --- Start hedproxy ---
@@ -82,16 +156,21 @@ hedproxy -proto socks -bind "0.0.0.0:$HEDPROXY_PORT" -tor "$TOR_PROXY_HOST:$TOR_
 # hedproxy socks "0.0.0.0:$HEDPROXY_PORT" -tor "$TOR_PROXY_HOST:$TOR_SOCKS_PORT" -i2p "$I2P_PROXY_HOST:$I2P_SAM_PORT" -passthrough clearnet -logLevel SILENT &
 HEDPROXY_PID=$!
 
-# Verify hedproxy is listening
-sleep 2
-if ! netstat -tlpn | grep -q ":$HEDPROXY_PORT.*LISTEN.*hedproxy"; then
-    echo "ERROR: hedproxy failed to bind to port $HEDPROXY_PORT"
-    exit 1
+# Verify hedproxy is listening (poll up to 10s instead of fixed sleep)
+echo "Waiting for hedproxy to bind to port $HEDPROXY_PORT..."
+hedproxy_wait=0
+while [ $hedproxy_wait -lt 10 ]; do
+  if netstat -tlpn 2>/dev/null | grep -q ":$HEDPROXY_PORT.*LISTEN"; then
+    echo "hedproxy is listening on port $HEDPROXY_PORT."
+    break
+  fi
+  sleep 1
+  hedproxy_wait=$((hedproxy_wait + 1))
+done
+if [ $hedproxy_wait -ge 10 ]; then
+  echo "ERROR: hedproxy failed to bind to port $HEDPROXY_PORT within 10s"
+  exit 1
 fi
-
-
-# Give services a moment to start
-sleep 2
 
 # Test Tor WebSocket connectivity with websocat
 test_tor_ws_with_websocat() {
@@ -186,27 +265,48 @@ verify_hedproxy_connectivity() {
     "oxen.io.loki"
   )
 
-  local timeout=10
+  local timeout=20
+  local max_retries=3
+  local retry_delay=5
   local exit_code=0
-  
-  # Function to test connection to a domain
+
+  # Function to test connection to a domain (with retries)
   test_domain() {
     local proxy_type=$1
     local proxy_addr=$2
     local domain=$3
     local timeout=$4
-    
-    echo "  • Testing connection to $domain..."
-    if [ "$proxy_type" = "socks5" ]; then
-      curl --socks5-hostname $proxy_addr -s --head --connect-timeout $timeout http://$domain > /dev/null 2>&1
-      return $?
-    elif [ "$proxy_type" = "http" ]; then
-      curl -x $proxy_addr -s --head --connect-timeout $timeout http://$domain > /dev/null 2>&1
-      return $?
-    else
-      curl -s --head --connect-timeout $timeout http://$domain > /dev/null 2>&1
-      return $?
-    fi
+
+    local attempt=1
+    while [ $attempt -le $max_retries ]; do
+      if [ $attempt -gt 1 ]; then
+        echo "    Retry $attempt/$max_retries for $domain..."
+      else
+        echo "  • Testing connection to $domain..."
+      fi
+
+      local result=1
+      if [ "$proxy_type" = "socks5" ]; then
+        curl --socks5-hostname $proxy_addr -s --head --connect-timeout $timeout http://$domain > /dev/null 2>&1
+        result=$?
+      elif [ "$proxy_type" = "http" ]; then
+        curl -x $proxy_addr -s --head --connect-timeout $timeout http://$domain > /dev/null 2>&1
+        result=$?
+      else
+        curl -s --head --connect-timeout $timeout http://$domain > /dev/null 2>&1
+        result=$?
+      fi
+
+      if [ $result -eq 0 ]; then
+        return 0
+      fi
+
+      attempt=$((attempt + 1))
+      if [ $attempt -le $max_retries ]; then
+        sleep $retry_delay
+      fi
+    done
+    return 1
   }
   
   # Check Tor connectivity
@@ -224,21 +324,40 @@ verify_hedproxy_connectivity() {
   done
   
   if [ "$tor_success" = "false" ]; then
-    echo "❌ Failed to connect to any Tor onion services"
+    echo "❌ Failed to connect to any Tor onion services via hedproxy"
     echo "Diagnostic information:"
-    echo "  • Checking direct Tor connection..."
+    echo "  • Checking direct Tor connection (note: extra time may allow circuits to complete)..."
+    local direct_tor_works=false
     for domain in "${tor_domains[@]}"; do
       if test_domain "socks5" "$TOR_PROXY_HOST:$TOR_SOCKS_PORT" "$domain" "$timeout"; then
-        echo "    ✓ Direct Tor connection works for $domain (issue is with hedproxy)"
+        echo "    ✓ Direct Tor connection works for $domain"
+        direct_tor_works=true
         break
       fi
     done
-    
-    echo "  • Displaying network configuration:"
+
+    if [ "$direct_tor_works" = "true" ]; then
+      echo "  • Direct Tor works — retrying hedproxy to rule out timing..."
+      for domain in "${tor_domains[@]}"; do
+        if test_domain "socks5" "127.0.0.1:$HEDPROXY_PORT" "$domain" "$timeout"; then
+          echo "    ✓ Hedproxy now works for $domain (was a timing issue, not hedproxy)"
+          tor_success=true
+          break
+        fi
+      done
+      if [ "$tor_success" = "false" ]; then
+        echo "    ✗ Hedproxy still fails — may be a hedproxy routing issue"
+      fi
+    else
+      echo "    ✗ Direct Tor also fails — Tor circuits may still be building"
+    fi
+
+    echo "  • Network configuration:"
     echo "    - Tor proxy: $TOR_PROXY_HOST:$TOR_SOCKS_PORT"
     echo "    - Hedproxy port: $HEDPROXY_PORT"
-    echo "    - HTTP_PROXY: $HTTP_PROXY"
-    exit_code=1
+    if [ "$tor_success" = "false" ]; then
+      exit_code=1
+    fi
   fi
   
   # Check I2P connectivity
@@ -256,27 +375,46 @@ verify_hedproxy_connectivity() {
   done
   
   if [ "$i2p_success" = "false" ]; then
-    echo "❌ Failed to connect to any I2P services"
+    echo "❌ Failed to connect to any I2P services via hedproxy"
     echo "Diagnostic information:"
-    # Check if I2P HTTP proxy is available
+    local direct_i2p_works=false
+    # Check if I2P HTTP proxy is available for diagnostics
     if nc -z $I2P_PROXY_HOST 4444 2>/dev/null; then
       echo "  • I2P HTTP proxy available at $I2P_PROXY_HOST:4444"
-      echo "  • Checking direct I2P HTTP proxy connection..."
+      echo "  • Checking direct I2P HTTP proxy connection (note: extra time may allow tunnels to build)..."
       for domain in "${i2p_domains[@]}"; do
         if test_domain "http" "$I2P_PROXY_HOST:4444" "$domain" "$timeout"; then
-          echo "    ✓ Direct I2P HTTP proxy works for $domain (issue is with hedproxy)"
+          echo "    ✓ Direct I2P HTTP proxy works for $domain"
+          direct_i2p_works=true
           break
         fi
       done
-    else 
+    else
       echo "  • I2P HTTP proxy not available at $I2P_PROXY_HOST:4444"
     fi
-    
-    echo "  • Displaying network configuration:"
+
+    if [ "$direct_i2p_works" = "true" ]; then
+      echo "  • Direct I2P works — retrying hedproxy to rule out timing..."
+      for domain in "${i2p_domains[@]}"; do
+        if test_domain "socks5" "127.0.0.1:$HEDPROXY_PORT" "$domain" "$timeout"; then
+          echo "    ✓ Hedproxy now works for $domain (was a timing issue, not hedproxy)"
+          i2p_success=true
+          break
+        fi
+      done
+      if [ "$i2p_success" = "false" ]; then
+        echo "    ✗ Hedproxy still fails — may be a hedproxy routing issue"
+      fi
+    else
+      echo "    ✗ Direct I2P also fails — I2P tunnels may still be building"
+    fi
+
+    echo "  • Network configuration:"
     echo "    - I2P SAM bridge: $I2P_PROXY_HOST:$I2P_SAM_PORT"
     echo "    - Hedproxy port: $HEDPROXY_PORT"
-    echo "    - HTTP_PROXY: $HTTP_PROXY"
-    exit_code=1
+    if [ "$i2p_success" = "false" ]; then
+      exit_code=1
+    fi
   fi
   
   # Check Lokinet connectivity if enabled

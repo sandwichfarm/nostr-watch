@@ -1,4 +1,4 @@
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 
 WORKDIR /app
 
@@ -23,16 +23,14 @@ ENV PATH="${DENO_INSTALL}/bin:${PATH}"
 # Create data directory
 RUN mkdir -p /app/data
 
-# First, copy only the deno.lock file (if it exists) to cache dependencies
+# Copy the monorepo (filtered by .dockerignore to only workspace deps)
 WORKDIR /app/nostr-watch
-COPY apps/trawler/deno.lock* ./apps/trawler/
-
-# Now copy the entire project
 COPY . .
 
-# Cache dependencies offline without trying to verify remote
+# Cache dependencies (trawler uses remote esm.sh imports, so no --no-remote)
 WORKDIR /app/nostr-watch/apps/trawler
-RUN deno cache --reload --no-remote src/main.ts || echo "Dependency caching failed, will try at runtime"
+RUN rm -f deno.lock && \
+    deno cache --reload src/main.ts || echo "Dependency caching failed, will try at runtime"
 
 # Run trawler
 CMD ["deno", "run", "--allow-all", "--unstable-sloppy-imports", "src/main.ts"]

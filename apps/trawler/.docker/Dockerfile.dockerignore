@@ -1,0 +1,25 @@
+# Exclude everything by default
+*
+
+# Include trawler app
+!apps/trawler/
+
+# Include workspace dependencies (referenced by apps/trawler/deno.json import map)
+!libraries/nostrawl/
+!libraries/nocap/
+!libraries/websocket/
+!libraries/db/
+!libraries/nostrings/
+!internal/utils/
+!internal/publisher/
+!internal/logger/
+!internal/controlflow/
+!internal/announce/
+!internal/seed/
+
+# Re-exclude heavy/unnecessary content in included dirs
+**/node_modules/
+**/dist/
+**/tests/
+**/*.db
+**/*.env*

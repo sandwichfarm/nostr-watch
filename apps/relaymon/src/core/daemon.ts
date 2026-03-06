@@ -6,6 +6,7 @@ import { delay } from "npm:@nostrwatch/utils";
 import { db, getExpiredRelays } from "npm:@nostrwatch/db";
 import { maybeAnnounce } from "../utils/announce.ts";
 import { getPublicKey } from "npm:nostr-tools";
+import { hexToBytes } from "@noble/hashes/utils";
 import { tryNsecToHex } from "npm:@nostrwatch/utils";
 import { RetryManager } from "../utils/retryManager.ts";
 import { formatCompactStats, showStatus } from "./status.ts";
@@ -140,7 +141,7 @@ export async function runDaemon(config: Config): Promise<void> {
     const privkey = getPrivateKey();
     if (privkey) {
       try {
-        pubkey = getPublicKey(privkey);
+        pubkey = getPublicKey(hexToBytes(privkey));
         logger.info("Successfully derived public key from RELAYMON_NSEC");
 
         // Run signing self-test if health monitoring is enabled

@@ -11,6 +11,7 @@
 import { getLogger } from "../utils/logger.ts";
 import { db } from "npm:@nostrwatch/db";
 import { getPublicKey, finalizeEvent } from "npm:nostr-tools";
+import { hexToBytes } from "@noble/hashes/utils";
 import type { HealthCheck, HealthThresholds, HeartbeatTracker } from "./types.ts";
 import type { QueueManager } from "../utils/queueManager.ts";
 
@@ -99,7 +100,7 @@ export async function checkSigning(privkey: string | undefined): Promise<HealthC
 
   try {
     // Derive public key
-    const pubkey = getPublicKey(privkey);
+    const pubkey = getPublicKey(hexToBytes(privkey));
 
     // Create a dummy event (kind 0 = metadata)
     const dummyEvent = {
@@ -111,7 +112,7 @@ export async function checkSigning(privkey: string | undefined): Promise<HealthC
     };
 
     // Sign the event using nostr-tools finalizeEvent
-    const signedEvent = finalizeEvent(dummyEvent, privkey);
+    const signedEvent = finalizeEvent(dummyEvent, hexToBytes(privkey));
 
     // Verify the signature is present and valid format
     if (!signedEvent.sig || signedEvent.sig.length !== 128) {

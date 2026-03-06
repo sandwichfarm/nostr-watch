@@ -1,5 +1,6 @@
 import { getLogger } from "./logger.ts";
 import { SimplePool, nip19, getPublicKey } from "npm:nostr-tools";
+import { hexToBytes } from "@noble/hashes/utils";
 import type { Event } from "npm:nostr-tools";
 import { normalizeURL } from "npm:nostr-tools/utils";
 import { db } from "../db/db.ts";
@@ -300,7 +301,7 @@ export class IgnoreListSync {
     }
 
     try {
-      const pubkey = getPublicKey(privkey);
+      const pubkey = getPublicKey(hexToBytes(privkey));
       const event: Partial<Event> = {
         kind: 10006,
         created_at: Math.floor(Date.now() / 1000),
@@ -314,7 +315,7 @@ export class IgnoreListSync {
 
       // Sign the event
       const { finishEvent } = await import("npm:nostr-tools");
-      const signedEvent = finishEvent(event, privkey);
+      const signedEvent = finishEvent(event, hexToBytes(privkey));
 
       // Publish to configured relays
       const publishPromises = this.listRelays.map(async (relay) => {

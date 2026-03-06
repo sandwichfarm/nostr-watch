@@ -1,6 +1,7 @@
 import { getLogger } from "./logger.ts";
 import { Publisher, Event } from "npm:@nostrwatch/publisher";
 import { getEventHash, getPublicKey } from "npm:nostr-tools";
+import { hexToBytes } from "@noble/hashes/utils";
 import type { Config } from "../config/config.ts";
 import type { QueueManager } from "./queueManager.ts";
 import { clearDeltaState, clearPeriodSnapshots } from "../db/db.ts";
@@ -91,7 +92,7 @@ export async function deleteRelayCheckEvent(
     }
 
     // Get the public key
-    const pubkey = getPublicKey(privkey);
+    const pubkey = getPublicKey(hexToBytes(privkey));
     
     // Check if config has publish relays
     if (!config.publisher?.relays || !Array.isArray(config.publisher.relays) || config.publisher.relays.length === 0) {

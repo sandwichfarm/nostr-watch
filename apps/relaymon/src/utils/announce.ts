@@ -1,6 +1,7 @@
 import { getLogger, LogLevel } from "./logger.ts";
 import { AnnounceMonitor } from "npm:@nostrwatch/announce";
 import { getPublicKey } from "npm:nostr-tools";
+import { hexToBytes } from "@noble/hashes/utils";
 import { type QueueManager } from "./queueManager.ts";
 import { timeString } from "../config/config.ts";
 import type { Config } from "../config/config.ts";
@@ -48,7 +49,7 @@ export async function maybeAnnounce(config: Config, queueManager?: QueueManager)
     return;
   }
 
-  const pk = getPublicKey(sk);
+  const pk = getPublicKey(hexToBytes(sk));
 
   const relays = Array.from(relaySet)
 

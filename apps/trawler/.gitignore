@@ -7,7 +7,8 @@ lmdb.bak
 cache
 .env*
 !.env.sample
-config*
+config*.yaml
+config*.yml
 *.db
 *.db-shm
 *.db-wal

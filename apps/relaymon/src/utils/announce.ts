@@ -22,7 +22,7 @@ export async function maybeAnnounce(config: Config, queueManager?: QueueManager)
   //   return;
   // }
   
-  const { info: profile, owner, geo } = config?.monitor5
+  const { info: profile, owner, geo } = config?.monitor
   const { userMetaRelays } = config?.announce || []
   const { relays:outboxRelays } = config?.publisher;
   const { networks } = config.relaymon || []

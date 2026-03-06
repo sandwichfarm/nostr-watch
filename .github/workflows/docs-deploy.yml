@@ -1,0 +1,56 @@
+name: Docs Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - next
+    paths:
+      - 'docs/**'
+      - 'libraries/*/README.md'
+      - 'apps/*/README.md'
+      - 'internal/*/README.md'
+      - 'libraries/*/package.json'
+      - 'apps/*/package.json'
+      - 'internal/*/package.json'
+      - '.github/workflows/docs-deploy.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: docs.nostr.watch
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Docs
+        run: pnpm docs:build
+
+      - name: Check Artifact Size
+        run: du -sh docs/.vitepress/dist
+
+      - name: Deploy to Bunny
+        uses: R-J-dev/bunny-deploy@v2.0.3
+        with:
+          access-key: ${{ secrets.BUNNY_API_KEY }}
+          directory-to-upload: "./docs/.vitepress/dist"
+          storage-endpoint: ${{ secrets.BUNNY_DOCS_STORAGE_ENDPOINT }}
+          storage-zone-name: ${{ secrets.BUNNY_DOCS_STORAGE_ZONE_NAME }}
+          storage-zone-password: ${{ secrets.BUNNY_DOCS_STORAGE_ZONE_PASSWORD }}
+          concurrency: "50"
+          enable-delete-action: true
+          enable-purge-pull-zone: true
+          pull-zone-id: ${{ secrets.BUNNY_DOCS_PULL_ZONE_ID }}
+          replication-timeout: "15000"

@@ -1,9 +1,0 @@
-{
-  "name": "sandbox",
-  "type": "module",
-  "dependencies": {
-    "@nostrwatch/nocap": "workspace:^",
-    "@nostrwatch/nocap-every-adapter-default": "workspace:^",
-    "@nostrwatch/nocap-websocket-adapter-default": "workspace:^"
-  }
-}

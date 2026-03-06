@@ -165,7 +165,7 @@ verify_hedproxy_connectivity() {
   echo "Usage:"
   echo "  • Run verification at startup: VERIFY_CONNECTIVITY=true"
   echo "  • Require successful tests:    REQUIRE_NETWORK_CONNECTIVITY=true"
-  echo "  • Run verification only:       docker exec <container> /app/nostr-watch/apps/relaymon/.docker/scripts/entrypoint.sh --verify-network"
+  echo "  • Run verification only:       docker exec <container> /usr/local/bin/entrypoint.sh --verify-network"
   echo "═════════════════════════════════════════════"
 
   # Known test domains for each network

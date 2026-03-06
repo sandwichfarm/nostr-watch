@@ -1,12 +1,22 @@
-node_modules/
-dist/
-.git
-yarn.lock
+# Exclude everything by default
+*
 
-*.env*
-apps/**/*.env*
-apps/**/config.yaml
-apps/**/config.docker.yaml
+# Include relaymon app
+!apps/relaymon/
 
-apps/**/.docker/config/*
-!apps/relaymon/.docker/config/*
+# Include workspace dependencies (referenced by apps/relaymon/deno.json import map)
+!libraries/nocap/
+!libraries/websocket/
+!libraries/db/
+!libraries/nostrings/
+!internal/utils/
+!internal/publisher/
+!internal/logger/
+!internal/announce/
+
+# Re-exclude heavy/unnecessary content in included dirs
+**/node_modules/
+**/dist/
+**/tests/
+**/*.db
+**/*.env*

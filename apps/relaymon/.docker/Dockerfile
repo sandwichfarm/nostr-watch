@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 debian:bullseye-slim
+FROM debian:bullseye-slim
 
 WORKDIR /app
 
@@ -62,11 +62,8 @@ COPY apps/relaymon/.docker/config/proxychains.conf /etc/proxychains.conf
 # Default to clearnet mode
 ENV RELAYMON_MODE=clearnet
 
-# First, copy only the deno.lock file (if it exists) to cache dependencies
+# Copy the monorepo (filtered by .dockerignore to only workspace deps)
 WORKDIR /app/nostr-watch
-COPY apps/relaymon/deno.lock* ./apps/relaymon/
-
-# Now copy the entire project
 COPY . .
 
 # Cache dependencies offline without trying to verify remote

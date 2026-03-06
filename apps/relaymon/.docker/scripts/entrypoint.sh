@@ -21,7 +21,7 @@ if [ "$RELAYMON_MODE" = "clearnet" ]; then
   echo "Starting RelayMon in clearnet mode..."
   export RELAYMON_SKIP_PID_CHECK=true
   cd /app/nostr-watch/apps/relaymon
-  exec deno run --env-file=/app/.env --allow-all --unstable-sloppy-imports index.ts -c /opt/config.yaml "${APP_ARGS[@]}"
+  exec deno run --no-lock --env-file=/app/.env --allow-all --unstable-sloppy-imports index.ts -c /opt/config.yaml "${APP_ARGS[@]}"
 fi
 
 echo "Starting RelayMon in multinet mode with hedproxy..."
@@ -70,7 +70,7 @@ if [ "$VERIFY_ONLY" = "false" ]; then
   unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY all_proxy ALL_PROXY
 
   # Cache dependencies
-  deno cache --reload index.ts || echo "Some dependency caching failed, continuing anyway"
+  deno cache --no-lock --reload index.ts || echo "Some dependency caching failed, continuing anyway"
 fi
 
 # --- Start hedproxy ---
@@ -358,4 +358,4 @@ fi
 echo "Starting RelayMon application..."
 echo "Executing with proxychains4: proxychains4 -f /etc/proxychains.conf deno run ... index.ts ${APP_ARGS[*]}"
 cd /app/nostr-watch/apps/relaymon
-exec proxychains4 -f /etc/proxychains.conf deno run --env-file=/app/.env --unstable-sloppy-imports --allow-all index.ts -c /opt/config.yaml "${APP_ARGS[@]}"
+exec proxychains4 -f /etc/proxychains.conf deno run --no-lock --env-file=/app/.env --unstable-sloppy-imports --allow-all index.ts -c /opt/config.yaml "${APP_ARGS[@]}"

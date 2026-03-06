@@ -2,9 +2,9 @@
 
 import { config } from "https://deno.land/x/dotenv@v3.2.2/mod.ts";
 import agent from './agent.ts';
-import Logger from '@nostrwatch/logger';
+import { getLogger } from './logger.ts';
 
-const logger = new Logger('root');
+const logger = getLogger('root');
 
 logger.debug('Current Directory', Deno.cwd());
 

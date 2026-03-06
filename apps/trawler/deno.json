@@ -5,13 +5,13 @@
       "vendor": true,
     },
     "vendor": true,
-    "nodeModulesDir": true,
+    "nodeModulesDir": "auto",
     "tasks": {
       "force-refresh": "rm -rf node_modules && rm -f deno.lock && DENO_DIR=$(deno info --json | jq -r .denoDir) && rm -rf \"$DENO_DIR/npm\" && deno task start",
       "compile": "mkdir -p dist && deno compile --no-check --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run --output dist/trawler src/main.ts",
       "start": "deno run --allow-sys --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run src/main.ts",
       "test": "deno test --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run",
-      "link:nocap": "bash -c 'if ! [ -L ./node_modules/@nostrwatch/nocap ]; then ln -sfn /Users/sandwich/Develop/nostr-watch/libraries/nocap ./node_modules/@nostrwatch/nocap; fi'"
+      "link:nocap": "bash -c 'REPO_ROOT=$(cd ../.. && pwd) && if ! [ -L ./node_modules/@nostrwatch/nocap ]; then ln -sfn \"$REPO_ROOT/libraries/nocap\" ./node_modules/@nostrwatch/nocap; fi'"
     },
     "fmt": {
       "files": {
@@ -26,10 +26,11 @@
     "version": "0.1.0",
     "imports": {
       "nostr-geotags": "https://esm.sh/nostr-geotags@latest",
-      "npm:nostr-fetch": "npm:nostr-fetch@0.17.0",
-      "npm:nostr-tools": "https://esm.sh/nostr-tools@latest",
-      "nostr-tools": "https://esm.sh/nostr-tools@latest",
-      "nostr-tools/pure": "https://esm.sh/nostr-tools@latest/pure",
+      "npm:nostr-fetch": "npm:nostr-fetch@0.13.1",
+      "npm:nostr-tools": "npm:nostr-tools@1.17.0",
+      "nostr-tools": "npm:nostr-tools@1.17.0",
+      "nostr-tools/pure": "https://esm.sh/nostr-tools@2.10.4/pure",
+      "nostr-tools/nip19": "npm:nostr-tools@1.17.0/nip19",
       "npm:murmurhash": "https://esm.sh/murmurhash@latest",
       "npm:p-queue": "https://esm.sh/p-queue@latest",
       "npm:chalk": "https://esm.sh/chalk@latest",
@@ -51,11 +52,11 @@
       "std/fs": "https://deno.land/std@0.218.2/fs/mod.ts",
       "ramda": "https://esm.sh/ramda@latest",
       "lmdb": "npm:lmdb@latest",
-      "@nostr-fetch/adapter-nostr-tools": "https://esm.sh/@nostr-fetch/adapter-nostr-tools@latest",
-      "nostr-fetch": "https://esm.sh/nostr-fetch@latest",
+      "@nostr-fetch/adapter-nostr-tools": "npm:@nostr-fetch/adapter-nostr-tools@0.13.1",
+      "nostr-fetch": "npm:nostr-fetch@0.13.1",
       "javascript-time-ago": "https://esm.sh/javascript-time-ago@latest",
       "javascript-time-ago/locale/en": "https://esm.sh/javascript-time-ago@latest/locale/en",
-      "websocket-polyfill": "https://esm.sh/websocket-polyfill@latest",
+      "websocket-polyfill": "npm:websocket-polyfill@0.0.3",
       "bullmq": "https://esm.sh/bullmq@latest",
       "tseep": "https://esm.sh/tseep@latest",
       "p-queue": "https://esm.sh/p-queue@latest",
@@ -79,6 +80,7 @@
       "npm:@nostrwatch/seed": "../../internal/seed/src/index.ts",
 
       "@nostrwatch/websocket": "../../libraries/websocket/src/index.ts",
+      "@nostrwatch/utils/network": "../../internal/utils/src/network.ts",
       "@nostrwatch/utils": "../../internal/utils/src/index.ts",
       "@nostrwatch/nocap": "../../libraries/nocap/src/index.ts",
       "@nostrwatch/nocap-every-adapter-default": "../../libraries/nocap/adapters/default/ZEveryAdapterDefault/src/index.ts",

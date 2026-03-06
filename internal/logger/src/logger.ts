@@ -4,9 +4,9 @@ let isDebugAvailable = false;
 let winston: typeof import('winston') | null = null;
 let isWinstonAvailable = false;
 
-if (typeof window === 'undefined') {
+if (typeof window === 'undefined' && typeof globalThis.require === 'function') {
   try {
-    const { createRequire } = require('module');
+    const { createRequire } = globalThis.require('module');
     const requireModule = createRequire(import.meta.url);
     winston = requireModule('winston');
     isWinstonAvailable = true;

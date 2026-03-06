@@ -1,0 +1,7 @@
+{
+  "publishServerUrl": "wss://nsite.nostr.watch",
+  "relays": [
+    "wss://relay.nostr.watch",
+    "wss://relay.damus.io"
+  ]
+}

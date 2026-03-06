@@ -32,4 +32,5 @@ apps/gui/static/seed
 .data
 .playwright-mcp/
 .memory
+.worktrees
 */.vitepress

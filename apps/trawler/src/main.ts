@@ -3,12 +3,12 @@
 import { config as dotenvConfig } from "https://deno.land/x/dotenv@v3.2.2/mod.ts";
 import { loadConfig } from "./config.ts";
 import { trawl } from './trawl.ts';
-import Logger from '@nostrwatch/logger';
+import { getLogger } from './logger.ts';
 
 // Initialize environment variables
 await dotenvConfig({ export: true });
 
-const logger = new Logger('Main');
+const logger = getLogger('Main');
 
 logger.debug(`Current Directory: ${Deno.cwd()}`);
 

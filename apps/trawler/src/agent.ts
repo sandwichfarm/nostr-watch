@@ -1,6 +1,6 @@
 /// <reference lib="deno.ns" />
 
-import { trawl } from './trawl';
+import { trawl } from './trawl.ts';
 import chalk from 'npm:chalk';
 
 const header = (): void => {

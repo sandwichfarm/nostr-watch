@@ -1,8 +1,7 @@
 /// <reference lib="deno.ns" />
 
 import { parseRelayList } from "./parse.ts";
-import { parseRelayNetwork } from "@nostrwatch/utils";
-import { db, seedNewRelay } from "@nostrwatch/db";
+import { parseRelayNetwork } from "@nostrwatch/utils/network";
 
 interface Relay {
   url: string;

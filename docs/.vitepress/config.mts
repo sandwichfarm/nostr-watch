@@ -1,5 +1,7 @@
 import { defineConfig } from 'vitepress'
 
+const nip66DocsUrl = process.env.VITE_NIP66_DOCS_URL || 'https://nip66.nostr.watch'
+
 export default defineConfig({
   title: 'nostr-watch',
   description: 'Documentation for the @nostrwatch monorepo',
@@ -38,6 +40,7 @@ export default defineConfig({
     'demos/**',
     'vendor/**',
     'docs/gui/**',
+    'nip66-docs/**',
   ],
 
   themeConfig: {
@@ -48,6 +51,7 @@ export default defineConfig({
       { text: 'Architecture', link: '/architecture' },
       { text: 'Getting Started', link: '/getting-started' },
       { text: 'Packages', link: '/packages/' },
+      { text: 'NIP-66 Docs', link: nip66DocsUrl },
     ],
 
     sidebar: {

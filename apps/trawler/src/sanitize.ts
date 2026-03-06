@@ -1,8 +1,8 @@
 /// <reference lib="deno.ns" />
 
-import Logger from '@nostrwatch/logger';
+import { getLogger } from './logger.ts';
 
-const logger = new Logger('sanitizers');
+const logger = getLogger('sanitizers');
 
 const BLOCK_HOSTNAMES: string[] = [];
 

@@ -1,11 +1,11 @@
 
 import { nostrawl, TrawlerOptions, Progress } from 'npm:nostrawl';
 import { relaysFromRelayList } from './helpers.ts';
-import { getLogger, setGlobalLogLevel, LogLevel   } from './logger';
-import { trawlerStats, setupStatusReporting, formatCompactStats } from './status';
-import { db, getAllRelays, initDB, seedNewRelay } from 'npm:@nostrwatch/db';
+import { getLogger, setGlobalLogLevel, LogLevel } from './logger.ts';
+import { trawlerStats, setupStatusReporting, formatCompactStats } from './status.ts';
+import { db, getAllRelays, initDB, seedNewRelay } from '@nostrwatch/db';
 import pQueue from 'npm:p-queue';
-import { RelaySeeder } from 'internal/seed';
+import { RelaySeeder } from './seeder.ts';
 import { loadConfig } from "./config.ts";
 
 const kinds = [2, 3, 10002, 30002];

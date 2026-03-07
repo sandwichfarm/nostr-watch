@@ -75,6 +75,7 @@ function processRelayList(event: any ): Promise<void> {
         // Feed discovered relays back into the trawler for scanning
         if (trawlerInstance) {
           trawlerInstance.addRelays(newRelays.map(r => r.url));
+          trawlerStats.relayPoolSize = allRelays.size;
         }
         logger.info(`Found ${newRelays.length} new relays: ${newRelays.map(r => r.url).join(', ')} | ${formatCompactStats()}`);
       }
@@ -175,31 +176,29 @@ export const trawl = async (options: TrawlOptions = {}) => {
 
   trawlerInstance = nostrawl(RELAYS, nostrawlOptions);
   const trawler = trawlerInstance;
+  trawlerStats.relayPoolSize = RELAYS.length;
 
   trawler.on('event', (event: any) => {
-    // Track totals and progress timestamps
     trawlerStats.totalEvents++;
     trawlerStats.eventsProcessed++;
     trawlerStats.lastUpdateTime = Date.now();
-    
     processRelayList(event);
   });
-  
+
   trawler
-    .on('progress', (progress: Progress ) => {
-      if (progress?.found > 0) {
-        logger.debug(`Progress from ${progress.relay}: ${progress.found} events found`);
+    .on('progress', (progress: Progress) => {
+      if (progress?.relay) {
+        trawlerStats.scanningRelays.add(progress.relay);
+        trawlerStats.relaysScannedTotal.add(progress.relay);
       }
     })
     .on('drained', () => {
+      trawlerStats.scanningRelays.clear();
       logger.info(`Queue drained | ${formatCompactStats()}`);
-    })
-    .on('completed', (job: any) => {
-      logger.debug(`Job completed: ${job.id}`);
     });
-  
+
   trawler.run();
-  logger.info('Trawler started and running');
+  logger.info(`Trawler started with ${RELAYS.length} relays`);
 
   setInterval(updateQueueStats, 5000);
 };

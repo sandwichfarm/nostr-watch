@@ -492,6 +492,48 @@ if [ "$VERIFY_ONLY" = "true" ]; then
   exit 0
 fi
 
+# --- Hedproxy supervisor (background) ---
+# Monitors hedproxy and restarts it if it dies.
+# Runs as a background process alongside the main Deno process.
+hedproxy_supervisor() {
+  local restart_count=0
+  local max_restarts=50
+  local backoff=5
+
+  while true; do
+    sleep 10
+    # Check if hedproxy is still listening
+    if ! ss -tlpn 2>/dev/null | grep -q ":$HEDPROXY_PORT.*LISTEN"; then
+      restart_count=$((restart_count + 1))
+      if [ $restart_count -gt $max_restarts ]; then
+        echo "[hedproxy-supervisor] Exceeded max restarts ($max_restarts), giving up"
+        return 1
+      fi
+      echo "[hedproxy-supervisor] hedproxy is not listening on port $HEDPROXY_PORT (restart #$restart_count)"
+      # Kill any leftover hedproxy processes
+      pkill -f "hedproxy.*$HEDPROXY_PORT" 2>/dev/null || true
+      sleep 1
+      # Restart hedproxy
+      hedproxy -proto socks -bind "0.0.0.0:$HEDPROXY_PORT" -tor "$TOR_PROXY_HOST:$TOR_SOCKS_PORT" -i2p "$I2P_PROXY_HOST:$I2P_SAM_PORT" -passthrough clearnet &
+      sleep 2
+      if ss -tlpn 2>/dev/null | grep -q ":$HEDPROXY_PORT.*LISTEN"; then
+        echo "[hedproxy-supervisor] hedproxy restarted successfully (restart #$restart_count)"
+      else
+        echo "[hedproxy-supervisor] hedproxy failed to restart, retrying in ${backoff}s..."
+        sleep $backoff
+        backoff=$((backoff * 2))
+        if [ $backoff -gt 60 ]; then backoff=60; fi
+      fi
+    else
+      # Reset backoff on successful check
+      backoff=5
+    fi
+  done
+}
+
+echo "Starting hedproxy supervisor..."
+hedproxy_supervisor &
+
 # --- Execute Application ---
 echo "Starting RelayMon application..."
 echo "Executing with proxychains4: proxychains4 -f /etc/proxychains.conf deno run ... index.ts ${APP_ARGS[*]}"

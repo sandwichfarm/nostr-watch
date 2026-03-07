@@ -215,7 +215,11 @@ export async function runDaemon(config: Config): Promise<void> {
           logger.debug(`Filtered out ${expiredRelays.length - notAlreadyEnqueued.length} already enqueued relays.`);
           
           let toEnqueue: string[] = [];
-          const maxValue = config.relaymon.checks.options.max;
+          const rawMax = config.relaymon.checks.options.max;
+          // Coerce string numbers to actual numbers (e.g. YAML '50' vs 50)
+          const maxValue = typeof rawMax === "string" && /^\d+$/.test(rawMax.trim())
+            ? parseInt(rawMax.trim(), 10)
+            : rawMax;
           if (typeof maxValue === "number") {
             toEnqueue = notAlreadyEnqueued.slice(0, maxValue);
             logger.info(`Enqueuing ${toEnqueue.length} relays (numeric max: ${maxValue}) - ${formatCompactStats(queueManager)}`);
@@ -349,7 +353,11 @@ export async function runDaemon(config: Config): Promise<void> {
         }
 
         let toEnqueue: string[] = [];
-        const maxValue = config.relaymon.checks.options.max;
+        const rawMax = config.relaymon.checks.options.max;
+        // Coerce string numbers to actual numbers (e.g. YAML '50' vs 50)
+        const maxValue = typeof rawMax === "string" && /^\d+$/.test(rawMax.trim())
+          ? parseInt(rawMax.trim(), 10)
+          : rawMax;
         if (typeof maxValue === "number") {
           toEnqueue = allUrls.slice(0, maxValue);
           logger.info(`Kickoff: enqueuing ${toEnqueue.length} relays (numeric max: ${maxValue}) for immediate publishing`);

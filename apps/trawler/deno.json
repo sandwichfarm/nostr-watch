@@ -23,7 +23,7 @@
         "include": ["**/*.ts", "**/*.js"]
       }
     },
-    "version": "0.1.0",
+    "version": "0.2.0",
     "imports": {
       "nostr-geotags": "https://esm.sh/nostr-geotags@latest",
       "npm:nostr-fetch": "npm:nostr-fetch@0.13.1",

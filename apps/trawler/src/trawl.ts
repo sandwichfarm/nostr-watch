@@ -32,7 +32,7 @@ let RELAYS = [
 function dropProcessedEventsTable(): void {
   try {
     db.query(`DROP TABLE IF EXISTS trawler_processed_events`);
-    logger.info("Dropped trawler_processed_events table");
+    logger.debug("Dropped trawler_processed_events table");
   } catch (error) {
     logger.error(`Error dropping table: ${error instanceof Error ? error.message : String(error)}`);
   }
@@ -100,7 +100,7 @@ const defaultNostrawlOptions: TrawlerOptions = {
   repeatWhenComplete: true,
   restDuration: 1000,
   sinceStrict: false,
-  logLevel: 5,
+  logLevel: 2,
   relaysPerBatch: 10,
   cache: {
     enabled: true,
@@ -113,9 +113,7 @@ const defaultNostrawlOptions: TrawlerOptions = {
 };
 
 export const trawl = async (options: TrawlOptions = {}) => {
-  logger.info('╭────────────────────────────────────────────────────────────────╮');
-  logger.info('│               Starting Nostr Trawler for Relays                │');
-  logger.info('╰────────────────────────────────────────────────────────────────╯');
+  logger.info('Starting Nostr Trawler for Relays');
   
   // Load configuration first, to set log level and seeding
   const config = await loadConfig();
@@ -130,11 +128,11 @@ export const trawl = async (options: TrawlOptions = {}) => {
 
   if (options.dbPath) {
     const enableWAL = options.enableWAL !== undefined ? options.enableWAL : true;
-    logger.info(`Using custom database path: ${options.dbPath} (WAL mode: ${enableWAL ? 'enabled' : 'disabled'})`);
+    logger.debug(`DB path: ${options.dbPath} (WAL: ${enableWAL})`);
     initDB(options.dbPath, enableWAL);
   } else {
     const enableWAL = options.enableWAL !== undefined ? options.enableWAL : true;
-    logger.info(`Using default database path: trawler.db (WAL mode: ${enableWAL ? 'enabled' : 'disabled'})`);
+    logger.debug(`DB path: trawler.db (WAL: ${enableWAL})`);
     initDB("trawler.db", enableWAL);
   }
 
@@ -172,7 +170,7 @@ export const trawl = async (options: TrawlOptions = {}) => {
   
   if (options.nostrawlOptions?.adapterOptions?.concurrency) {
     nostrawlOptions.adapterOptions.concurrency = options.nostrawlOptions.adapterOptions.concurrency;
-    logger.info(`Using concurrency level: ${nostrawlOptions.adapterOptions.concurrency}`);
+    logger.debug(`Concurrency: ${nostrawlOptions.adapterOptions.concurrency}`);
   }
 
   trawlerInstance = nostrawl(RELAYS, nostrawlOptions);

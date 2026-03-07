@@ -14,6 +14,7 @@ const logger = getLogger("Trawler");
 const persistQueue = new pQueue({ concurrency: 20 });
 
 let allRelays: Set<string>;
+let trawlerInstance: ReturnType<typeof nostrawl> | null = null;
 
 let RELAYS = [
   'wss://purplepag.es',
@@ -71,6 +72,10 @@ function processRelayList(event: any ): Promise<void> {
         trawlerStats.newRelaysFound += newRelays.length;
         // Track each newly discovered relay in the unique set for this session
         newRelays.forEach(r => trawlerStats.uniqueRelaysFound.add(r.url));
+        // Feed discovered relays back into the trawler for scanning
+        if (trawlerInstance) {
+          trawlerInstance.addRelays(newRelays.map(r => r.url));
+        }
         logger.info(`Found ${newRelays.length} new relays: ${newRelays.map(r => r.url).join(', ')} | ${formatCompactStats()}`);
       }
       trawlerStats.persistQueue.completed += 1;
@@ -170,7 +175,8 @@ export const trawl = async (options: TrawlOptions = {}) => {
     logger.info(`Using concurrency level: ${nostrawlOptions.adapterOptions.concurrency}`);
   }
 
-  const trawler = nostrawl(RELAYS, nostrawlOptions);
+  trawlerInstance = nostrawl(RELAYS, nostrawlOptions);
+  const trawler = trawlerInstance;
 
   trawler.on('event', (event: any) => {
     // Track totals and progress timestamps

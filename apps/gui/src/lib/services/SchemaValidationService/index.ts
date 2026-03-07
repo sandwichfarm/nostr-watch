@@ -34,6 +34,9 @@ export class SchemaValidationService {
     constructor(){
         this.worker = new Worker(new URL('./schemavalidation.worker.ts', import.meta.url), { type: 'module' });
         this.worker.onmessage = this.onmessage.bind(this);
+        this.worker.onerror = (event) => {
+            console.error('[SchemaValidationService] Worker error:', event.message);
+        };
     }
 
     get subIds(): Set<string> { 

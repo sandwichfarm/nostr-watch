@@ -71,7 +71,10 @@ export default class NTQueue extends NTTrawler {
   async handle_queue_drained($job: any, result: any): Promise<void> {
     const timeoutExists = this.repeatTimeout !== null;
     if (this.options?.repeatWhenComplete && !timeoutExists) {
-      this.repeatTimeout = setTimeout(() => this.run(), this.options?.restDuration);
+      this.repeatTimeout = setTimeout(() => {
+        this.repeatTimeout = null;
+        this.run();
+      }, this.options?.restDuration);
     }
   }
 

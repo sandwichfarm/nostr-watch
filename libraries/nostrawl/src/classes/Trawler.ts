@@ -216,6 +216,21 @@ export default class NTTrawler extends EventEmitter {
     this.logger.info('Trawl completed for all relays in chunk');
   }
 
+  addRelays(newRelays: string[]): void {
+    const existing = new Set(this.relays);
+    const added: string[] = [];
+    for (const relay of newRelays) {
+      if (!existing.has(relay)) {
+        this.relays.push(relay);
+        existing.add(relay);
+        added.push(relay);
+      }
+    }
+    if (added.length > 0) {
+      this.logger.info(`Added ${added.length} new relays to trawler (total: ${this.relays.length})`);
+    }
+  }
+
   chunk_relays(): string[][] {
     if (this.relays.length === 0) return [];
     const batchSize = this.options.relaysPerBatch ?? 3;

@@ -14,6 +14,7 @@ const logger = getLogger("Trawler");
 const persistQueue = new pQueue({ concurrency: 20 });
 
 let allRelays: Set<string>;
+let trawlerInstance: ReturnType<typeof nostrawl> | null = null;
 
 let RELAYS = [
   'wss://purplepag.es',
@@ -31,7 +32,7 @@ let RELAYS = [
 function dropProcessedEventsTable(): void {
   try {
     db.query(`DROP TABLE IF EXISTS trawler_processed_events`);
-    logger.info("Dropped trawler_processed_events table");
+    logger.debug("Dropped trawler_processed_events table");
   } catch (error) {
     logger.error(`Error dropping table: ${error instanceof Error ? error.message : String(error)}`);
   }
@@ -71,6 +72,10 @@ function processRelayList(event: any ): Promise<void> {
         trawlerStats.newRelaysFound += newRelays.length;
         // Track each newly discovered relay in the unique set for this session
         newRelays.forEach(r => trawlerStats.uniqueRelaysFound.add(r.url));
+        // Feed discovered relays back into the trawler for scanning
+        if (trawlerInstance) {
+          trawlerInstance.addRelays(newRelays.map(r => r.url));
+        }
         logger.info(`Found ${newRelays.length} new relays: ${newRelays.map(r => r.url).join(', ')} | ${formatCompactStats()}`);
       }
       trawlerStats.persistQueue.completed += 1;
@@ -95,7 +100,7 @@ const defaultNostrawlOptions: TrawlerOptions = {
   repeatWhenComplete: true,
   restDuration: 1000,
   sinceStrict: false,
-  logLevel: 5,
+  logLevel: 2,
   relaysPerBatch: 10,
   cache: {
     enabled: true,
@@ -108,9 +113,7 @@ const defaultNostrawlOptions: TrawlerOptions = {
 };
 
 export const trawl = async (options: TrawlOptions = {}) => {
-  logger.info('╭────────────────────────────────────────────────────────────────╮');
-  logger.info('│               Starting Nostr Trawler for Relays                │');
-  logger.info('╰────────────────────────────────────────────────────────────────╯');
+  logger.info('Starting Nostr Trawler for Relays');
   
   // Load configuration first, to set log level and seeding
   const config = await loadConfig();
@@ -125,11 +128,11 @@ export const trawl = async (options: TrawlOptions = {}) => {
 
   if (options.dbPath) {
     const enableWAL = options.enableWAL !== undefined ? options.enableWAL : true;
-    logger.info(`Using custom database path: ${options.dbPath} (WAL mode: ${enableWAL ? 'enabled' : 'disabled'})`);
+    logger.debug(`DB path: ${options.dbPath} (WAL: ${enableWAL})`);
     initDB(options.dbPath, enableWAL);
   } else {
     const enableWAL = options.enableWAL !== undefined ? options.enableWAL : true;
-    logger.info(`Using default database path: trawler.db (WAL mode: ${enableWAL ? 'enabled' : 'disabled'})`);
+    logger.debug(`DB path: trawler.db (WAL: ${enableWAL})`);
     initDB("trawler.db", enableWAL);
   }
 
@@ -167,10 +170,11 @@ export const trawl = async (options: TrawlOptions = {}) => {
   
   if (options.nostrawlOptions?.adapterOptions?.concurrency) {
     nostrawlOptions.adapterOptions.concurrency = options.nostrawlOptions.adapterOptions.concurrency;
-    logger.info(`Using concurrency level: ${nostrawlOptions.adapterOptions.concurrency}`);
+    logger.debug(`Concurrency: ${nostrawlOptions.adapterOptions.concurrency}`);
   }
 
-  const trawler = nostrawl(RELAYS, nostrawlOptions);
+  trawlerInstance = nostrawl(RELAYS, nostrawlOptions);
+  const trawler = trawlerInstance;
 
   trawler.on('event', (event: any) => {
     // Track totals and progress timestamps

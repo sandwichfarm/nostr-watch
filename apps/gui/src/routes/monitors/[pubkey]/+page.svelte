@@ -7,7 +7,7 @@
     import { Badge } from '$lib/components/ui/badge';
     import Button from '$lib/components/ui/button/button.svelte';
     import PageHeader from '$lib/components/layout/PageHeader.svelte';
-    import { monitorsMap, monitorRows, monitorRelayLivenessCounts } from '$lib/stores/monitors';
+    import { monitorsMap, monitorRows, monitorRelayLivenessCounts, monitorRelayDetails } from '$lib/stores/monitors';
     import { relayCheckAggregates } from '$lib/stores/checks';
     import { formatSeconds, timeAgo } from '$lib/utils/time';
     import { PFP } from '$lib/utils/pfp';
@@ -134,18 +134,21 @@
         };
     }
 
-    // Get relays checked by this monitor, sorted by lastSeen (most recent first)
-    $: relaysCheckedByMonitor = $relayCheckAggregates
-        .filter((relay: any) => relay?.seenBy?.includes(pubkey))
-        .map((relay: any) => ({
-            url: relay.relay,
-            liveness: relay.liveness,
-            lastSeen: relay.lastSeen,
-            rtt: relay.rtt,
-            software: relay.software,
-            geocode: relay.geocode,
-        }))
-        .sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0));
+    // Get relays checked by this monitor from the cache-backed store
+    // This uses the same data source as the count/donut, ensuring consistency
+    $: relaysCheckedByMonitor = (pubkey ? $monitorRelayDetails[pubkey] ?? [] : [])
+        .map((detail: any) => {
+            const aggregate = $relayCheckAggregates.find((r: any) => r.relay === detail.relay);
+            return {
+                url: detail.relay,
+                liveness: detail.liveness,
+                lastSeen: detail.lastSeen,
+                rtt: detail.rtt ?? aggregate?.rtt,
+                software: detail.software ?? aggregate?.software,
+                geocode: aggregate?.geocode,
+            };
+        })
+        .sort((a: any, b: any) => (b.lastSeen || 0) - (a.lastSeen || 0));
 
     // Chart
     let chartCanvas: HTMLCanvasElement;

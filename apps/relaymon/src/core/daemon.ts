@@ -338,6 +338,25 @@ export async function runDaemon(config: Config): Promise<void> {
     // Run warmup before starting normal loops
     await runWarmup();
 
+    // Auto-recover from retry poisoning (e.g. after prolonged proxy outage)
+    {
+      const networks: string[] = Array.isArray(config.relaymon.networks) ? config.relaymon.networks : ["clearnet"];
+      const placeholders = networks.map(() => '?').join(',');
+      const totalResult = db.query(
+        `SELECT COUNT(*) FROM relay_status WHERE ignore = 0 AND network IN (${placeholders})`, networks
+      );
+      const highRetryResult = db.query(
+        `SELECT COUNT(*) FROM relay_status WHERE ignore = 0 AND retries > 7 AND network IN (${placeholders})`, networks
+      );
+      const total = (totalResult[0]?.[0] as number) || 0;
+      const highRetry = (highRetryResult[0]?.[0] as number) || 0;
+
+      if (total > 0 && (highRetry / total) > 0.5) {
+        logger.warn(`Retry poisoning detected: ${highRetry}/${total} relays have retries > 7. Resetting all retries.`);
+        db.query("UPDATE relay_status SET retries = 0");
+      }
+    }
+
     // Kickstart publishing immediately after warmup so we don't wait for expiry
     async function kickstartPublishing(): Promise<void> {
       try {

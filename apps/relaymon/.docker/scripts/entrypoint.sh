@@ -499,12 +499,14 @@ hedproxy_supervisor() {
   local restart_count=0
   local max_restarts=50
   local backoff=5
+  local stable_count=0
 
   while true; do
     sleep 10
     # Check if hedproxy is still listening
     if ! ss -tlpn 2>/dev/null | grep -q ":$HEDPROXY_PORT.*LISTEN"; then
       restart_count=$((restart_count + 1))
+      stable_count=0
       if [ $restart_count -gt $max_restarts ]; then
         echo "[hedproxy-supervisor] Exceeded max restarts ($max_restarts), giving up"
         return 1
@@ -527,6 +529,15 @@ hedproxy_supervisor() {
     else
       # Reset backoff on successful check
       backoff=5
+      # Track stability — reset restart_count after 1 hour of uptime (360 checks × 10s)
+      stable_count=$((stable_count + 1))
+      if [ $stable_count -ge 360 ]; then
+        if [ $restart_count -gt 0 ]; then
+          echo "[hedproxy-supervisor] hedproxy stable for 1 hour, resetting restart count (was $restart_count)"
+        fi
+        restart_count=0
+        stable_count=0
+      fi
     fi
   done
 }

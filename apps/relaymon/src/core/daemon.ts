@@ -339,20 +339,22 @@ export async function runDaemon(config: Config): Promise<void> {
     await runWarmup();
 
     // Auto-recover from retry poisoning (e.g. after prolonged proxy outage)
+    // Only checks relays whose last known state was online=1 — dead relays
+    // naturally accumulate high retries and should not trigger recovery.
     {
       const networks: string[] = Array.isArray(config.relaymon.networks) ? config.relaymon.networks : ["clearnet"];
       const placeholders = networks.map(() => '?').join(',');
-      const totalResult = db.query(
-        `SELECT COUNT(*) FROM relay_status WHERE ignore = 0 AND network IN (${placeholders})`, networks
+      const onlineResult = db.query(
+        `SELECT COUNT(*) FROM relay_status WHERE ignore = 0 AND online = 1 AND network IN (${placeholders})`, networks
       );
-      const highRetryResult = db.query(
-        `SELECT COUNT(*) FROM relay_status WHERE ignore = 0 AND retries > 7 AND network IN (${placeholders})`, networks
+      const poisonedResult = db.query(
+        `SELECT COUNT(*) FROM relay_status WHERE ignore = 0 AND online = 1 AND retries > 7 AND network IN (${placeholders})`, networks
       );
-      const total = (totalResult[0]?.[0] as number) || 0;
-      const highRetry = (highRetryResult[0]?.[0] as number) || 0;
+      const onlineTotal = (onlineResult[0]?.[0] as number) || 0;
+      const poisoned = (poisonedResult[0]?.[0] as number) || 0;
 
-      if (total > 0 && (highRetry / total) > 0.5) {
-        logger.warn(`Retry poisoning detected: ${highRetry}/${total} relays have retries > 7. Resetting all retries.`);
+      if (onlineTotal > 0 && (poisoned / onlineTotal) > 0.5) {
+        logger.warn(`Retry poisoning detected: ${poisoned}/${onlineTotal} previously-online relays have retries > 7. Resetting all retries.`);
         db.query("UPDATE relay_status SET retries = 0");
       }
     }

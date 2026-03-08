@@ -68,6 +68,6 @@ COPY . .
 
 # Cache dependencies offline without trying to verify remote
 WORKDIR /app/nostr-watch/apps/relaymon
-RUN deno cache --reload --no-remote index.ts || echo "Dependency caching failed, will try at runtime"
+RUN deno cache --reload --no-remote --unstable-sloppy-imports index.ts || echo "Dependency caching failed, will try at runtime"
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

@@ -9,10 +9,10 @@ import { SubscriptionManager } from '../src/services/subscription-manager.js'
 import { SSEDeliveryService } from '../src/rest/sse-delivery.js'
 import { DEFAULT_QUERY_SHAPE } from '../src/utils/validation.js'
 import {
-  createRelaysListTool,
+  createRelaysListDetailedTool,
   createRelaysGetStateTool,
-  createRelaysSearchTool,
-  createRelaysByLabelTool,
+  createRelaysSearchDetailedTool,
+  createRelaysByLabelDetailedTool,
   createRelaysByNipTool,
   createRelaysByCountryTool,
 } from '../src/tools/relays.js'
@@ -67,10 +67,10 @@ async function main() {
 
   // Tool handlers
   const tools = {
-    list: createRelaysListTool({ core }),
+    list: createRelaysListDetailedTool({ core }),
     getState: createRelaysGetStateTool({ core }),
-    search: createRelaysSearchTool({ core }),
-    byLabel: createRelaysByLabelTool({ core }),
+    search: createRelaysSearchDetailedTool({ core }),
+    byLabel: createRelaysByLabelDetailedTool({ core }),
     byNip: createRelaysByNipTool({ core }),
     byCountry: createRelaysByCountryTool({ core }),
   }

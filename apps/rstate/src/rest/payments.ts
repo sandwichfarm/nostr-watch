@@ -13,7 +13,21 @@ export function isFeatureEnabled(name: string): boolean {
 
 /** Map canonical config names → REST route paths (only where they differ from /<name>) */
 export const NAME_TO_ROUTE: Record<string, string> = {
-  'relays/list':        '/relays',
+  'relays/list':           '/relays',
+  'relays/list/detailed':  '/relays/detailed',
+  'relays/list/full':      '/relays/full',
+  'relays/search':           '/relays/search',
+  'relays/search/detailed':  '/relays/search/detailed',
+  'relays/search/full':      '/relays/search/full',
+  'relays/nearby':           '/relays/nearby',
+  'relays/nearby/detailed':  '/relays/nearby/detailed',
+  'relays/nearby/full':      '/relays/nearby/full',
+  'relays/bbox':             '/relays/bbox',
+  'relays/bbox/detailed':    '/relays/bbox/detailed',
+  'relays/bbox/full':        '/relays/bbox/full',
+  'relays/by/label':           '/relays/by/label',
+  'relays/by/label/detailed':  '/relays/by/label/detailed',
+  'relays/by/label/full':      '/relays/by/label/full',
   'monitors/get':       '/monitors/:pubkey',
   'monitors/list':      '/monitors',
 }

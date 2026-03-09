@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "relays": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "description": "RelayState objects (detailed or full)"
+    },
+    "total": { "type": "number" },
+    "limit": { "type": "number" },
+    "offset": { "type": "number" }
+  },
+  "required": ["relays", "total", "limit", "offset"]
+}

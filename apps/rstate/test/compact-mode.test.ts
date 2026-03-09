@@ -1,8 +1,14 @@
 /**
- * Compact Mode Tests
+ * Shape-specific Endpoint Tests
  *
- * Validates that the compact parameter correctly removes contributingAuthors
- * and authors fields while preserving all other relay state data.
+ * Validates that the shape-specific endpoints (/detailed, /full, /simple)
+ * correctly control whether contributingAuthors and authors fields are
+ * included in the response while preserving all other relay state data.
+ *
+ * Migrated from the old compact query-parameter approach to path-based shapes:
+ *   - /detailed  → no contributor attribution (was compact=true)
+ *   - /full      → full contributor attribution (was compact=false / default)
+ *   - /simple    → minimal URL-only output
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
@@ -16,7 +22,7 @@ import { RateLimiterService } from '../src/services/rate-limiter.js'
 import { QueryCache } from '../src/services/cache.js'
 import { DEFAULT_QUERY_SHAPE } from '../src/utils/validation.js'
 
-describe('Compact Mode Tests', () => {
+describe('Shape-specific Endpoint Tests', () => {
   let server: RestServer
   let app: any
   let core: ReturnType<typeof initStateCore>
@@ -155,11 +161,11 @@ describe('Compact Mode Tests', () => {
     return false
   }
 
-  describe('GET /relays with compact parameter', () => {
-    it('should return full response without compact parameter', async () => {
+  describe('GET /relays/full and GET /relays/detailed', () => {
+    it('should return full response with contributor data via /relays/full', async () => {
       const response = await app.inject({
         method: 'GET',
-        url: '/relays?limit=10',
+        url: '/relays/full?limit=10',
       })
 
       expect(response.statusCode).toBe(200)
@@ -172,10 +178,10 @@ describe('Compact Mode Tests', () => {
       // (depending on aggregation implementation)
     })
 
-    it('should remove contributor fields when compact=true', async () => {
+    it('should remove contributor fields via /relays/detailed', async () => {
       const response = await app.inject({
         method: 'GET',
-        url: '/relays?limit=10&compact=true',
+        url: '/relays/detailed?limit=10',
       })
 
       expect(response.statusCode).toBe(200)
@@ -188,10 +194,10 @@ describe('Compact Mode Tests', () => {
       expect(hasContributorFields(body.relays)).toBe(false)
     })
 
-    it('should preserve essential relay data in compact mode', async () => {
+    it('should preserve essential relay data in detailed shape', async () => {
       const response = await app.inject({
         method: 'GET',
-        url: '/relays?limit=10&compact=true',
+        url: '/relays/detailed?limit=10',
       })
 
       expect(response.statusCode).toBe(200)
@@ -220,11 +226,11 @@ describe('Compact Mode Tests', () => {
     })
   })
 
-  describe('POST /relays/search with compact parameter', () => {
-    it('should return full response without compact parameter', async () => {
+  describe('POST /relays/search/full and POST /relays/search/detailed', () => {
+    it('should return full response via /relays/search/full', async () => {
       const response = await app.inject({
         method: 'POST',
-        url: '/relays/search',
+        url: '/relays/search/full',
         payload: {
           network: 'clearnet',
           limit: 100,
@@ -238,14 +244,13 @@ describe('Compact Mode Tests', () => {
       expect(body.relays.length).toBeGreaterThan(0)
     })
 
-    it('should remove contributor fields when compact=true in POST body', async () => {
+    it('should remove contributor fields via /relays/search/detailed', async () => {
       const response = await app.inject({
         method: 'POST',
-        url: '/relays/search',
+        url: '/relays/search/detailed',
         payload: {
           network: 'clearnet',
           limit: 100,
-          compact: true,
         },
       })
 
@@ -259,14 +264,13 @@ describe('Compact Mode Tests', () => {
       expect(hasContributorFields(body.relays)).toBe(false)
     })
 
-    it('should handle complex filters with compact mode', async () => {
+    it('should handle complex filters with detailed shape', async () => {
       const response = await app.inject({
         method: 'POST',
-        url: '/relays/search',
+        url: '/relays/search/detailed',
         payload: {
           nips: [1, 11],
           software: { family: 'strfry' },
-          compact: true,
         },
       })
 
@@ -277,11 +281,11 @@ describe('Compact Mode Tests', () => {
     })
   })
 
-  describe('GET /relays/nearby with compact parameter', () => {
-    it('should support compact mode for nearby search', async () => {
+  describe('GET /relays/nearby/detailed', () => {
+    it('should support detailed shape for nearby search', async () => {
       const response = await app.inject({
         method: 'GET',
-        url: '/relays/nearby?lat=37.7749&lon=-122.4194&radius=100&compact=true',
+        url: '/relays/nearby/detailed?lat=37.7749&lon=-122.4194&radius=100',
       })
 
       expect(response.statusCode).toBe(200)
@@ -295,11 +299,11 @@ describe('Compact Mode Tests', () => {
     })
   })
 
-  describe('GET /relays/bbox with compact parameter', () => {
-    it('should support compact mode for bbox search', async () => {
+  describe('GET /relays/bbox/detailed', () => {
+    it('should support detailed shape for bbox search', async () => {
       const response = await app.inject({
         method: 'GET',
-        url: '/relays/bbox?sw.lat=32&sw.lon=-125&ne.lat=42&ne.lon=-120&compact=true',
+        url: '/relays/bbox/detailed?sw.lat=32&sw.lon=-125&ne.lat=42&ne.lon=-120',
       })
 
       expect(response.statusCode).toBe(200)
@@ -313,11 +317,11 @@ describe('Compact Mode Tests', () => {
     })
   })
 
-  describe('GET /relays/by/label with compact parameter', () => {
-    it('should support compact mode for label-based search', async () => {
+  describe('GET /relays/by/label/detailed', () => {
+    it('should support detailed shape for label-based search', async () => {
       const response = await app.inject({
         method: 'GET',
-        url: '/relays/by/label?namespace=nip32.geo&value=US&compact=true',
+        url: '/relays/by/label/detailed?namespace=nip32.geo&value=US',
       })
 
       expect(response.statusCode).toBe(200)
@@ -337,10 +341,10 @@ describe('Compact Mode Tests', () => {
   })
 
   describe('Defense-in-depth validation', () => {
-    it('should recursively remove contributor fields from nested objects', async () => {
+    it('should recursively remove contributor fields from nested objects in detailed shape', async () => {
       const response = await app.inject({
         method: 'GET',
-        url: '/relays?limit=10&compact=true',
+        url: '/relays/detailed?limit=10',
       })
 
       expect(response.statusCode).toBe(200)
@@ -363,43 +367,42 @@ describe('Compact Mode Tests', () => {
       }
     })
 
-    it('should not affect non-contributor fields', async () => {
-      // Get same relay with and without compact
+    it('should not affect non-contributor fields between full and detailed shapes', async () => {
+      // Get same relay with full and detailed shapes
       const fullResponse = await app.inject({
         method: 'GET',
-        url: '/relays?limit=1&compact=false',
+        url: '/relays/full?limit=1',
       })
 
-      const compactResponse = await app.inject({
+      const detailedResponse = await app.inject({
         method: 'GET',
-        url: '/relays?limit=1&compact=true',
+        url: '/relays/detailed?limit=1',
       })
 
       expect(fullResponse.statusCode).toBe(200)
-      expect(compactResponse.statusCode).toBe(200)
+      expect(detailedResponse.statusCode).toBe(200)
 
       const fullRelay = JSON.parse(fullResponse.body).relays[0]
-      const compactRelay = JSON.parse(compactResponse.body).relays[0]
+      const detailedRelay = JSON.parse(detailedResponse.body).relays[0]
 
       // Essential fields should match
-      expect(compactRelay.relayUrl).toBe(fullRelay.relayUrl)
-      expect(compactRelay.observationCount).toBe(fullRelay.observationCount)
+      expect(detailedRelay.relayUrl).toBe(fullRelay.relayUrl)
+      expect(detailedRelay.observationCount).toBe(fullRelay.observationCount)
 
       if (fullRelay.network) {
-        expect(compactRelay.network.value).toBe(fullRelay.network.value)
-        expect(compactRelay.network.support).toBe(fullRelay.network.support)
+        expect(detailedRelay.network.value).toBe(fullRelay.network.value)
+        expect(detailedRelay.network.support).toBe(fullRelay.network.support)
       }
     })
   })
 
   describe('Edge cases', () => {
-    it('should handle empty result sets with compact mode', async () => {
+    it('should handle empty result sets with detailed shape', async () => {
       const response = await app.inject({
         method: 'POST',
-        url: '/relays/search',
+        url: '/relays/search/detailed',
         payload: {
           nips: [99999], // Non-existent NIP
-          compact: true,
         },
       })
 
@@ -410,27 +413,30 @@ describe('Compact Mode Tests', () => {
       expect(body.total).toBe(0)
     })
 
-    it('should handle compact=false explicitly', async () => {
+    it('should return full attribution data via /relays/full', async () => {
       const response = await app.inject({
         method: 'GET',
-        url: '/relays?limit=10&compact=false',
+        url: '/relays/full?limit=10',
       })
 
       expect(response.statusCode).toBe(200)
       const body = JSON.parse(response.body)
 
       expect(body.relays).toBeDefined()
-      // compact=false should return full data
+      // /full should return complete data with contributor attribution
     })
 
-    it('should handle invalid compact values gracefully', async () => {
+    it('should return simple format via /relays', async () => {
       const response = await app.inject({
         method: 'GET',
-        url: '/relays?limit=10&compact=invalid',
+        url: '/relays',
       })
 
-      // Should still return valid response (treating as false or true)
       expect(response.statusCode).toBe(200)
+      const body = JSON.parse(response.body)
+
+      expect(body.relays).toBeDefined()
+      // Simple format returns minimal URL-only output
     })
   })
 })

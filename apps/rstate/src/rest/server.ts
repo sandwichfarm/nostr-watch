@@ -376,7 +376,11 @@ export class RestServer {
     if (method === 'GET') {
       // Expensive query operations
       if (path.includes('/relays/compare')) return 5
-      if (path.includes('/relays/search')) return 3
+
+      // Simple endpoints return all results (no limit) — higher cost
+      // Root list endpoints return all results (no limit) — higher cost
+      if (path === '/relays' || path === '/relays/search' || path === '/relays/nearby' || path === '/relays/bbox' || path === '/relays/by/label') return 2
+
       if (path.includes('/monitors/analytics')) return 2
 
       // Standard queries
@@ -385,8 +389,8 @@ export class RestServer {
 
     // POST/PUT/DELETE have higher costs
     if (method === 'POST' || method === 'PUT') {
-      // DISABLED: Subscription system
-      // if (path.includes('/subscriptions')) return 2 // Subscription creation
+      // Search endpoints
+      if (path.includes('/relays/search')) return 3
       return 2
     }
 

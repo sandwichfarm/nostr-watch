@@ -8,10 +8,8 @@
  *
  * Test Coverage:
  * 1. Unit tests for shaping utility functions
- * 2. Integration tests for REST endpoints
- * 3. Backward compatibility tests for legacy 'compact' parameter
- * 4. Schema conformance and type safety tests
- * 5. Performance benchmarks comparing three shapes
+ * 2. Integration tests for REST endpoints (shape-specific URL paths)
+ * 3. Schema conformance and type safety tests
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
@@ -385,11 +383,11 @@ describe('Three-Level Response Shaping', () => {
       }
     })
 
-    describe('GET /relays (list endpoint)', () => {
-      it('should return full RelayState array with format=full', async () => {
+    describe('GET /relays/full', () => {
+      it('should return full RelayState array with contributingAuthors', async () => {
         const response = await app.inject({
           method: 'GET',
-          url: '/relays?format=full',
+          url: '/relays/full',
         })
 
         expect(response.statusCode).toBe(200)
@@ -403,10 +401,25 @@ describe('Three-Level Response Shaping', () => {
         expect(Array.isArray(relay.network?.contributingAuthors)).toBe(true)
       })
 
-      it('should return CompactRelayState array with format=detailed (default)', async () => {
+      it('should support pagination with limit and offset', async () => {
         const response = await app.inject({
           method: 'GET',
-          url: '/relays?format=detailed',
+          url: '/relays/full?limit=1&offset=0',
+        })
+
+        expect(response.statusCode).toBe(200)
+        const body = JSON.parse(response.body)
+        expect(body.relays).toHaveLength(1)
+        expect(body.limit).toBe(1)
+        expect(body.offset).toBe(0)
+      })
+    })
+
+    describe('GET /relays/detailed', () => {
+      it('should return CompactRelayState array without contributingAuthors', async () => {
+        const response = await app.inject({
+          method: 'GET',
+          url: '/relays/detailed',
         })
 
         expect(response.statusCode).toBe(200)
@@ -421,10 +434,24 @@ describe('Three-Level Response Shaping', () => {
         expect(relay.relayUrl).toBeDefined()
       })
 
-      it('should return string array with format=simple', async () => {
+      it('should support pagination with limit and offset', async () => {
         const response = await app.inject({
           method: 'GET',
-          url: '/relays?format=simple',
+          url: '/relays/detailed?limit=1&offset=0',
+        })
+
+        expect(response.statusCode).toBe(200)
+        const body = JSON.parse(response.body)
+        expect(body.relays).toHaveLength(1)
+        expect(body.limit).toBe(1)
+      })
+    })
+
+    describe('GET /relays', () => {
+      it('should return string array of relay URLs', async () => {
+        const response = await app.inject({
+          method: 'GET',
+          url: '/relays',
         })
 
         expect(response.statusCode).toBe(200)
@@ -437,7 +464,7 @@ describe('Three-Level Response Shaping', () => {
         expect(body.relays[0]).toMatch(/^wss:\/\//)
       })
 
-      it('should default to detailed format when no format specified', async () => {
+      it('should return all results with no limit/offset pagination', async () => {
         const response = await app.inject({
           method: 'GET',
           url: '/relays',
@@ -445,23 +472,12 @@ describe('Three-Level Response Shaping', () => {
 
         expect(response.statusCode).toBe(200)
         const body = JSON.parse(response.body)
-        const relay = body.relays[0]
-        expect(relay.network?.contributingAuthors).toBeUndefined()
-      })
-
-      it('should respect pagination with all format types', async () => {
-        const responseSimple = await app.inject({
-          method: 'GET',
-          url: '/relays?format=simple&limit=1',
-        })
-
-        const body = JSON.parse(responseSimple.body)
-        expect(body.relays).toHaveLength(1)
-        expect(body.limit).toBe(1)
+        // simple endpoint returns all results, total matches array length
+        expect(body.relays.length).toBe(body.total)
       })
     })
 
-    describe('GET /relays/state (single endpoint)', () => {
+    describe('GET /relays/state (single relay endpoint)', () => {
       it('should return full RelayState with format=full', async () => {
         const response = await app.inject({
           method: 'GET',
@@ -511,14 +527,14 @@ describe('Three-Level Response Shaping', () => {
       })
     })
 
-    describe('POST /relays/search (search endpoint)', () => {
-      it('should return full RelayState array with format=full', async () => {
+    describe('POST /relays/search/full', () => {
+      it('should return full RelayState array with contributingAuthors', async () => {
         const response = await app.inject({
           method: 'POST',
-          url: '/relays/search',
+          url: '/relays/search/full',
           payload: {
-            format: 'full',
             limit: 10,
+            offset: 0,
           },
         })
 
@@ -530,13 +546,32 @@ describe('Three-Level Response Shaping', () => {
         }
       })
 
-      it('should return CompactRelayState array with format=detailed', async () => {
+      it('should support limit/offset in body for pagination', async () => {
         const response = await app.inject({
           method: 'POST',
-          url: '/relays/search',
+          url: '/relays/search/full',
           payload: {
-            format: 'detailed',
+            limit: 1,
+            offset: 0,
+          },
+        })
+
+        expect(response.statusCode).toBe(200)
+        const body = JSON.parse(response.body)
+        expect(body.relays).toHaveLength(1)
+        expect(body.limit).toBe(1)
+        expect(body.offset).toBe(0)
+      })
+    })
+
+    describe('POST /relays/search/detailed', () => {
+      it('should return CompactRelayState array without contributingAuthors', async () => {
+        const response = await app.inject({
+          method: 'POST',
+          url: '/relays/search/detailed',
+          payload: {
             limit: 10,
+            offset: 0,
           },
         })
 
@@ -547,14 +582,29 @@ describe('Three-Level Response Shaping', () => {
         }
       })
 
-      it('should return string array with format=simple', async () => {
+      it('should support limit/offset in body for pagination', async () => {
+        const response = await app.inject({
+          method: 'POST',
+          url: '/relays/search/detailed',
+          payload: {
+            limit: 1,
+            offset: 0,
+          },
+        })
+
+        expect(response.statusCode).toBe(200)
+        const body = JSON.parse(response.body)
+        expect(body.relays).toHaveLength(1)
+        expect(body.limit).toBe(1)
+      })
+    })
+
+    describe('POST /relays/search', () => {
+      it('should return string array of relay URLs', async () => {
         const response = await app.inject({
           method: 'POST',
           url: '/relays/search',
-          payload: {
-            format: 'simple',
-            limit: 10,
-          },
+          payload: {},
         })
 
         expect(response.statusCode).toBe(200)
@@ -564,12 +614,11 @@ describe('Three-Level Response Shaping', () => {
         }
       })
 
-      it('should respect search filters with all format types', async () => {
+      it('should respect search filters', async () => {
         const response = await app.inject({
           method: 'POST',
           url: '/relays/search',
           payload: {
-            format: 'simple',
             network: 'clearnet',
           },
         })
@@ -578,10 +627,20 @@ describe('Three-Level Response Shaping', () => {
         const body = JSON.parse(response.body)
         expect(body.relays).toBeInstanceOf(Array)
       })
+
+      it('should return all results with no limit/offset', async () => {
+        const response = await app.inject({
+          method: 'POST',
+          url: '/relays/search',
+          payload: {},
+        })
+
+        expect(response.statusCode).toBe(200)
+        const body = JSON.parse(response.body)
+        expect(body.relays.length).toBe(body.total)
+      })
     })
   })
-
-  // ==================== BACKWARD COMPATIBILITY TESTS ====================
 
   // ==================== SCHEMA CONFORMANCE TESTS ====================
   describe('Schema Conformance', () => {

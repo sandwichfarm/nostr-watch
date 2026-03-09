@@ -433,5 +433,23 @@ export function getAllPeriodSnapshots(url: string): Map<string, PeriodSnapshot> 
   return snapshots;
 }
 
+/**
+ * Mark a relay as ignored in the database
+ * @param url The relay URL to mark as ignored
+ * @param reason Optional reason for ignoring (logged only)
+ */
+export function markRelayIgnored(url: string, reason?: string): void {
+  try {
+    db.query(`UPDATE relay_status SET ignore = 1 WHERE url = ?`, [url]);
+    if (reason) {
+      logger.info(`Marked relay ${url} as ignored: ${reason}`);
+    } else {
+      logger.info(`Marked relay ${url} as ignored`);
+    }
+  } catch (e) {
+    logger.error(`Failed to mark relay ${url} as ignored: ${e}`);
+  }
+}
+
 // Re-export everything from the DB package
 export * from "npm:@nostrwatch/db";

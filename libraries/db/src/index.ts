@@ -153,7 +153,9 @@ export function getExpiredRelays(expires: number, allowedNetworks: string[], ret
 }
 
 export function persistResult(result: any): void {
-  const online = result.open?.data ? 1 : 0;
+  const online = ('online' in result && result.online !== undefined)
+    ? (result.online ? 1 : 0)
+    : (result.open?.data ? 1 : 0);
   const ignore = result.ignore ? 1 : 0;
   const parent = result.parent || "";
   const checked_at = Math.round(Date.now()/1000);

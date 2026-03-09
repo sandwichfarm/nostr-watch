@@ -168,7 +168,7 @@ export async function runDaemon(config: Config): Promise<void> {
       errorTracker.track("Missing or invalid RELAYMON_NSEC", "daemon");
     }
 
-    const worker = new Worker(pubkey, queueManager, config);
+    const worker = new Worker(pubkey, queueManager, config, ignoreListSync);
 
     let seeder: RelaySeeder | undefined
     

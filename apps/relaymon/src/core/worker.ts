@@ -2,7 +2,7 @@ import { Nocap } from "npm:@nostrwatch/nocap";
 import EveryAdapterDefault from "npm:@nostrwatch/nocap-every-adapter-default";
 import { Publisher, Kind30166 } from "npm:@nostrwatch/publisher";
 import { relayHostnameDedup, setConfig } from "../utils/hostnames.ts";
-import { persistResult, incrementRetryCount, getRetryCount, db, storeRelayInfo, isRelayIgnored, getLastDeltaState, storeDeltaState, getPeriodSnapshot, storePeriodSnapshot } from "../db/db.ts";
+import { persistResult, incrementRetryCount, getRetryCount, db, storeRelayInfo, isRelayIgnored, getLastDeltaState, storeDeltaState, getPeriodSnapshot, storePeriodSnapshot, markRelayIgnored } from "../db/db.ts";
 import { delay } from "npm:@nostrwatch/utils";
 import { getLogger, LogLevel } from "../utils/logger.ts";
 import { RetryManager } from "../utils/retryManager.ts";
@@ -17,6 +17,7 @@ import { createInfoHash } from "../utils/hostnames.ts";
 import { deleteRelayCheckEvent } from "../utils/deletion.ts";
 import type { Config } from "../config/config.ts";
 import type { NocapCheckResult, RelayCheckResult } from "../types/relay.ts";
+import type { IgnoreListSync } from "../utils/IgnoreListSync.ts";
 import { getErrorMessage } from "../types/errors.ts";
 import { detectDeltas } from "../delta/detector.ts";
 import { Kind1066 } from "../delta/kind1066.ts";
@@ -37,13 +38,16 @@ export class Worker {
   private publishMaxRetries: number = 5;
   private publishInitialBackoffMs: number = 1000*60;
   private warmupMode: boolean = false;
+  private ignoreListSync: IgnoreListSync | null = null;
 
   constructor(
     private pubkey: string,
     private queueManager: QueueManager,
-    config: Config
+    config: Config,
+    ignoreListSync?: IgnoreListSync
   ) {
     this.config = config;
+    this.ignoreListSync = ignoreListSync || null;
     this.publisher = new Publisher(this.pubkey, config.publisher.relays);
 
     this.retryManager = new RetryManager(config.relaymon.retry.expiry);
@@ -173,7 +177,32 @@ export class Worker {
       const dedupedResult = await relayHostnameDedup(result);
       
       wasOnline = result.open?.data === true;
-      
+
+      // Fake relay detection: connects but doesn't speak nostr protocol
+      const checksEnabled = this.config.relaymon.checks.enabled || ["open", "read"];
+      const readCheckEnabled = checksEnabled.includes("read");
+      const isFakeRelay = wasOnline && readCheckEnabled && result.read?.data !== true;
+
+      if (isFakeRelay) {
+        this.logger.warn(`Fake relay detected: ${relayUrl} (open=true, read=false)`);
+        wasOnline = false;
+        dedupedResult.ignore = true;
+        dedupedResult.online = false;
+
+        markRelayIgnored(relayUrl, "Fake relay: connects but does not speak nostr protocol");
+
+        if (this.ignoreListSync) {
+          this.ignoreListSync.addToIgnoreList(relayUrl);
+        }
+
+        await deleteRelayCheckEvent(
+          relayUrl,
+          "Fake relay: WebSocket connects but does not speak nostr protocol",
+          this.config,
+          this.queueManager
+        );
+      }
+
       if (isFirstCheck && wasOnline) {
         incrementNewRelaysFound(1, true);
         this.logger.debug(`New relay ${relayUrl} is online - incrementing new relays found counter`);
@@ -213,7 +242,7 @@ export class Worker {
       }
 
       // Publish delta event (Kind 1066) if enabled
-      this.publishDeltaEvent(relayUrl, dedupedResult, operationalStatus);
+      this.publishDeltaEvent(relayUrl, dedupedResult, operationalStatus, wasOnline);
 
       this.logger.debug(`Persisting result for relay: ${relayUrl}, online: ${wasOnline}`);
       persistResult(dedupedResult);
@@ -310,15 +339,21 @@ export class Worker {
   async publishDeltaEvent(
     relayUrl: string,
     result: RelayCheckResult,
-    operationalStatus?: "init" | "down" | "up"
+    operationalStatus?: "init" | "down" | "up",
+    isOnline?: boolean
   ): Promise<void> {
     // Check if delta events are enabled
     if (!this.config.relaymon.delta?.enabled) {
       return;
     }
 
+    // Don't publish delta events for ignored relays
+    if (result.ignore) {
+      return;
+    }
+
     try {
-      const wasOnline = result.open?.data === true;
+      const wasOnline = isOnline ?? (result.open?.data === true);
       const retryCount = getRetryCount(relayUrl);
 
       // Check if we should stop publishing delta events (exceeded max retries for offline relay)

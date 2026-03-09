@@ -32,6 +32,7 @@ export function initDB(dbPath: string = DEFAULT_DB_PATH, enableWAL: boolean = tr
       url TEXT PRIMARY KEY,
       online INTEGER,
       ignore INTEGER DEFAULT 0,
+      ignore_reason TEXT DEFAULT '',
       parent TEXT,
       checked_at INTEGER,
       rtt INTEGER,
@@ -53,6 +54,20 @@ export function initDB(dbPath: string = DEFAULT_DB_PATH, enableWAL: boolean = tr
   if (!hasRetriesColumn) {
     logger.info("Adding retries column to relay_status table");
     db.query(`ALTER TABLE relay_status ADD COLUMN retries INTEGER DEFAULT 0`);
+  }
+
+  // Check if ignore_reason column exists, if not add it
+  let hasIgnoreReasonColumn = false;
+  for (const row of tableInfo) {
+    if (row[1] === "ignore_reason") {
+      hasIgnoreReasonColumn = true;
+      break;
+    }
+  }
+
+  if (!hasIgnoreReasonColumn) {
+    logger.info("Adding ignore_reason column to relay_status table");
+    db.query(`ALTER TABLE relay_status ADD COLUMN ignore_reason TEXT DEFAULT ''`);
   }
 
   // Create timestamp table to track seeder methods' last run times
@@ -157,6 +172,7 @@ export function persistResult(result: any): void {
     ? (result.online ? 1 : 0)
     : (result.open?.data ? 1 : 0);
   const ignore = result.ignore ? 1 : 0;
+  const ignore_reason = result.ignore_reason || "";
   const parent = result.parent || "";
   const checked_at = Math.round(Date.now()/1000);
   const rtt = result.open?.duration || -1;
@@ -173,18 +189,19 @@ export function persistResult(result: any): void {
   
   db.query(
     `
-    INSERT INTO relay_status (url, online, ignore, parent, checked_at, rtt, network, retries)
-    VALUES (?, ?, ?, ?, ?, ?, ?, 0)
+    INSERT INTO relay_status (url, online, ignore, ignore_reason, parent, checked_at, rtt, network, retries)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
     ON CONFLICT(url) DO UPDATE SET
       online = excluded.online,
       ignore = excluded.ignore,
+      ignore_reason = excluded.ignore_reason,
       parent = excluded.parent,
       checked_at = excluded.checked_at,
       rtt = excluded.rtt,
       network = excluded.network,
       ${retryUpdate}
     `,
-    [result.url, online, ignore, parent, checked_at, rtt, network]
+    [result.url, online, ignore, ignore_reason, parent, checked_at, rtt, network]
   );
   
   // Check if retries were updated correctly
@@ -220,8 +237,8 @@ export function incrementRetryCount(url: string): void {
 export function seedNewRelay(url: string, network: string): boolean {
   return db.query(
     `
-    INSERT INTO relay_status (url, online, ignore, parent, checked_at, rtt, network, retries)
-    VALUES (?, 0, 0, '', -1, -1, ?, 0)
+    INSERT INTO relay_status (url, online, ignore, ignore_reason, parent, checked_at, rtt, network, retries)
+    VALUES (?, 0, 0, '', '', -1, -1, ?, 0)
     ON CONFLICT(url) DO NOTHING
     `,
     [url, network]

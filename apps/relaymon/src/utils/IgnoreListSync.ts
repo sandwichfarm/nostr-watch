@@ -26,8 +26,8 @@ export class IgnoreListSync {
   private syncPubkeys: string[];
   private metaRelays: string[];
   private pool: SimplePool;
-  private ignoredRelays: Set<string> = new Set();
-  private localIgnoredRelays: Set<string> = new Set();
+  private ignoredRelays: Map<string, string> = new Map();
+  private localIgnoredRelays: Map<string, string> = new Map();
   private localIgnoreListChanged: boolean = false;
 
   constructor(config: Config, metaRelays: string[]) {
@@ -58,15 +58,16 @@ export class IgnoreListSync {
    */
   async loadLocalIgnoresFromDB(): Promise<void> {
     try {
-      const results = db.query(`SELECT url FROM relay_status WHERE ignore = 1`);
+      const results = db.query(`SELECT url, ignore_reason FROM relay_status WHERE ignore = 1`);
 
       const previousSize = this.localIgnoredRelays.size;
 
       this.localIgnoredRelays.clear();
-      for (const [url] of results) {
+      for (const [url, reason] of results) {
         const normalizedUrl = normalizeURL(url as string);
-        this.localIgnoredRelays.add(normalizedUrl);
-        this.ignoredRelays.add(normalizedUrl);
+        const reasonStr = (reason as string) || "";
+        this.localIgnoredRelays.set(normalizedUrl, reasonStr);
+        this.ignoredRelays.set(normalizedUrl, reasonStr);
       }
 
       if (this.localIgnoredRelays.size !== previousSize) {
@@ -123,13 +124,13 @@ export class IgnoreListSync {
   /**
    * Add a relay to this monitor's local ignore list
    */
-  addToIgnoreList(relayUrl: string): void {
+  addToIgnoreList(relayUrl: string, reason: string = ""): void {
     const normalized = normalizeURL(relayUrl);
-    const sizeBefore = this.localIgnoredRelays.size;
-    this.localIgnoredRelays.add(normalized);
-    this.ignoredRelays.add(normalized);
+    const isNew = !this.localIgnoredRelays.has(normalized);
+    this.localIgnoredRelays.set(normalized, reason);
+    this.ignoredRelays.set(normalized, reason);
 
-    if (this.localIgnoredRelays.size > sizeBefore) {
+    if (isNew) {
       this.localIgnoreListChanged = true;
       this.logger.info(`Added ${normalized} to local ignore list (total: ${this.localIgnoredRelays.size})`);
     }
@@ -154,6 +155,18 @@ export class IgnoreListSync {
     } catch (e: unknown) {
       this.logger.error(`Error checking if relay is ignored: ${getErrorMessage(e)}`);
       return false;
+    }
+  }
+
+  /**
+   * Get the ignore reason for a relay from the merged ignore list
+   */
+  getIgnoreReason(relayUrl: string): string {
+    try {
+      const normalized = normalizeURL(relayUrl);
+      return this.ignoredRelays.get(normalized) || "";
+    } catch (e: unknown) {
+      return "";
     }
   }
 
@@ -208,7 +221,7 @@ export class IgnoreListSync {
   /**
    * Fetch kind 10006 (blocked relays) for a pubkey from their relays
    */
-  async fetchKind10006(pubkey: string, relays: string[]): Promise<string[]> {
+  async fetchKind10006(pubkey: string, relays: string[]): Promise<Array<{url: string, reason: string}>> {
     try {
       this.logger.debug(`Fetching kind 10006 for ${pubkey.slice(0, 8)}... from ${relays.length} relays`);
 
@@ -232,9 +245,8 @@ export class IgnoreListSync {
       const event = events[0];
       const blockedRelays = event.tags
         .filter((tag: string[]) => tag[0] === "relay" || tag[0] === "r")
-        .map((tag: string[]) => tag[1])
-        .filter(Boolean)
-        .map((url: string) => normalizeURL(url));
+        .filter((tag: string[]) => Boolean(tag[1]))
+        .map((tag: string[]) => ({ url: normalizeURL(tag[1]), reason: tag[2] || "" }));
 
       this.logger.info(`Found ${blockedRelays.length} blocked relays from ${pubkey.slice(0, 8)}...`);
       return blockedRelays;
@@ -260,7 +272,7 @@ export class IgnoreListSync {
 
     this.logger.info(`Syncing ignore lists from ${this.syncPubkeys.length} pubkeys...`);
 
-    const allIgnoredRelays = new Set<string>();
+    const allIgnoredRelays = new Map<string, string>();
 
     for (const pubkey of this.syncPubkeys) {
       try {
@@ -274,27 +286,32 @@ export class IgnoreListSync {
           relays.length > 0 ? relays : this.metaRelays
         );
 
-        for (const relay of blockedRelays) {
-          allIgnoredRelays.add(relay);
+        const pubkey8 = pubkey.slice(0, 8);
+        for (const { url, reason } of blockedRelays) {
+          // Construct propagation reason with attribution
+          const propagationReason = reason
+            ? `Propagated block from monitor ${pubkey8}: ${reason}`
+            : `Propagated block from monitor ${pubkey8}`;
+          allIgnoredRelays.set(url, propagationReason);
         }
       } catch (e: unknown) {
         this.logger.error(`Error syncing ignore list for ${pubkey.slice(0, 8)}...: ${getErrorMessage(e)}`);
       }
     }
 
-    const previousIgnored = new Set(this.ignoredRelays);
-    this.ignoredRelays = new Set([...this.localIgnoredRelays, ...allIgnoredRelays]);
+    const previousIgnored = new Map(this.ignoredRelays);
+    this.ignoredRelays = new Map([...this.localIgnoredRelays, ...allIgnoredRelays]);
     this.logger.info(`Total ignore list size: ${this.ignoredRelays.size} (local: ${this.localIgnoredRelays.size}, synced: ${allIgnoredRelays.size})`);
 
     // Send Kind 5 deletions for newly-synced blocked relays
     const { deleteRelayCheckEvent } = await import("./deletion.ts");
-    for (const relay of allIgnoredRelays) {
+    for (const [relay, reason] of allIgnoredRelays) {
       if (!previousIgnored.has(relay)) {
         this.logger.info(`Sending deletion for remotely-synced blocked relay: ${relay}`);
         try {
           await deleteRelayCheckEvent(
             relay,
-            "Relay blocked by synced monitor",
+            reason,
             this.fullConfig
           );
         } catch (e) {
@@ -324,7 +341,9 @@ export class IgnoreListSync {
         kind: 10006,
         created_at: Math.floor(Date.now() / 1000),
         tags: [
-          ...Array.from(this.localIgnoredRelays).map((url) => ["r", url]),
+          ...Array.from(this.localIgnoredRelays.entries()).map(([url, reason]) =>
+            reason ? ["r", url, reason] : ["r", url]
+          ),
           ["client", "@nostrwatch/relaymon"],
         ],
         content: "",
@@ -368,11 +387,11 @@ export class IgnoreListSync {
     const { deleteRelayCheckEvent } = await import("./deletion.ts");
 
     let deletionCount = 0;
-    for (const relayUrl of this.localIgnoredRelays) {
+    for (const [relayUrl, reason] of this.localIgnoredRelays) {
       try {
         const ok = await deleteRelayCheckEvent(
           relayUrl,
-          "Relay marked as ignored by deduplication",
+          reason || "Relay marked as ignored by deduplication",
           this.fullConfig
         );
         if (ok) deletionCount++;

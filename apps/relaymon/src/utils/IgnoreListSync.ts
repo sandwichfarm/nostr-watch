@@ -282,8 +282,26 @@ export class IgnoreListSync {
       }
     }
 
+    const previousIgnored = new Set(this.ignoredRelays);
     this.ignoredRelays = new Set([...this.localIgnoredRelays, ...allIgnoredRelays]);
     this.logger.info(`Total ignore list size: ${this.ignoredRelays.size} (local: ${this.localIgnoredRelays.size}, synced: ${allIgnoredRelays.size})`);
+
+    // Send Kind 5 deletions for newly-synced blocked relays
+    const { deleteRelayCheckEvent } = await import("./deletion.ts");
+    for (const relay of allIgnoredRelays) {
+      if (!previousIgnored.has(relay)) {
+        this.logger.info(`Sending deletion for remotely-synced blocked relay: ${relay}`);
+        try {
+          await deleteRelayCheckEvent(
+            relay,
+            "Relay blocked by synced monitor",
+            this.fullConfig
+          );
+        } catch (e) {
+          this.logger.error(`Failed to send deletion for synced relay ${relay}: ${getErrorMessage(e)}`);
+        }
+      }
+    }
   }
 
   /**

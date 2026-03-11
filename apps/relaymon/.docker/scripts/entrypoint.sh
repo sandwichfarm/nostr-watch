@@ -161,7 +161,7 @@ HEDPROXY_PID=$!
 echo "Waiting for hedproxy to bind to port $HEDPROXY_PORT..."
 hedproxy_wait=0
 while [ $hedproxy_wait -lt 10 ]; do
-  if netstat -tlpn 2>/dev/null | grep -q ":$HEDPROXY_PORT.*LISTEN"; then
+  if netstat -tlpn 2>/dev/null | grep -q ":$HEDPROXY_PORT\b"; then
     echo "hedproxy is listening on port $HEDPROXY_PORT."
     break
   fi
@@ -505,7 +505,7 @@ hedproxy_supervisor() {
   while true; do
     sleep 10
     # Check if hedproxy is still listening
-    if ! ss -tlpn 2>/dev/null | grep -q ":$HEDPROXY_PORT.*LISTEN"; then
+    if ! ss -tlpn 2>/dev/null | grep -q ":$HEDPROXY_PORT\b"; then
       restart_count=$((restart_count + 1))
       stable_count=0
       if [ $restart_count -gt $max_restarts ]; then
@@ -519,7 +519,7 @@ hedproxy_supervisor() {
       # Restart hedproxy
       hedproxy -proto socks -bind "0.0.0.0:$HEDPROXY_PORT" -tor "$TOR_PROXY_HOST:$TOR_SOCKS_PORT" -i2p "$I2P_PROXY_HOST:$I2P_SOCKS_PORT" -passthrough clearnet &
       sleep 2
-      if ss -tlpn 2>/dev/null | grep -q ":$HEDPROXY_PORT.*LISTEN"; then
+      if ss -tlpn 2>/dev/null | grep -q ":$HEDPROXY_PORT\b"; then
         echo "[hedproxy-supervisor] hedproxy restarted successfully (restart #$restart_count)"
       else
         echo "[hedproxy-supervisor] hedproxy failed to restart, retrying in ${backoff}s..."

@@ -31,7 +31,8 @@ TOR_PROXY_HOST="tor-proxy"
 TOR_SOCKS_PORT="9050"
 
 I2P_PROXY_HOST="i2pd"
-I2P_SAM_PORT="4447"
+I2P_SOCKS_PORT="4447"
+I2P_SAM_PORT="7656"
 
 LOKINET_PROXY_HOST="lokinet"
 LOKINET_SOCKS_PORT="9060"
@@ -152,8 +153,8 @@ echo "Starting hedproxy for network operations..."
 
 # Run hedproxy in the background with debug logging
 # hedproxy <proto> <bind> <...options>
-hedproxy -proto socks -bind "0.0.0.0:$HEDPROXY_PORT" -tor "$TOR_PROXY_HOST:$TOR_SOCKS_PORT" -i2p "$I2P_PROXY_HOST:$I2P_SAM_PORT" -passthrough clearnet &
-# hedproxy socks "0.0.0.0:$HEDPROXY_PORT" -tor "$TOR_PROXY_HOST:$TOR_SOCKS_PORT" -i2p "$I2P_PROXY_HOST:$I2P_SAM_PORT" -passthrough clearnet -logLevel SILENT &
+hedproxy -proto socks -bind "0.0.0.0:$HEDPROXY_PORT" -tor "$TOR_PROXY_HOST:$TOR_SOCKS_PORT" -i2p "$I2P_PROXY_HOST:$I2P_SOCKS_PORT" -passthrough clearnet &
+# hedproxy socks "0.0.0.0:$HEDPROXY_PORT" -tor "$TOR_PROXY_HOST:$TOR_SOCKS_PORT" -i2p "$I2P_PROXY_HOST:$I2P_SOCKS_PORT" -passthrough clearnet -logLevel SILENT &
 HEDPROXY_PID=$!
 
 # Verify hedproxy is listening (poll up to 10s instead of fixed sleep)
@@ -516,7 +517,7 @@ hedproxy_supervisor() {
       pkill -f "hedproxy.*$HEDPROXY_PORT" 2>/dev/null || true
       sleep 1
       # Restart hedproxy
-      hedproxy -proto socks -bind "0.0.0.0:$HEDPROXY_PORT" -tor "$TOR_PROXY_HOST:$TOR_SOCKS_PORT" -i2p "$I2P_PROXY_HOST:$I2P_SAM_PORT" -passthrough clearnet &
+      hedproxy -proto socks -bind "0.0.0.0:$HEDPROXY_PORT" -tor "$TOR_PROXY_HOST:$TOR_SOCKS_PORT" -i2p "$I2P_PROXY_HOST:$I2P_SOCKS_PORT" -passthrough clearnet &
       sleep 2
       if ss -tlpn 2>/dev/null | grep -q ":$HEDPROXY_PORT.*LISTEN"; then
         echo "[hedproxy-supervisor] hedproxy restarted successfully (restart #$restart_count)"

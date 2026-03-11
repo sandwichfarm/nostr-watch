@@ -47,6 +47,7 @@ services:
     image: purplei2p/i2pd:latest
     container_name: i2pd
     restart: unless-stopped
+    entrypoint: ["/bin/sh", "-c", "rm -rf \"$$DATA_DIR\"/certificates && ln -s /i2pd_certificates \"$$DATA_DIR\"/certificates && exec /usr/local/bin/i2pd $$DEFAULT_ARGS $$@", "--"]
     volumes:
       - i2pd-data:/home/i2pd/data
     networks:

@@ -181,7 +181,10 @@ export class Worker {
       // Fake relay detection: connects but doesn't speak nostr protocol
       const checksEnabled = this.config.relaymon.checks.enabled || ["open", "read"];
       const readCheckEnabled = checksEnabled.includes("read");
-      const isFakeRelay = wasOnline && readCheckEnabled && result.read?.data !== true;
+      const readFailedProtocol = result.read?.data !== true
+        && typeof result.read?.message === 'string'
+        && result.read.message.includes('NIP-01 compatible');
+      const isFakeRelay = wasOnline && readCheckEnabled && readFailedProtocol;
 
       if (isFakeRelay) {
         const fakeRelayReason = "Not a relay: WebSocket connects but does not speak nostr protocol";

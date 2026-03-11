@@ -30,7 +30,7 @@ const containsPubkey = (str: string): boolean => /[0-9a-fA-F]{64}/.test(str);
 // Define IgnoreListSync interface for type safety
 interface IgnoreListSyncInterface {
   isIgnored(url: string): boolean;
-  addToIgnoreList(url: string): void;
+  addToIgnoreList(url: string, reason?: string): void;
 }
 
 // Import IgnoreListSync type (will be set via setIgnoreListSync function)
@@ -170,16 +170,17 @@ export const relayHostnameDedup = async (result: RelayCheckResult): Promise<Rela
               result.ignore = true;
               result.parent = rootURLs[0];
               logger.debug(`Ignoring ${mURL} - has same NIP-11 info as root URL ${rootURLs[0]}`);
-              
+
+              const nip11RootReason = `Relay has same NIP-11 info as root URL ${rootURLs[0]}`;
+              if (ignoreListSyncInstance) {
+                ignoreListSyncInstance.addToIgnoreList(mURL, nip11RootReason);
+              }
+
               // Generate deletion event for this ignored relay
               if (appConfig) {
-                await deleteRelayCheckEvent(
-                  mURL, 
-                  `Relay has same NIP-11 info as root URL ${rootURLs[0]}`, 
-                  appConfig
-                );
+                await deleteRelayCheckEvent(mURL, nip11RootReason, appConfig);
               }
-              
+
               return result;
             }
             
@@ -189,16 +190,17 @@ export const relayHostnameDedup = async (result: RelayCheckResult): Promise<Rela
               result.ignore = true;
               result.parent = relaysWithSameInfo[0];
               logger.debug(`Ignoring ${mURL} - has same NIP-11 info as ${relaysWithSameInfo[0]}`);
-              
+
+              const nip11ShorterReason = `Relay has same NIP-11 info as shorter URL ${relaysWithSameInfo[0]}`;
+              if (ignoreListSyncInstance) {
+                ignoreListSyncInstance.addToIgnoreList(mURL, nip11ShorterReason);
+              }
+
               // Generate deletion event for this ignored relay
               if (appConfig) {
-                await deleteRelayCheckEvent(
-                  mURL, 
-                  `Relay has same NIP-11 info as shorter URL ${relaysWithSameInfo[0]}`, 
-                  appConfig
-                );
+                await deleteRelayCheckEvent(mURL, nip11ShorterReason, appConfig);
               }
-              
+
               return result;
             }
           }
@@ -395,27 +397,28 @@ export const relayHostnameDedup = async (result: RelayCheckResult): Promise<Rela
         logger.debug(`${mURL} has been ignored because of: case [1:${case1}] [2:${case2}] [3:${case3}] [4:${case4}] [5:${case5}] [6:${case6}] [7:${case7}] [8:${case8}]`);
         result.ignore = true;
 
+        // Compute the reason for ignoring
+        let reason = "Duplicated relay with same hostname";
+        if (case1) reason = reason1;
+        if (case2) reason = reason2;
+        if (case3) reason = reason3;
+        if (case4) reason = reason4;
+        if (case5) reason = reason5;
+        if (case6) reason = reason6;
+        if (case7) reason = reason7;
+        if (case8) reason = reason8;
+
+        if (result.parent) {
+          reason += ` (parent: ${result.parent})`;
+        }
+
         // Add to IgnoreListSync if it has a parent (i.e., is a deduplication ignore, not remote sync)
         if (result.parent && ignoreListSyncInstance) {
-          ignoreListSyncInstance.addToIgnoreList(mURL);
+          ignoreListSyncInstance.addToIgnoreList(mURL, reason);
         }
 
         // Generate deletion event when a relay is ignored
         if (appConfig) {
-          let reason = "Duplicated relay with same hostname";
-          if (case1) reason = reason1;
-          if (case2) reason = reason2;
-          if (case3) reason = reason3;
-          if (case4) reason = reason4;
-          if (case5) reason = reason5;
-          if (case6) reason = reason6;
-          if (case7) reason = reason7;
-          if (case8) reason = reason8;
-
-          if (result.parent) {
-            reason += ` (parent: ${result.parent})`;
-          }
-
           await deleteRelayCheckEvent(mURL, reason, appConfig);
         }
       } else {

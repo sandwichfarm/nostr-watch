@@ -440,7 +440,7 @@ export function getAllPeriodSnapshots(url: string): Map<string, PeriodSnapshot> 
  */
 export function markRelayIgnored(url: string, reason?: string): void {
   try {
-    db.query(`UPDATE relay_status SET ignore = 1 WHERE url = ?`, [url]);
+    db.query(`UPDATE relay_status SET ignore = 1, ignore_reason = ? WHERE url = ?`, [reason || "", url]);
     if (reason) {
       logger.info(`Marked relay ${url} as ignored: ${reason}`);
     } else {
@@ -448,6 +448,24 @@ export function markRelayIgnored(url: string, reason?: string): void {
     }
   } catch (e) {
     logger.error(`Failed to mark relay ${url} as ignored: ${e}`);
+  }
+}
+
+/**
+ * Get the ignore reason for a relay
+ * @param url The relay URL
+ * @returns The ignore reason string, or empty string if not found
+ */
+export function getIgnoreReason(url: string): string {
+  try {
+    const result = db.query(`SELECT ignore_reason FROM relay_status WHERE url = ?`, [url]);
+    if (!result || result.length === 0) {
+      return "";
+    }
+    return (result[0][0] as string) || "";
+  } catch (e) {
+    logger.error(`Error getting ignore reason for relay ${url}: ${e}`);
+    return "";
   }
 }
 

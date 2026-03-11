@@ -122,6 +122,7 @@ export interface RelayCheckResult extends NocapCheckResult {
   checked_at: number;
   online: boolean;
   ignore: boolean;
+  ignore_reason?: string;
   parent: string;
   network: NetworkType;
 }

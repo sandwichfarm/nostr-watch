@@ -184,15 +184,17 @@ export class Worker {
       const isFakeRelay = wasOnline && readCheckEnabled && result.read?.data !== true;
 
       if (isFakeRelay) {
+        const fakeRelayReason = "Not a relay: WebSocket connects but does not speak nostr protocol";
         this.logger.warn(`Fake relay detected: ${relayUrl} (open=true, read=false)`);
         wasOnline = false;
         dedupedResult.ignore = true;
+        dedupedResult.ignore_reason = fakeRelayReason;
         dedupedResult.online = false;
 
-        markRelayIgnored(relayUrl, "Fake relay: connects but does not speak nostr protocol");
+        markRelayIgnored(relayUrl, fakeRelayReason);
 
         if (this.ignoreListSync) {
-          this.ignoreListSync.addToIgnoreList(relayUrl);
+          this.ignoreListSync.addToIgnoreList(relayUrl, fakeRelayReason);
         }
 
         await deleteRelayCheckEvent(

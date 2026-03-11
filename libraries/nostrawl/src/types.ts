@@ -1,20 +1,33 @@
-import { Event } from 'nostr-tools';
 import PQueue from 'p-queue';
 import { LogLevel } from './utils/Logger';
 
 /**
+ * Nostr event type — structurally compatible with nostr-tools v2 NostrEvent.
+ * Defined inline to avoid hard coupling to a specific nostr-tools version.
+ */
+export interface NostrEvent {
+  id: string;
+  pubkey: string;
+  created_at: number;
+  kind: number;
+  tags: string[][];
+  content: string;
+  sig: string;
+}
+
+/**
  * Options for configuring the trawler
- * 
+ *
  * The trawler now supports an EventEmitter interface for handling events:
  * - 'event': Emitted when a new valid event is received
  * - 'progress': Emitted with progress updates
  * - 'error': Emitted when an error occurs
- * 
+ *
  * You can use either the event listener pattern:
  * ```
  * trawler.on('event', (event) => {...})
  * ```
- * 
+ *
  * Or the parser/validator pattern (legacy):
  * ```
  * parser: (trawler, event) => {...}
@@ -30,10 +43,6 @@ export interface TrawlerOptions {
   since?: number | Record<string, number>;
   sinceStrict?: boolean;
   adapter?: 'pqueue' | 'bullmq';
-  nostrFetcherOptions?: {
-    sort?: boolean;
-    [key: string]: any;
-  };
   adapterOptions?: Record<string, any>;
   workerOptions?: Record<string, any>;
   queueOptions?: Record<string, any>;
@@ -41,7 +50,30 @@ export interface TrawlerOptions {
     enabled: boolean;
     path: string;
   };
-  
+
+  /**
+   * Options passed to applesauce-relay Relay constructor
+   */
+  relayOptions?: {
+    eoseTimeout?: number;
+    keepAlive?: number;
+    WebSocket?: any;
+  };
+
+  /**
+   * Enable NIP-77 negentropy sync (set reconciliation).
+   * When enabled, the trawler will attempt negentropy sync first and
+   * fall back to REQ-based fetching if the relay doesn't support NIP-77.
+   * @default true
+   */
+  negentropyEnabled?: boolean;
+
+  /**
+   * TTL in seconds for caching NIP-77 capability probe results per relay.
+   * @default 3600 (1 hour)
+   */
+  negentropyCapabilityCacheTTL?: number;
+
   /**
    * Log level for the trawler
    * @default LogLevel.INFO
@@ -52,14 +84,14 @@ export interface TrawlerOptions {
    * Parser function for processing events (legacy approach)
    * Consider using event listeners instead: trawler.on('event', (event) => {...})
    */
-  parser?: (trawler: any, event: Event, job: any) => Promise<void>;
-  
+  parser?: (trawler: any, event: NostrEvent, job: any) => Promise<void>;
+
   /**
    * Validator function for filtering events
    * @returns true to accept the event, false to reject it
    */
-  validator?: (trawler: any, event: Event) => boolean;
-  
+  validator?: (trawler: any, event: NostrEvent) => boolean;
+
   /**
    * Called after the cache is opened
    */

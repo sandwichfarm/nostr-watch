@@ -107,6 +107,11 @@ const defaultNostrawlOptions: TrawlerOptions = {
     enabled: true,
     path: './cache'
   },
+  relayOptions: {
+    eoseTimeout: 15000,
+    keepAlive: 0,
+  },
+  negentropyEnabled: true,
   adapterOptions: {
     concurrency: 5,
     // p-queue specific options go here (concurrency, timeout, etc.)

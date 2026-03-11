@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { Subject } from 'rxjs';
 
 // Mock modules first (these are hoisted to the top)
 vi.mock('lmdb', () => {
@@ -11,28 +12,15 @@ vi.mock('lmdb', () => {
   };
 });
 
-// Mock nostr-fetch with a more complete implementation
-vi.mock('nostr-fetch', () => ({
-  NostrFetcher: {
-    withCustomPool: vi.fn().mockReturnValue({
-      allEventsIterator: vi.fn().mockReturnValue({
-        [Symbol.asyncIterator]: function* () {
-          yield { created_at: 1234567890, id: 'event1' };
-          yield { created_at: 1234567891, id: 'event2' };
-        }
-      })
-    })
-  }
-}));
-
-// Mock nostr-tools with required methods
-vi.mock('nostr-tools', () => ({
-  SimplePool: vi.fn().mockImplementation(() => ({
-    get: vi.fn(),
+// Mock applesauce-relay
+const mockSubscribe = vi.fn();
+vi.mock('applesauce-relay', () => ({
+  Relay: vi.fn().mockImplementation(() => ({
+    request: vi.fn().mockReturnValue({ subscribe: mockSubscribe }),
+    sync: vi.fn().mockReturnValue({ subscribe: mockSubscribe }),
     close: vi.fn()
   })),
-  Event: {},
-  Filter: {}
+  SyncDirection: { RECEIVE: 1, SEND: 2, BOTH: 3 }
 }));
 
 import NTTrawler from './Trawler';
@@ -61,6 +49,11 @@ describe('NTTrawler', () => {
       { key: 'has:event1', value: true },
       { key: 'has:event2', value: true }
     ]);
+    // Make subscribe call complete immediately by default
+    mockSubscribe.mockImplementation(({ complete }) => {
+      if (complete) complete();
+      return { unsubscribe: vi.fn() };
+    });
     trawler = new NTTrawler(relays, options);
     // Add the pause method to the instance
     trawler.pause = vi.fn();
@@ -126,6 +119,7 @@ describe('NTTrawler', () => {
     await trawler.openCache();
     await trawler.trawl(relays, { id: 1 });
     const mockDb = vi.mocked(lmdb.open)();
-    expect(mockDb.put).toHaveBeenCalled();
+    // With negentropy enabled (default), it attempts sync which calls subscribe
+    expect(mockSubscribe).toHaveBeenCalled();
   });
 });

@@ -7,7 +7,8 @@ import { DB } from "https://deno.land/x/sqlite/mod.ts";
 import { getLogger, LogLevel } from "./logger.ts";
 import * as nostrwatchDB from "@nostrwatch/db";
 import nostrings from '@nostrwatch/nostrings';
-import { NostrFetcher } from "nostr-fetch";
+import { Relay } from "applesauce-relay";
+import { merge, lastValueFrom, toArray } from "rxjs";
 
 const nostrNow = () => Math.round(Date.now() / 1000);
 
@@ -297,37 +298,36 @@ export class RelaySeeder {
     this.logger.debug(`Fetching events from relays: ${fetchFromRelays.join(', ')}`);
     this.logger.debug(`Looking for kind ${kinds[0]} events from authors: ${authors.join(', ')}`);
 
-    const fetcher = NostrFetcher.init();
+    const relayInstances = fetchFromRelays.map(
+      (url: string) => new Relay(url, { keepAlive: 0 })
+    );
 
     try {
       this.logger.debug('Starting to fetch events...');
-      const events = await fetcher.fetchAllEvents(
-        fetchFromRelays,
-        { kinds, authors },
-        { since }
+      const events$ = merge(
+        ...relayInstances.map((r: Relay) => r.request({ kinds, authors, since } as any))
       );
+      const events = await lastValueFrom(events$.pipe(toArray()), { defaultValue: [] as any[] });
 
       const relays: string[] = [];
       let newest = since;
-      let eventCount = 0;
 
-      for await (const ev of events) {
-        eventCount++;
+      for (const ev of events) {
         if (ev.created_at > newest) newest = ev.created_at;
         const relay = ev.tags.find((tag: string[]) => tag[0] === "d")?.[1];
         if (!relay) continue;
         relays.push(relay);
       }
 
-      this.logger.debug(`Processed ${eventCount} events`);
-      fetcher.shutdown();
+      this.logger.debug(`Processed ${events.length} events`);
       this.logger.debug(`seedFromEvents: Extracted ${relays.length} relays from events.`);
 
       return [[...new Set(relays)], newest];
     } catch (error) {
       this.logger.error(`Error in seedFromEvents: ${error}`);
-      fetcher.shutdown();
       return [[], since];
+    } finally {
+      relayInstances.forEach((r: Relay) => r.close());
     }
   }
 

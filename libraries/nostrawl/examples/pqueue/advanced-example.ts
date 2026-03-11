@@ -1,6 +1,5 @@
 import { nostrawl } from '../../src';
-import { TrawlerOptions, Progress } from '../../src/types';
-import { Event } from 'nostr-tools';
+import { TrawlerOptions, Progress, NostrEvent } from '../../src/types';
 
 /**
  * Advanced example demonstrating the usage of the PQueue adapter
@@ -29,7 +28,7 @@ async function main() {
   let lastProgressUpdate = Date.now();
 
   // Custom parser function to process events
-  const customParser = async (trawler: any, event: Event, job: any) => {
+  const customParser = async (trawler: any, event: NostrEvent, job: any) => {
     // Increment total events counter
     totalEvents++;
     
@@ -52,7 +51,7 @@ async function main() {
   };
 
   // Custom validator function to filter events
-  const customValidator = (trawler: any, event: Event) => {
+  const customValidator = (trawler: any, event: NostrEvent) => {
     // Example: Only accept events from the last 7 days
     const sevenDaysAgo = Math.floor(Date.now() / 1000) - (7 * 24 * 60 * 60);
     return event.created_at >= sevenDaysAgo;

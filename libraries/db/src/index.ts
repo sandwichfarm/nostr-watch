@@ -141,9 +141,10 @@ export function getExpiredRelays(expires: number, allowedNetworks: string[], ret
   // Also exclude relays that are marked as ignored
   const query = `
     SELECT url, checked_at, retries, online, network
-    FROM relay_status 
+    FROM relay_status
     WHERE network IN (${networkPlaceholders})
     AND ignore = 0
+    ORDER BY online DESC, checked_at ASC
   `;
   
   // All parameters: just networks

@@ -4,6 +4,7 @@
   "description": "Library for publishing nostr.watch relay status and publisher registration events",
   "repository": "http://github.com/sandwichfarm/nostr-watch",
   "author": "sandwich <dskvr@no-reply.github.com> ",
+  "private": true,
   "license": "MIT",
   "type": "module",
   "entry": "src/index.ts",

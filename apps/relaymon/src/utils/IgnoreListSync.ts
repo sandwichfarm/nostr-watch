@@ -137,12 +137,18 @@ export class IgnoreListSync {
   }
 
   /**
-   * Remove a relay from this monitor's local ignore list
+   * Remove a relay from this monitor's local ignore list and trigger republish
    */
   removeFromIgnoreList(relayUrl: string): void {
     const normalized = normalizeURL(relayUrl);
+    const wasPresent = this.localIgnoredRelays.has(normalized);
     this.localIgnoredRelays.delete(normalized);
-    this.logger.debug(`Removed ${normalized} from local ignore list`);
+    this.ignoredRelays.delete(normalized);
+
+    if (wasPresent) {
+      this.localIgnoreListChanged = true;
+      this.logger.info(`Removed ${normalized} from local ignore list (total: ${this.localIgnoredRelays.size})`);
+    }
   }
 
   /**

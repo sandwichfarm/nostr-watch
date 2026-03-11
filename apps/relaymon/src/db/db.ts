@@ -452,6 +452,37 @@ export function markRelayIgnored(url: string, reason?: string): void {
 }
 
 /**
+ * Unmark a relay as ignored in the database
+ * @param url The relay URL to unignore
+ */
+export function markRelayUnignored(url: string): void {
+  try {
+    db.query(`UPDATE relay_status SET ignore = 0, ignore_reason = '' WHERE url = ?`, [url]);
+    logger.info(`Unmarked relay ${url} as ignored`);
+  } catch (e) {
+    logger.error(`Failed to unignore relay ${url}: ${e}`);
+  }
+}
+
+/**
+ * Get all ignored relays whose ignore_reason matches a pattern
+ * @param reasonPattern Substring to match against ignore_reason
+ * @returns Array of {url, reason} objects
+ */
+export function getIgnoredRelaysByReason(reasonPattern: string): Array<{url: string, reason: string}> {
+  try {
+    const results = db.query(
+      `SELECT url, ignore_reason FROM relay_status WHERE ignore = 1 AND ignore_reason LIKE ?`,
+      [`%${reasonPattern}%`]
+    );
+    return results.map(([url, reason]) => ({ url: url as string, reason: reason as string }));
+  } catch (e) {
+    logger.error(`Error getting ignored relays by reason pattern "${reasonPattern}": ${e}`);
+    return [];
+  }
+}
+
+/**
  * Get the ignore reason for a relay
  * @param url The relay URL
  * @returns The ignore reason string, or empty string if not found

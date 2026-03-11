@@ -4,6 +4,7 @@ import { RelaySeeder } from "./seeder.ts";
 import { getLogger, setGlobalLogLevel } from "../utils/logger.ts";
 import { delay } from "npm:@nostrwatch/utils";
 import { db, getExpiredRelays } from "npm:@nostrwatch/db";
+import { getIgnoredRelaysByReason } from "../db/db.ts";
 import { maybeAnnounce } from "../utils/announce.ts";
 import { getPublicKey } from "npm:nostr-tools";
 import { hexToBytes } from "@noble/hashes/utils";
@@ -486,6 +487,53 @@ export async function runDaemon(config: Config): Promise<void> {
       }
     }
 
+    // Schedule re-evaluation of fake-relay ignored relays
+    async function runIgnoredRelayReevaluation() {
+      if (!config?.relaymon?.ignorelist?.enabled) {
+        logger.debug("IgnoreListSync is disabled, skipping ignored relay re-evaluation");
+        return;
+      }
+
+      const interval = config.relaymon.ignorelist.reevaluation_interval || "24h";
+      const intervalMs = parseInterval(interval);
+      logger.info(`Scheduling ignored relay re-evaluation every ${interval}`);
+
+      while (true) {
+        try {
+          await delay(intervalMs);
+          logger.info("Running scheduled ignored relay re-evaluation...");
+
+          const fakeRelays = getIgnoredRelaysByReason("does not speak nostr protocol");
+          if (fakeRelays.length === 0) {
+            logger.info("No fake-relay-ignored relays to re-evaluate");
+            continue;
+          }
+
+          logger.info(`Re-evaluating ${fakeRelays.length} fake-relay-ignored relays`);
+          let unignoredCount = 0;
+
+          for (const { url } of fakeRelays) {
+            const wasUnignored = await worker.recheckIgnoredRelay(url);
+            if (wasUnignored) {
+              unignoredCount++;
+            }
+          }
+
+          if (unignoredCount > 0) {
+            logger.info(`Unignored ${unignoredCount} relay(s) that are no longer fake — republishing block list`);
+            await ignoreListSync.publish(getPrivateKey()).catch((err) =>
+              logger.error(`Publish after re-evaluation error: ${err.message}`)
+            );
+          } else {
+            logger.info("All fake-relay-ignored relays still fail protocol check");
+          }
+        } catch (error) {
+          logger.error(`Error in runIgnoredRelayReevaluation: ${error.message}`);
+          await delay(60000);
+        }
+      }
+    }
+
     // Initialize health server if enabled
     let healthServer: HealthServer | null = null;
     if (config.health?.enabled && config.health.server.enabled) {
@@ -589,6 +637,14 @@ export async function runDaemon(config: Config): Promise<void> {
         logger.error(`Dedup re-evaluation process error: ${error.message}`);
       })
     )
+
+    if (config?.relaymon?.ignorelist?.enabled) {
+      tasks.push(
+        runIgnoredRelayReevaluation().catch(error => {
+          logger.error(`Ignored relay re-evaluation process error: ${error.message}`);
+        })
+      );
+    }
 
     showStatus(queueManager);
     

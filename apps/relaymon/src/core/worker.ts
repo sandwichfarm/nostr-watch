@@ -2,7 +2,7 @@ import { Nocap } from "npm:@nostrwatch/nocap";
 import EveryAdapterDefault from "npm:@nostrwatch/nocap-every-adapter-default";
 import { Publisher, Kind30166 } from "npm:@nostrwatch/publisher";
 import { relayHostnameDedup, setConfig } from "../utils/hostnames.ts";
-import { persistResult, incrementRetryCount, getRetryCount, db, storeRelayInfo, isRelayIgnored, getLastDeltaState, storeDeltaState, getPeriodSnapshot, storePeriodSnapshot, markRelayIgnored } from "../db/db.ts";
+import { persistResult, incrementRetryCount, getRetryCount, db, storeRelayInfo, isRelayIgnored, getLastDeltaState, storeDeltaState, getPeriodSnapshot, storePeriodSnapshot, markRelayIgnored, markRelayUnignored } from "../db/db.ts";
 import { delay } from "npm:@nostrwatch/utils";
 import { getLogger, LogLevel } from "../utils/logger.ts";
 import { RetryManager } from "../utils/retryManager.ts";
@@ -293,6 +293,59 @@ export class Worker {
       } catch (statsError) {
         console.error("Error updating stats:", statsError);
       }
+    }
+  }
+
+  /**
+   * Re-check an ignored relay to see if it should be unignored.
+   * Bypasses the normal ignore gate. Returns true if the relay was unignored.
+   */
+  async recheckIgnoredRelay(relayUrl: string): Promise<boolean> {
+    try {
+      this.logger.info(`Re-checking ignored relay: ${relayUrl}`);
+
+      const nocap = new Nocap(relayUrl, {
+        timeouts: this.config.relaymon.checks.options.timeout,
+        logLevel: this.config.logLevel,
+      });
+      await nocap.useAdapters(Object.values(EveryAdapterDefault));
+      const result = await nocap.check(["open", "read"]);
+
+      const wasOnline = result.open?.data === true;
+
+      if (!wasOnline) {
+        this.logger.debug(`Re-check: ${relayUrl} is offline, keeping ignored`);
+        return false;
+      }
+
+      // Check if the read failure is still a protocol incompatibility
+      const readFailedProtocol = result.read?.data !== true
+        && typeof result.read?.message === 'string'
+        && result.read.message.includes('NIP-01 compatible');
+
+      if (readFailedProtocol) {
+        this.logger.debug(`Re-check: ${relayUrl} still fails protocol check, keeping ignored`);
+        return false;
+      }
+
+      // Relay is online and either read passed or failed for non-protocol reasons → unignore
+      this.logger.info(`Re-check: ${relayUrl} is no longer a fake relay, unignoring`);
+
+      markRelayUnignored(relayUrl);
+
+      if (this.ignoreListSync) {
+        this.ignoreListSync.removeFromIgnoreList(relayUrl);
+      }
+
+      // Reset retry count so it gets picked up by normal check cycle
+      db.query("UPDATE relay_status SET retries = 0 WHERE url = ?", [relayUrl]);
+      this.relayRetries.set(relayUrl, 0);
+      this.knownRelayStatus.set(relayUrl, true);
+
+      return true;
+    } catch (error: unknown) {
+      this.logger.error(`Error re-checking ignored relay ${relayUrl}: ${getErrorMessage(error)}`);
+      return false;
     }
   }
 

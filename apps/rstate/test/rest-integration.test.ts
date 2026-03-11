@@ -275,7 +275,7 @@ describe('REST API Integration Tests', () => {
       // Use a static endpoint (relay list returns deterministic results for same dataset)
       const response1 = await app.inject({
         method: 'GET',
-        url: '/relays?limit=1&offset=0',
+        url: '/relays/detailed?limit=1&offset=0',
       })
 
       if (response1.statusCode !== 200) {
@@ -292,7 +292,7 @@ describe('REST API Integration Tests', () => {
       // Second request with If-None-Match
       const response2 = await app.inject({
         method: 'GET',
-        url: '/relays?limit=1&offset=0',
+        url: '/relays/detailed?limit=1&offset=0',
         headers: {
           'if-none-match': etag,
         },

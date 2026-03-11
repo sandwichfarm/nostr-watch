@@ -2,30 +2,49 @@
  * Relay Routes
  *
  * HTTP endpoints for relay state queries
+ * Each list endpoint is split into /simple, /detailed, /full variants
  */
 
 import type { FastifyInstance } from 'fastify'
 import type { RestContext } from '../server.js'
+import type { RelayState } from '../../types/aggregation.js'
 import { getLogger } from '../../utils/logger.js'
-import { type ResponseShape, applyShapeList, applyShapeSingle } from '../../types/response-formats.js'
+import { applyShapeList, applyShapeSingle } from '../../types/response-formats.js'
 import { schemas } from '../schemas.js'
 import { normalizeRelayUrl } from '../../utils/url.js'
 
 const logger = getLogger().child({ module: 'rest-relays' })
 
-/**
- * Helper to resolve format parameter
- *
- * @param formatParam - The format query/body parameter ('full' | 'detailed' | 'simple' | undefined)
- * @returns ResponseShape - Resolved shape ('full' | 'detailed' | 'simple')
- */
-function resolveFormat(formatParam: string | undefined): ResponseShape {
-  if (formatParam === 'full' || formatParam === 'detailed' || formatParam === 'simple') {
-    return formatParam
-  }
+// ─── Shared sort helpers ────────────────────────────────────────────
 
-  // Default to 'detailed'
-  return 'detailed'
+type SortBy = 'url' | 'updated' | 'observationCount' | 'lastSeen'
+
+function sortRelays(relays: RelayState[], sortBy: SortBy, sortOrder: 'asc' | 'desc'): void {
+  relays.sort((a, b) => {
+    let comparison = 0
+    if (sortBy === 'url') {
+      comparison = a.relayUrl.localeCompare(b.relayUrl)
+    } else if (sortBy === 'updated') {
+      comparison = (a.updated_at || 0) - (b.updated_at || 0)
+    } else if (sortBy === 'observationCount') {
+      comparison = (a.observationCount || 0) - (b.observationCount || 0)
+    } else if (sortBy === 'lastSeen') {
+      comparison = (a.lastSeenAt || 0) - (b.lastSeenAt || 0)
+    }
+    return sortOrder === 'asc' ? comparison : -comparison
+  })
+}
+
+// ─── Shared querystring schemas ─────────────────────────────────────
+
+const sortQueryProps = {
+  sortBy: { type: 'string' as const, enum: ['url', 'updated', 'observationCount', 'lastSeen'], default: 'url' },
+  sortOrder: { type: 'string' as const, enum: ['asc', 'desc'], default: 'asc' },
+}
+
+const paginationQueryProps = {
+  limit: { type: 'number' as const, default: 50, maximum: 200 },
+  offset: { type: 'number' as const, default: 0, minimum: 0 },
 }
 
 /**
@@ -34,70 +53,70 @@ function resolveFormat(formatParam: string | undefined): ResponseShape {
 export async function registerRelayRoutes(app: FastifyInstance, context: RestContext): Promise<void> {
   const { core } = context
 
-  // GET /relays - List all relays (detailed by default)
+  // ═══════════════════════════════════════════════════════════════════
+  // GET /relays/{simple,detailed,full}
+  // ═══════════════════════════════════════════════════════════════════
+
+  function getRelaysList(sortBy: SortBy = 'url', sortOrder: 'asc' | 'desc' = 'asc'): RelayState[] {
+    const all = core.query.relays.getAll()
+    sortRelays(all, sortBy, sortOrder)
+    return all
+  }
+
+  // GET /relays — no pagination, all results (simple format)
   app.get<{
-    Querystring: {
-      limit?: number
-      offset?: number
-      sortBy?: string
-      sortOrder?: 'asc' | 'desc'
-      format?: string
-    }
+    Querystring: { sortBy?: SortBy; sortOrder?: 'asc' | 'desc' }
   }>('/relays', {
     schema: {
       tags: ['relays'],
-      description: 'List all relay states with pagination (detailed format by default)',
-      querystring: {
-        type: 'object',
-        properties: {
-          limit: { type: 'number', default: 50, maximum: 200 },
-          offset: { type: 'number', default: 0, minimum: 0 },
-          sortBy: { type: 'string', enum: ['url', 'updated', 'observationCount', 'lastSeen'], default: 'url' },
-          sortOrder: { type: 'string', enum: ['asc', 'desc'], default: 'asc' },
-          format: { type: 'string', enum: ['full', 'detailed', 'simple'], default: 'detailed', description: 'Response format: full (all attribution), detailed (default, no attribution), simple (URLs only)' },
-        },
-      },
-      response: {
-        200: schemas.relays.list,
-      },
+      description: 'List all relay URLs (simple format, no pagination)',
+      querystring: { type: 'object', properties: { ...sortQueryProps } },
+      response: { 200: schemas.relays.listSimple },
     },
-  }, async (request, _reply) => {
-    const { limit = 50, offset = 0, sortBy = 'url', sortOrder = 'asc' } = request.query
-
-    // Resolve format
-    const shape = resolveFormat(request.query.format)
-
-    const allStates = core.query.relays.getAll()
-
-    // Sort
-    allStates.sort((a, b) => {
-      let comparison = 0
-      if (sortBy === 'url') {
-        comparison = a.relayUrl.localeCompare(b.relayUrl)
-      } else if (sortBy === 'updated') {
-        comparison = (a.updated_at || 0) - (b.updated_at || 0)
-      } else if (sortBy === 'observationCount') {
-        comparison = (a.observationCount || 0) - (b.observationCount || 0)
-      } else if (sortBy === 'lastSeen') {
-        comparison = (a.lastSeenAt || 0) - (b.lastSeenAt || 0)
-      }
-      return sortOrder === 'asc' ? comparison : -comparison
-    })
-
-    let paged = allStates.slice(offset, offset + limit)
-
-    // Apply three-level shaping
-    const formatted = applyShapeList(paged, shape)
-
-    return {
-      relays: formatted as any,
-      total: allStates.length,
-      limit,
-      offset,
-    }
+  }, async (request) => {
+    const { sortBy = 'url', sortOrder = 'asc' } = request.query
+    const items = getRelaysList(sortBy, sortOrder)
+    return { relays: applyShapeList(items, 'simple') as any, total: items.length }
   })
 
-  // GET /relays/state - Get single relay state (detailed by default)
+  // GET /relays/detailed — paginated
+  app.get<{
+    Querystring: { limit?: number; offset?: number; sortBy?: SortBy; sortOrder?: 'asc' | 'desc' }
+  }>('/relays/detailed', {
+    schema: {
+      tags: ['relays'],
+      description: 'List relay states in detailed format (no contributor attribution)',
+      querystring: { type: 'object', properties: { ...paginationQueryProps, ...sortQueryProps } },
+      response: { 200: schemas.relays.listObject },
+    },
+  }, async (request) => {
+    const { limit = 50, offset = 0, sortBy = 'url', sortOrder = 'asc' } = request.query
+    const items = getRelaysList(sortBy, sortOrder)
+    const paged = items.slice(offset, offset + limit)
+    return { relays: applyShapeList(paged, 'detailed') as any, total: items.length, limit, offset }
+  })
+
+  // GET /relays/full — paginated
+  app.get<{
+    Querystring: { limit?: number; offset?: number; sortBy?: SortBy; sortOrder?: 'asc' | 'desc' }
+  }>('/relays/full', {
+    schema: {
+      tags: ['relays'],
+      description: 'List relay states in full format (with contributor attribution)',
+      querystring: { type: 'object', properties: { ...paginationQueryProps, ...sortQueryProps } },
+      response: { 200: schemas.relays.listObject },
+    },
+  }, async (request) => {
+    const { limit = 50, offset = 0, sortBy = 'url', sortOrder = 'asc' } = request.query
+    const items = getRelaysList(sortBy, sortOrder)
+    const paged = items.slice(offset, offset + limit)
+    return { relays: applyShapeList(paged, 'full') as any, total: items.length, limit, offset }
+  })
+
+  // ═══════════════════════════════════════════════════════════════════
+  // GET /relays/state — unchanged (single relay)
+  // ═══════════════════════════════════════════════════════════════════
+
   app.get<{
     Querystring: { relayUrl: string; format?: string }
   }>('/relays/state', {
@@ -112,207 +131,297 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
         },
         required: ['relayUrl'],
       },
-      response: {
-        200: schemas.relays.getState,
-      },
+      response: { 200: schemas.relays.getState },
     },
   }, async (request, reply) => {
     const { relayUrl } = request.query
-
-    // Resolve format
-    const shape = resolveFormat(request.query.format)
+    const shape = (request.query.format === 'full' || request.query.format === 'detailed' || request.query.format === 'simple')
+      ? request.query.format : 'detailed'
 
     let state = core.query.relays.getState(relayUrl)
-
     if (!state) {
-      return reply.status(404).send({
-        error: {
-          code: 'RELAY_NOT_FOUND',
-          message: `Relay ${relayUrl} not found`,
-        },
-      })
+      return reply.status(404).send({ error: { code: 'RELAY_NOT_FOUND', message: `Relay ${relayUrl} not found` } })
     }
-
-    // Apply three-level shaping (simple is treated as detailed for single endpoints)
-    const formatted = applyShapeSingle(state, shape)
-
-    return { relay: formatted as any }
+    return { relay: applyShapeSingle(state, shape) as any }
   })
 
-  // POST /relays/search - Search relays with filters
+  // ═══════════════════════════════════════════════════════════════════
+  // POST /relays/search/{simple,detailed,full}
+  // ═══════════════════════════════════════════════════════════════════
+
+  const searchBodyProps = {
+    network: { type: 'string' as const },
+    nips: { type: 'array' as const, items: { type: 'number' as const } },
+    software: {
+      type: 'object' as const,
+      properties: {
+        family: { type: 'string' as const },
+        version: { type: 'string' as const },
+      },
+    },
+    labels: {
+      type: 'array' as const,
+      items: {
+        type: 'object' as const,
+        properties: {
+          namespace: { type: 'string' as const },
+          value: { type: 'string' as const },
+        },
+        required: ['namespace', 'value'] as const,
+      },
+    },
+    maxLatency: {
+      type: 'object' as const,
+      properties: {
+        open: { type: 'number' as const },
+        read: { type: 'number' as const },
+        write: { type: 'number' as const },
+      },
+    },
+    minSupport: { type: 'number' as const, minimum: 0, maximum: 1 },
+  }
+
+  function searchRelays(filters: any): RelayState[] {
+    return core.query.relays.search(filters)
+  }
+
+  // POST /relays/search — no pagination, all results (simple format)
   app.post<{
     Body: {
-      network?: string
-      nips?: number[]
-      software?: { family?: string; version?: string }
+      network?: string; nips?: number[]; software?: { family?: string; version?: string }
       labels?: { namespace: string; value: string }[]
       maxLatency?: { open?: number; read?: number; write?: number }
       minSupport?: number
-      limit?: number
-      offset?: number
-      format?: string
     }
   }>('/relays/search', {
     schema: {
       tags: ['relays'],
-      description: 'Search relays with complex filters, pagination, and three-level response shaping',
+      description: 'Search relays with filters, return URLs only (no pagination)',
+      body: { type: 'object', properties: { ...searchBodyProps } },
+      response: { 200: schemas.relays.searchSimple },
+    },
+  }, async (request) => {
+    const results = searchRelays(request.body)
+    return { relays: applyShapeList(results, 'simple') as any, total: results.length }
+  })
+
+  // POST /relays/search/detailed — paginated
+  app.post<{
+    Body: {
+      network?: string; nips?: number[]; software?: { family?: string; version?: string }
+      labels?: { namespace: string; value: string }[]
+      maxLatency?: { open?: number; read?: number; write?: number }
+      minSupport?: number; limit?: number; offset?: number
+    }
+  }>('/relays/search/detailed', {
+    schema: {
+      tags: ['relays'],
+      description: 'Search relays with filters, return detailed format',
       body: {
         type: 'object',
         properties: {
-          network: { type: 'string' },
-          nips: { type: 'array', items: { type: 'number' } },
-          software: {
-            type: 'object',
-            properties: {
-              family: { type: 'string' },
-              version: { type: 'string' },
-            },
-          },
-          labels: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                namespace: { type: 'string' },
-                value: { type: 'string' },
-              },
-              required: ['namespace', 'value'],
-            },
-          },
-          maxLatency: {
-            type: 'object',
-            properties: {
-              open: { type: 'number' },
-              read: { type: 'number' },
-              write: { type: 'number' },
-            },
-          },
-          minSupport: { type: 'number', minimum: 0, maximum: 1 },
+          ...searchBodyProps,
           limit: { type: 'number', default: 100, maximum: 500 },
           offset: { type: 'number', default: 0, minimum: 0 },
-          format: { type: 'string', enum: ['full', 'detailed', 'simple'], default: 'detailed', description: 'Response format: full (all attribution), detailed (default, no attribution), simple (URLs only)' },
         },
       },
-      response: {
-        200: schemas.relays.list,
-      },
+      response: { 200: schemas.relays.searchObject },
     },
-  }, async (request, _reply) => {
-    const { limit = 100, offset = 0, format: reqFormat, ...filters } = request.body
-
-    // Resolve format
-    const shape = resolveFormat(reqFormat)
-
-    const results = core.query.relays.search(filters)
-    const total = results.length
-
-    // Apply pagination
-    let paged = results.slice(offset, offset + limit)
-
-    // Apply three-level shaping
-    const formatted = applyShapeList(paged, shape)
-
-    return { relays: formatted as any, total, limit, offset }
+  }, async (request) => {
+    const { limit = 100, offset = 0, ...filters } = request.body
+    const results = searchRelays(filters)
+    const paged = results.slice(offset, offset + limit)
+    return { relays: applyShapeList(paged, 'detailed') as any, total: results.length, limit, offset }
   })
 
-  // GET /relays/nearby - Find relays near a point
-  app.get<{
-    Querystring: {
-      lat: number
-      lon: number
-      radius?: number
-      format?: string
+  // POST /relays/search/full — paginated
+  app.post<{
+    Body: {
+      network?: string; nips?: number[]; software?: { family?: string; version?: string }
+      labels?: { namespace: string; value: string }[]
+      maxLatency?: { open?: number; read?: number; write?: number }
+      minSupport?: number; limit?: number; offset?: number
     }
+  }>('/relays/search/full', {
+    schema: {
+      tags: ['relays'],
+      description: 'Search relays with filters, return full format with attribution',
+      body: {
+        type: 'object',
+        properties: {
+          ...searchBodyProps,
+          limit: { type: 'number', default: 100, maximum: 500 },
+          offset: { type: 'number', default: 0, minimum: 0 },
+        },
+      },
+      response: { 200: schemas.relays.searchObject },
+    },
+  }, async (request) => {
+    const { limit = 100, offset = 0, ...filters } = request.body
+    const results = searchRelays(filters)
+    const paged = results.slice(offset, offset + limit)
+    return { relays: applyShapeList(paged, 'full') as any, total: results.length, limit, offset }
+  })
+
+  // ═══════════════════════════════════════════════════════════════════
+  // GET /relays/nearby/{simple,detailed,full}
+  // ═══════════════════════════════════════════════════════════════════
+
+  const nearbyQueryProps = {
+    lat: { type: 'number' as const, minimum: -90, maximum: 90 },
+    lon: { type: 'number' as const, minimum: -180, maximum: 180 },
+    radius: { type: 'number' as const, default: 100, minimum: 1 },
+  }
+
+  function nearbyRelays(lat: number, lon: number, radius: number): RelayState[] {
+    return core.query.relays.nearby(lat, lon, radius)
+  }
+
+  // GET /relays/nearby — no pagination, returns {relayUrl, distance}[] (simple format)
+  app.get<{
+    Querystring: { lat: number; lon: number; radius?: number }
   }>('/relays/nearby', {
     schema: {
       tags: ['relays'],
-      description: 'Find relays near a geographic point',
-      querystring: {
-        type: 'object',
-        properties: {
-          lat: { type: 'number', minimum: -90, maximum: 90 },
-          lon: { type: 'number', minimum: -180, maximum: 180 },
-          radius: { type: 'number', default: 100, minimum: 1 },
-          format: { type: 'string', enum: ['full', 'detailed', 'simple', 'compact'], default: 'detailed', description: 'Response format: full (all attribution), detailed (default, aggregated), simple (URLs only), compact (deprecated)' },
-        },
-        required: ['lat', 'lon'],
-      },
-      response: {
-        200: schemas.relays.nearby,
-      },
+      description: 'Find nearby relays, return URLs with distance (no pagination)',
+      querystring: { type: 'object', properties: { ...nearbyQueryProps }, required: ['lat', 'lon'] },
+      response: { 200: schemas.relays.nearbySimple },
     },
-  }, async (request, _reply) => {
+  }, async (request) => {
     const { lat, lon, radius = 100 } = request.query
-
-    // Resolve format
-    const shape = resolveFormat(request.query.format)
-
-    let results = core.query.relays.nearby(lat, lon, radius)
-
-    // Apply three-level shaping
-    const formatted = applyShapeList(results, shape)
-
-    return {
-      relays: formatted as any,
-      center: { lat, lon },
-      radius,
-    }
+    const results = nearbyRelays(lat, lon, radius)
+    const relays = results.map((r: any) => ({ relayUrl: r.relayUrl, distance: r.distance }))
+    return { relays, center: { lat, lon }, radius }
   })
 
-  // GET /relays/bbox - Find relays in bounding box
+  // GET /relays/nearby/detailed — no pagination (geo results naturally bounded by radius)
   app.get<{
-    Querystring: {
-      'sw.lat': number
-      'sw.lon': number
-      'ne.lat': number
-      'ne.lon': number
-      format?: string
-    }
+    Querystring: { lat: number; lon: number; radius?: number }
+  }>('/relays/nearby/detailed', {
+    schema: {
+      tags: ['relays'],
+      description: 'Find nearby relays in detailed format',
+      querystring: { type: 'object', properties: { ...nearbyQueryProps }, required: ['lat', 'lon'] },
+      response: { 200: schemas.relays.nearbyObject },
+    },
+  }, async (request) => {
+    const { lat, lon, radius = 100 } = request.query
+    const results = nearbyRelays(lat, lon, radius)
+    const shaped = applyShapeList(results, 'detailed') as any[]
+    const relays = shaped.map((item: any, idx: number) => ({ ...item, distance: (results[idx] as any).distance }))
+    return { relays, center: { lat, lon }, radius }
+  })
+
+  // GET /relays/nearby/full — no pagination
+  app.get<{
+    Querystring: { lat: number; lon: number; radius?: number }
+  }>('/relays/nearby/full', {
+    schema: {
+      tags: ['relays'],
+      description: 'Find nearby relays in full format with attribution',
+      querystring: { type: 'object', properties: { ...nearbyQueryProps }, required: ['lat', 'lon'] },
+      response: { 200: schemas.relays.nearbyObject },
+    },
+  }, async (request) => {
+    const { lat, lon, radius = 100 } = request.query
+    const results = nearbyRelays(lat, lon, radius)
+    const shaped = applyShapeList(results, 'full') as any[]
+    const relays = shaped.map((item: any, idx: number) => ({ ...item, distance: (results[idx] as any).distance }))
+    return { relays, center: { lat, lon }, radius }
+  })
+
+  // ═══════════════════════════════════════════════════════════════════
+  // GET /relays/bbox/{simple,detailed,full}
+  // ═══════════════════════════════════════════════════════════════════
+
+  const bboxQueryProps = {
+    'sw.lat': { type: 'number' as const, minimum: -90, maximum: 90 },
+    'sw.lon': { type: 'number' as const, minimum: -180, maximum: 180 },
+    'ne.lat': { type: 'number' as const, minimum: -90, maximum: 90 },
+    'ne.lon': { type: 'number' as const, minimum: -180, maximum: 180 },
+  }
+
+  function bboxRelays(query: any): { results: RelayState[]; sw: { lat: number; lon: number }; ne: { lat: number; lon: number } } {
+    const sw = { lat: query['sw.lat'], lon: query['sw.lon'] }
+    const ne = { lat: query['ne.lat'], lon: query['ne.lon'] }
+    return { results: core.query.relays.bbox(sw, ne), sw, ne }
+  }
+
+  // GET /relays/bbox — no pagination (simple format)
+  app.get<{
+    Querystring: { 'sw.lat': number; 'sw.lon': number; 'ne.lat': number; 'ne.lon': number }
   }>('/relays/bbox', {
     schema: {
       tags: ['relays'],
-      description: 'Find relays within a bounding box',
+      description: 'Find relays within a bounding box, return URLs only (no pagination)',
+      querystring: { type: 'object', properties: { ...bboxQueryProps }, required: ['sw.lat', 'sw.lon', 'ne.lat', 'ne.lon'] },
+      response: { 200: schemas.relays.bboxSimple },
+    },
+  }, async (request) => {
+    const { results, sw, ne } = bboxRelays(request.query)
+    return { relays: applyShapeList(results, 'simple') as any, bbox: { sw, ne }, total: results.length }
+  })
+
+  // GET /relays/bbox/detailed — paginated
+  app.get<{
+    Querystring: { 'sw.lat': number; 'sw.lon': number; 'ne.lat': number; 'ne.lon': number; limit?: number; offset?: number }
+  }>('/relays/bbox/detailed', {
+    schema: {
+      tags: ['relays'],
+      description: 'Find relays within a bounding box in detailed format',
       querystring: {
         type: 'object',
         properties: {
-          'sw.lat': { type: 'number', minimum: -90, maximum: 90 },
-          'sw.lon': { type: 'number', minimum: -180, maximum: 180 },
-          'ne.lat': { type: 'number', minimum: -90, maximum: 90 },
-          'ne.lon': { type: 'number', minimum: -180, maximum: 180 },
-          format: { type: 'string', enum: ['full', 'detailed', 'simple', 'compact'], default: 'detailed', description: 'Response format: full (all attribution), detailed (default, aggregated), simple (URLs only), compact (deprecated)' },
+          ...bboxQueryProps,
+          limit: { type: 'number', default: 100, maximum: 500 },
+          offset: { type: 'number', default: 0, minimum: 0 },
         },
         required: ['sw.lat', 'sw.lon', 'ne.lat', 'ne.lon'],
       },
-      response: {
-        200: schemas.relays.bbox,
-      },
+      response: { 200: schemas.relays.bboxObject },
     },
-  }, async (request, _reply) => {
+  }, async (request) => {
     const query = request.query as any
-    const sw = { lat: query['sw.lat'], lon: query['sw.lon'] }
-    const ne = { lat: query['ne.lat'], lon: query['ne.lon'] }
-
-    // Resolve format
-    const shape = resolveFormat(query.format)
-
-    let results = core.query.relays.bbox(sw, ne)
-
-    // Apply three-level shaping
-    const formatted = applyShapeList(results, shape)
-
-    return {
-      relays: formatted as any,
-      bbox: { sw, ne },
-      total: results.length,
-    }
+    const { results, sw, ne } = bboxRelays(query)
+    const limit = query.limit ?? 100
+    const offset = query.offset ?? 0
+    const paged = results.slice(offset, offset + limit)
+    return { relays: applyShapeList(paged, 'detailed') as any, bbox: { sw, ne }, total: results.length, limit, offset }
   })
 
-  // GET /relays/labels - Get labels for a relay
+  // GET /relays/bbox/full — paginated
   app.get<{
-    Querystring: {
-      relayUrl: string
-      namespace?: string
-    }
+    Querystring: { 'sw.lat': number; 'sw.lon': number; 'ne.lat': number; 'ne.lon': number; limit?: number; offset?: number }
+  }>('/relays/bbox/full', {
+    schema: {
+      tags: ['relays'],
+      description: 'Find relays within a bounding box in full format with attribution',
+      querystring: {
+        type: 'object',
+        properties: {
+          ...bboxQueryProps,
+          limit: { type: 'number', default: 100, maximum: 500 },
+          offset: { type: 'number', default: 0, minimum: 0 },
+        },
+        required: ['sw.lat', 'sw.lon', 'ne.lat', 'ne.lon'],
+      },
+      response: { 200: schemas.relays.bboxObject },
+    },
+  }, async (request) => {
+    const query = request.query as any
+    const { results, sw, ne } = bboxRelays(query)
+    const limit = query.limit ?? 100
+    const offset = query.offset ?? 0
+    const paged = results.slice(offset, offset + limit)
+    return { relays: applyShapeList(paged, 'full') as any, bbox: { sw, ne }, total: results.length, limit, offset }
+  })
+
+  // ═══════════════════════════════════════════════════════════════════
+  // GET /relays/labels — unchanged
+  // ═══════════════════════════════════════════════════════════════════
+
+  app.get<{
+    Querystring: { relayUrl: string; namespace?: string }
   }>('/relays/labels', {
     schema: {
       tags: ['relays'],
@@ -325,73 +434,81 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
         },
         required: ['relayUrl'],
       },
-      response: {
-        200: schemas.relays.getLabels,
-      },
+      response: { 200: schemas.relays.getLabels },
     },
-  }, async (request, _reply) => {
+  }, async (request) => {
     const { relayUrl, namespace } = request.query
     const labels = core.query.relays.getLabels(relayUrl)
-
     if (namespace) {
       return { labels: { [namespace]: labels[namespace] || [] } }
     }
-
     return { labels }
   })
 
-  // GET /relays/labels/list - List all available labels
+  // ═══════════════════════════════════════════════════════════════════
+  // GET /relays/labels/list — unchanged
+  // ═══════════════════════════════════════════════════════════════════
+
   app.get<{
     Querystring: { namespace?: string }
   }>('/relays/labels/list', {
     schema: {
       tags: ['relays'],
       description: 'List all available labels',
-      querystring: {
-        type: 'object',
-        properties: {
-          namespace: { type: 'string' },
-        },
-      },
-      response: {
-        200: schemas.relays.listLabels,
-      },
+      querystring: { type: 'object', properties: { namespace: { type: 'string' } } },
+      response: { 200: schemas.relays.listLabels },
     },
-  }, async (request, _reply) => {
+  }, async (request) => {
     const { namespace } = request.query
     const labelsList = core.query.relays.listLabels(namespace)
-
-    // Group by namespace (matching CVM tool output)
     const allLabels: Record<string, string[]> = {}
     const namespaces = new Set<string>()
-
     for (const { namespace: ns, value } of labelsList) {
       namespaces.add(ns)
-      if (!allLabels[ns]) {
-        allLabels[ns] = []
-      }
+      if (!allLabels[ns]) allLabels[ns] = []
       allLabels[ns].push(value)
     }
-
-    return {
-      namespaces: Array.from(namespaces).sort(),
-      labels: allLabels,
-    }
+    return { namespaces: Array.from(namespaces).sort(), labels: allLabels }
   })
 
-  // GET /relays/by/label - Find relays by label
+  // ═══════════════════════════════════════════════════════════════════
+  // GET /relays/by/label/{simple,detailed,full}
+  // ═══════════════════════════════════════════════════════════════════
+
+  function byLabelRelays(namespace: string, value: string): RelayState[] {
+    const relayUrls = core.query.relays.byLabel(namespace, value)
+    return relayUrls
+      .map((url) => core.query.relays.getState(url))
+      .filter((r): r is RelayState => r !== null)
+  }
+
+  // GET /relays/by/label — no pagination (simple format)
   app.get<{
-    Querystring: {
-      namespace: string
-      value: string
-      limit?: number
-      offset?: number
-      format?: string
-    }
+    Querystring: { namespace: string; value: string }
   }>('/relays/by/label', {
     schema: {
       tags: ['relays'],
-      description: 'Find relays with a specific label',
+      description: 'Find relays with a specific label, return URLs only (no pagination)',
+      querystring: {
+        type: 'object',
+        properties: { namespace: { type: 'string' }, value: { type: 'string' } },
+        required: ['namespace', 'value'],
+      },
+      response: { 200: schemas.relays.byLabelSimple },
+    },
+  }, async (request) => {
+    const { namespace, value } = request.query
+    const relays = byLabelRelays(namespace, value)
+    return { relays: applyShapeList(relays, 'simple') as any, label: { namespace, value }, total: relays.length }
+  })
+
+  // GET /relays/by/label/detailed — paginated
+  app.get<{
+    Querystring: { namespace: string; value: string; limit?: number; offset?: number }
+  }>('/relays/by/label/detailed', {
+    schema: {
+      tags: ['relays'],
+      description: 'Find relays with a specific label in detailed format',
       querystring: {
         type: 'object',
         properties: {
@@ -399,92 +516,85 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
           value: { type: 'string' },
           limit: { type: 'number', default: 100, maximum: 200 },
           offset: { type: 'number', default: 0, minimum: 0 },
-          format: { type: 'string', enum: ['full', 'detailed', 'simple', 'compact'], default: 'detailed', description: 'Response format: full (all attribution), detailed (default, aggregated), simple (URLs only), compact (deprecated)' },
         },
         required: ['namespace', 'value'],
       },
-      response: {
-        200: schemas.relays.byLabel,
-      },
+      response: { 200: schemas.relays.byLabelObject },
     },
-  }, async (request, _reply) => {
+  }, async (request) => {
     const { namespace, value, limit = 100, offset = 0 } = request.query
-
-    // Resolve format
-    const shape = resolveFormat(request.query.format)
-
-    const relayUrls = core.query.relays.byLabel(namespace, value)
-    const relays = relayUrls
-      .map((url) => core.query.relays.getState(url))
-      .filter((r) => r !== null)
-
-    const total = relays.length
-    let paged = relays.slice(offset, offset + limit)
-
-    // Apply three-level shaping
-    const formatted = applyShapeList(paged, shape)
-
-    return {
-      relays: formatted as any,
-      label: { namespace, value },
-      total,
-    }
+    const relays = byLabelRelays(namespace, value)
+    const paged = relays.slice(offset, offset + limit)
+    return { relays: applyShapeList(paged, 'detailed') as any, label: { namespace, value }, total: relays.length, limit, offset }
   })
 
-  // GET /relays/by/software - Group relays by software
+  // GET /relays/by/label/full — paginated
+  app.get<{
+    Querystring: { namespace: string; value: string; limit?: number; offset?: number }
+  }>('/relays/by/label/full', {
+    schema: {
+      tags: ['relays'],
+      description: 'Find relays with a specific label in full format with attribution',
+      querystring: {
+        type: 'object',
+        properties: {
+          namespace: { type: 'string' },
+          value: { type: 'string' },
+          limit: { type: 'number', default: 100, maximum: 200 },
+          offset: { type: 'number', default: 0, minimum: 0 },
+        },
+        required: ['namespace', 'value'],
+      },
+      response: { 200: schemas.relays.byLabelObject },
+    },
+  }, async (request) => {
+    const { namespace, value, limit = 100, offset = 0 } = request.query
+    const relays = byLabelRelays(namespace, value)
+    const paged = relays.slice(offset, offset + limit)
+    return { relays: applyShapeList(paged, 'full') as any, label: { namespace, value }, total: relays.length, limit, offset }
+  })
+
+  // ═══════════════════════════════════════════════════════════════════
+  // Unchanged endpoints (no format splitting)
+  // ═══════════════════════════════════════════════════════════════════
+
+  // GET /relays/by/software
   app.get<{
     Querystring: { family?: string }
   }>('/relays/by/software', {
     schema: {
       tags: ['relays'],
       description: 'Get relays grouped by software family',
-      querystring: {
-        type: 'object',
-        properties: {
-          family: { type: 'string' },
-        },
-      },
-      response: {
-        200: schemas.relays.bySoftware,
-      },
+      querystring: { type: 'object', properties: { family: { type: 'string' } } },
+      response: { 200: schemas.relays.bySoftware },
     },
-  }, async (request, _reply) => {
+  }, async (request) => {
     const { family } = request.query
     const grouped = core.query.relays.bySoftware()
-
     if (family) {
       return { relays: grouped[family] || [], total: (grouped[family] || []).length }
     }
-
     return { groups: grouped }
   })
 
-  // GET /relays/by/network - Group relays by network
+  // GET /relays/by/network
   app.get('/relays/by/network', {
     schema: {
       tags: ['relays'],
       description: 'Get relays grouped by network type',
-      response: {
-        200: schemas.relays.byNetwork,
-      },
+      response: { 200: schemas.relays.byNetwork },
     },
-  }, async (_request, _reply) => {
+  }, async () => {
     const grouped = core.query.relays.byNetwork()
-    // Transform Record<string, string[]> to array format expected by schema
     const groups = Object.entries(grouped).map(([network, relays]) => ({
-      network,
-      count: relays.length,
-      relays
+      network, count: relays.length, relays,
     }))
     return { groups }
   })
 
-  // GET /relays/by/nip - Group relays by NIP support
+  // GET /relays/by/nip
   app.get<{
-    Querystring: {
-      nip?: number
-      minSupport?: number
-    }
+    Querystring: { nip?: number; minSupport?: number }
   }>('/relays/by/nip', {
     schema: {
       tags: ['relays'],
@@ -496,34 +606,21 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
           minSupport: { type: 'number', default: 0.5, minimum: 0, maximum: 1 },
         },
       },
-      response: {
-        200: schemas.relays.byNip,
-      },
+      response: { 200: schemas.relays.byNip },
     },
-  }, async (request, _reply) => {
+  }, async (request) => {
     const { nip, minSupport = 0.5 } = request.query
     const nipData = core.query.relays.byNip()
-
     let groups = Object.entries(nipData).map(([nipNum, data]) => ({
-      nip: Number(nipNum),
-      count: data.relays.length,
-      avgSupport: data.supportRatio,
-      relays: data.relays,
+      nip: Number(nipNum), count: data.relays.length, avgSupport: data.supportRatio, relays: data.relays,
     }))
-
-    // Filter by specific NIP if requested
     if (nip !== undefined) {
       groups = groups.filter((g) => g.nip === nip)
     }
-
-    return {
-      groups: groups
-        .filter((g) => g.avgSupport >= minSupport)
-        .sort((a, b) => b.count - a.count),
-    }
+    return { groups: groups.filter((g) => g.avgSupport >= minSupport).sort((a, b) => b.count - a.count) }
   })
 
-  // GET /relays/by/country - Group relays by country
+  // GET /relays/by/country
   app.get<{
     Querystring: { countryCode?: string }
   }>('/relays/by/country', {
@@ -532,42 +629,25 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
       description: 'Get relays grouped by country',
       querystring: {
         type: 'object',
-        properties: {
-          countryCode: { type: 'string', pattern: '^[A-Z]{2}$' },
-        },
+        properties: { countryCode: { type: 'string', pattern: '^[A-Z]{2}$' } },
       },
-      response: {
-        200: schemas.relays.byCountry,
-      },
+      response: { 200: schemas.relays.byCountry },
     },
-  }, async (request, _reply) => {
+  }, async (request) => {
     const { countryCode } = request.query
     const groupsMap = core.query.relays.byCountry()
-
     let groups = Object.entries(groupsMap).map(([code, relays]) => {
-      // Get country name from the first relay's labels
       const firstRelayState = core.query.relays.getState(relays[0])
       const countryName = firstRelayState?.labels?.['countryName']?.[0]
-
-      return {
-        countryCode: code,
-        countryName,
-        count: relays.length,
-        relays,
-      }
+      return { countryCode: code, countryName, count: relays.length, relays }
     })
-
-    // Filter by specific country code if requested
     if (countryCode) {
       groups = groups.filter((g) => g.countryCode === countryCode)
     }
-
-    return {
-      groups: groups.sort((a, b) => b.count - a.count),
-    }
+    return { groups: groups.sort((a, b) => b.count - a.count) }
   })
 
-  // POST /relays/compare - Compare multiple relays
+  // POST /relays/compare
   app.post<{
     Body: { relayUrls: string[] }
   }>('/relays/compare', {
@@ -577,201 +657,117 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
       body: {
         type: 'object',
         properties: {
-          relayUrls: {
-            type: 'array',
-            items: { type: 'string', format: 'uri' },
-            minItems: 1,
-            maxItems: 10,
-          },
+          relayUrls: { type: 'array', items: { type: 'string', format: 'uri' }, minItems: 1, maxItems: 10 },
         },
         required: ['relayUrls'],
       },
-      response: {
-        200: schemas.relays.compare,
-      },
+      response: { 200: schemas.relays.compare },
     },
-  }, async (request, _reply) => {
+  }, async (request) => {
     const { relayUrls } = request.body
-
-    // Normalize relay URLs
     const normalizedUrls: string[] = []
     for (const url of relayUrls) {
-      try {
-        normalizedUrls.push(normalizeRelayUrl(url))
-      } catch (err) {
+      try { normalizedUrls.push(normalizeRelayUrl(url)) } catch (err) {
         logger.warn({ url, error: String(err) }, 'Invalid relay URL')
       }
     }
-
-    const relays = core.query.relays.compare(normalizedUrls)
-      .filter((r): r is NonNullable<typeof r> => r !== null)
-
+    const relays = core.query.relays.compare(normalizedUrls).filter((r): r is NonNullable<typeof r> => r !== null)
     if (relays.length === 0) {
       return {
         relays: [],
-        comparison: {
-          common: { nips: [], requirements: [] },
-          differences: { network: false, software: false, latency: false },
-        },
+        comparison: { common: { nips: [], requirements: [] }, differences: { network: false, software: false, latency: false } },
       }
     }
-
-    // Find common NIPs
     const nipSets = relays.map((r) => new Set(r.nips?.list || []))
-    const commonNips = Array.from(nipSets[0]).filter((nip) =>
-      nipSets.every((set) => set.has(nip))
-    )
-
-    // Find common requirements
+    const commonNips = Array.from(nipSets[0]).filter((nip) => nipSets.every((set) => set.has(nip)))
     const reqKeys = new Set<string>()
-    relays.forEach((r) => {
-      if (r.requirements) {
-        Object.keys(r.requirements).forEach((key) => reqKeys.add(key))
-      }
-    })
+    relays.forEach((r) => { if (r.requirements) Object.keys(r.requirements).forEach((key) => reqKeys.add(key)) })
     const commonReqs = Array.from(reqKeys).filter((key) => {
-      const values = relays
-        .map((r) => r.requirements?.[key]?.value)
-        .filter((v) => v !== undefined)
+      const values = relays.map((r) => r.requirements?.[key]?.value).filter((v) => v !== undefined)
       return values.length === relays.length && values.every((v) => v === values[0])
     })
-
-    // Check for differences
     const networks = new Set(relays.map((r) => r.network?.value).filter(Boolean))
     const softwareFamilies = new Set(relays.map((r) => r.software?.family?.value).filter(Boolean))
-
-    // Check latency differences (consider different if > 20% variance)
     let latencyDiff = false
     for (const key of ['open', 'read', 'write'] as const) {
-      const latencies = relays
-        .map((r) => r.rtt?.[key]?.value)
-        .filter((v): v is number => v !== undefined)
+      const latencies = relays.map((r) => r.rtt?.[key]?.value).filter((v): v is number => v !== undefined)
       if (latencies.length > 1) {
         const avg = latencies.reduce((a, b) => a + b, 0) / latencies.length
         const maxDiff = Math.max(...latencies.map((l) => Math.abs(l - avg)))
-        if (maxDiff / avg > 0.2) {
-          latencyDiff = true
-          break
-        }
+        if (maxDiff / avg > 0.2) { latencyDiff = true; break }
       }
     }
-
     return {
       relays,
       comparison: {
-        common: {
-          nips: commonNips,
-          requirements: commonReqs,
-        },
-        differences: {
-          network: networks.size > 1,
-          software: softwareFamilies.size > 1,
-          latency: latencyDiff,
-        },
+        common: { nips: commonNips, requirements: commonReqs },
+        differences: { network: networks.size > 1, software: softwareFamilies.size > 1, latency: latencyDiff },
       },
     }
   })
 
-  // POST /relays/online - Get online relays (supports label filtering)
+  // POST /relays/online
   app.post<{
-    Body: {
-      onlineWindowSeconds?: number
-      network?: string
-      labels?: { namespace: string; value: string }[]
-    }
+    Body: { onlineWindowSeconds?: number; network?: string; labels?: { namespace: string; value: string }[] }
   }>('/relays/online', {
     schema: {
       tags: ['relays'],
-      description: 'Get currently online relays. A relay is online if it responded within the max monitor frequency window. Defaults derived from monitor frequencies.',
+      description: 'Get currently online relays',
       body: {
         type: 'object',
         properties: {
-          onlineWindowSeconds: { type: 'number', minimum: 60, description: 'Override the online window in seconds (default: max monitor frequency)' },
+          onlineWindowSeconds: { type: 'number', minimum: 60 },
           network: { type: 'string' },
           labels: {
             type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                namespace: { type: 'string' },
-                value: { type: 'string' },
-              },
-              required: ['namespace', 'value'],
-            },
+            items: { type: 'object', properties: { namespace: { type: 'string' }, value: { type: 'string' } }, required: ['namespace', 'value'] },
           },
         },
       },
-      response: {
-        200: schemas.relays.availability,
-      },
+      response: { 200: schemas.relays.availability },
     },
-  }, async (request, _reply) => {
+  }, async (request) => {
     const { onlineWindowSeconds, network, labels } = request.body
     const filters = (network || labels) ? { network, labels } : undefined
-    const relays = core.query.relays.online({
-      onlineWindowSeconds,
-      filters,
-    })
+    const relays = core.query.relays.online({ onlineWindowSeconds, filters })
     return { relays, total: relays.length, limit: 0, offset: 0 }
   })
 
-  // POST /relays/offline - Get offline relays (supports label filtering)
+  // POST /relays/offline
   app.post<{
-    Body: {
-      offlineThresholdSeconds?: number
-      deadThresholdSeconds?: number
-      network?: string
-      labels?: { namespace: string; value: string }[]
-    }
+    Body: { offlineThresholdSeconds?: number; deadThresholdSeconds?: number; network?: string; labels?: { namespace: string; value: string }[] }
   }>('/relays/offline', {
     schema: {
       tags: ['relays'],
-      description: 'Get relays that are offline but not yet dead. Offline means monitors checked recently but the relay did not respond. Defaults derived from monitor frequencies.',
+      description: 'Get relays that are offline but not yet dead',
       body: {
         type: 'object',
         properties: {
-          offlineThresholdSeconds: { type: 'number', minimum: 60, description: 'Seconds since lastOpenAt to consider offline (default: max monitor frequency)' },
-          deadThresholdSeconds: { type: 'number', minimum: 3600, description: 'Seconds since lastSeenAt beyond which relay is dead, not offline (default: 7 days)' },
+          offlineThresholdSeconds: { type: 'number', minimum: 60 },
+          deadThresholdSeconds: { type: 'number', minimum: 3600 },
           network: { type: 'string' },
           labels: {
             type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                namespace: { type: 'string' },
-                value: { type: 'string' },
-              },
-              required: ['namespace', 'value'],
-            },
+            items: { type: 'object', properties: { namespace: { type: 'string' }, value: { type: 'string' } }, required: ['namespace', 'value'] },
           },
         },
       },
-      response: {
-        200: schemas.relays.availability,
-      },
+      response: { 200: schemas.relays.availability },
     },
-  }, async (request, _reply) => {
+  }, async (request) => {
     const { offlineThresholdSeconds, deadThresholdSeconds, network, labels } = request.body
     const filters = (network || labels) ? { network, labels } : undefined
-    const relays = core.query.relays.offline({
-      offlineThresholdSeconds,
-      deadThresholdSeconds,
-      filters,
-    })
+    const relays = core.query.relays.offline({ offlineThresholdSeconds, deadThresholdSeconds, filters })
     return { relays, total: relays.length }
   })
 
-  // POST /relays/dead - Get probably dead relays (supports label filtering)
+  // POST /relays/dead
   app.post<{
-    Body: {
-      deadThresholdSeconds?: number
-      network?: string
-      labels?: { namespace: string; value: string }[]
-    }
+    Body: { deadThresholdSeconds?: number; network?: string; labels?: { namespace: string; value: string }[] }
   }>('/relays/dead', {
     schema: {
       tags: ['relays'],
-      description: 'Get probably dead relays (not seen in a long time) with optional label filtering',
+      description: 'Get probably dead relays',
       body: {
         type: 'object',
         properties: {
@@ -779,28 +775,16 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
           network: { type: 'string' },
           labels: {
             type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                namespace: { type: 'string' },
-                value: { type: 'string' },
-              },
-              required: ['namespace', 'value'],
-            },
+            items: { type: 'object', properties: { namespace: { type: 'string' }, value: { type: 'string' } }, required: ['namespace', 'value'] },
           },
         },
       },
-      response: {
-        200: schemas.relays.availability,
-      },
+      response: { 200: schemas.relays.availability },
     },
-  }, async (request, _reply) => {
+  }, async (request) => {
     const { deadThresholdSeconds, network, labels } = request.body
     const filters = (network || labels) ? { network, labels } : undefined
-    const relays = core.query.relays.dead({
-      deadThresholdSeconds,
-      filters,
-    })
+    const relays = core.query.relays.dead({ deadThresholdSeconds, filters })
     return { relays, total: relays.length }
   })
 

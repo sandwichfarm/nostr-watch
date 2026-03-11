@@ -49,7 +49,6 @@ export interface RelaysListInput {
   offset?: number
   sortBy?: 'url' | 'updated' | 'observationCount'
   sortOrder?: 'asc' | 'desc'
-  compact?: boolean  // Omit contributor data from results
 }
 
 export interface RelaysListOutput {
@@ -64,7 +63,6 @@ export interface RelaysListOutput {
  */
 export interface RelaysGetStateInput {
   relayUrl: string
-  compact?: boolean  // Omit contributor data from results
 }
 
 export interface RelaysGetStateOutput {
@@ -93,7 +91,6 @@ export interface RelaysSearchInput {
   minSupport?: number  // min support ratio filter
   limit?: number
   offset?: number
-  compact?: boolean  // Omit contributor data from results
 }
 
 export interface RelaysSearchOutput {
@@ -111,7 +108,6 @@ export interface RelaysNearbyInput {
   lon: number
   radius?: number  // km, default: 100
   maxResults?: number
-  compact?: boolean  // Omit contributor data from results
 }
 
 export interface RelaysNearbyOutput {
@@ -129,7 +125,6 @@ export interface RelaysBboxInput {
   sw: { lat: number; lon: number }
   ne: { lat: number; lon: number }
   limit?: number
-  compact?: boolean  // Omit contributor data from results
 }
 
 export interface RelaysBboxOutput {
@@ -174,7 +169,6 @@ export interface RelaysByLabelInput {
   value: string
   limit?: number
   offset?: number
-  compact?: boolean  // Omit contributor data from results
 }
 
 export interface RelaysByLabelOutput {

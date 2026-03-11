@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "relays": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "relayUrl": { "type": "string" },
+          "distance": { "type": "number" }
+        },
+        "required": ["relayUrl", "distance"]
+      },
+      "description": "Relay URLs with distance"
+    },
+    "center": {
+      "type": "object",
+      "properties": {
+        "lat": { "type": "number" },
+        "lon": { "type": "number" }
+      },
+      "required": ["lat", "lon"]
+    },
+    "radius": { "type": "number" }
+  },
+  "required": ["relays", "center", "radius"]
+}

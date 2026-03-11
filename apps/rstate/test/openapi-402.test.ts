@@ -81,8 +81,8 @@ describe('OpenAPI 402 documentation', () => {
     const compareHeaders = compare.responses['402'].headers || {}
     expect(compareHeaders['WWW-Authenticate'] || compareHeaders['X-Cashu']).toBeDefined()
 
-    // /relays/search
-    const search = spec.paths['/relays/search']?.post
+    // /relays/search/detailed
+    const search = spec.paths['/relays/search/detailed']?.post
     expect(search).toBeDefined()
     expect(search.responses['402']).toBeDefined()
 

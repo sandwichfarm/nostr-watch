@@ -28,13 +28,23 @@ import { DEFAULT_QUERY_SHAPE } from './utils/validation.js'
 import { verifyCriticalSchemas } from './utils/startup-checks.js'
 import {
   createRelaysListTool,
+  createRelaysListDetailedTool,
+  createRelaysListFullTool,
   createRelaysGetStateTool,
   createRelaysSearchTool,
+  createRelaysSearchDetailedTool,
+  createRelaysSearchFullTool,
   createRelaysNearbyTool,
+  createRelaysNearbyDetailedTool,
+  createRelaysNearbyFullTool,
   createRelaysBboxTool,
+  createRelaysBboxDetailedTool,
+  createRelaysBboxFullTool,
   createRelaysGetLabelsTool,
   createRelaysListLabelsTool,
   createRelaysByLabelTool,
+  createRelaysByLabelDetailedTool,
+  createRelaysByLabelFullTool,
   createRelaysBySoftwareTool,
   createRelaysByNetworkTool,
   createRelaysByNipTool,
@@ -346,26 +356,61 @@ export class CVMServer {
       { enabled: false }
     )
 
-    // Relay tools (cached)
+    // Relay list tools (3 shapes, cached)
     registry.registerTool(
       createRelaysListTool(toolsContext),
       { enabled: true, cacheKeyFn: (p) => `relays:list:${p.sortBy || 'url'}:${p.sortOrder || 'asc'}` }
     )
     registry.registerTool(
+      createRelaysListDetailedTool(toolsContext),
+      { enabled: true, cacheKeyFn: (p) => `relays:list:detailed:${p.sortBy || 'url'}:${p.sortOrder || 'asc'}` }
+    )
+    registry.registerTool(
+      createRelaysListFullTool(toolsContext),
+      { enabled: true, cacheKeyFn: (p) => `relays:list:full:${p.sortBy || 'url'}:${p.sortOrder || 'asc'}` }
+    )
+    registry.registerTool(
       createRelaysGetStateTool(toolsContext),
       { enabled: true, cacheKeyFn: (p) => `relays:state:${p.relayUrl}` }
     )
+    // Relay search tools (3 shapes, cached)
     registry.registerTool(
       createRelaysSearchTool(toolsContext),
       { enabled: true, cacheKeyFn: (p) => `relays:search:${JSON.stringify(p)}` }
     )
     registry.registerTool(
+      createRelaysSearchDetailedTool(toolsContext),
+      { enabled: true, cacheKeyFn: (p) => `relays:search:detailed:${JSON.stringify(p)}` }
+    )
+    registry.registerTool(
+      createRelaysSearchFullTool(toolsContext),
+      { enabled: true, cacheKeyFn: (p) => `relays:search:full:${JSON.stringify(p)}` }
+    )
+    // Relay nearby tools (3 shapes, cached)
+    registry.registerTool(
       createRelaysNearbyTool(toolsContext),
       { enabled: true, cacheKeyFn: (p) => `nearby:${p.lat}:${p.lon}:${p.radius || 100}` }
     )
     registry.registerTool(
+      createRelaysNearbyDetailedTool(toolsContext),
+      { enabled: true, cacheKeyFn: (p) => `nearby:detailed:${p.lat}:${p.lon}:${p.radius || 100}` }
+    )
+    registry.registerTool(
+      createRelaysNearbyFullTool(toolsContext),
+      { enabled: true, cacheKeyFn: (p) => `nearby:full:${p.lat}:${p.lon}:${p.radius || 100}` }
+    )
+    // Relay bbox tools (3 shapes, cached)
+    registry.registerTool(
       createRelaysBboxTool(toolsContext),
       { enabled: true, cacheKeyFn: (p) => `bbox:${p.sw.lat}:${p.sw.lon}:${p.ne.lat}:${p.ne.lon}` }
+    )
+    registry.registerTool(
+      createRelaysBboxDetailedTool(toolsContext),
+      { enabled: true, cacheKeyFn: (p) => `bbox:detailed:${p.sw.lat}:${p.sw.lon}:${p.ne.lat}:${p.ne.lon}` }
+    )
+    registry.registerTool(
+      createRelaysBboxFullTool(toolsContext),
+      { enabled: true, cacheKeyFn: (p) => `bbox:full:${p.sw.lat}:${p.sw.lon}:${p.ne.lat}:${p.ne.lon}` }
     )
     registry.registerTool(
       createRelaysGetLabelsTool(toolsContext),
@@ -375,9 +420,18 @@ export class CVMServer {
       createRelaysListLabelsTool(toolsContext),
       { enabled: true, cacheKeyFn: (p) => `list-labels:${p.namespace || 'all'}` }
     )
+    // Relay by-label tools (3 shapes, cached)
     registry.registerTool(
       createRelaysByLabelTool(toolsContext),
       { enabled: true, cacheKeyFn: (p) => `relays:group:label:${p.namespace}:${p.value}` }
+    )
+    registry.registerTool(
+      createRelaysByLabelDetailedTool(toolsContext),
+      { enabled: true, cacheKeyFn: (p) => `relays:group:label:detailed:${p.namespace}:${p.value}` }
+    )
+    registry.registerTool(
+      createRelaysByLabelFullTool(toolsContext),
+      { enabled: true, cacheKeyFn: (p) => `relays:group:label:full:${p.namespace}:${p.value}` }
     )
     registry.registerTool(
       createRelaysBySoftwareTool(toolsContext),

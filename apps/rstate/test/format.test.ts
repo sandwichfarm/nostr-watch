@@ -18,7 +18,7 @@ import { SecurityService } from '../src/services/security.js'
 import { RateLimiterService } from '../src/services/rate-limiter.js'
 import { QueryCache } from '../src/services/cache.js'
 import { DEFAULT_QUERY_SHAPE } from '../src/utils/validation.js'
-import { createRelaysListTool, createRelaysGetStateTool, createRelaysSearchTool } from '../src/tools/relays.js'
+import { createRelaysListDetailedTool, createRelaysListTool, createRelaysListFullTool, createRelaysGetStateTool, createRelaysSearchDetailedTool, createRelaysSearchTool, createRelaysSearchFullTool } from '../src/tools/relays.js'
 
 describe('Response Format Comprehensive Tests', () => {
   let server: RestServer
@@ -153,71 +153,40 @@ describe('Response Format Comprehensive Tests', () => {
     }
   })
 
-  describe('REST API: GET /relays', () => {
-    it('format=full should include contributingAuthors', async () => {
-      const response = await app.inject({
-        method: 'GET',
-        url: '/relays?format=full&limit=1',
-      })
-
+  describe('REST API: GET /relays/{shape}', () => {
+    it('/relays/full should include contributingAuthors', async () => {
+      const response = await app.inject({ method: 'GET', url: '/relays/full?limit=1' })
       expect(response.statusCode).toBe(200)
       const body = JSON.parse(response.body)
       expect(body.relays).toBeInstanceOf(Array)
       expect(body.relays.length).toBeGreaterThan(0)
-
       const relay = body.relays[0]
       expect(relay.network?.contributingAuthors).toBeDefined()
       expect(Array.isArray(relay.network?.contributingAuthors)).toBe(true)
     })
 
-    it('format=detailed should NOT include contributingAuthors', async () => {
-      const response = await app.inject({
-        method: 'GET',
-        url: '/relays?format=detailed&limit=1',
-      })
-
+    it('/relays/detailed should NOT include contributingAuthors', async () => {
+      const response = await app.inject({ method: 'GET', url: '/relays/detailed?limit=1' })
       expect(response.statusCode).toBe(200)
       const body = JSON.parse(response.body)
       expect(body.relays).toBeInstanceOf(Array)
       expect(body.relays.length).toBeGreaterThan(0)
-
       const relay = body.relays[0]
       expect(relay.network?.contributingAuthors).toBeUndefined()
       expect(relay.network?.value).toBeDefined()
       expect(relay.relayUrl).toBeDefined()
     })
 
-    it('format=simple should return string array of URLs only', async () => {
-      const response = await app.inject({
-        method: 'GET',
-        url: '/relays?format=simple&limit=3',
-      })
-
+    it('/relays should return string array of URLs only', async () => {
+      const response = await app.inject({ method: 'GET', url: '/relays' })
       expect(response.statusCode).toBe(200)
       const body = JSON.parse(response.body)
       expect(body.relays).toBeInstanceOf(Array)
       expect(body.relays.length).toBeGreaterThan(0)
-
-      // All elements should be strings
       for (const item of body.relays) {
         expect(typeof item).toBe('string')
         expect(item).toMatch(/^wss:\/\//)
       }
-    })
-
-
-    it('no format parameter should default to detailed', async () => {
-      const response = await app.inject({
-        method: 'GET',
-        url: '/relays?limit=1',
-      })
-
-      expect(response.statusCode).toBe(200)
-      const body = JSON.parse(response.body)
-      const relay = body.relays[0]
-
-      expect(relay.network?.contributingAuthors).toBeUndefined()
-      expect(relay.relayUrl).toBeDefined()
     })
   })
 
@@ -260,14 +229,9 @@ describe('Response Format Comprehensive Tests', () => {
 
   })
 
-  describe('REST API: POST /relays/search', () => {
-    it('format=full should include contributingAuthors', async () => {
-      const response = await app.inject({
-        method: 'POST',
-        url: '/relays/search',
-        payload: { format: 'full', limit: 1 },
-      })
-
+  describe('REST API: POST /relays/search/{shape}', () => {
+    it('/relays/search/full should include contributingAuthors', async () => {
+      const response = await app.inject({ method: 'POST', url: '/relays/search/full', payload: { limit: 1 } })
       expect(response.statusCode).toBe(200)
       const body = JSON.parse(response.body)
       if (body.relays.length > 0) {
@@ -275,13 +239,8 @@ describe('Response Format Comprehensive Tests', () => {
       }
     })
 
-    it('format=detailed should NOT include contributingAuthors', async () => {
-      const response = await app.inject({
-        method: 'POST',
-        url: '/relays/search',
-        payload: { format: 'detailed', limit: 1 },
-      })
-
+    it('/relays/search/detailed should NOT include contributingAuthors', async () => {
+      const response = await app.inject({ method: 'POST', url: '/relays/search/detailed', payload: { limit: 1 } })
       expect(response.statusCode).toBe(200)
       const body = JSON.parse(response.body)
       if (body.relays.length > 0) {
@@ -289,57 +248,46 @@ describe('Response Format Comprehensive Tests', () => {
       }
     })
 
-    it('format=simple should return string array', async () => {
-      const response = await app.inject({
-        method: 'POST',
-        url: '/relays/search',
-        payload: { format: 'simple', limit: 3 },
-      })
-
+    it('/relays/search should return string array', async () => {
+      const response = await app.inject({ method: 'POST', url: '/relays/search', payload: { limit: 3 } })
       expect(response.statusCode).toBe(200)
       const body = JSON.parse(response.body)
       if (body.relays.length > 0) {
         expect(typeof body.relays[0]).toBe('string')
       }
     })
-
   })
 
-  describe('ContextVM Tools: relays/list', () => {
-    let listTool: ReturnType<typeof createRelaysListTool>
+  describe('ContextVM Tools: relays/list/{shape}', () => {
+    let fullTool: ReturnType<typeof createRelaysListFullTool>
+    let detailedTool: ReturnType<typeof createRelaysListDetailedTool>
+    let simpleTool: ReturnType<typeof createRelaysListTool>
 
     beforeAll(() => {
-      listTool = createRelaysListTool({ core })
+      fullTool = createRelaysListFullTool({ core })
+      detailedTool = createRelaysListDetailedTool({ core })
+      simpleTool = createRelaysListTool({ core })
     })
 
-    it('format=full should include contributingAuthors', async () => {
-      const result = await listTool.handler({ format: 'full', limit: 1 } as any)
+    it('relays/list/full should include contributingAuthors', async () => {
+      const result = await fullTool.handler({ limit: 1 } as any)
       if (result.relays.length > 0) {
-        expect(result.relays[0].network?.contributingAuthors).toBeDefined()
+        expect((result.relays[0] as any).network?.contributingAuthors).toBeDefined()
       }
     })
 
-    it('format=detailed should NOT include contributingAuthors', async () => {
-      const result = await listTool.handler({ format: 'detailed', limit: 1 } as any)
+    it('relays/list/detailed should NOT include contributingAuthors', async () => {
+      const result = await detailedTool.handler({ limit: 1 } as any)
       if (result.relays.length > 0) {
-        expect(result.relays[0].network?.contributingAuthors).toBeUndefined()
-        expect(result.relays[0].relayUrl).toBeDefined()
+        expect((result.relays[0] as any).network?.contributingAuthors).toBeUndefined()
+        expect((result.relays[0] as any).relayUrl).toBeDefined()
       }
     })
 
-    it('format=simple should return string array', async () => {
-      const result = await listTool.handler({ format: 'simple', limit: 3 } as any)
+    it('relays/list should return string array', async () => {
+      const result = await simpleTool.handler({ limit: 3 } as any)
       if (result.relays.length > 0) {
         expect(typeof result.relays[0]).toBe('string')
-      }
-    })
-
-
-    it('no format parameter should default to detailed', async () => {
-      const result = await listTool.handler({ limit: 1 } as any)
-      if (result.relays.length > 0) {
-        expect(result.relays[0].network?.contributingAuthors).toBeUndefined()
-        expect(result.relays[0].relayUrl).toBeDefined()
       }
     })
   })
@@ -380,33 +328,36 @@ describe('Response Format Comprehensive Tests', () => {
 
   })
 
-  describe('ContextVM Tools: relays/search', () => {
-    let searchTool: ReturnType<typeof createRelaysSearchTool>
+  describe('ContextVM Tools: relays/search/{shape}', () => {
+    let fullTool: ReturnType<typeof createRelaysSearchFullTool>
+    let detailedTool: ReturnType<typeof createRelaysSearchDetailedTool>
+    let simpleTool: ReturnType<typeof createRelaysSearchTool>
 
     beforeAll(() => {
-      searchTool = createRelaysSearchTool({ core })
+      fullTool = createRelaysSearchFullTool({ core })
+      detailedTool = createRelaysSearchDetailedTool({ core })
+      simpleTool = createRelaysSearchTool({ core })
     })
 
-    it('format=full should include contributingAuthors', async () => {
-      const result = await searchTool.handler({ format: 'full', limit: 1 } as any)
+    it('relays/search/full should include contributingAuthors', async () => {
+      const result = await fullTool.handler({ limit: 1 } as any)
       if (result.relays.length > 0) {
-        expect(result.relays[0].network?.contributingAuthors).toBeDefined()
+        expect((result.relays[0] as any).network?.contributingAuthors).toBeDefined()
       }
     })
 
-    it('format=detailed should NOT include contributingAuthors', async () => {
-      const result = await searchTool.handler({ format: 'detailed', limit: 1 } as any)
+    it('relays/search/detailed should NOT include contributingAuthors', async () => {
+      const result = await detailedTool.handler({ limit: 1 } as any)
       if (result.relays.length > 0) {
-        expect(result.relays[0].network?.contributingAuthors).toBeUndefined()
+        expect((result.relays[0] as any).network?.contributingAuthors).toBeUndefined()
       }
     })
 
-    it('format=simple should return string array', async () => {
-      const result = await searchTool.handler({ format: 'simple', limit: 3 } as any)
+    it('relays/search should return string array', async () => {
+      const result = await simpleTool.handler({ limit: 3 } as any)
       if (result.relays.length > 0) {
         expect(typeof result.relays[0]).toBe('string')
       }
     })
-
   })
 })

@@ -15,10 +15,10 @@ import { SecurityService } from '../src/services/security.js'
 import { RateLimiterService } from '../src/services/rate-limiter.js'
 import { DEFAULT_QUERY_SHAPE } from '../src/utils/validation.js'
 import {
-  createRelaysListTool,
+  createRelaysListDetailedTool,
   createRelaysGetStateTool,
-  createRelaysSearchTool,
-  createRelaysByLabelTool,
+  createRelaysSearchDetailedTool,
+  createRelaysByLabelDetailedTool,
   createRelaysByNipTool,
   createRelaysByCountryTool,
 } from '../src/tools/relays.js'
@@ -231,10 +231,10 @@ describe('REST vs Tool Parity (seeded dataset)', () => {
 
   // Tool handlers using the same core
   const tools = {
-    list: createRelaysListTool({ core }),
+    list: createRelaysListDetailedTool({ core }),
     getState: createRelaysGetStateTool({ core }),
-    search: createRelaysSearchTool({ core }),
-    byLabel: createRelaysByLabelTool({ core }),
+    search: createRelaysSearchDetailedTool({ core }),
+    byLabel: createRelaysByLabelDetailedTool({ core }),
     byNip: createRelaysByNipTool({ core }),
     byCountry: createRelaysByCountryTool({ core }),
   }
@@ -259,7 +259,7 @@ describe('REST vs Tool Parity (seeded dataset)', () => {
 
   it('parity: relays/list', async () => {
     const app = rest.getApp()
-    const res = await app.inject({ method: 'GET', url: '/relays?limit=10&offset=0&sortBy=url' })
+    const res = await app.inject({ method: 'GET', url: '/relays/detailed?limit=10&offset=0&sortBy=url' })
     expect(res.statusCode).toBe(200)
     const body = res.json() as any
 
@@ -281,7 +281,7 @@ describe('REST vs Tool Parity (seeded dataset)', () => {
   })
 
   it('parity: relays/search (network=clearnet)', async () => {
-    const res = await rest.getApp().inject({ method: 'POST', url: '/relays/search', payload: { network: 'clearnet', limit: 100, offset: 0 } })
+    const res = await rest.getApp().inject({ method: 'POST', url: '/relays/search/detailed', payload: { network: 'clearnet', limit: 100, offset: 0 } })
     expect(res.statusCode).toBe(200)
     const body = res.json() as any
 
@@ -293,7 +293,7 @@ describe('REST vs Tool Parity (seeded dataset)', () => {
   })
 
   it('parity: relays/by/label (nip32.geo=US)', async () => {
-    const res = await rest.getApp().inject({ method: 'GET', url: '/relays/by/label?namespace=nip32.geo&value=US' })
+    const res = await rest.getApp().inject({ method: 'GET', url: '/relays/by/label/detailed?namespace=nip32.geo&value=US' })
     expect(res.statusCode).toBe(200)
     const body = res.json() as any
 

@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "relays": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Relay URLs"
+    },
+    "total": { "type": "number" }
+  },
+  "required": ["relays", "total"]
+}

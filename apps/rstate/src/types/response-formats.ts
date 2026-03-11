@@ -9,12 +9,6 @@
 import type { RelayState, AggregatedValue } from './aggregation.js'
 
 /**
- * Response format mode (legacy, kept for backward compatibility)
- * @deprecated Use ResponseShape instead
- */
-export type ResponseFormat = 'compact' | 'detailed'
-
-/**
  * Response shape level (three-level system)
  * - full: Most detailed, includes all contributor attribution (RelayState)
  * - detailed: Medium detail, aggregated without attribution (CompactRelayState)
@@ -228,26 +222,6 @@ export function toDetailedArray(states: RelayState[]): DetailedRelayState[] {
   return states
 }
 
-/**
- * Format response based on requested format
- */
-export function formatRelayState(
-  state: RelayState | null,
-  format: ResponseFormat = 'compact'
-): CompactRelayState | DetailedRelayState | null {
-  if (!state) return null
-  return format === 'compact' ? toCompact(state) : toDetailed(state)
-}
-
-/**
- * Format response array based on requested format
- */
-export function formatRelayStates(
-  states: RelayState[],
-  format: ResponseFormat = 'compact'
-): CompactRelayState[] | DetailedRelayState[] {
-  return format === 'compact' ? toCompactArray(states) : toDetailedArray(states)
-}
 
 /**
  * Convert array of RelayStates to simple format (string URLs only)

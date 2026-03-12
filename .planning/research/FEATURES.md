@@ -1,255 +1,416 @@
 # Feature Research
 
-**Domain:** Developer documentation site for a TypeScript/Nostr monorepo (30+ packages)
-**Researched:** 2026-03-04
-**Confidence:** HIGH (README/docs patterns), MEDIUM (agent skill patterns — newer standard, less settled)
+**Domain:** Nostr relay auditor — NIP conformance test suite expansion
+**Researched:** 2026-03-12
+**Confidence:** HIGH (NIP specs read directly from official source), MEDIUM (adoption rates — inferred from relay implementation lists)
 
 ---
 
 ## Context
 
-This research covers features for a GREENFIELD documentation project built on top of a BROWNFIELD
-codebase. The target output is:
+This is a SUBSEQUENT MILESTONE adding comprehensive NIP test coverage to the existing `@nostrwatch/auditor`
+library. The auditor already covers NIP-01, 02, 11, 22, 42 (schemata only), 50, 65, and 77. This
+research identifies every remaining NIP that defines testable relay behavior, categorizes it, and
+estimates implementation complexity within the existing Suite/SuiteTest architecture.
 
-1. **Per-package README.md files** — human and agent readable, consistent format
-2. **Claude Code skills** — `.claude/skills/` YAML+markdown files for agent-specific guidance
-3. **mkdocs SPA** — unified docs site at `developers.nostr.watch`, aggregating all package docs
-4. **Styleguide** — enforces consistency across all 30+ packages
+**What counts as testable relay behavior:**
+- Relay must handle a specific message type (REQ, EVENT, COUNT, AUTH, etc.)
+- Relay must respond in a verifiable way (OK with prefix, CLOSED, AUTH challenge, COUNT response)
+- Relay must enforce a constraint (reject expired events, enforce deletion, require auth)
+- Relay exposes a machine-readable document (NIP-11 relay info document fields)
 
-Primary audiences: human contributors to nostr-watch, and AI agents (Claude Code) working on the
-codebase. NOT end-users of the relay monitoring product.
+**What does NOT count:**
+- NIPs that only define event kinds/schemas that clients store and retrieve (no relay logic)
+- NIPs defining encryption, key derivation, or identity mapping (fully client-side)
+- NIPs defining HTTP file storage servers (not relay WebSocket protocol)
+- Deprecated/unrecommended NIPs (NIP-04, NIP-08, NIP-26)
 
 ---
 
 ## Feature Landscape
 
-### Table Stakes (Users Expect These)
+### Table Stakes (Every relay auditor must test these)
 
-Features a developer docs system must have. Missing these = docs feel incomplete or unusable.
+NIPs with widespread relay adoption, fundamental behavior that distinguishes a compliant relay from
+a broken one. Missing these = the auditor is incomplete for any production use.
 
-#### README Features
-
-| Feature | Why Expected | Complexity | Notes |
-|---------|--------------|------------|-------|
-| Package overview / purpose statement | First thing any reader needs — what does this do? | LOW | One paragraph, problem-first framing |
-| Installation instructions | Developers can't use the package without this | LOW | `pnpm add @nostrwatch/[pkg]` format; workspace vs. standalone |
-| Basic usage example | Shows the API in practice before diving into docs | LOW | Minimal working example, not a tutorial |
-| API surface summary | What functions/classes/types are exported | MEDIUM | Table or list; links to deeper docs for complex packages |
-| Environment / runtime support table | nostr-watch targets web, Node, Deno — must be explicit | LOW | Already in root README as a table; replicate per package |
-| Prerequisites / peer dependencies | Prevents "why doesn't this work" frustration | LOW | e.g., "requires Redis", "requires Deno 2.x" |
-| Status badge (alpha/beta/stable/deprecated) | Sets expectations; many packages are alpha or deprecated | LOW | Already used in root README; standardize the format |
-| Build / test commands | Contributors need this immediately | LOW | pnpm commands scoped to package |
-| License section | Standard open source expectation | LOW | Apache-2.0 per existing repo LICENSE |
-| Link to full docs / deeper reading | README is entry point, not the full story | LOW | Links to docs/ subdirectory or SPA URL |
-
-#### Documentation Site Features
-
-| Feature | Why Expected | Complexity | Notes |
-|---------|--------------|------------|-------|
-| Site-wide search | Developers search, they don't browse | MEDIUM | Material for MkDocs includes lunr.js search out of the box |
-| Package index / discovery page | 30+ packages — developers need a map | LOW | Single page listing all packages with type, status, description |
-| Consistent navigation structure | Every package page should feel the same | LOW | MkDocs nav config handles this |
-| Code syntax highlighting | Developer docs with unstyled code is unacceptable | LOW | MkDocs Material handles this out of the box |
-| Mobile-responsive layout | Standard web expectation in 2026 | LOW | Material theme is responsive by default |
-| Stable, bookmarkable URLs | Links shared in issues, PRs, Slack must persist | LOW | MkDocs URL structure is stable |
-| Cross-package links | Libraries reference each other; docs must too | MEDIUM | MkDocs relative links + monorepo-plugin handles this |
-
-#### Agent Skill Features
-
-| Feature | Why Expected | Complexity | Notes |
-|---------|--------------|------------|-------|
-| YAML frontmatter with name + description | Required for Claude Code skill discovery | LOW | `name`, `description` fields; description is how Claude decides to use the skill |
-| Slash-command invocability | Standard Claude Code skill pattern | LOW | `/skill-name` invocation requires correct `name` field |
-| Package-specific context skills | Each adapter pattern (nocap, route66, publisher) needs a skill | MEDIUM | One skill per adapter type; loaded automatically when editing that adapter |
-| Monorepo operation skills | Adding packages, publishing, running tests across workspace | MEDIUM | Cross-cutting skills at root `.claude/skills/` |
-| Agent Skills section in each README | Links skill file from human-readable docs | LOW | Standard section at bottom of each README; links `.claude/skills/` paths |
+| NIP | Feature | Why Expected | Complexity | Notes |
+|-----|---------|--------------|------------|-------|
+| NIP-42 (complete) | AUTH challenge-response test suite | Already has schemata; 3 major relay implementations support it (strfry, nostr-rs-relay). AUTH is the gateway to NIP-70, protected events, and restricted subscriptions. | MEDIUM | Needs: send REQ to restricted resource → expect AUTH challenge; complete AUTH handshake → verify OK; test invalid AUTH → expect rejection with `auth-required:` prefix |
+| NIP-09 | Event deletion request enforcement | Implemented by nostr-rs-relay, nostream, strfry. Relay SHOULD delete referenced events and SHOULD NOT serve them after deletion. `e` and `a` tag handling both testable. | MEDIUM | Send kind 5 with `e` ref; query for deleted event; verify not returned. Also test `a` tag for replaceable events. Complexity: requires event publication first, then deletion, then query. |
+| NIP-40 | Expiration timestamp enforcement | Implemented by strfry, nostr-rs-relay, nostream. Relay SHOULD drop incoming expired events; SHOULD NOT serve stored expired events. | MEDIUM | Two tests: (1) publish event with past `expiration` tag → expect rejection; (2) query for event known to have expired → verify not returned. |
+| NIP-45 | COUNT verb support | Strfry implements it. Widely useful for relay operators. Simple message exchange: `["COUNT", id, filters]` → `["COUNT", id, {"count": N}]`. | LOW | Simple: send COUNT with known filter, verify numeric response. Can also test rejection CLOSED message format. Slightly above NIP-01 complexity. |
+| NIP-13 (behavioral) | PoW enforcement via NIP-11 `min_pow_difficulty` | Many relay implementations reject under-powered events if `min_pow_difficulty` is set. Testable if NIP-11 document exposes the field. | LOW | Conditional test: if NIP-11 reports `min_pow_difficulty > 0`, send event with insufficient PoW and expect `["OK", id, false, "pow: ..." ]` rejection. |
+| NIP-70 | Protected events (`["-"]` tag enforcement) | Strfry explicitly supports NIP-70. Relay MUST reject `["-"]` events without AUTH; MUST verify pubkey match after AUTH. | MEDIUM | Depends on NIP-42 suite. Three cases: (1) send protected event without auth → expect rejection; (2) send protected event with auth + matching pubkey → expect acceptance; (3) auth + non-matching pubkey → expect rejection. |
+| NIP-01 (OK prefixes) | Machine-readable OK/CLOSED prefix validation | NIP-01 defines `duplicate`, `pow`, `blocked`, `rate-limited`, `invalid`, `restricted`, `mute`, `error` as required prefixes. Already partially covered; completing prefix coverage is a table stakes gap. | LOW | Extend existing NIP-01 suite. Trigger each condition where possible and verify prefix format. Relays that use free-form error text fail this test. |
+| NIP-11 (limitation fields) | Relay limits enforcement | NIP-11 defines `max_message_length`, `max_subscriptions`, `max_filters`, `max_limit`, `min_pow_difficulty`, `auth_required`, `payment_required`, `created_at_lower_limit`, `created_at_upper_limit`. These are behavioral constraints that can be tested. | MEDIUM | Existing NIP-11 suite can be extended. For each advertised limit: attempt to exceed it and verify the relay enforces it (or flags if limits are advertised but not enforced). |
 
 ---
 
-### Differentiators (Competitive Advantage)
+### Differentiators (Valuable but not universally expected)
 
-Features that would make `developers.nostr.watch` notably better than generic open source docs.
+NIPs with relay behavior that fewer relays implement, or protocols requiring more sophisticated test
+scaffolding. Completing these sets the auditor apart from basic NIP-01 checkers.
 
-| Feature | Value Proposition | Complexity | Notes |
-|---------|-------------------|------------|-------|
-| Adapter creation skills (nocap, route66, publisher) | Adapter pattern is the core extension mechanism — agents that can create correct adapters without manual guidance are a force multiplier | HIGH | Each adapter system has its own contract and lifecycle; skills need examples + reference files |
-| NIP-66 protocol skill | NIP-66 is custom-built here; no external reference exists | MEDIUM | Covers event kind structure, aggregation rules, publisher flow, validation expectations |
-| Debugging skills for common failure modes | Relay connection failures, state sync issues, OPFS contention, build errors in pnpm workspaces are all recurring | HIGH | Requires gathering real failure patterns from the codebase first |
-| Dependency graph section in package READMEs | "What depends on this?" and "What does this depend on?" makes architectural reasoning faster | MEDIUM | Can be generated from pnpm workspace graph; keep human-maintained so it stays accurate |
-| Status and deprecation notices inline | Several packages are deprecated or being rewritten (nocapd, nwcache, schemata, controlflow) — docs must surface this prominently | LOW | Warning callout at top of deprecated packages; links to replacement |
-| "When to use this vs X" comparisons | e.g., db vs idb, route66 vs direct nostr publishing — helps developers pick the right tool | MEDIUM | Requires understanding the design intent of each package; manually authored |
-| Progressive disclosure in skills (supporting files) | Keep SKILL.md under 500 lines; offload reference docs to `reference.md` and examples to `examples.md` | MEDIUM | Claude Code skills spec explicitly supports this pattern; HIGH value for complex adapter skills |
-| Agent Skills auto-discovery for monorepo packages | Claude Code auto-discovers `.claude/skills/` in subdirectories when editing files in that subtree | LOW | Structure: `packages/[name]/.claude/skills/`; zero extra config required |
-| Consistent "Agent Skills" section in README | Explicit link from human docs to machine-readable skills; bidirectional discoverability | LOW | Format: list of skill file paths with one-line descriptions |
+| NIP | Feature | Value Proposition | Complexity | Notes |
+|-----|---------|-------------------|------------|-------|
+| NIP-29 | Relay-based groups enforcement | NIP-29 defines MUST relay behaviors: reject unauthorized moderation events, enforce group membership, validate timeline references. This is one of the few NIPs with hard relay requirements beyond basic event storage. | HIGH | Requires relay keypair knowledge, group creation, membership management. Multi-step stateful protocol. Only worthwhile if targeting group-capable relays specifically. |
+| NIP-62 | Request to Vanish (pubkey deletion) | MUST requirements: relay MUST delete all events from a pubkey if its service URL is tagged. MUST prevent re-broadcasting. Stronger than NIP-09. | HIGH | Difficult to test definitively without publishing many events first, then vanishing, then verifying none are served. Re-broadcast prevention test is especially complex. |
+| NIP-43 | Relay access (invite codes, join/leave) | DRAFT status. Defines join/leave/invite WebSocket flows with OK responses. Niche — only relevant for invite-only relays. | HIGH | NIP-43 is draft; adoption is minimal. Complex stateful flow. Only for specialized audit targets. |
+| NIP-86 | Relay Management API | HTTP-based admin API. 18 methods, NIP-98 auth. Supports operational testing (can the operator ban pubkeys, change relay name, etc.). | HIGH | HTTP, not WebSocket. Out-of-band from main auditor protocol. Requires valid NIP-98 auth token. Valuable for relay operators but separate test surface. |
+| NIP-66 (publish) | Publishing monitor reports | NIP-66 defines kind 30166 for publishing relay findings. The auditor could publish structured results as NIP-66 events, making findings machine-readable across the nostr network. | MEDIUM | This is about the auditor publishing its results, not testing a relay. Out of scope for test suites but relevant to auditor output. Flag for separate consideration. |
+| NIP-37 | Draft event storage (NIP-42 private relay) | Defines kind 31234 events published to NIP-42 authed private relays. Relay SHOULD be NIP-42-authed and restrict access. Tests whether auth-gated draft storage works. | MEDIUM | Depends on NIP-42 suite. Niche use case; only authed private relays implement this pattern. |
 
 ---
 
-### Anti-Features (Deliberately NOT Build)
+### Anti-Features (Explicitly exclude from the auditor)
 
-Features that seem useful but would harm this project's scope, quality, or maintainability.
+NIPs that should NOT have test suites added. Including them would be wasted effort or misleading.
 
 | Anti-Feature | Why Avoid | What to Do Instead |
 |--------------|-----------|-------------------|
-| Auto-generated API reference from TypeScript | Tempting; creates maintenance burden. TypeDoc output is verbose, often unreadable, and decouples docs from intent | Write concise, intent-focused API summaries manually in each README |
-| Versioned documentation (multiple doc versions) | Already out of scope per PROJECT.md; adds infrastructure complexity for a codebase with inconsistent versioning | Single current version; use package status badges (alpha/beta) to communicate stability |
-| User-facing end-user guides | Wrong audience; confuses scope | Keep all docs developer-oriented; link to nostr.watch for user product |
-| Comprehensive tutorial sequences | Time-consuming to write, goes stale, and isn't what contributors need | Prefer short usage examples per package over multi-page tutorials |
-| Internationalization | Not needed for a technical contributor audience | English only |
-| Comment-based docs (JSDoc / TSDoc parsing) | Requires annotating all source code, which is a separate (larger) project | Separate concern; docs project writes prose docs, not code annotations |
-| Interactive API playgrounds | High complexity, high maintenance, no clear audience benefit for a relay monitoring stack | Keep examples as copy-pasteable code blocks |
-| Changelog aggregation in docs site | Changelogs belong with the code (CHANGELOG.md per package); duplicating in site creates drift | Link to CHANGELOG.md files from package pages |
-| Monorepo dependency graph visualization | Generates interest but adds tooling complexity with low practical value for contributors | Include a static textual dependency list in key package READMEs |
+| NIP-03 (OpenTimestamps) | Client-only attestation. Relay stores kind 1040 events normally; no relay-specific behavior. | No test suite; normal event storage already covered by NIP-01. |
+| NIP-04 (Encrypted DM) | Marked unrecommended/deprecated in favor of NIP-17. Testing deprecated protocol adds confusion. | Document as deprecated in any NIP coverage report. |
+| NIP-05 (DNS identity) | Purely HTTP GET against a well-known URL. No relay WebSocket behavior. | No test suite. |
+| NIP-06 (key derivation) | Client-side only. No relay behavior. | No test suite. |
+| NIP-07 (window.nostr) | Browser extension API. No relay behavior. | No test suite. |
+| NIP-08 (Handling Mentions) | Deprecated/unrecommended. | No test suite. |
+| NIP-10 (e/p tag conventions) | Client interpretation rules. Relay stores events unchanged. | No test suite; normal event storage covered by NIP-01. |
+| NIP-14 (Subject tag) | Client-side display convention only. | No test suite. |
+| NIP-15 (Marketplace) | Explicitly "software should be entirely clientside". No relay-specific behavior. | No test suite. |
+| NIP-17 (Private DMs) | Relay OPTIONALLY restricts kind 1059 via NIP-42 AUTH. Testing this is the NIP-42 AUTH suite's job, not NIP-17's. | Cover via NIP-42 AUTH test for kind 1059 restriction if desired. |
+| NIP-18 (Reposts) | Standard event storage. No relay enforcement rules. | No test suite. |
+| NIP-19 (bech32) | Encoding format, client-side only. | No test suite. |
+| NIP-21 (nostr: URI) | URI scheme, client-side only. | No test suite. |
+| NIP-23 (Long-form content) | Client-side content format. Relay stores kind 30023 as standard replaceable events. | Covered by existing NIP-01 replaceable event behavior. |
+| NIP-24 (Extra metadata) | Client-side extension of kind 0. No relay logic. | No test suite. |
+| NIP-25 (Reactions) | Standard event storage for kind 7. No relay enforcement. | No test suite. |
+| NIP-26 (Delegated signing) | Marked unrecommended. Relay behavior (query expansion) is complex, deprecated, and disabled in nostr-rs-relay. | No test suite. |
+| NIP-27 (Text Note References) | Client parsing convention. No relay behavior. | No test suite. |
+| NIP-28 (Public Chat) | Spec explicitly states moderation is "client-centric" and imposes "no additional requirements on relays." | No test suite. |
+| NIP-30 (Custom Emoji) | Client-side only. | No test suite. |
+| NIP-31 (Unknown Events) | Client handling only. | No test suite. |
+| NIP-32 (Labeling) | Client behavior for kind 1985. No relay enforcement. | No test suite. |
+| NIP-34 (git stuff) | Event formats for code collaboration. No relay-specific behavior. | No test suite. |
+| NIP-35 (Torrents) | Standard event storage. No relay logic. | No test suite. |
+| NIP-36 (Sensitive Content) | Client-side content warning tag. No relay enforcement. | No test suite. |
+| NIP-38 (User Statuses) | Client-side kind 30315 event. No relay logic. | No test suite. |
+| NIP-39 (External Identities) | Client-side only. | No test suite. |
+| NIP-44 (Encrypted Payloads) | Encryption algorithm. Client-only. | No test suite. |
+| NIP-46 (Remote Signing) | Relay is infrastructure only; protocol runs client-to-signer. No relay-specific behavior. | No test suite. |
+| NIP-47 (Wallet Connect) | Relay used as message bus only. No relay enforcement. | No test suite. |
+| NIP-48 (Proxy Tags) | Client metadata tag. No relay enforcement. | No test suite. |
+| NIP-49 (Private Key Encryption) | Local encryption format. No relay behavior. | No test suite. |
+| NIP-51 (Lists) | Standard addressable event storage. No relay logic. | No test suite. |
+| NIP-52 (Calendar Events) | Standard event storage. No relay logic. | No test suite. |
+| NIP-53 (Live Activities) | Relay used for standard event distribution. No custom relay logic. | No test suite. |
+| NIP-54 (Wiki) | Standard event storage for kind 30818. No relay logic. | No test suite. |
+| NIP-55 (Android Signer) | Mobile signing app. No relay behavior. | No test suite. |
+| NIP-56 (Reporting) | Standard event storage for kind 1984. No relay enforcement. | No test suite. |
+| NIP-57 (Lightning Zaps) | Relay stores kind 9735 receipts. No relay-specific validation logic. | No test suite. |
+| NIP-58 (Badges) | Standard event storage. No relay logic. | No test suite. |
+| NIP-59 (Gift Wrap) | Relay OPTIONALLY restricts kind 1059 via NIP-42. Testing covered by NIP-42 suite. | No separate test suite; handled by NIP-42 AUTH coverage. |
+| NIP-60 (Cashu Wallet) | Standard event kinds. No relay logic. | No test suite. |
+| NIP-61 (Nutzaps) | Standard event kinds. No relay logic. | No test suite. |
+| NIP-64 (Chess PGN) | Standard event storage. No relay logic. | No test suite. |
+| NIP-68 (Picture feeds) | Standard event storage. No relay logic. | No test suite. |
+| NIP-69 (P2P Orders) | Standard event kinds. No relay logic. | No test suite. |
+| NIP-71 (Video Events) | Standard event storage. No relay logic. | No test suite. |
+| NIP-72 (Moderated Communities) | Spec defines relay tags as recommendations, not enforced behavior. No mandatory relay logic. | No test suite. |
+| NIP-73 (External Content IDs) | Tag convention. Client-side. No relay enforcement. | No test suite. |
+| NIP-75 (Zap Goals) | Standard event storage. No relay logic. | No test suite. |
+| NIP-78 (App-specific data) | Standard event kinds (30078). No relay logic. | No test suite. |
+| NIP-7D (Threads) | Standard event kind. No relay logic. | No test suite. |
+| NIP-84 (Highlights) | Standard event storage. No relay logic. | No test suite. |
+| NIP-85 (Trusted Assertions) | Attestation events. No relay enforcement. | No test suite. |
+| NIP-87 (Ecash Mint Discovery) | Standard event kind. No relay logic. | No test suite. |
+| NIP-88 (Polls) | Standard event kinds. No relay logic. | No test suite. |
+| NIP-89 (App Handlers) | Standard event kinds for client discovery. No relay logic. | No test suite. |
+| NIP-90 (Data Vending Machines) | Standard event flow for ML tasks. Relay is message bus only. | No test suite. |
+| NIP-92 (Media Attachments) | Tag convention. Client-side. | No test suite. |
+| NIP-94 (File Metadata) | Standard event kind 1063. No relay logic. | No test suite. |
+| NIP-96 (HTTP File Storage) | HTTP file server protocol. Not relay WebSocket behavior. | No test suite. |
+| NIP-98 (HTTP Auth) | HTTP server auth using Nostr events. Not relay WebSocket protocol. However, NIP-86 requires NIP-98 — test indirectly via NIP-86 suite if built. | No standalone test suite. |
+| NIP-99 (Classified Listings) | Standard event storage for kind 30402. No relay logic. | No test suite. |
+| NIP-A0 (Voice Messages) | Standard event kind. No relay logic. | No test suite. |
+| NIP-A4 (Public Messages) | Routing is client-side via NIP-65. Relay stores kind 24 as normal events. | No test suite. |
+| NIP-B0 (Web Bookmarks) | Standard event storage. No relay logic. | No test suite. |
+| NIP-B7 (Blossom) | HTTP media server protocol. Not relay WebSocket behavior. | No test suite. |
+| NIP-BE (Nostr BLE) | Bluetooth protocol. Not relay behavior. | No test suite. |
+| NIP-C0 (Code Snippets) | Standard event storage. No relay logic. | No test suite. |
+| NIP-C7 (Chats) | Standard event kinds. No relay logic. | No test suite. |
+| NIP-EE (MLS E2EE) | Relay is just an event store. No relay-specific behavior. | No test suite. |
 
 ---
 
 ## Feature Dependencies
 
 ```
-README Styleguide
-    └──required by──> All 30+ Package READMEs
-                          └──feeds into──> mkdocs SPA (nav + content)
+NIP-01 suite (existing)
+    └──required by──> All other suites
+                         (every test uses REQ/EVENT/CLOSE/OK messages)
 
-mkdocs Configuration
-    └──required by──> SPA Build + Deployment
-                          └──deploys to──> developers.nostr.watch (Bunny CDN)
+NIP-42 AUTH suite (complete)
+    └──required by──> NIP-70 protected events test
+    └──required by──> NIP-37 private draft relay test
+    └──enhances──> NIP-09 deletion test (deletion by authenticated pubkey)
+    └──required by──> NIP-86 management API (indirectly, via NIP-98)
 
-mkdocs-monorepo-plugin
-    └──required by──> Per-package docs/ dirs appearing in unified site
-                          └──enables──> Cross-package linking
+NIP-11 suite (existing)
+    └──enhances──> NIP-13 PoW test (reads min_pow_difficulty)
+    └──enhances──> NIP-45 COUNT test (reads supported_nips to gate suite)
+    └──enhances──> NIP-40 expiration test (reads created_at limits)
+    └──enables──> Auto-detect gating for all suites
 
-Package README (each)
-    └──enhances──> Agent Skills section
-                      └──links to──> .claude/skills/[package]/SKILL.md
+NIP-09 deletion test
+    └──requires──> NIP-01 event publication (to create events for deletion)
 
-Agent Skill (adapter)
-    └──requires──> Reference docs (examples.md, reference.md in skill dir)
-                      └──enables──> Progressive disclosure pattern
+NIP-40 expiration test
+    └──requires──> NIP-01 event publication (to create events with expiration tags)
 
-NIP-66 Skill
-    └──requires──> Understanding of publisher + route66 packages
-                      └──cross-references──> route66 README + publisher README
+NIP-70 protected events test
+    └──requires──> NIP-42 AUTH suite (AUTH must complete before protected event acceptance)
+
+NIP-45 COUNT test
+    └──requires──> NIP-01 data (COUNT filters need pre-existing events to count)
 ```
 
 ### Dependency Notes
 
-- **README Styleguide required by all READMEs:** Styleguide must be first deliverable. All package READMEs written after it must conform to it. Writing READMEs before the styleguide means either rewriting or inconsistency.
-- **mkdocs-monorepo-plugin required for per-package docs:** Without it, only root-level docs appear in the site. Package-level `docs/` directories need `!include` syntax in root `mkdocs.yml`.
-- **Agent Skills section enhances README:** The section is table stakes for the agent audience, but it links to skills files. Skills files must exist before the links are meaningful. Stub links acceptable during initial README pass.
-- **Adapter skills require progressive disclosure:** Complex adapter skills (nocap, route66, publisher) cannot fit in a single SKILL.md under 500 lines. Supporting files (`reference.md`, `examples.md`) must be part of the skill directory structure from day one.
+- **NIP-42 blocks NIP-70:** NIP-70's three test cases all require completed AUTH flow. Build NIP-42 test suite first; NIP-70 suite imports NIP-42 helpers.
+- **NIP-13 PoW test is conditional:** Only runs if `min_pow_difficulty > 0` in NIP-11 document. Test must read NIP-11 data as precondition.
+- **NIP-09 requires event setup:** Tests must publish events first, then delete them, then query. Ingestor pattern (like AuthorIngestor in NIP-01) handles setup.
+- **NIP-40 expiration is probabilistic:** "SHOULD NOT send expired events" allows relay discretion. Test should flag `WARN` not `FAIL` if expired events are returned, since the spec uses SHOULD not MUST.
 
 ---
 
 ## MVP Definition
 
-### Launch With (v1)
+This is a milestone expansion, not a new product. "MVP" here means: minimum test coverage expansion
+that gives the auditor comprehensive relay compliance coverage for widely-adopted NIPs.
 
-Minimum viable product — what a developer hitting `developers.nostr.watch` needs on day one.
+### Phase 1: Complete AUTH + Core Behavioral NIPs (v2.0)
 
-- [ ] **README styleguide** — The specification all other READMEs will follow. Must exist first. Covers: section order, badge format, code example standards, tone/voice.
-- [ ] **README.md for every package (apps + libraries + internal)** — All 30+ packages. Consistent format. Stubs acceptable for deprecated packages; full docs required for active ones.
-- [ ] **mkdocs configuration** — Root `mkdocs.yml` with monorepo-plugin, Material theme, nav structure, search enabled.
-- [ ] **Package discovery index** — Single page listing all packages: name, type (app/library/internal), status, one-line description, link to package README.
-- [ ] **Docs build pipeline** — `mkdocs build` produces deployable static output from package READMEs.
-- [ ] **Docs deployment** — Bunny CDN deployment script, resolving to `developers.nostr.watch`.
-- [ ] **Core monorepo operation skills** — Adding packages, running tests, publishing, deploying. These cross-cutting skills unblock agent contributors immediately.
+NIPs that are foundational, widely adopted, and have clear testable behaviors.
 
-### Add After Validation (v1.x)
+- [ ] **NIP-42 complete test suite** — Schemata and interfaces already exist. Highest-impact gap: 3 major relays support it; AUTH gates multiple other NIPs. Tests: challenge generation, kind 22242 validation, timestamp check, challenge matching, relay URL matching, `auth-required:` prefix.
+- [ ] **NIP-09 deletion enforcement** — Implemented by all major relays. Tests: publish + delete + query = verify not returned (e-tag); replaceable event deletion via a-tag.
+- [ ] **NIP-40 expiration enforcement** — Implemented by strfry, nostr-rs-relay, nostream. Tests: reject expired incoming event; do not serve stored expired events.
+- [ ] **NIP-45 COUNT support** — Strfry and others. Simple message exchange, low complexity. Tests: valid COUNT response format; optional approximate flag; CLOSED rejection format.
+- [ ] **NIP-70 protected events** — Strfry. Depends on NIP-42. Tests: reject without auth; accept with auth + matching pubkey; reject with auth + mismatched pubkey.
+- [ ] **NIP-01 OK/CLOSED prefix completeness** — Extend existing suite. All 8 machine-readable prefixes validated where triggerable.
+- [ ] **NIP-11 limitation fields enforcement** — Extend existing suite. Test `max_message_length`, `created_at_lower_limit`/`created_at_upper_limit` enforcement; flag advertised-but-unenforced limits.
+- [ ] **NIP-13 PoW conditional test** — Conditional on `min_pow_difficulty` in NIP-11. Low complexity addition.
 
-Features to add once the core system is working and validated.
+### Phase 2: Advanced / Niche NIPs (v2.x)
 
-- [ ] **Adapter creation skills (nocap, route66, publisher)** — High-value skills but require deep per-package knowledge; parallelize with README writing but finalize after READMEs are stable.
-- [ ] **NIP-66 protocol skill** — Specialized; can be written once route66 and publisher READMEs are complete.
-- [ ] **Debugging skills** — Requires gathering real failure patterns; best written after contributors start using the docs and surface recurring questions.
-- [ ] **docs/ subdirectory for complex packages** — rstate, nocap, route66 likely need deeper docs. Add after base READMEs validate what depth is needed.
+Add if adoption evidence supports or if operator demand exists.
 
-### Future Consideration (v2+)
+- [ ] **NIP-29 relay-based groups** — High complexity, stateful. Only for dedicated group relay testing.
+- [ ] **NIP-62 Request to Vanish** — High complexity. Strong MUST requirements but hard to test comprehensively.
+- [ ] **NIP-86 Management API** — HTTP-based, requires NIP-98 auth. Separate test surface from WebSocket protocol.
 
-Features to defer until post-launch.
+### Defer Indefinitely
 
-- [ ] **"When to use X vs Y" comparison pages** — Requires real contributor feedback on confusion points; premature to guess.
-- [ ] **Automated README freshness checks** — CI job that flags READMEs whose packages have changed but docs haven't. High maintenance overhead; only justified once docs are in active use.
-- [ ] **Per-package build/test status badges in site** — Requires CI integration; nice visual but not blocking.
+- [ ] **NIP-43 relay access (invite codes)** — Draft status, minimal adoption. Re-evaluate when finalized.
+- [ ] **NIP-66 publish results** — This is about auditor output format, not testing relays. Separate milestone.
 
 ---
 
 ## Feature Prioritization Matrix
 
-| Feature | User Value | Implementation Cost | Priority |
-|---------|------------|---------------------|----------|
-| README styleguide | HIGH | LOW | P1 |
-| README for every active package | HIGH | HIGH | P1 |
-| mkdocs configuration | HIGH | LOW | P1 |
-| Package discovery index | HIGH | LOW | P1 |
-| Docs build pipeline | HIGH | LOW | P1 |
-| Bunny CDN deployment | HIGH | LOW | P1 |
-| Site-wide search | HIGH | LOW | P1 (Material MkDocs built-in) |
-| Monorepo operation skills | HIGH | MEDIUM | P1 |
-| Adapter creation skills | HIGH | HIGH | P2 |
-| NIP-66 skill | MEDIUM | MEDIUM | P2 |
-| Debugging skills | HIGH | HIGH | P2 |
-| docs/ for complex packages | MEDIUM | MEDIUM | P2 |
-| Deprecation notices | MEDIUM | LOW | P1 (inline in READMEs) |
-| Dependency graph per README | MEDIUM | MEDIUM | P2 |
-| "When to use X vs Y" pages | MEDIUM | HIGH | P3 |
-| Automated freshness checks | LOW | HIGH | P3 |
-| Per-package CI badges in site | LOW | MEDIUM | P3 |
+| NIP | User Value | Implementation Cost | Priority | Adoption |
+|-----|------------|---------------------|----------|----------|
+| NIP-42 (complete) | HIGH | MEDIUM | P1 | strfry, nostr-rs-relay, nostream |
+| NIP-09 deletion | HIGH | MEDIUM | P1 | strfry, nostr-rs-relay, nostream |
+| NIP-40 expiration | HIGH | MEDIUM | P1 | strfry, nostr-rs-relay, nostream |
+| NIP-01 OK prefixes | HIGH | LOW | P1 | Universal (NIP-01 is mandatory) |
+| NIP-11 limits enforcement | HIGH | MEDIUM | P1 | All NIP-11 relays |
+| NIP-45 COUNT | MEDIUM | LOW | P1 | strfry + others |
+| NIP-70 protected events | MEDIUM | MEDIUM | P1 | strfry |
+| NIP-13 PoW conditional | MEDIUM | LOW | P1 | Any relay with min_pow_difficulty |
+| NIP-29 groups | MEDIUM | HIGH | P2 | Niche group relays |
+| NIP-62 vanish | MEDIUM | HIGH | P2 | Limited |
+| NIP-86 management API | LOW | HIGH | P3 | Relay operators only |
+| NIP-43 invite system | LOW | HIGH | P3 | Draft; minimal |
 
 **Priority key:**
-- P1: Must have for launch
-- P2: Should have, add when possible
-- P3: Nice to have, future consideration
+- P1: Build in Phase 1 (v2.0)
+- P2: Build in Phase 2 (v2.x) — after validation
+- P3: Defer pending demand
 
 ---
 
-## README Section Order (Styleguide Recommendation)
+## Relay Adoption Evidence
 
-Based on research into effective open source READMEs and the dual audience (humans + agents), the
-following section order is recommended for each package README:
+Cross-referencing three major relay implementations to ground adoption claims:
 
-1. **Header** — Package name + one-line description (what problem does this solve?)
-2. **Status badge row** — Build status, version, license, runtime support (web/node/deno)
-3. **Overview** — 2-3 paragraphs: what it does, when to use it, what it does NOT do
-4. **Prerequisites** — Runtime requirements, peer dependencies, environment expectations
-5. **Installation** — `pnpm add` command; workspace vs. standalone usage
-6. **Usage** — Minimal working example first; more examples below if needed
-7. **API** — Exported functions/classes/types with brief descriptions; not exhaustive prose
-8. **Configuration** — Config shape, env vars, adapter options (if applicable)
-9. **Agent Skills** — List of `.claude/skills/` paths that apply to this package, with one-line descriptions
-10. **Related Packages** — What this package depends on; what depends on this (within monorepo)
-11. **Contributing** — Link to root CONTRIBUTING.md or package-specific notes
-12. **License** — One-liner pointing to root LICENSE
+| NIP | strfry | nostr-rs-relay | nostream | Confidence |
+|-----|--------|----------------|----------|------------|
+| NIP-01 | YES | YES | YES | HIGH |
+| NIP-02 | YES | YES | YES | HIGH |
+| NIP-09 | YES | YES | YES | HIGH |
+| NIP-11 | YES | YES | YES | HIGH |
+| NIP-13 (PoW) | — | — | YES | MEDIUM |
+| NIP-22 | — | YES | YES | MEDIUM |
+| NIP-40 | YES | YES | YES | HIGH |
+| NIP-42 | YES | YES | — | HIGH |
+| NIP-45 | YES | — | — | MEDIUM |
+| NIP-70 | YES | — | — | MEDIUM |
+| NIP-77 | YES | — | — | MEDIUM |
+| NIP-29 | — | — | — | LOW |
+| NIP-43 | — | — | — | LOW (draft) |
+| NIP-62 | — | — | — | LOW |
+| NIP-86 | — | — | — | LOW |
+
+Source: strfry GitHub README (direct read, HIGH confidence); nostr-rs-relay GitHub README (direct read, HIGH confidence); nostream GitHub (direct read, HIGH confidence).
 
 ---
 
-## Competitor / Reference Analysis
+## NIP-by-NIP Testing Detail (P1 NIPs)
 
-| Site | Package Count | Key Feature | Approach |
-|------|--------------|-------------|----------|
-| [Turborepo docs](https://turbo.build/repo/docs) | N/A (tool docs) | Clear per-feature sections; excellent search | Nextra (Next.js-based) |
-| [Radix UI docs](https://www.radix-ui.com/docs/primitives) | 50+ components | Package-level pages with consistent API tables | Custom Next.js |
-| [Effect-TS docs](https://effect.website/docs) | 40+ modules | Module-level docs with cross-links | Nextra |
-| [Backstage docs](https://backstage.io/docs) | 100+ plugins | mkdocs-monorepo-plugin (they built it) | MkDocs + monorepo-plugin |
+### NIP-42: Complete AUTH Suite
+**Relay behavior:** Relay sends `["AUTH", challenge]` on connect or when unauthenticated access is
+attempted. Client responds with `["AUTH", kind:22242 event]`. Relay sends `["OK", ...]` back.
 
-**Takeaway:** The biggest multi-package TypeScript docs sites use either Next.js-based solutions or
-MkDocs. Since PROJECT.md already commits to MkDocs (already decided), the reference to emulate is
-Backstage's approach — they invented the mkdocs-monorepo-plugin for exactly this use case.
+**Testable assertions:**
+1. Relay sends AUTH message with string challenge on connection (if `auth_required: true` in NIP-11)
+2. AUTH response event must be kind 22242
+3. Relay rejects AUTH events with `created_at` more than 10 minutes old
+4. Relay validates challenge tag matches issued challenge
+5. Relay validates relay tag matches relay's own URL
+6. Relay never broadcasts kind 22242 events to other subscribers
+7. Unauthenticated request to restricted resource → `["CLOSED", id, "auth-required: ..."]`
+8. Post-auth request to forbidden resource → `["CLOSED", id, "restricted: ..."]`
+
+**Testing flow:** Multi-step. Requires the suite to track challenge strings, sign events, and
+correlate OK messages with prior AUTH responses.
+
+**Complexity: MEDIUM** — More complex than simple request/response because of state tracking.
+
+---
+
+### NIP-09: Event Deletion
+**Relay behavior:** Relay receives kind 5 (deletion request). SHOULD delete or stop serving
+referenced events if `pubkey` matches. SHOULD preserve the deletion event itself indefinitely.
+
+**Testable assertions:**
+1. Publish event E by author A; publish kind 5 by author A with `e: [E]`; query for E → not returned
+2. Publish replaceable event R; publish kind 5 with `a: [kind:pubkey:d-tag]`; query → not returned
+3. Publish kind 5 by author B referencing event E by author A → E should still be returned (pubkey mismatch)
+4. Kind 5 deletion event itself is still retrievable after deletion
+
+**Complexity: MEDIUM** — Three-step setup (publish, delete, query). Ingestor needed for initial
+event publication. Replaceable event deletion adds an `a`-tag code path.
+
+---
+
+### NIP-40: Expiration Timestamp
+**Relay behavior:** Relay SHOULD drop incoming events with `expiration` tag already in the past.
+Relay SHOULD NOT serve stored events whose `expiration` has passed.
+
+**Testable assertions:**
+1. Publish event with `expiration: [past_timestamp]` → expect `["OK", id, false, "..."]` rejection
+2. Query for events with expired `expiration` tag → none returned (WARN if returned, since SHOULD not MUST)
+
+**Complexity: MEDIUM** — Two test cases; second requires knowing of a previously-stored expired
+event (tricky) or using a very short expiration window (timing-dependent). Flag as WARN not FAIL.
+
+---
+
+### NIP-45: COUNT Verb
+**Relay behavior:** Relay responds to `["COUNT", query_id, ...filters]` with
+`["COUNT", query_id, {"count": N}]` or refuses with `["CLOSED", query_id, reason]`.
+
+**Testable assertions:**
+1. Send COUNT with valid filter → receive COUNT response with numeric count field
+2. Optional: count value is approximate if `approximate: true` is set
+3. Unsupported rejection → `["CLOSED", query_id, "..."]` (correct message format)
+
+**Complexity: LOW** — Single message round-trip. Similar to sending a REQ and waiting for EOSE.
+
+---
+
+### NIP-70: Protected Events
+**Relay behavior:** Relay MUST reject any event with `["-"]` tag without AUTH. After successful
+AUTH, relay verifies pubkey match before accepting.
+
+**Testable assertions:**
+1. Send event with `["-"]` without auth → expect `["OK", id, false, "auth-required: ..."]`
+2. Complete AUTH; send event with `["-"]` where `event.pubkey == auth.pubkey` → accept
+3. Complete AUTH; send event with `["-"]` where `event.pubkey != auth.pubkey` → reject
+
+**Complexity: MEDIUM** — Requires NIP-42 auth flow as prerequisite; three test cases.
+
+---
+
+### NIP-01 OK/CLOSED Prefix Completeness
+**Relay behavior:** All OK and CLOSED messages must use machine-readable prefixes when the reason
+is machine-relevant: `duplicate`, `pow`, `blocked`, `rate-limited`, `invalid`, `restricted`, `mute`,
+`error`.
+
+**Testable assertions:**
+1. Publish duplicate event → `["OK", id, false, "duplicate: ..."]`
+2. Publish event violating PoW → `["OK", id, false, "pow: ..."]`
+3. Publish event from blocked pubkey → `["OK", id, false, "blocked: ..."]` (if enforceable)
+4. Any CLOSED message that has a reason uses a recognized prefix
+
+**Complexity: LOW** — Extends existing NIP-01 suite. Some prefix conditions (blocked, rate-limited,
+mute) require relay-specific state that may not be reproducible in a generic auditor.
+
+---
+
+### NIP-11 Limitation Fields Enforcement
+**Relay behavior:** If NIP-11 document advertises `max_message_length`, `created_at_lower_limit`,
+`created_at_upper_limit`, `max_subscriptions`, or `max_filters`, the relay should enforce them.
+
+**Testable assertions:**
+1. If `max_message_length` is set: send message exceeding it → expect rejection (NOTICE or OK false)
+2. If `created_at_lower_limit` is set: send event with too-old `created_at` → expect rejection
+3. If `created_at_upper_limit` is set: send event with too-future `created_at` → expect rejection
+4. If `max_subscriptions` is set: open more subscriptions than allowed → expect rejection or CLOSED
+5. If `auth_required: true`: open subscription without auth → expect AUTH challenge or CLOSED
+
+**Complexity: MEDIUM** — All tests are conditional on NIP-11 fields. Existing NIP-11 suite needs
+extension; does not need a new suite from scratch.
+
+---
+
+### NIP-13: Proof of Work (Conditional)
+**Relay behavior:** If NIP-11 reports `min_pow_difficulty > 0`, relay enforces that incoming events
+meet the difficulty threshold. Uses OK `pow:` prefix for rejections.
+
+**Testable assertions:**
+1. If `min_pow_difficulty > 0`: send event with zero PoW → expect `["OK", id, false, "pow: ..."]`
+2. Send event with PoW meeting the threshold → expect acceptance
+
+**Complexity: LOW** — Conditional on NIP-11. Event generation with PoW requires computing nonce
+(available via nostr-tools). Can be a single SuiteTest added to an extended NIP-11 or NIP-13 suite.
 
 ---
 
 ## Sources
 
-- [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/) — Feature overview, search, navigation, versioning
-- [mkdocs-monorepo-plugin (Backstage)](https://backstage.github.io/mkdocs-monorepo-plugin/) — Monorepo documentation patterns, `!include` syntax, cross-package navigation
-- [Claude Code — Extend with skills](https://code.claude.com/docs/en/skills) — SKILL.md format, frontmatter reference, progressive disclosure, monorepo auto-discovery
-- [AGENTS.md standard](https://agents.md/) — Open standard for agent-readable codebase docs; nested files in monorepos
-- [GitHub — readme-best-practices](https://github.com/jehna/readme-best-practices) — README section patterns for open source projects
-- [daily.dev — README Badges Best Practices](https://daily.dev/blog/readme-badges-github-best-practices) — Badge quantity, types, placement
-- [Spotify Engineering — Solving documentation for monoliths and monorepos](https://engineering.atspotify.com/2019/10/solving-documentation-for-monoliths-and-monorepos) — Origin rationale for mkdocs-monorepo-plugin
-- nostr-watch root `README.md` — Existing package table format; already establishes runtime support as a key signal
-- `.planning/codebase/ARCHITECTURE.md` — Confirms adapter pattern prominence; informs which skills are highest value
-- `.planning/codebase/CONVENTIONS.md` — Import conventions (`@nostrwatch/*` scoping) inform code example standards
+- NIP-01: https://raw.githubusercontent.com/nostr-protocol/nips/master/01.md (HIGH confidence — official spec, direct read)
+- NIP-09: https://raw.githubusercontent.com/nostr-protocol/nips/master/09.md (HIGH confidence)
+- NIP-11: https://raw.githubusercontent.com/nostr-protocol/nips/master/11.md (HIGH confidence)
+- NIP-13: https://raw.githubusercontent.com/nostr-protocol/nips/master/13.md (HIGH confidence)
+- NIP-29: https://raw.githubusercontent.com/nostr-protocol/nips/master/29.md (HIGH confidence)
+- NIP-40: https://raw.githubusercontent.com/nostr-protocol/nips/master/40.md (HIGH confidence)
+- NIP-42: https://raw.githubusercontent.com/nostr-protocol/nips/master/42.md (HIGH confidence)
+- NIP-43: https://raw.githubusercontent.com/nostr-protocol/nips/master/43.md (HIGH confidence — draft status confirmed)
+- NIP-45: https://raw.githubusercontent.com/nostr-protocol/nips/master/45.md (HIGH confidence)
+- NIP-62: https://raw.githubusercontent.com/nostr-protocol/nips/master/62.md (HIGH confidence)
+- NIP-66: https://raw.githubusercontent.com/nostr-protocol/nips/master/66.md (HIGH confidence)
+- NIP-70: https://raw.githubusercontent.com/nostr-protocol/nips/master/70.md (HIGH confidence)
+- NIP-86: https://raw.githubusercontent.com/nostr-protocol/nips/master/86.md (HIGH confidence)
+- NIP README (full NIP list): https://raw.githubusercontent.com/nostr-protocol/nips/master/README.md (HIGH confidence)
+- strfry relay NIP support: https://github.com/hoytech/strfry (HIGH confidence — direct README read, supports NIPs 1, 2, 4, 9, 11, 28, 40, 42, 45, 70, 77)
+- nostr-rs-relay NIP support: https://github.com/scsibug/nostr-rs-relay (HIGH confidence — direct README read)
+- nostream NIP support: https://github.com/cameri/nostream (HIGH confidence — direct README read)
+- NIP adoption statistics: MEDIUM confidence — inferred from relay implementation READMEs; no comprehensive network-wide statistics found
 
 ---
 
-*Feature research for: Developer documentation site — nostr-watch monorepo*
-*Researched: 2026-03-04*
+*Feature research for: @nostrwatch/auditor — NIP conformance test suite expansion*
+*Researched: 2026-03-12*

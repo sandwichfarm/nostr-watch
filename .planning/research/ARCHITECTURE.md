@@ -1,464 +1,419 @@
 # Architecture Research
 
-**Domain:** Developer documentation SPA for a 30+ package TypeScript monorepo
-**Researched:** 2026-03-04
-**Confidence:** HIGH (mkdocs ecosystem verified against official docs and plugin repositories)
-
----
+**Domain:** Nostr relay conformance testing — NIP suite expansion for @nostrwatch/auditor
+**Researched:** 2026-03-12
+**Confidence:** HIGH (sourced entirely from direct codebase analysis)
 
 ## Standard Architecture
 
 ### System Overview
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                         SOURCE LAYER                                     │
-│                                                                          │
-│  ┌────────────────┐  ┌────────────────┐  ┌──────────────────────────┐  │
-│  │  Package READMEs│  │  docs/ dirs    │  │  Claude Code Skills      │  │
-│  │                 │  │  (complex pkgs)│  │  (.claude/skills/)       │  │
-│  │  apps/*/README  │  │  apps/*/docs/  │  │  skills/*/SKILL.md       │  │
-│  │  libraries/*    │  │  libraries/*   │  │  skills/*/scripts/       │  │
-│  │  internal/*     │  │  internal/*    │  │  skills/*/templates/     │  │
-│  └────────┬───────┘  └────────┬───────┘  └──────────────────────────┘  │
-└───────────┼──────────────────-┼──────────────────────────────────────────┘
-            │                   │
-            ▼                   ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                       AGGREGATION LAYER                                  │
-│                                                                          │
-│  ┌─────────────────────────────────────────────────────────────────┐   │
-│  │                    Root mkdocs.yml                               │   │
-│  │                                                                  │   │
-│  │   nav:                                                           │   │
-│  │     - Overview: docs/index.md                                    │   │
-│  │     - Apps: '*include ./apps/*/mkdocs.yml'                       │   │
-│  │     - Libraries: '*include ./libraries/*/mkdocs.yml'             │   │
-│  │     - Internal: '*include ./internal/*/mkdocs.yml'               │   │
-│  │     - Agent Skills: docs/skills/index.md                         │   │
-│  │                                                                  │   │
-│  │   plugins: [monorepo, search, literate-nav]                      │   │
-│  └──────────────────────────┬──────────────────────────────────────┘   │
-│                              │                                           │
-│  ┌───────────────────────────────────────────────────────────────────┐  │
-│  │           Per-Package mkdocs.yml (owns its own nav)               │  │
-│  │                                                                    │  │
-│  │   site_name: apps/gui       (determines URL path)                 │  │
-│  │   nav:                                                             │  │
-│  │     - Overview: README.md                                          │  │
-│  │     - Architecture: docs/architecture.md                           │  │
-│  │     - Agent Skills: docs/skills.md                                 │  │
-│  └────────────────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────────────┘
-            │
-            ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                         BUILD LAYER                                      │
-│                                                                          │
-│   mkdocs build                                                           │
-│     → resolves !include / *include directives                            │
-│     → copies & merges all docs/ content into unified site/               │
-│     → applies Material for MkDocs theme                                  │
-│     → generates full-text search index                                   │
-│     → outputs static HTML + assets → site/                               │
-│                                                                          │
-└──────────────────────────────────────────────────────────────────────────┘
-            │
-            ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                       DELIVERY LAYER                                     │
-│                                                                          │
-│   deploy-bunny.mjs (adapted from apps/gui/scripts/deploy-bunny.mjs)     │
-│     → walks site/ directory                                              │
-│     → PUTs each file to Bunny Storage Zone (PUT /zoneName/targetDir/rel)│
-│     → purges Bunny Pull Zone CDN cache                                   │
-│     → result: developers.nostr.watch (static SPA served from CDN)       │
-│                                                                          │
-└──────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                        Auditor                               │
+│  - Orchestrates suite execution (sequential)                 │
+│  - Loads suites via nipManifest dynamic import               │
+│  - Runs NIP-11 pre-check for supported_nips auto-detect      │
+│  - Emits auditor.suite:start/finish events                   │
+│  - Aggregates IAuditorResult with passrate                   │
+└────────────────────────┬────────────────────────────────────┘
+                         │ creates one per suite key
+┌────────────────────────▼────────────────────────────────────┐
+│                     Suite (abstract)                         │
+│  - Owns the WebSocket connection (shared with SuiteTests)    │
+│  - Registers messageValidators / jsonValidators              │
+│  - Routes incoming messages to per-test handlers             │
+│  - Runs Sampler before tests when ingestors are registered   │
+│  - Runs each SuiteTest in sequence, 500ms apart              │
+│  - Emits auditor.suite.test:start/finish events              │
+└──────┬──────────────────────────┬──────────────────────────┘
+       │ 0..N ingestors            │ 1..N testers
+┌──────▼──────────┐     ┌─────────▼────────────────────────┐
+│ Sampler/Ingestor│     │       SuiteTest (abstract)        │
+│                 │     │  - Holds per-test state            │
+│ Sampler sends   │     │  - Implements digest/precheck/test │
+│ a REQ, feeds    │     │  - Calls REQ/EVENT/CLOSE helpers   │
+│ notes to        │     │  - Awaits testable() (EOSE/max)    │
+│ Ingestors.      │     │  - Calls conclude() to close WS    │
+│                 │     │  - Uses Expect for assertions       │
+│ Each Ingestor   │     │  - _onMessageXxx = qualify gate    │
+│ collects typed  │     │  - onMessageXxx  = handler         │
+│ samples then    │     │                                    │
+│ signals done.   │     └────────────────────────────────────┘
+│                 │
+│ poop() returns  │
+│ sample payload. │
+└─────────────────┘
 ```
 
 ### Component Responsibilities
 
 | Component | Responsibility | Communicates With |
 |-----------|----------------|-------------------|
-| Package README.md | Primary human-facing docs; mkdocs index for that package | Per-package mkdocs.yml (included as nav entry), Agent Skills section |
-| Per-package docs/ | Extended docs for complex packages (architecture, API, adapters) | Per-package mkdocs.yml |
-| Per-package mkdocs.yml | Declares site_name (= URL path segment) and nav for that package | Root mkdocs.yml via `!include` |
-| Root mkdocs.yml | Aggregates all packages using `*include` glob; declares plugins and theme | All per-package mkdocs.yml files |
-| docs/ (root) | Top-level pages: index, styleguide, glossary, cross-cutting guides | Root mkdocs.yml nav |
-| .claude/skills/ | Claude Code skill files for agent task execution | Referenced from README "Agent Skills" sections |
-| docs/skills/ | Human-readable skill index page in the SPA | Root mkdocs.yml, links from package READMEs |
-| site/ | mkdocs build output (static HTML) | deploy-bunny.mjs reads this |
-| Bunny CDN | Hosts and serves the static SPA | deploy-bunny.mjs writes to it |
-
----
+| `Auditor` | Suite orchestration, NIP-11 pre-check, passrate aggregation | `Suite` (creates), `Emitter` (events), `manifest.js` (dynamic load) |
+| `Suite` | WS connection ownership, message routing, schema validation, Sampler lifecycle | `SuiteTest` (runs), `Sampler` (owns), `SchemaValidator` (validates), `Emitter` |
+| `SuiteTest` | Single behavioral test: sends messages, awaits responses, asserts with Expect | `Suite` (via ISuite reference), `WebSocket` (via suite.socket), `Sampler` (optional local) |
+| `Sampler` | Pre-test data collection: opens REQ, runs Ingestors, closes WS | `Ingestor[]` (feeds notes), `WebSocket` (connection), `Emitter` (EOSE signal) |
+| `Ingestor` | Typed data extraction from a stream of Notes | `Sampler` (receives feed calls), `SuiteTest` (owner reads via poop()) |
+| `SchemaValidator` | JSON Schema validation wrapper | `Suite` (called via validateMessage/validateJson), `Expect.message/json` |
+| `Expect` / `AssertWrap` | Fluent assertion groups (behavior, json, message, conditions) | `SuiteTest` (used in test/precheck), `Suite` (used in validateMessage) |
+| `Emitter` | Global singleton event bus (tseep) | All layers emit/consume events |
+| `manifest.js` | Dynamic import map: suiteKey → `() => import(...)` | `Auditor` (loads suites) |
+| `suite-test-manifest.js` | Dynamic import map: suiteKey → `() => import(tests/index.ts)` | `Suite.setup()` (loads test classes) |
 
 ## Recommended Project Structure
 
+Each NIP follows an identical directory shape. Complexity within each slot varies by NIP.
+
 ```
-nostr-watch/
-├── mkdocs.yml                        # Root aggregator — the single build entry point
-├── docs/                             # Root-level docs (not tied to any package)
-│   ├── index.md                      # Site landing page
-│   ├── styleguide.md                 # README authoring styleguide
-│   ├── glossary.md                   # Shared abbreviations (auto-tooltip via pymdownx.snippets)
-│   ├── contributing.md               # How to add/update docs
-│   └── skills/
-│       └── index.md                  # Agent Skills directory page
-│
-├── apps/
-│   ├── gui/
-│   │   ├── README.md                 # Package docs (mkdocs index page for this package)
-│   │   ├── mkdocs.yml                # site_name: apps/gui; nav over README + docs/
-│   │   └── docs/                     # Only for complex packages that need more than README
-│   │       ├── architecture.md
-│   │       └── deployment.md
-│   ├── rstate/
-│   │   ├── README.md
-│   │   └── mkdocs.yml                # site_name: apps/rstate
-│   ├── trawler/
-│   │   ├── README.md
-│   │   └── mkdocs.yml
-│   └── ...                           # All other apps follow the same pattern
-│
-├── libraries/
-│   ├── nocap/
-│   │   ├── README.md
-│   │   ├── mkdocs.yml                # site_name: libraries/nocap
-│   │   └── docs/
-│   │       └── adapters.md           # Adapter creation guide (complex enough to warrant it)
-│   ├── route66/
-│   │   ├── README.md
-│   │   ├── mkdocs.yml
-│   │   └── docs/
-│   │       └── state-management.md
-│   └── ...
-│
-├── internal/
-│   ├── publisher/
-│   │   ├── README.md
-│   │   └── mkdocs.yml                # site_name: internal/publisher
-│   └── ...
-│
-└── .claude/
-    └── skills/                       # Claude Code skills (not part of mkdocs build)
-        ├── add-package/
-        │   └── SKILL.md
-        ├── create-adapter/
-        │   └── SKILL.md
-        ├── debug-relay-connection/
-        │   └── SKILL.md
-        ├── nip66-protocol/
-        │   └── SKILL.md
-        └── run-tests/
-            └── SKILL.md
+src/nips/NipXX/
+├── index.ts              # Suite subclass: slug, messageValidators, jsonValidators,
+│                         #   onMessageXxx handlers, optional generator classes
+├── tests/
+│   ├── index.ts          # Re-exports all SuiteTest subclasses for this NIP
+│   └── SomeTestName.ts   # One SuiteTest subclass per behavioral scenario
+├── interfaces/           # TypeScript types for NIP-specific message shapes
+│   ├── index.ts          # Barrel export
+│   └── SomeMessage.ts
+├── schemata/             # JSON Schema files for message validation
+│   ├── index.ts          # Imports .json files, exports named + default bundle
+│   └── some-message.schema.json
+└── ingestors/            # Optional: only when Sampler pre-collection is needed
+    └── SomeIngestor.ts
 ```
+
+**Minimal NIP (no pre-sampling, no custom messages):**
+- `index.ts` + `tests/index.ts` + `tests/SomeTest.ts` — 3 files total
+
+**Full-depth NIP (pre-sampling, custom message types):**
+- Add `interfaces/`, `schemata/`, `ingestors/` — up to ~12 files
 
 ### Structure Rationale
 
-- **README.md at package root:** mkdocs treats `README.md` as the index page for a directory. This means the file simultaneously serves GitHub rendering and the mkdocs SPA — no duplication. The mkdocs-monorepo-plugin correctly resolves these as index pages when included.
-
-- **Per-package mkdocs.yml:** Required by mkdocs-monorepo-plugin. The `site_name` field determines the URL path in the built site (e.g. `site_name: apps/gui` → `developers.nostr.watch/apps/gui/`). Each package owns its own navigation, enabling independent updates without touching the root config.
-
-- **docs/ only for complex packages:** Most packages document well in a single README. The rule: create `docs/` only when a package has genuinely separate concerns that would make one README unwieldy (nocap adapters, gui architecture, route66 state management). Premature `docs/` directories add navigation complexity without benefit.
-
-- **.claude/skills/ separate from mkdocs:** Skills are Claude Code runtime artifacts, not website pages. They live in `.claude/skills/` (the convention for Claude Code skill discovery). READMEs link to them by path; the SPA has a `docs/skills/index.md` that documents what skills exist and how to invoke them.
-
-- **Root docs/glossary.md:** Shared terminology defined once using pymdownx.snippets + abbr extension. Every page in the site automatically gets hover tooltips for defined terms (e.g. "NIP-66", "nocap", "route66") without per-page duplication.
-
----
+- **index.ts at NIP root:** Suite constructor always imported from here; Auditor manifest points here.
+- **tests/index.ts barrel:** `suite-test-manifest.js` imports `tests/index.ts`; the barrel re-exports all test classes so Suite.setup() can iterate them dynamically.
+- **schemata/ + interfaces/ optional:** Only needed when the NIP defines new message types beyond NIP-01 baseline. NIPs that only filter standard events (NIP-02, NIP-65) reuse Nip01 interfaces directly.
+- **ingestors/ optional:** Only needed when tests require pre-existing relay data. NIPs that write-then-read can use a local Sampler inside the SuiteTest instead of suite-level ingestors.
 
 ## Architectural Patterns
 
-### Pattern 1: Glob Include for Package Discovery
+### Pattern 1: Standard Filter-and-Assert (most NIPs)
 
-**What:** The root mkdocs.yml uses `*include` glob syntax (mkdocs-monorepo-plugin v0.5.2+) to auto-discover all package mkdocs.yml files without manually listing each one.
+**What:** Send a REQ with NIP-specific filter fields, receive events via onMessageEvent, call test() after EOSE.
+**When to use:** Any NIP that adds filter fields or new event kinds. Examples: NIP-02, NIP-22, NIP-65, NIP-25, NIP-94, NIP-58.
+**Trade-offs:** Zero infrastructure additions needed. Limited to passive read behavior. Cannot verify write-side acceptance.
 
-**When to use:** Always. With 30+ packages, manually maintaining a list of `!include` directives is a maintenance burden. Glob discovery means new packages are automatically included once their `mkdocs.yml` is created.
+```typescript
+export class MyTest extends SuiteTest implements ISuiteTest {
+  readonly slug = 'MyTest';
 
-**Trade-offs:** Glob ordering is alphabetical; packages cannot be arbitrarily reordered in nav without explicit listing. Accept alphabetical ordering within each section (apps, libraries, internal) — it is predictable and requires zero maintenance.
+  get filters(): INip01Filter[] {
+    return [{ kinds: [1234], limit: 5 }];
+  }
 
-**Example root mkdocs.yml:**
-```yaml
-site_name: nostr-watch Developer Docs
-site_url: https://developers.nostr.watch/
-docs_dir: docs
-
-theme:
-  name: material
-  features:
-    - navigation.tabs
-    - navigation.sections
-    - navigation.indexes
-    - content.tooltips
-    - search.highlight
-
-plugins:
-  - search
-  - monorepo
-
-markdown_extensions:
-  - abbr
-  - attr_list
-  - pymdownx.snippets:
-      base_path: docs
-      auto_append:
-        - glossary.md
-  - pymdownx.highlight
-  - pymdownx.superfences
-
-nav:
-  - Home: index.md
-  - Styleguide: styleguide.md
-  - Apps: '*include ./apps/*/mkdocs.yml'
-  - Libraries: '*include ./libraries/*/mkdocs.yml'
-  - Internal: '*include ./internal/*/mkdocs.yml'
-  - Agent Skills: skills/index.md
+  test({ behavior }) {
+    behavior.toBeOk(this.events.length > 0, 'relay returned kind 1234 events');
+    behavior.toBeOk(
+      this.events.every(e => e.kind === 1234),
+      'all returned events are kind 1234'
+    );
+  }
+}
 ```
 
-### Pattern 2: README as Single Source of Truth
+### Pattern 2: Write-Then-Read Behavioral Test
 
-**What:** Each package's `README.md` is the primary (and often sole) documentation file. The per-package `mkdocs.yml` lists `README.md` as its first nav entry. This makes README the mkdocs index page AND the GitHub-rendered overview — one file, two display contexts.
+**What:** EVENT to publish a test event, then REQ to verify the relay stored or acted on it. Requires nostr-tools for event signing.
+**When to use:** NIP-09 (deletion — publish kind 5, verify target gone), NIP-40 (expiration — publish with expiration tag, verify eviction), NIP-16 (replaceable events — publish two events same kind+pubkey, verify only latest survives).
+**Trade-offs:** Requires test keypair management. Timing-sensitive for expiration tests. Must use `completeOn = ['off']` and manually call `conclude()` inside `_onMessageOk`, exactly as Nip77's NegOpen does.
 
-**When to use:** For all packages where the documentation fits in one page. Default assumption: start with README-only, add `docs/` only when content exceeds ~500 lines or covers genuinely distinct topics (e.g., separate adapter creation guide).
+```typescript
+export class DeleteTest extends SuiteTest implements ISuiteTest {
+  readonly slug = 'DeleteTest';
+  private publishedId?: string;
+  private okAccepted = false;
+  completeOn: CompleteOnTypeArray = ['off'];
 
-**Trade-offs:** mkdocs strips the H1 title from README when used as index (it becomes the nav label). Ensure README starts with a clean H1 that reads well as a page title.
+  async prepare() {
+    const note = await signTestEvent({ kind: 1, content: 'delete me' });
+    this.publishedId = note.id;
+    this.EVENT(note);
+    await this.testable();
+  }
 
-**Example per-package mkdocs.yml (simple package):**
-```yaml
-site_name: libraries/nocap
+  _onMessageOk(message: RelayOkMessage): boolean {
+    if (message[1] !== this.publishedId) return true;
+    this.okAccepted = message[2];
+    this.test(this.expect);
+    this.conclude();
+    return false;
+  }
 
-nav:
-  - Overview: README.md
+  test({ behavior }) {
+    behavior.toBeOk(this.okAccepted, 'relay accepted published event');
+  }
+}
 ```
 
-**Example per-package mkdocs.yml (complex package with docs/):**
-```yaml
-site_name: libraries/nocap
+### Pattern 3: Challenge-Response (AUTH / NIP-42)
 
-nav:
-  - Overview: README.md
-  - Adapter Guide: docs/adapters.md
-  - API Reference: docs/api.md
+**What:** Connect, receive relay AUTH challenge, sign a response event, send AUTH back, verify relay accepts the subscription or returns CLOSED with auth-required.
+**When to use:** NIP-42 AUTH suite exclusively.
+**Trade-offs:** Requires extending Suite to add `onMessageAuth` handler. The `_onMessage{Suffix}` → `onMessage{Suffix}` dispatch chain in Suite.handleMessage already handles custom message types via camelCase suffix routing — no new routing infrastructure needed. The current `Nip42` class does NOT extend Suite and is not registered in manifests; this must be corrected before tests can run.
+
+```typescript
+// Nip42 Suite index.ts — must extend Suite:
+export class Nip42 extends Suite implements ISuite {
+  public get slug() { return 'Nip42'; }
+  readonly requires = ['websocket'];
+
+  readonly messageValidators = {
+    AUTH: new SchemaValidator<RelayAuthMessage>(schemata.RelayAuthMessage),
+  };
+
+  protected onMessageAuth(message: RelayAuthMessage): void {
+    // challenge is captured by SuiteTest via _onMessageAuth
+  }
+}
+
+// In test class:
+export class AuthChallenge extends SuiteTest implements ISuiteTest {
+  readonly slug = 'AuthChallenge';
+  completeOn: CompleteOnTypeArray = ['off'];
+  private challengeReceived = false;
+
+  _onMessageAuth(message: RelayAuthMessage): boolean {
+    const challenge = message[1];
+    this.challengeReceived = true;
+    const signedEvent = signAuthEvent(challenge, this.socket.url);
+    this.socket.send(Nip42ClientMessageGenerator.AUTH(signedEvent));
+    return false;
+  }
+}
 ```
 
-### Pattern 3: Structured README Sections with Agent Skills Block
+### Pattern 4: Custom Protocol Extension (NIP-77 style)
 
-**What:** Every README follows the same section order, ending with an "Agent Skills" section that links to relevant `.claude/skills/` files. This creates a discoverable contract for both human developers and AI agents.
+**What:** NIP introduces non-NIP-01 message types. Suite defines custom message generators and messageValidators keyed on new type strings.
+**When to use:** NIP-77 (negentropy: NEG-OPEN/NEG-MSG/NEG-ERR/NEG-CLOSE).
+**Trade-offs:** Requires new interfaces and schemata. The `handleMessage` dispatch in Suite uses `message[0]` as a key suffix, so `NEG-OPEN` routes to `onMessageNegOpen` automatically via `handlerSuffix()` camelCase logic. No Suite base class changes needed.
 
-**When to use:** All packages. The styleguide enforces this. Agent Skills section is always last — it does not clutter the human-focused content but is always findable.
+### Pattern 5: HTTP-Only Test (NIP-11 / NIP-86 style)
 
-**Trade-offs:** Skills links use relative paths that work on GitHub but not in the mkdocs SPA (skills live outside the docs tree). Mitigate by linking to the `docs/skills/index.md` page in the SPA, and to the `.claude/skills/` file path on GitHub. Use conditional formatting or a clear note.
+**What:** Override `requires = []` in Suite to skip WebSocket setup. Use `fetch()` inside SuiteTest.prepare() instead of REQ/CLOSE.
+**When to use:** NIP-11 (relay information document), NIP-86 (relay management API — HTTP POST to relay URL).
+**Trade-offs:** No WebSocket involved. Suite still needs both manifest registrations and the test result flows through ISuiteTestResult normally. The existing ValidateSchema.ts in Nip11 demonstrates this pattern completely — it directly calls `fetch()` in `prepare()`.
 
-**Example README tail section:**
-```markdown
-## Agent Skills
+```typescript
+// Suite:
+export class Nip86 extends Suite implements ISuite {
+  public get slug() { return 'Nip86'; }
+  readonly requires = [];  // no WebSocket
+}
 
-Skills for working with this package are available in `.claude/skills/`:
-
-| Skill | Purpose |
-|-------|---------|
-| [create-adapter](/.claude/skills/create-adapter/SKILL.md) | Scaffold a new nocap adapter |
-| [debug-relay-connection](/.claude/skills/debug-relay-connection/SKILL.md) | Diagnose WebSocket issues |
-
-See the [full skills index](https://developers.nostr.watch/skills/) on the developer site.
+// Test:
+export class RelayManagementApi extends SuiteTest implements ISuiteTest {
+  async prepare() {
+    const url = new URL(this.socket.url.toString());
+    url.protocol = 'https:';
+    const response = await fetch(url.toString(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/nostr+json-rpc' },
+      body: JSON.stringify({ method: 'supportedmethods' })
+    });
+    // inspect response
+  }
+}
 ```
 
-### Pattern 4: Centralized Glossary with Auto-Tooltips
+### Pattern 6: Sampler Pre-Collection + Digest
 
-**What:** A single `docs/glossary.md` defines domain-specific abbreviations using the pymdownx.snippets `auto_append` configuration. Every page in the built site automatically renders hover tooltips for defined terms.
-
-**When to use:** Always. The Nostr ecosystem has many opaque terms (NIP-66, nocap, route66, LMDB, negentropy). Glossary tooltips prevent every author from needing to explain these terms inline.
-
-**Trade-offs:** Abbreviation tooltips only render in the built mkdocs site, not on GitHub. This is acceptable — GitHub has hover context from file navigation; the SPA is the authoritative developer reference.
-
-**Example glossary.md (partial):**
-```markdown
-*[NIP-66]: Nostr Implementation Possibility 66 — the relay check protocol implemented by nostr-watch
-*[nocap]: Library for relay capability discovery using an adapter pattern
-*[route66]: Library for multi-relay data aggregation and state management
-*[LMDB]: Lightning Memory-Mapped Database, used by relaymon for persistence
-*[OPFS]: Origin Private File System, used by gui worker-relay for in-browser SQLite
-```
-
----
+**What:** Register ingestors in SuiteTest constructor via `this.suiteIngest(ingestor)`. Suite runs Sampler before tests. Test calls `this.getSamples<T>()` in `digest()`.
+**When to use:** Any NIP where tests need real relay data to construct meaningful filters (NIP-01 FilterAuthor, NIP-50 search terms). Required when you cannot construct a useful filter without knowing what's on the relay.
+**Trade-offs:** Adds a sampling round-trip before tests. If sampling fails, all tests in the suite skip automatically via Suite.test(). Use `precheck(conditions)` to validate samples are sufficient before the test body runs.
 
 ## Data Flow
 
-### Markdown to Deployed SPA
+### Standard Suite Execution Flow
 
 ```
-Package READMEs (30+ files)
-    +
-Per-package docs/ directories (complex packages only)
-    +
-Root docs/ (index, styleguide, glossary, skills index)
-    ↓
-[mkdocs-monorepo-plugin resolves *include globs]
-    ↓
-[Root mkdocs.yml nav assembled from all packages]
-    ↓
-[mkdocs build]
-    → pymdownx.snippets auto-appends glossary.md to every page
-    → Material theme applies navigation tabs, search index
-    → All markdown converted to HTML + JS + CSS
-    → Output: site/ (static files, fully self-contained SPA)
-    ↓
-[deploy-bunny.mjs]
-    → reads BUNNY_STORAGE_ENDPOINT, BUNNY_STORAGE_ZONE_NAME, BUNNY_STORAGE_ZONE_PASSWORD
-    → walks site/ directory recursively
-    → PUTs each file to Bunny Storage at /zoneName/[targetDir]/[relative-path]
-    → waits BUNNY_REPLICATION_TIMEOUT_MS (default 15s)
-    → POSTs purge to Bunny Pull Zone API
-    ↓
-[Bunny CDN Pull Zone]
-    → serves developers.nostr.watch
+Auditor.test(relay)
+    |
+    +-- import nipManifest[suiteKey]()   --> Suite constructor
+    |
+    +-- Suite.test()
+          |
+          +-- Suite.ready()              --> wait for setup() (async test class loading)
+          |
+          +-- [if sampler.samplable]
+          |   +-- Sampler.sample()       --> connect WS, send REQ {limit:500, since:0}
+          |   |     +-- on EVENT --> Ingestor.feed(note)
+          |   |     +-- on EOSE  --> resolve, close WS
+          |   +-- Suite.toilet()         --> ingestor.poop() --> SuiteState['samples']
+          |
+          +-- for each SuiteTest:
+                +-- SuiteTest.run()
+                |     +-- sampler.sample() (if test-local ingestors)
+                |     +-- suite.reset() --> testKey = slug
+                |     +-- suite.setupHandlers() --> socket.on('message', handleMessage)
+                |     +-- socket.connect()
+                |     +-- timeoutBegin()
+                |     +-- digest()        --> getSamples() --> populate test fields
+                |     +-- precheck()      --> conditions assertions
+                |     +-- evaluateConditions() --> skip behavior if conditions fail
+                |     +-- prepare()       --> send REQ/EVENT/custom messages
+                |     |     +-- testable() --> await until socket closes
+                |     +-- finish()        --> collect Expect results --> resulter
+                +-- await 500ms delay
+    |
+    +-- Auditor.calculatePassrate() --> IAuditorResult
 ```
 
-### Cross-Package Linking
+### Message Dispatch Flow (Suite.handleMessage)
 
 ```
-Package A README.md
-    → standard markdown link: [route66](../../libraries/route66/README.md)
-    → mkdocs resolves relative paths within the merged nav
-    → built site renders as: /libraries/route66/
-
-Package README "Agent Skills" section
-    → links to /.claude/skills/create-adapter/SKILL.md (GitHub path)
-    → links to /skills/ (built SPA skills index page)
-    → two separate link targets for two separate audiences
+WebSocket 'message' event
+    |
+    +-- JSON.parse(data) --> message[]
+    +-- message[0] --> key (e.g., "OK", "EVENT", "NEG-MSG")
+    +-- handlerSuffix(key) --> suffix (e.g., "Ok", "Event", "NegMsg")
+    |
+    +-- validateMessage(message)    --> messageValidators[key].validate()
+    |                                   --> expect.message.toBeOk(...)
+    |
+    +-- messages.set(key, [...])    --> accumulate for result
+    |
+    +-- [if key == 'EVENT']
+    |   +-- testInstance.addEvent(note)
+    |
+    +-- Suite.onMessage{Suffix}(message)   --> Suite-level handler (optional override)
+    |
+    +-- testInstance._onMessage{Suffix}(message) --> qualifying gate
+    |   +-- returns false --> stop; returns true --> continue to test handler
+    |
+    +-- testInstance.onMessage{Suffix}(message)  --> test-level handler
 ```
 
-### Skill Integration into Doc Tree
+### Key Data Flows
 
-```
-.claude/skills/create-adapter/SKILL.md  (Claude Code runtime)
-    ↑ referenced by
-Package READMEs → "Agent Skills" section → path link
-    ↑ summarized by
-docs/skills/index.md  (human-readable inventory)
-    ↑ included in
-Root mkdocs.yml nav → "Agent Skills" tab
-    ↑ rendered in
-SPA at developers.nostr.watch/skills/
-```
+1. **Sample data:** Sampler -> Ingestor.feed() -> Ingestor.poop() -> SuiteState['samples'][testSlug] -> SuiteTest.getSamples()
+2. **Assertion results:** SuiteTest.test(expect) -> Expect.behavior.toBeOk() -> AssertWrap._result[] -> SuiteTest.finish() -> SuiteTestResulter -> Suite.resulter -> Auditor.resulter
+3. **Events from relay:** Suite.handleMessage -> testInstance.addEvent() -> SuiteTest.events[] -> used in test()
 
----
+## NIP Integration Classification
 
-## Component Boundaries
+### Category A: Standard Pattern — No Architecture Changes Needed
 
-### What Talks to What
+These NIPs use existing Suite/SuiteTest/Ingestor as-is, following the NIP-65 or NIP-02 template.
 
-| From | To | Mechanism | Notes |
-|------|----|-----------|-------|
-| Root mkdocs.yml | Per-package mkdocs.yml | `*include` glob | Plugin resolves at build time |
-| Per-package mkdocs.yml | Package README.md | nav entry | README becomes index page |
-| Per-package mkdocs.yml | Package docs/*.md | nav entries | Only for complex packages |
-| Any markdown page | Any other page | Relative markdown links | mkdocs validates at build |
-| Any markdown page | Glossary terms | Auto via pymdownx.snippets | Tooltip rendered client-side |
-| docs/skills/index.md | .claude/skills/ paths | Markdown links | Path links only; not a build dependency |
-| Package README | docs/skills/index.md | Markdown link | Points to SPA skills page |
-| Package README | .claude/skills/ | Markdown link | Points to raw skill file (GitHub) |
-| deploy-bunny.mjs | site/ | fs.readdir walk | Reads every file in build output |
-| deploy-bunny.mjs | Bunny Storage API | HTTP PUT | Uploads each static file |
-| deploy-bunny.mjs | Bunny Pull Zone API | HTTP POST | Purges CDN cache after upload |
+| NIP | Test Pattern | Key Behavior to Verify |
+|-----|-------------|------------------------|
+| NIP-25 (Reactions) | Filter-and-Assert | Query kind 7, assert `e` tag points to target event |
+| NIP-94 (File Metadata) | Filter-and-Assert | Query kind 1063, assert required `url`, `m`, `x` tags |
+| NIP-58 (Badges) | Filter-and-Assert | Query kinds 30008/30009, assert tag structure |
+| NIP-09 (Deletion) | Write-Then-Read | Publish kind 5 deletion, verify target kind 1 disappears |
+| NIP-16 (Replaceable Events) | Write-Then-Read | Publish kind K twice with same pubkey, only latest survives |
+| NIP-40 (Expiration) | Write-Then-Read with delay | Publish with `expiration` tag, wait, REQ, assert gone |
+| NIP-26 (Delegated Events) | Write-Then-Read | Publish event with `delegation` tag, verify relay accepts |
+| NIP-04 (Direct Messages) | Write-Then-Read | Publish kind 4, verify relay does not expose to non-participants |
 
-### Boundary Constraints
+### Category B: Requires Small Suite Extension
 
-- **Skills are not part of the mkdocs build.** `.claude/skills/` is outside `docs_dir`. Skills files are Claude Code runtime artifacts. The SPA `docs/skills/index.md` is a human-written index that describes the skills — it does not `!include` or transclude skill files.
+| NIP | Required Extension | Notes |
+|-----|--------------------|-------|
+| NIP-42 (AUTH) | Promote `Nip42` to extend `Suite` properly; add to both manifests | Schemata and interfaces already exist; bare class is not runnable by Auditor |
+| NIP-86 (Relay Mgmt API) | `requires = []` in Suite; fetch() in prepare() | Identical to NIP-11 HTTP pattern; model directly on ValidateSchema.ts |
 
-- **Per-package mkdocs.yml files are not served independently.** They only exist to give each package an owned nav definition. The build is always invoked from the root.
+### Category C: New Message Type Infrastructure
 
-- **The Bunny deploy script is format-agnostic.** It walks any directory and uploads every file. The same script that deploys the GUI can deploy the docs with different env vars and `--dir site`.
+| NIP | New Messages | Extension Needed |
+|-----|-------------|-----------------|
+| NIP-45 (COUNT) | Client sends `COUNT` verb; relay responds with `["COUNT", subId, {"count": N}]` | Add COUNT generator class in NIP-45 index.ts; add messageValidator for COUNT response |
 
----
+### Shared Utilities to Build Before Any Write-Then-Read NIPs
 
-## Suggested Build Order
+| Utility | Suggested Location | Purpose | Used By |
+|---------|-------------------|---------|---------|
+| `generateTestKeypair()` | `src/utils/signing.ts` (new file) | Ephemeral pubkey/privkey using nostr-tools | NIP-09, NIP-16, NIP-40, NIP-42, NIP-26 |
+| `signTestEvent(params)` | `src/utils/signing.ts` | Sign a Note with throw-away key | Same NIPs |
+| `signAuthEvent(challenge, relayUrl)` | `src/utils/signing.ts` | Build NIP-42 auth signed event | NIP-42 exclusively |
+| `waitFor(ms)` | `src/utils/async.ts` (new file) | Simple delay for expiration tests | NIP-40 |
 
-Dependencies between documentation components determine the correct implementation sequence:
-
-```
-1. Styleguide (docs/styleguide.md)
-   └── Must exist before writing any package README
-       — defines the section order, tone, badge rules, code example format
-
-2. Glossary (docs/glossary.md)
-   └── Define all domain terms upfront
-       — prevents inconsistent terminology in READMEs written later
-
-3. Root mkdocs.yml + docs/index.md
-   └── The scaffolding that will aggregate everything
-       — verify the build succeeds with zero packages first
-
-4. Internal package READMEs + mkdocs.yml stubs (internal/*)
-   └── Simplest packages; no adapter complexity
-       — proves the per-package pattern works end-to-end
-
-5. Library READMEs + mkdocs.yml (libraries/*)
-   └── More complex; some have adapters (nocap, route66, publisher)
-       — adapter-bearing libraries get docs/ subdirectory
-
-6. App READMEs + mkdocs.yml (apps/*)
-   └── Most complex; reference both libraries and internal packages
-       — written last because they reference the library docs just established
-
-7. Claude Code Skills (.claude/skills/)
-   └── Written after READMEs because skills reference specific patterns
-       — one skill per common agent task; link from READMEs
-
-8. docs/skills/index.md
-   └── Inventory page written after all skills exist
-       — references all skills; included in root nav
-
-9. Bunny deploy pipeline (docs-specific deploy script + CI workflow)
-   └── Built last; everything else must be stable first
-```
-
----
+The signing utilities are the highest-priority shared infrastructure — 6+ NIP suites cannot be implemented without them.
 
 ## Anti-Patterns
 
-### Anti-Pattern 1: Flat docs/ at Root for All Packages
+### Anti-Pattern 1: Monolithic SuiteTest Per NIP
 
-**What people do:** Put everything in `docs/apps/gui/`, `docs/libraries/nocap/`, etc. at the root. No per-package docs directories.
+**What people do:** Put all behavioral assertions for a NIP into a single SuiteTest class.
+**Why it's wrong:** The Suite.test() loop runs each SuiteTest independently with its own WebSocket lifecycle. A single class cannot be independently skipped when samples are missing for one scenario. NIP-01 splits into FilterAuthor/FilterKinds/FilterLimit/FilterMulti/FilterRange/FilterTags — each independently skippable and independently reportable.
+**Do this instead:** One SuiteTest per distinct behavioral scenario. Different filter parameters = different test class.
 
-**Why it's wrong:** Documentation lives far from the code it describes. Authors editing `libraries/nocap/src/` must navigate to a completely separate tree to update docs. GitHub Codeowners cannot scope docs ownership to the package team. The root `docs/` becomes a sprawling mess of 30+ directories.
+### Anti-Pattern 2: Skipping One of the Two Manifest Files
 
-**Do this instead:** Keep `README.md` and `docs/` co-located with the package. The mkdocs-monorepo-plugin exists precisely for this pattern.
+**What people do:** Implement Suite and SuiteTest but forget to update one of the two manifest files.
+**Why it's wrong:** `isRunnableSuiteKey()` in Auditor requires presence in BOTH `manifest.js` AND `suite-test-manifest.js`. Missing either causes the suite to be silently filtered out. No error is thrown — the suite simply never runs.
+**Do this instead:** Update both manifests atomically. Treat them as a pair. Add an entry to `manifest.js` (Suite loader) and `suite-test-manifest.js` (tests loader) in the same commit.
 
-### Anti-Pattern 2: Manually Listing Every Package in Root Nav
+### Anti-Pattern 3: Bare Class for Nip42 (Current State Is Broken)
 
-**What people do:** Explicitly list every `!include ./apps/gui/mkdocs.yml`, `!include ./apps/rstate/mkdocs.yml`, etc. in the root `mkdocs.yml`.
+**What people do:** The current `Nip42` in `src/nips/Nip42/index.ts` is a plain class — not a Suite subclass. It has `messageValidators` and generator classes but no `slug` getter, no `requires`, no `test()` method, and is absent from both manifests.
+**Why it's wrong:** `resolveSuiteConstructor()` in Auditor looks for `prototype.test` — a bare class fails this check silently. Even if registered, `$Suite.test()` would throw.
+**Do this instead:** Extend `Suite` properly, declare `readonly requires = ['websocket']`, implement `get slug() { return 'Nip42'; }`. The existing interfaces and schemata are valid — keep them and promote the class structure.
 
-**Why it's wrong:** 30+ `!include` lines. Every new package requires a root config edit. Forgotten packages silently disappear from the SPA.
+### Anti-Pattern 4: Using Default completeOn for Write-Then-Read Tests
 
-**Do this instead:** Use `*include` glob: `'*include ./apps/*/mkdocs.yml'`. New packages auto-appear when their `mkdocs.yml` is created.
+**What people do:** Use the default `completeOn = ['maxEvents', 'EOSE']` in a write-then-read test that needs to inspect the OK response.
+**Why it's wrong:** `_onMessageEose()` calls `conclude()` immediately after EOSE, terminating the WebSocket before the write-side OK/CLOSED messages can be received.
+**Do this instead:** Set `completeOn = ['off']` and manually call `this.test(this.expect); this.conclude()` inside the appropriate `_onMessageXxx` handler — exactly as NegOpen.ts does for NIP-77.
 
-### Anti-Pattern 3: Separate skills.md Per Package (Not in .claude/skills/)
+### Anti-Pattern 5: Suite-Level State Shared Between Tests
 
-**What people do:** Write Claude Code guidance as prose in a `docs/skills.md` within each package, outside the `.claude/skills/` convention.
+**What people do:** Store per-scenario state on the Suite subclass instead of the SuiteTest subclass.
+**Why it's wrong:** Suite instances are reused across all tests. State set during one SuiteTest's `onMessageXxx` persists into the next test. `Suite.reset()` only clears `testKey` — all other state is the test's responsibility.
+**Do this instead:** Keep all per-scenario state in the SuiteTest subclass. Suite-level state is only appropriate for things that must survive across all tests (validators, generators).
 
-**Why it's wrong:** Claude Code discovers skills from `.claude/skills/` (the Agent Skills open standard). Prose guidance files are not invocable — they are just documentation that the agent must manually read and interpret. Skills in the standard location are auto-discovered and invocable via `/skill-name`.
+## Build Order Implications
 
-**Do this instead:** Skills go in `.claude/skills/{skill-name}/SKILL.md`. READMEs link to them. The SPA has a human-readable `docs/skills/index.md` that describes available skills.
+### Phase 1: Shared Signing Infrastructure (prerequisite)
 
-### Anti-Pattern 4: Overusing docs/ Subdirectories
+Build first; blocks 6+ NIP suites otherwise.
 
-**What people do:** Create `docs/` in every package regardless of complexity, with stub files that just restate the README.
+1. `src/utils/signing.ts` — `generateTestKeypair()`, `signTestEvent()`, `signAuthEvent()` using nostr-tools
+2. `src/utils/async.ts` — `waitFor(ms)` for expiration timing
 
-**Why it's wrong:** Navigation complexity with no information gain. A package with a 200-line README does not need a `docs/` directory that contains `docs/overview.md` (which duplicates the README) and `docs/api.md` (which has two paragraphs).
+### Phase 2: NIP-42 AUTH (fix existing scaffolding)
 
-**Do this instead:** README-first. Add `docs/` only when a specific additional file is needed (e.g. an adapter creation guide for nocap, architecture deep-dive for gui). The rule: every file in `docs/` must cover a topic that genuinely cannot fit in README without making it unwieldy.
+Schemata and interfaces exist. Suite fix is small. AUTH pattern is unique and should be proven before other suites that might need similar challenge-response flows.
 
-### Anti-Pattern 5: Absolute URLs for Cross-Package Links
+3. Fix `Nip42/index.ts` to extend Suite
+4. Implement AUTH challenge-response test(s)
+5. Add to both manifests
 
-**What people do:** Hard-code `https://developers.nostr.watch/libraries/nocap/` in package READMEs when linking to other packages.
+### Phase 3: Passive Read NIPs (standard pattern, no signing required)
 
-**Why it's wrong:** Breaks in local `mkdocs serve`. Breaks on GitHub rendering. Makes links stale if the site URL changes.
+Follow NIP-65 as the template. These are straightforward.
 
-**Do this instead:** Use relative markdown paths: `[nocap](../../libraries/nocap/README.md)`. mkdocs rewrites these correctly in the built site. GitHub renders them as GitHub file links. Both audiences win.
+6. NIP-25 (Reactions — kind 7)
+7. NIP-94 (File Metadata — kind 1063)
+8. NIP-58 (Badges — kinds 30008/30009)
 
----
+### Phase 4: Write-Then-Read NIPs (depends on Phase 1 signing utils)
+
+9. NIP-09 (Deletion — kind 5, verify target disappears)
+10. NIP-16 (Replaceable events — same kind+pubkey, latest wins)
+11. NIP-26 (Delegated events — delegation tag acceptance)
+12. NIP-40 (Expiration — short-TTL events, verify eviction)
+
+### Phase 5: Protocol Extensions
+
+13. NIP-45 (COUNT filter extension — new message type)
+14. NIP-86 (Relay Management API — HTTP pattern)
+
+### Phase 6: Encrypted / Privacy NIPs (most research-intensive)
+
+15. NIP-04 (Direct Messages — relay access control behavior)
+16. NIP-44 (Encrypted Payloads — relay storage assertions)
 
 ## Integration Points
 
@@ -466,48 +421,35 @@ Dependencies between documentation components determine the correct implementati
 
 | Service | Integration Pattern | Notes |
 |---------|---------------------|-------|
-| Bunny CDN Storage | HTTP PUT per file, parallel (concurrency 50) | Existing script at `apps/gui/scripts/deploy-bunny.mjs` can be reused directly with `--dir site` |
-| Bunny CDN Pull Zone | HTTP POST purge after upload | Requires BUNNY_API_KEY + BUNNY_PULL_ZONE_ID env vars |
-| GitHub | README.md renders natively | Relative links in READMEs work both on GitHub and in mkdocs SPA |
+| Nostr relay (WebSocket) | `UniversalWebSocket` from `@nostrwatch/websocket` | One WS per suite; Sampler creates and closes its own connection |
+| Nostr relay (HTTP) | `fetch()` inside SuiteTest.prepare() | Model: Nip11/tests/ValidateSchema.ts; applies to NIP-86 |
+| `@nostrability/schemata` | Static import of JSON Schema objects | Central schema library; check here before defining custom schemata |
+| `nostr-tools` | Event signing for write-then-read and AUTH tests | Already a project dependency |
 
 ### Internal Boundaries
 
 | Boundary | Communication | Notes |
 |----------|---------------|-------|
-| mkdocs-monorepo-plugin ↔ per-package mkdocs.yml | `*include` glob resolved at build time | Each package mkdocs.yml must have `site_name` that matches desired URL path |
-| pymdownx.snippets ↔ docs/glossary.md | `auto_append` in root mkdocs.yml | Glossary appended to every page; abbreviations render as tooltips via `content.tooltips` feature |
-| READMEs ↔ Agent Skills | Markdown links to `.claude/skills/` paths | Not a build dependency; purely informational linking |
-| docs/skills/index.md ↔ .claude/skills/ | Markdown links and prose description | Skills index is human-written; not auto-generated from skill files |
-| CI pipeline ↔ deploy-bunny.mjs | Shell invocation with env vars | `mkdocs build && node scripts/deploy-docs-bunny.mjs --dir site --purge` |
-
----
-
-## Scaling Considerations
-
-This is a documentation project, not a user-facing application. "Scale" here means maintainability as the package count grows.
-
-| Concern | Current (30 pkgs) | Future (50+ pkgs) |
-|---------|-------------------|--------------------|
-| Build time | Acceptable — mkdocs builds fast | Still fast; mkdocs-monorepo-plugin adds minimal overhead per package |
-| Nav discoverability | `*include` glob auto-discovers all | Unchanged; glob scales to any package count |
-| Root config maintenance | Single `mkdocs.yml` with 3 glob lines | Unchanged |
-| Skills inventory | Manual `docs/skills/index.md` | May warrant auto-generation from SKILL.md frontmatter if >20 skills |
-| CDN deploy time | ~250 files per chunk log | More files; concurrency=50 handles this; add retry logic if needed |
-
----
+| Auditor ↔ Suite | Direct method call `$Suite.test()` | Auditor catches errors and converts to skippedSuiteResult |
+| Suite ↔ SuiteTest | Suite creates instances from suite-test-manifest; calls `suiteTest.run()` | 500ms delay between tests |
+| Suite ↔ Sampler | Suite.initSampler() on first registerIngestor call | Lazily initialized |
+| SuiteTest ↔ WebSocket | Via `this.suite.socket` property | Socket owned by Suite; SuiteTest closes via `conclude()` only |
+| Global event bus | `Emitter` singleton (tseep) | Events: `auditor.suite:start/finish`, `auditor.suite.test:start/finish`, `auditor.suite:samples`, `all:abort`, `socket:eose:{subId}` |
 
 ## Sources
 
-- mkdocs-monorepo-plugin official docs: https://backstage.github.io/mkdocs-monorepo-plugin/ (MEDIUM confidence — official plugin docs)
-- mkdocs-monorepo-plugin GitHub README (glob `*include` syntax, v0.5.2+): https://github.com/backstage/mkdocs-monorepo-plugin (HIGH confidence — official source)
-- Material for MkDocs tooltips/snippets: https://squidfunk.github.io/mkdocs-material/reference/tooltips/ (HIGH confidence — official docs)
-- Claude Code skills format: https://mikhail.io/2025/10/claude-code-skills/ (MEDIUM confidence — verified community deep-dive)
-- Claude Code skills official docs: https://code.claude.com/docs/en/skills (HIGH confidence — official Anthropic docs)
-- mkdocs-literate-nav (README-as-nav pattern): https://oprypin.github.io/mkdocs-literate-nav/ (MEDIUM confidence — official plugin docs)
-- Existing Bunny deploy script (path confirmed): `apps/gui/scripts/deploy-bunny.mjs` (HIGH confidence — read directly from codebase)
-- Monorepo structure (confirmed): `.planning/codebase/STRUCTURE.md`, `.planning/codebase/ARCHITECTURE.md` (HIGH confidence — codebase analysis files)
+- `libraries/auditor/src/base/Auditor.ts` — direct code analysis (HIGH confidence)
+- `libraries/auditor/src/base/Suite.ts` — direct code analysis (HIGH confidence)
+- `libraries/auditor/src/base/SuiteTest.ts` — direct code analysis (HIGH confidence)
+- `libraries/auditor/src/base/Ingestor.ts` — direct code analysis (HIGH confidence)
+- `libraries/auditor/src/base/Sampler.ts` — direct code analysis (HIGH confidence)
+- `libraries/auditor/src/base/Expect.ts` — direct code analysis (HIGH confidence)
+- `libraries/auditor/src/nips/Nip01/index.ts` + tests/ — full-depth pattern example (HIGH confidence)
+- `libraries/auditor/src/nips/Nip77/index.ts` + tests/NegOpen.ts — custom protocol extension example (HIGH confidence)
+- `libraries/auditor/src/nips/Nip42/index.ts` + schemata/ interfaces/ — incomplete scaffolding analysis (HIGH confidence)
+- `libraries/auditor/src/nips/Nip11/tests/ValidateSchema.ts` — HTTP-only test pattern (HIGH confidence)
+- `libraries/auditor/src/nips/manifest.js` + suite-test-manifest.js — registration mechanism (HIGH confidence)
 
 ---
-
-*Architecture research for: nostr-watch developer documentation SPA*
-*Researched: 2026-03-04*
+*Architecture research for: @nostrwatch/auditor wider NIP support*
+*Researched: 2026-03-12*

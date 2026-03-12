@@ -1,227 +1,227 @@
 # Project Research Summary
 
-**Project:** nostr-watch developer documentation site
-**Domain:** Developer documentation SPA for a TypeScript/Nostr monorepo (30+ packages)
-**Researched:** 2026-03-04
-**Confidence:** HIGH (core stack and architecture), MEDIUM (Claude Code skills patterns)
+**Project:** @nostrwatch/auditor — Wider NIP Support
+**Domain:** Nostr relay conformance testing — NIP test suite expansion
+**Researched:** 2026-03-12
+**Confidence:** HIGH
 
 ## Executive Summary
 
-This project is a greenfield developer documentation system built on top of a brownfield codebase. The deliverables are four interlinked artifacts: per-package README.md files, Claude Code skill files, a unified documentation SPA deployed to `developers.nostr.watch`, and an enforced README styleguide. The primary audiences are human contributors to nostr-watch and AI agents (Claude Code) working in the codebase — not end users of the relay monitoring product itself. Research strongly recommends VitePress 1.6.4 as the documentation site generator over mkdocs-material (maintenance mode since November 2025) or Zensical (alpha status), with the existing Bunny CDN deploy script reused for deployment.
+The `@nostrwatch/auditor` library is a Node.js ESM conformance testing tool that checks Nostr relay behavior against official NIP specifications. The existing suite architecture (Suite → SuiteTest → Sampler/Ingestor → Expect) is well-designed and extensible; research confirms every new NIP can be added by following one of five established patterns without changing the base framework. The single most impactful gap blocking nearly all new test suites is the absence of event signing capability — the library has no dependency on `nostr-tools`, so it cannot create, sign, or verify Nostr events. Adding `nostr-tools@^2.10.4` (already pinned at the workspace root) resolves this in a single `pnpm` command and unlocks six or more NIP suites simultaneously.
 
-The recommended architecture follows a layered pattern: source content lives co-located with each package (README.md + optional docs/ subdirectory), aggregated via VitePress rewrites config into a unified build, deployed as a static SPA to Bunny CDN. Claude Code skills live in `.claude/skills/` at both monorepo and package levels, auto-discovered by the agent without any extra configuration. The most critical architectural decision is using VitePress's built-in rewrites config for monorepo routing rather than any external plugin, keeping the toolchain purely Node-based with no Python dependency.
+The recommended approach is a staged expansion: fix the existing broken NIP-42 scaffolding first, then build the shared signing utilities that unblock write-heavy NIPs, then add the high-adoption behavioral NIPs (NIP-09, NIP-40, NIP-45, NIP-70, NIP-13, NIP-01 completeness, NIP-11 limits enforcement) as Phase 1, and defer high-complexity niche NIPs (NIP-29, NIP-62, NIP-86) to Phase 2. The majority of target NIPs have HIGH-confidence official specs and clear testable behaviors, making this expansion well-scoped with low ambiguity.
 
-The primary risks are documentation consistency without enforcement (styleguide exists on paper only), docs staleness due to no CI ownership model, and Claude Code skills that never trigger because descriptions use internal vocabulary rather than the natural language of task-oriented queries. All three risks have clear mitigations: a CI-enforced README validator before any package docs are written, a link-freshness check in CI, and evaluation-driven skill description writing with 3+ trigger phrase tests per skill.
+The key risks are operational, not architectural. Writing test events to live relays permanently pollutes relay data; this must be mitigated by using ephemeral keypairs and marker tags from the first write-heavy suite. The dual-manifest registration pattern (both `manifest.js` and `suite-test-manifest.js` must be updated atomically) is a silent failure trap that will cause carelessly added suites to be silently skipped with no error. A manifest consistency validator should be the very first deliverable of the implementation work. There is also a latent `formatNip()` bug with incorrect padding logic that will silently drop suites if left unfixed.
 
 ## Key Findings
 
 ### Recommended Stack
 
-VitePress 1.6.4 is the clear choice for this TypeScript monorepo. It lives in the same Node/pnpm ecosystem as the codebase, requires no Python, and has native `rewrites` config for mapping package docs to clean URLs. mkdocs-material entered maintenance mode in November 2025 (critical fixes only through November 2026); mkdocs itself has been unmaintained since August 2024 and the mkdocs-material team calls it a supply chain risk. Zensical, the mkdocs successor, is PyPI Dev Status 3 (Alpha) at v0.0.24 with no feature parity yet. Docusaurus adds React/MDX overhead for zero benefit — all docs here are plain Markdown.
+The auditor stack requires only one net-new dependency: `nostr-tools@^2.10.4`. The workspace root and `schemata-js-ajv` already pin this version, so no version conflicts arise. The `nostr-tools/pure` subpath (pure JS crypto, no WASM initialization required) provides all necessary primitives: `generateSecretKey`, `getPublicKey`, `finalizeEvent`, `verifyEvent`, and the `nip44` subpath for gift-wrap encryption. No other additions are needed — HTTP is covered by the existing `cross-fetch`, WebSocket by `@nostrwatch/websocket`, and PoW computation reuses `@noble/hashes` already bundled inside `nostr-tools`.
 
 **Core technologies:**
-- **VitePress 1.6.4**: Documentation site generator — native monorepo rewrites, same toolchain as codebase, no Python dependency, sub-second HMR
-- **VitePress rewrites config** (built-in): Monorepo routing — maps `packages/*/docs/*.md` to clean URLs, no external plugin required
-- **markdownlint-cli2 0.21.0**: README linting — configuration-file-driven, faster than predecessor, actively maintained by core library author
-- **lychee** (latest Rust binary): Dead link checking — dramatically faster than Node-based alternatives for CI on large repos
-- **Existing `apps/gui/scripts/deploy-bunny.mjs`**: CDN deployment — already production-tested, native Node fetch, no SDK dependencies
-- **Claude Code Agent Skills standard**: AI agent guidance — `.claude/skills/<name>/SKILL.md` at project and package levels, auto-discovered
+- `nostr-tools@^2.10.4` (new): Event signing, key generation, NIP-44 encryption — only addition needed; matches workspace root pin
+- `@nostrwatch/websocket` (existing): WebSocket connections to relays — unchanged
+- `ajv` + `@nostrability/schemata` (existing): JSON schema validation for message types — unchanged
+- `cross-fetch` (existing): HTTP for NIP-11 and NIP-86 pattern tests — unchanged
+- `vitest` (existing): Unit testing — applies to new ingestors and signing utilities
+
+Use `nostr-tools/pure` not `nostr-tools/wasm` — WASM requires async initialization that adds complexity in a test-runner context. Pure JS is adequate for conformance testing throughput.
+
+**What NOT to use:** NDK (`@nostr-dev-kit/ndk`) obscures the raw WebSocket messages the auditor must inspect and validate. `nostr-tools@1.x` has an incompatible v1 API. Separate SHA-256 libraries duplicate what `nostr-tools` already bundles via `@noble/hashes`.
 
 ### Expected Features
 
-The dual audience (humans + AI agents) shapes the feature set. Documentation for 30+ packages where many are alpha, deprecated, or being rewritten requires strong status signaling and depth tiering — internal utilities should not get the same treatment as public-facing adapter libraries.
+Research from official NIP specs and three major relay implementation READMEs (strfry, nostr-rs-relay, nostream) identifies eight P1 features with broad adoption and clear testable behaviors.
 
-**Must have (table stakes):**
-- README styleguide with CI enforcement before any package README is written
-- README.md for every package (apps, libraries, internal) — consistent format, stubs for deprecated, full docs for active
-- VitePress configuration with monorepo rewrites, Material theme equivalent, search enabled
-- Package discovery index — all packages listed with type, status, one-line description, link
-- Docs build pipeline — VitePress build producing deployable static output
-- Bunny CDN deployment resolving to `developers.nostr.watch`
-- Core monorepo operation skills — adding packages, running tests, publishing, deploying
-- Site-wide search (VitePress built-in)
-- Status and deprecation notices inline in READMEs
+**Must have (table stakes — P1):**
+- **NIP-42 complete AUTH suite** — challenge-response flow with kind 22242; schemata exist but class is not runnable; 3 major relays support it; gates NIP-70, NIP-37, and NIP-59 behavior
+- **NIP-09 deletion enforcement** — publish kind 5 + query verification; all three major relays implement it
+- **NIP-40 expiration enforcement** — reject expired incoming events; do not serve stored expired events; all three major relays; spec uses SHOULD not MUST (test as WARN not FAIL)
+- **NIP-45 COUNT verb support** — `["COUNT", id, filter]` → `["COUNT", id, {"count": N}]`; low complexity; relay may legitimately refuse with CLOSED
+- **NIP-70 protected events** — `["-"]` tag enforcement without/with AUTH; strfry; depends on NIP-42
+- **NIP-01 OK/CLOSED prefix completeness** — all 8 machine-readable prefixes (`duplicate`, `pow`, `blocked`, `rate-limited`, `invalid`, `restricted`, `mute`, `error`)
+- **NIP-11 limitation fields enforcement** — test advertised limits (`max_message_length`, `created_at` bounds, `max_subscriptions`) for actual enforcement
+- **NIP-13 PoW conditional** — send under-powered event if `min_pow_difficulty > 0` in NIP-11; expect `pow:` prefix rejection
 
-**Should have (competitive differentiators):**
-- Adapter creation skills (nocap, route66, publisher) — the primary extension mechanism for this codebase
-- NIP-66 protocol skill — custom-built protocol with no external reference, high agent value
-- Debugging skills for common failure modes — relay connection, state sync, OPFS, pnpm workspace errors
-- Dependency graph section in package READMEs (textual, human-maintained)
-- Progressive disclosure in skills — SKILL.md under 500 lines, with `reference/` and `examples/` supporting files
-- "Known Limitations" sections cross-referenced against CONCERNS.md for brownfield packages
-- Agent Skills auto-discovery via package-level `.claude/skills/` directories
+**Should have (differentiators — P2):**
+- **NIP-29 relay-based groups** — stateful, niche, only group relays; HIGH complexity; limited adoption
+- **NIP-62 Request to Vanish** — strong MUST requirements but testing re-broadcast prevention is inherently hard
+- **NIP-86 Relay Management API** — HTTP-only, NIP-98 auth required, operator-targeted; separate test surface
 
-**Defer (v2+):**
-- "When to use X vs Y" comparison pages — requires real contributor feedback first
-- Automated README freshness checks — CI job that flags docs-code drift; only justified once docs are in active use
-- Per-package build/test status badges — requires CI integration, not blocking
-- Auto-generated API reference from TypeScript (TypeDoc) — creates maintenance burden, second source of truth
-
-**Anti-features (deliberately excluded):**
-- Auto-generated TypeDoc API reference
-- Versioned documentation
-- User-facing end-user guides (wrong audience)
-- Interactive API playgrounds
-- Internationalization
+**Defer indefinitely:**
+- **NIP-43 invite system** — draft status, minimal adoption; re-evaluate when finalized
+- **NIP-66 publish results** — about auditor output format, not testing relays; separate milestone
+- All client-only NIPs (NIP-05, NIP-06, NIP-07, NIP-19, NIP-44, NIP-46, etc.) — no relay behavior to test
 
 ### Architecture Approach
 
-The architecture is a four-layer pipeline: Source (co-located package READMEs + optional docs/) → Aggregation (VitePress rewrites config merging all packages) → Build (VitePress static output) → Delivery (existing deploy-bunny.mjs to Bunny CDN). Package README.md files serve double duty: they render on GitHub and become the index page for each package in the VitePress SPA. Claude Code skills live in `.claude/skills/` outside the docs tree and are not part of the VitePress build — READMEs link to them, and a human-authored `docs/skills/index.md` describes them for SPA visitors.
+The auditor follows a layered architecture where `Auditor` orchestrates `Suite` instances, each owning a WebSocket connection and routing messages to `SuiteTest` implementations. Five established patterns cover all new NIPs: Filter-and-Assert (passive read), Write-Then-Read (event signing required), Challenge-Response (NIP-42 only), Custom Protocol Extension (NIP-77-style new message types), and HTTP-Only (NIP-11/NIP-86 style). Every NIP follows the same directory layout (`src/nips/NipXX/index.ts`, `tests/`, optional `interfaces/`, `schemata/`, `ingestors/`). No framework changes are needed.
 
 **Major components:**
-1. **Package README.md** — Primary human-facing docs and VitePress index page for each package; serves GitHub and SPA simultaneously
-2. **VitePress rewrites config** — Aggregates 30+ packages into unified nav via glob patterns; new packages auto-appear when their doc files are created
-3. **`docs/` (root-level)** — Landing page, styleguide, glossary with auto-tooltips, skills inventory page
-4. **`.claude/skills/`** — Claude Code runtime artifacts for agent task execution; separate from VitePress build
-5. **deploy-bunny.mjs** — Adapted from existing GUI deploy script; walks VitePress build output, uploads to Bunny Storage, purges CDN cache
-6. **CI pipeline (GitHub Actions)** — markdownlint-cli2 + lychee on PR; VitePress build + Bunny deploy on merge to main
+1. `Auditor` — suite orchestration, NIP-11 pre-check, passrate aggregation, dual-manifest loading via `isRunnableSuiteKey()`
+2. `Suite` — WebSocket ownership, message routing to `_onMessageXxx`/`onMessageXxx` handlers, schema validation, Sampler lifecycle
+3. `SuiteTest` — single behavioral scenario: send messages, await responses, assert with Expect; state is isolated per test
+4. `Sampler/Ingestor` — pre-test data collection for suites requiring real relay content before test execution
+5. `src/utils/signing.ts` (new, shared) — `generateTestKeypair()`, `signTestEvent()`, `signAuthEvent()` using nostr-tools; prerequisite for 6+ suites
 
-**Key patterns:**
-- README as single source of truth (README-first, add `docs/` only when content exceeds ~500 lines or covers genuinely distinct topics)
-- Glob-based routing in VitePress rewrites (no hand-maintained package lists)
-- Agent Skills section as the last README section (always findable, never clutters human content)
-- Centralized glossary with auto-tooltips for Nostr domain terms (NIP-66, nocap, route66, OPFS, LMDB)
-- Progressive disclosure in skills (SKILL.md overview + `reference/` files loaded on demand)
+**Critical structural issue to fix now:** The existing `Nip42/index.ts` is a bare class — it does not extend `Suite`, has no `slug` getter, no `requires`, no `test()` method, and is absent from both manifests. It is completely non-runnable. The schemata and interfaces are valid and should be kept; only the class structure needs to be promoted to a proper Suite subclass.
 
 ### Critical Pitfalls
 
-1. **Styleguide without enforcement** — Write a README validator script that checks required section headings in order and add it to CI before any package README is written. Styleguide sections must be expressed as machine-checkable predicates ("README MUST contain `## Agent Skills` heading") not vague prose.
+1. **Dual manifest mismatch causes silent skip** — Adding a NIP to `manifest.js` without also updating `suite-test-manifest.js` causes the suite to be silently dropped by `isRunnableSuiteKey()`. No error, no warning, no test run. Prevention: build a manifest consistency validator as the first deliverable; treat both files as an atomic pair.
 
-2. **Docs go stale immediately** — Never copy-paste type signatures or implementation details into READMEs; link to source instead. Add a CHANGELOG hook in CI that warns (soft block) when a PR modifies `src/` in a package without touching its README. Run lychee link checker on every PR.
+2. **Test event pollution on live relays** — Write-heavy NIPs (NIP-09, NIP-40, NIP-42, NIP-70) publish events to production relays permanently. These contaminate ingestor samples in future runs. Prevention: always use ephemeral keypairs generated fresh per audit run; tag test events with `["test", "nostr-watch-auditor"]`; use ephemeral event kinds (20000–29999) where allowed.
 
-3. **Manual mkdocs/VitePress nav for 30+ packages** — Use VitePress `rewrites` with glob patterns from day one. Never maintain a hand-written list of packages in the config. With 30+ packages, manual nav maintenance fails immediately.
+3. **NIP-42 blocking all other suites on auth-required relays** — Relays requiring AUTH before any subscription respond `CLOSED: auth-required` to every suite, cascading into false failures everywhere. Prevention: detect auth-on-connect in a NIP-42 pre-flight; mark all other suites as `skipped` with reason `"relay requires auth"` rather than failing them.
 
-4. **Claude Code skills with vague descriptions that never trigger** — Write descriptions in third person with both the task description and explicit trigger phrases using common alternative vocabulary ("transport", "plugin", "backend"). Test each skill with 5+ natural language phrasings before shipping. Descriptions under 50 characters are a warning sign.
+4. **Timing-sensitive write/read gaps** — Slow relays may not have indexed a written event by the time the subsequent REQ arrives. Prevention: insert configurable 100–200ms delay between EVENT submission and follow-up REQ; design NIP-09 tests to assert deletion acceptance (OK: true), not immediate absence.
 
-5. **Brownfield documented as aspirational, not actual** — Cross-reference every package README against `CONCERNS.md`. Packages with known tech debt (SDK stubs, `@ts-nocheck`, incomplete validation) need a "Known Limitations" section. Skills for fragile areas must include explicit caveats before code examples.
+5. **`formatNip()` bug** — The condition `if (number > 0 || number <= 9)` is logically wrong and misformats NIP numbers >= 100. Prevention: fix to `number < 10`, add unit tests covering `formatNip(1)`, `formatNip(9)`, `formatNip(42)`, `formatNip(100)`.
 
 ## Implications for Roadmap
 
-The architecture research produces a clear build order with hard dependencies between phases. The styleguide and VitePress config are blockers for everything else. Claude Code skills are best written after READMEs are stable. Deployment infrastructure can be set up early but only validated after the build pipeline works.
+The dependency graph dictates phase order. Signing utilities block all write-heavy NIP suites. NIP-42 blocks NIP-70. NIP-11 data gates NIP-13 PoW tests. Two bugs in the foundation layer must be fixed before any new suite is registered. These dependencies naturally collapse into five phases.
 
-### Phase 1: Foundation — Styleguide and Infrastructure
+### Phase 1: Foundation — Code Quality, Shared Infrastructure, and Tooling
 
-**Rationale:** Everything else depends on this. The README styleguide must exist and be enforced before any package README is written. The VitePress configuration must prove the monorepo routing works with zero packages before adding 30+. The README validator CI step must be passing before authors start writing. Building this foundation first eliminates the largest category of pitfalls.
+**Rationale:** Two latent bugs (`formatNip()` condition, NIP-42 bare class) and missing signing utilities will silently break every subsequent phase if not addressed first. The manifest consistency validator prevents wasted debugging cycles across all later phases. This phase is entirely code-quality and infrastructure work with no external dependencies.
 
-**Delivers:** README styleguide (machine-enforceable), VitePress config with glob rewrites for monorepo, root docs (index, glossary with domain terms), README CI validator, markdownlint-cli2 + lychee configured in GitHub Actions, `docs/skills/index.md` placeholder
+**Delivers:** A trustworthy platform for adding NIP suites — all silent failure modes eliminated, shared signing utilities available for 6+ suites.
 
-**Addresses:** README styleguide (P1), mkdocs configuration (P1), docs build pipeline (P1)
+**Addresses:**
+- Fix `formatNip()` condition to `number < 10`; add unit tests
+- Build manifest consistency validator (test-time or build-time check asserting key symmetry between both manifests)
+- Create `src/utils/signing.ts` with `generateTestKeypair()`, `signTestEvent()`, `signAuthEvent()` using `nostr-tools/pure`
+- Create `src/utils/async.ts` with `waitFor(ms)` for expiration timing
+- Add `nostr-tools@^2.10.4` as explicit auditor dependency (`pnpm --filter @nostrwatch/auditor add nostr-tools@^2.10.4`)
 
-**Avoids:** Styleguide-without-enforcement (Pitfall 1), manual nav maintenance (Pitfall 3), asset path breakage (Pitfall 7)
+**Avoids:** Pitfall 1 (manifest mismatch), Pitfall 5 (formatNip bug); enables Pitfalls 2/4 tooling
 
-### Phase 2: Internal Package READMEs
+### Phase 2: NIP-42 AUTH — Fix Broken Scaffolding and Build Complete Suite
 
-**Rationale:** Internal packages (publisher, kinds, logger, utils, etc.) are the simplest — no adapter complexity, smaller consumer surface. Documenting them first proves the per-package pattern end-to-end with lower stakes. These packages should get shorter READMEs by design (depth tiered by consumer surface). Establishes the vocabulary and cross-references used by later, more complex packages.
+**Rationale:** NIP-42 scaffolding exists but is non-runnable. It must be fixed before any auth-dependent suite can exist. NIP-42 also has the most complex test pattern (challenge-response with state tracking) and should be proven in isolation before NIP-70, NIP-09 (authenticated deletion), and NIP-37 depend on it.
 
-**Delivers:** README.md for all `internal/` packages following styleguide; per-package VitePress routes verified; "Known Limitations" sections for packages with CONCERNS.md entries; deprecation notices for deprecated internal packages
+**Delivers:** A fully functional NIP-42 suite covering 8 testable assertions: challenge detection, kind 22242 validation, timestamp window, challenge matching, relay URL matching, no-broadcast enforcement, `auth-required:` prefix, `restricted:` prefix.
 
-**Addresses:** READMEs for every package (P1), deprecation notices (P1)
+**Uses:** `signAuthEvent()` from Phase 1; existing NIP-42 schemata and interfaces (valid, retained).
 
-**Avoids:** Over-documenting internals (Pitfall 5), brownfield-as-aspirational (Pitfall 11)
+**Implements:** Challenge-Response pattern (Architecture Pattern 3); auth-on-connect detection pre-flight to prevent cascade failures in other suites.
 
-### Phase 3: Library Package READMEs
+**Avoids:** Pitfall 3 (auth blocking all suites), Pitfall 10 (10-minute timestamp window handling)
 
-**Rationale:** Libraries are more complex than internal packages — several (nocap, route66, publisher) have adapter patterns that are the primary extension mechanism for the entire codebase. These packages need `docs/` subdirectories. They also have more cross-package references, which can only be written correctly once the internal package docs from Phase 2 exist. Adapter-bearing libraries are the highest-value documentation target.
+### Phase 3: Core Behavioral NIPs — Write-Then-Read Suite Group
 
-**Delivers:** README.md for all `libraries/` packages; `docs/adapters.md` for nocap; `docs/state-management.md` for route66; cross-package dependency graphs (textual); "When to use X vs Y" positioning for packages with overlapping scope (db vs idb)
+**Rationale:** These NIPs are the highest-value additions (all three major relays implement them), share the Write-Then-Read architectural pattern, and all depend on Phase 1 signing utilities. Grouping them minimizes context-switching.
 
-**Addresses:** READMEs for every package (P1), dependency graph sections (P2), docs/ for complex packages (P2)
+**Delivers:** NIP-09 deletion enforcement, NIP-40 expiration enforcement.
 
-**Avoids:** Under-documenting integration points (Pitfall 5), brownfield-as-aspirational (Pitfall 11)
+**Addresses:**
+- NIP-09: publish event, kind-5 deletion, query verification (e-tag and a-tag paths); assert deletion acceptance not immediate absence (SHOULD behavior; assert OK: true then test absence as advisory)
+- NIP-40: reject expired incoming events (FAIL); do not serve stored expired events (WARN, not FAIL — spec says SHOULD not MUST)
 
-### Phase 4: App Package READMEs
+**Uses:** `signTestEvent()`, `generateTestKeypair()` from Phase 1; Write-Then-Read pattern with `completeOn = ['off']`.
 
-**Rationale:** Apps (gui, rstate, trawler, relaymon) reference both libraries and internal packages and are the most complex to document correctly. They should be written last because they reference the package docs established in Phases 2 and 3. Apps also tend to have the most tech debt and the most CONCERNS.md entries — documenting them last ensures Known Limitations are informed by the full picture.
+**Avoids:** Pitfall 2 (test event pollution — ephemeral keypairs), Pitfall 4 (write/read timing gaps), Pitfall 7 (SHOULD treated as MUST)
 
-**Delivers:** README.md for all `apps/` packages; cross-reference links to library docs now written; Known Limitations sections with CONCERNS.md references for each app
+### Phase 4: Protocol Extensions and Conditional Tests
 
-**Addresses:** READMEs for every package (P1), brownfield concerns surfaced (correctness requirement)
+**Rationale:** NIP-45 introduces a new message type (COUNT) requiring a generator class and messageValidator but is otherwise low-complexity. NIP-70 depends on Phase 2 NIP-42. NIP-13 and NIP-11 limits enforcement are conditional on NIP-11 document fields and extend the existing NIP-11 suite. NIP-01 prefix completeness extends the existing NIP-01 suite. This phase completes all P1 table-stakes features.
 
-**Avoids:** Brownfield-as-aspirational (Pitfall 11)
+**Delivers:** NIP-45 COUNT support, NIP-70 protected events, NIP-13 PoW conditional test, NIP-01 OK/CLOSED prefix completeness, NIP-11 limitation field enforcement.
 
-### Phase 5: Claude Code Skills
+**Addresses:**
+- NIP-45: COUNT generator class, messageValidator for COUNT response; pass if COUNT response OR CLOSED received (refusal is valid per spec); timeout-only is the failure condition
+- NIP-70: declare NIP-42 as prerequisite in `suite.requires`; three test cases (no auth, auth + matching pubkey, auth + mismatched pubkey)
+- NIP-13: conditional on `min_pow_difficulty > 0` from NIP-11; add as single SuiteTest to NIP-13 or extended NIP-11 suite
+- NIP-01 prefixes: extend existing suite; trigger each condition where reproducible; verify prefix format
+- NIP-11 limits: extend existing suite; test `max_message_length`, `created_at` bounds, `max_subscriptions`; flag "advertised but unenforced" as advisory
 
-**Rationale:** Skills should be written after READMEs are stable because skills reference specific patterns, function names, and file paths that are established during the README phases. Writing skills before READMEs risks vocabulary mismatch and rework. Adapter creation skills (nocap, route66, publisher) are the highest-value skills — they encode the primary extension mechanism. NIP-66 and debugging skills follow.
+**Uses:** Architecture Pattern 4 (Custom Protocol Extension) for NIP-45 COUNT message type; Phase 2 NIP-42 for NIP-70; Architecture Pattern 1 extensions for NIP-01/NIP-11.
 
-**Delivers:** Core monorepo operation skills (add-package, run-tests, publish, deploy); adapter creation skills (nocap, route66, publisher) with progressive disclosure structure; NIP-66 protocol skill; debugging skills for common failure modes; package-level `.claude/skills/` for packages with complex patterns; updated docs/skills/index.md
+**Avoids:** Pitfall 8 (NIP-45 CLOSED treated as failure), Pitfall 12 (NIP-70 missing NIP-42 precondition), Pitfall 5 (NIP-11 supported_nips false negatives / reporting semantics)
 
-**Addresses:** Monorepo operation skills (P1), adapter creation skills (P2), NIP-66 skill (P2), debugging skills (P2)
+### Phase 5: Advanced and Niche NIPs (v2.x — validate demand first)
 
-**Avoids:** Vague skill descriptions (Pitfall 4), skill files too long (Pitfall 9), CLAUDE.md/skills divergence (Pitfall 6)
+**Rationale:** NIP-29 (groups), NIP-62 (vanish), and NIP-86 (management API) are all HIGH complexity with low current adoption evidence. They should not be scheduled until relay ecosystem adoption warrants the investment.
 
-### Phase 6: Deployment and CI Pipeline
+**Delivers:** Group relay conformance (NIP-29), pubkey vanish enforcement (NIP-62), HTTP management API testing (NIP-86).
 
-**Rationale:** Deployment infrastructure can be scaffolded early but fully validated only once the build pipeline is stable. The Bunny CDN deploy script (adapted from `apps/gui/scripts/deploy-bunny.mjs`) is straightforward — the risk is in CDN cache behavior, not the script itself. The CI pipeline should enforce the full chain: lint → build → deploy.
-
-**Delivers:** `scripts/deploy-docs-bunny.mjs` adapted for VitePress output; GitHub Actions workflow for PR (lint + build) and main (build + deploy); post-deploy smoke test verifying CDN content; `developers.nostr.watch` live
-
-**Addresses:** Bunny CDN deployment (P1), CI pipeline (foundation)
-
-**Avoids:** CDN cache serving stale docs (Pitfall 8)
+**Go/no-go criteria before scheduling:**
+- NIP-29: evidence of 3+ production relays with groups enabled
+- NIP-62: at least 2 relay implementations supporting vanish
+- NIP-86: operator demand via issue tracker or community request
 
 ### Phase Ordering Rationale
 
-- **Styleguide before all READMEs:** The single hardest-to-recover-from pitfall is writing 30 READMEs without a styleguide and then discovering inconsistency. Recovery cost is HIGH (rewrite phase). Prevention cost is LOW (one validator script).
-- **VitePress config before content:** Proving the monorepo routing works with zero packages catches structural errors before any content is invested. Adding packages to a broken config is harder to debug than adding config to a working structure.
-- **Internal before libraries before apps:** Follows the dependency graph — apps reference libraries which reference internal packages. Writing in dependency order means cross-reference links are never stubs.
-- **Skills after READMEs:** Skills reference specific function names, config keys, and file paths. Writing them against stable READMEs avoids rework. Adapter skills for nocap, route66, and publisher require deep understanding that the README-writing phase builds.
-- **Deployment last:** Low complexity (script adaptation is trivial), high dependency on everything else being stable. CDN configuration should not be in flux during content phases.
+- **Foundation before NIPs:** Latent bugs and missing shared utilities silently corrupt all NIP suite results if not fixed first. Recovery cost after the fact is HIGH.
+- **NIP-42 before NIP-70 and auth-dependent suites:** Hard dependency. NIP-70's three test cases all require completed AUTH flow.
+- **Signing utilities before any write-heavy NIPs:** Six suites cannot be implemented without `signTestEvent()` and `generateTestKeypair()`.
+- **Extension NIPs last in P1:** NIP-13 and NIP-11 enforcement are low-complexity but depend on NIP-11 suite stability; extending a stable suite is simpler than building new ones from scratch.
+- **Phase 5 gated on adoption evidence:** High-complexity niche work only makes sense when a real audience exists.
 
 ### Research Flags
 
 Phases likely needing deeper research during planning:
-- **Phase 5 (Skills):** Claude Code skills description writing and trigger evaluation is a newer standard with less settled community practice. Skill descriptions that fail to trigger are invisible failures. Research into evaluation-driven skill authoring patterns recommended before this phase.
-- **Phase 3 (Library READMEs):** nocap adapter pattern, route66 state management, and publisher lifecycle each need deeper codebase analysis before docs can be written correctly. The CONCERNS.md analysis for these packages should precede the planning step.
+- **Phase 5 (NIP-29 groups):** Relay-based group protocol is stateful and multi-step; group relay implementations are sparse and may have diverged from the spec. Needs dedicated research before planning begins.
+- **Phase 5 (NIP-62 vanish):** Re-broadcast prevention testing requires an external vantage point to verify. Implementation strategy is conceptually unclear. Needs research into how existing tools (relay-tester) approach this.
+- **Phase 5 (NIP-86 management):** NIP-98 HTTP auth token format and relay-specific method support varies across implementations. Needs API surface research against real relays.
 
-Phases with standard patterns (skip additional research):
-- **Phase 1 (Foundation):** VitePress configuration is well-documented with official guides. Monorepo rewrites config is a first-class VitePress feature. markdownlint-cli2 and lychee have clear documentation.
-- **Phase 6 (Deployment):** The existing deploy-bunny.mjs script is the implementation reference. Pattern is fully established.
+Phases with standard patterns (skip research-phase):
+- **Phase 1 (Foundation):** Code quality and utility extraction — no new protocols or APIs. Entirely internal.
+- **Phase 2 (NIP-42):** Schemata exist; AUTH flow is fully specified in the official NIP; challenge-response pattern maps directly to the existing NegOpen.ts template in NIP-77.
+- **Phase 3 (NIP-09, NIP-40):** Both NIPs have HIGH-confidence official specs with clear MUST/SHOULD semantics and the Write-Then-Read pattern is documented in architecture.
+- **Phase 4 (extensions):** All target NIPs have HIGH-confidence specs and established patterns in the codebase. NIP-11 and NIP-01 extend existing suites rather than building new ones.
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | VitePress, markdownlint-cli2, lychee all verified against official docs. mkdocs deprecation confirmed from official announcement. Zensical alpha status confirmed from PyPI. |
-| Features | HIGH (table stakes), MEDIUM (agent skills) | README and docs site features are well-established patterns. Claude Code skills format is a newer standard (2025) with less community history. |
-| Architecture | HIGH | Four-layer pipeline pattern verified against official VitePress and monorepo docs. Existing deploy-bunny.mjs confirmed from codebase. |
-| Pitfalls | HIGH (critical), MEDIUM (moderate) | Critical pitfalls verified from official Anthropic skills docs and mkdocs-monorepo-plugin docs. Moderate pitfalls from community sources and codebase analysis. |
+| Stack | HIGH | Workspace root pin verified directly in codebase; nostr-tools/pure API confirmed against README and official NIP specs; no guesswork on versions |
+| Features | HIGH | Target NIP specs read directly from official source (raw GitHub); relay adoption cross-referenced against three major relay READMEs (direct reads) |
+| Architecture | HIGH | Sourced entirely from direct codebase analysis of working implementations (Nip01, Nip77, Nip11) and broken scaffolding (Nip42) |
+| Pitfalls | HIGH (architectural) / MEDIUM (behavioral) | Architectural pitfalls verified in codebase source; NIP behavioral edge cases verified against official specs; relay ecosystem quirks from WebSearch only |
 
 **Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **Skill description evaluation methodology:** Official Anthropic docs are clear that description quality is critical and recommend testing with multiple phrasings, but specific evaluation tooling for this is not documented. Handle by writing evaluation tests manually and verifying trigger behavior with Claude Code directly during the skills phase.
-- **VitePress rewrites and image asset handling:** It is not confirmed from research whether VitePress rewrites config correctly resolves relative image paths in package READMEs (the `libraries/auditor/README.md` uses `.assets/` relative paths). Validate early in Phase 1 with a real example before migrating all content.
-- **mkdocs-monorepo-plugin `*include` glob version requirement:** Research cites v0.5.2+ for glob syntax. Since STACK.md recommends VitePress instead of mkdocs, this is moot — but any residual mkdocs tooling used for comparison must use v0.5.2+.
-- **Bunny replication delay:** The 15-second wait before purge is MEDIUM confidence (community guides, not official Bunny docs). Validate empirically during Phase 6 by monitoring CDN propagation timing.
+- **NIP-40 expiration test (second case):** Testing that stored expired events are not served requires knowing a relay has a previously-stored expired event, or using precise timing (publish with short TTL, wait, query). The timed approach may produce flaky results on slow relays. Validate test strategy against a real relay before committing to assertion level.
+- **NIP-42 clock drift:** The kind 22242 10-minute window can be broken by clock skew between auditor host and relay server. The strategy for surfacing this as a diagnostic notice (not test failure) needs validation during implementation; the expected relay error message text varies.
+- **Live relay test pollution recovery:** Kind-5 deletion requests for test-keypair events will not be honored by all relays. Accept residual pollution as a known limitation and document it in the contributing guide.
+- **NIP-96 adoption estimate (~20%):** Single WebSearch source, LOW confidence. Not blocking for this milestone (NIP-96 is deferred), but if community demand emerges, re-research with relay implementation census data.
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- VitePress routing/rewrites — https://vitepress.dev/guide/routing (verified 2026-03-04)
-- VitePress getting started — https://vitepress.dev/guide/getting-started
-- Claude Code Skills official docs — https://code.claude.com/docs/en/skills
-- Anthropic Skills authoring best practices — https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices
-- mkdocs-material maintenance mode announcement — https://squidfunk.github.io/mkdocs-material/blog/2025/11/05/zensical/
-- Zensical PyPI status — https://pypi.org/project/zensical/
-- markdownlint-cli2 — https://github.com/DavidAnson/markdownlint-cli2
-- lychee link checker — https://github.com/lycheeverse/lychee
-- mkdocs-monorepo-plugin GitHub (glob `*include` syntax) — https://github.com/backstage/mkdocs-monorepo-plugin
-- mkdocs-monorepo-plugin limitations — https://backstage.github.io/mkdocs-monorepo-plugin/limitations/
-- Material for MkDocs tooltips/snippets — https://squidfunk.github.io/mkdocs-material/reference/tooltips/
-- Existing deploy script — `apps/gui/scripts/deploy-bunny.mjs` (codebase, direct read)
-- Codebase analysis files — `.planning/codebase/ARCHITECTURE.md`, `.planning/codebase/STRUCTURE.md`, `.planning/codebase/CONCERNS.md`
+- Workspace root `package.json` — nostr-tools ^2.10.4 pin verification (direct codebase read)
+- `libraries/auditor/src/base/Auditor.ts`, `Suite.ts`, `SuiteTest.ts`, `Sampler.ts`, `Ingestor.ts`, `Expect.ts` — direct codebase analysis
+- `libraries/auditor/src/nips/manifest.js` + `suite-test-manifest.js` — registration mechanism analysis
+- `libraries/auditor/src/nips/Nip01/`, `Nip77/`, `Nip42/`, `Nip11/` — pattern examples and broken scaffolding analysis
+- NIP-01: https://raw.githubusercontent.com/nostr-protocol/nips/master/01.md (official spec)
+- NIP-09: https://raw.githubusercontent.com/nostr-protocol/nips/master/09.md (official spec)
+- NIP-11: https://raw.githubusercontent.com/nostr-protocol/nips/master/11.md (official spec)
+- NIP-13: https://raw.githubusercontent.com/nostr-protocol/nips/master/13.md (official spec)
+- NIP-40: https://raw.githubusercontent.com/nostr-protocol/nips/master/40.md (official spec)
+- NIP-42: https://raw.githubusercontent.com/nostr-protocol/nips/master/42.md (official spec)
+- NIP-45: https://raw.githubusercontent.com/nostr-protocol/nips/master/45.md (official spec)
+- NIP-62: https://raw.githubusercontent.com/nostr-protocol/nips/master/62.md (official spec)
+- NIP-70: https://raw.githubusercontent.com/nostr-protocol/nips/master/70.md (official spec)
+- NIP-86: https://raw.githubusercontent.com/nostr-protocol/nips/master/86.md (official spec)
+- strfry relay NIP support — https://github.com/hoytech/strfry (direct README read)
+- nostr-rs-relay NIP support — https://github.com/scsibug/nostr-rs-relay (direct README read)
+- nostream NIP support — https://github.com/cameri/nostream (direct README read)
 
 ### Secondary (MEDIUM confidence)
-- Claude Code skills community deep-dive — https://mikhail.io/2025/10/claude-code-skills/
-- Bunny CDN static site deployment (replication delay) — https://european-alternatives.eu/blog/how-to-host-a-static-site-on-bunny-net-cdn-with-automatic-deployment
-- AI coding agent context file maintenance — https://packmind.com/evaluate-context-ai-coding-agent/
-- Docs linting CI integration — https://buildwithfern.com/post/docs-linting-guide
-- Codified context scaling limits — https://arxiv.org/html/2602.20478v1
+- nostr-tools README / nbd-wtf/nostr-tools GitHub — generateSecretKey/finalizeEvent/nip44 API details (WebSearch)
+- NIP-09 and NIP-40 relay enforcement behavior — WebSearch corroborated against spec language
+- relay-tester tool warnings about live relay testing — https://github.com/mikedilger/relay-tester (community tool)
+- CLOSED messages design rationale — https://github.com/nostr-protocol/nips/pull/902 (merged PR)
 
-### Tertiary (LOW confidence / not relied upon)
-- Zensical feature parity with mkdocs-material — not fully documented; treat as unknown until beta
+### Tertiary (LOW confidence)
+- NIP-96 adoption estimate (~20% of relays) — single WebSearch community estimate; not blocking for this milestone
+- nostr-tools/pure vs /wasm performance comparison (34ms vs 239ms) — WebSearch, not benchmarked in this repo
 
 ---
-*Research completed: 2026-03-04*
+*Research completed: 2026-03-12*
 *Ready for roadmap: yes*

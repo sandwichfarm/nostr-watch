@@ -26,7 +26,8 @@ packages/kinds
 test-results
 scripts/deploy/gui-scp.sh
 .vscode
-.roo 
+.roo
+.planning
 apps/gui/static/seed
 
 .data

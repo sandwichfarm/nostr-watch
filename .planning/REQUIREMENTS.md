@@ -1,111 +1,89 @@
-# Requirements: nostr-watch Documentation
+# Requirements: @nostrwatch/auditor Wider NIP Support
 
-**Defined:** 2026-03-04
-**Core Value:** Every package in the monorepo has clear, consistent, useful documentation that serves both human developers and AI agents.
+**Defined:** 2026-03-12
+**Core Value:** The auditor can test any Nostr relay against every NIP that defines relay behavior
 
-## v1 Requirements
+## v2.0 Requirements
 
-Requirements for initial release. Each maps to roadmap phases.
+Requirements for milestone v2.0. Each maps to roadmap phases.
 
 ### Foundation
 
-- [x] **FOUND-01**: README styleguide defines consistent section order (header, badges, overview, prerequisites, install, usage, API, config, agent skills, related packages, contributing, license)
-- [x] **FOUND-02**: README styleguide defines badge standards (build status, version, license, runtime support)
-- [x] **FOUND-03**: README styleguide defines code example format (language tags, import style, realistic minimal examples)
-- [x] **FOUND-04**: README styleguide defines tone/voice guide (audience assumptions, level of explanation, writing style)
-- [x] **FOUND-05**: CI enforcement validates README format via markdownlint-cli2 in GitHub Actions
-- [x] **FOUND-06**: CI enforcement validates links via lychee link checker in GitHub Actions
-- [x] **FOUND-07**: VitePress configuration aggregates all package docs into unified site with search and navigation
-- [ ] **FOUND-08**: Package discovery index page lists all 30+ packages with type, status, one-line description, and link
+- [ ] **FOUND-01**: Fix `formatNip()` condition to correctly pad single-digit NIP numbers only
+- [ ] **FOUND-02**: Build manifest consistency validator that asserts key symmetry between `manifest.js` and `suite-test-manifest.js`
+- [ ] **FOUND-03**: Add `nostr-tools@^2.10.4` as explicit auditor dependency
+- [ ] **FOUND-04**: Create `src/utils/signing.ts` with `generateTestKeypair()`, `signTestEvent()`, and `signAuthEvent()` using `nostr-tools/pure`
 
-### App READMEs
+### NIP-42 AUTH
 
-- [x] **APP-01**: README.md for apps/gui following styleguide (Svelte/SvelteKit relay dashboard)
-- [x] **APP-02**: README.md for apps/rstate following styleguide (ContextVM relay state machine + REST API)
-- [x] **APP-03**: README.md for apps/trawler following styleguide (Deno relay data crawler)
-- [x] **APP-04**: README.md for apps/relaymon following styleguide (relay health monitoring)
-- [x] **APP-05**: README.md for apps/purist following styleguide (data transformation utilities)
-- [x] **APP-06**: Deprecation stub README for apps/nocapd (legacy daemon, link to replacement)
-- [x] **APP-07**: README.md for apps/docker-stacks following styleguide (Docker Compose definitions)
-- [x] **APP-08**: README.md or deprecation stub for apps/umon following styleguide (experimental monitoring)
+- [ ] **AUTH-01**: Auditor can detect AUTH challenge sent by relay on connection or restricted access
+- [ ] **AUTH-02**: Auditor can complete AUTH handshake by signing and sending kind 22242 event
+- [ ] **AUTH-03**: Relay rejects AUTH events with `created_at` outside 10-minute window
+- [ ] **AUTH-04**: Relay validates challenge tag matches issued challenge
+- [ ] **AUTH-05**: Relay validates relay tag matches relay's own URL
+- [ ] **AUTH-06**: Unauthenticated request to restricted resource returns `CLOSED` with `auth-required:` prefix
+- [ ] **AUTH-07**: Auth-on-connect detection pre-flight prevents cascade failures in other suites
 
-### Library READMEs
+### NIP-09 Deletion
 
-- [x] **LIB-01**: README.md for libraries/nocap following styleguide (adapter-based relay capability discovery)
-- [x] **LIB-02**: README.md for libraries/route66 following styleguide (relay aggregation + state management)
-- [x] **LIB-03**: README.md for libraries/auditor following styleguide (Nostr event validation)
-- [x] **LIB-04**: README.md for libraries/schemata following styleguide (JSON Schema definitions)
-- [x] **LIB-05**: README.md for libraries/schemata-js-ajv following styleguide (AJV validation)
-- [x] **LIB-06**: README.md for libraries/relay-charts following styleguide (relay metric visualization)
-- [x] **LIB-07**: README.md for libraries/relay-chronicle following styleguide (relay event history)
-- [x] **LIB-08**: README.md for libraries/nostrawl following styleguide (queue-based web crawler)
-- [x] **LIB-09**: README.md for libraries/db following styleguide (database client abstractions)
-- [x] **LIB-10**: README.md for libraries/idb following styleguide (IndexedDB wrapper)
-- [x] **LIB-11**: README.md for libraries/websocket following styleguide (WebSocket connection management)
-- [x] **LIB-12**: README.md for libraries/nip66 following styleguide (NIP-66 relay check protocol)
-- [x] **LIB-13**: README.md for libraries/nostrings following styleguide (relay URL validation)
-- [x] **LIB-14**: README.md for libraries/memory-relay following styleguide (in-memory relay)
-- [x] **LIB-15**: README.md for libraries/negentropy following styleguide (NIP-49 support)
-- [x] **LIB-16**: README.md for libraries/worker-relay following styleguide (web worker relay)
-- [x] **LIB-17**: README.md for libraries/uptime-kuma-monitor following styleguide (uptime monitoring)
+- [ ] **DEL-01**: Relay stops serving an event after receiving kind 5 deletion from the event's author (e-tag)
+- [ ] **DEL-02**: Relay stops serving a replaceable event after receiving kind 5 deletion with a-tag
+- [ ] **DEL-03**: Relay ignores kind 5 deletion from a different pubkey than the event's author
+- [ ] **DEL-04**: Relay continues serving the kind 5 deletion event itself
 
-### Internal Package READMEs
+### NIP-40 Expiration
 
-- [x] **INT-01**: README.md for internal/utils following styleguide (shared utility functions)
-- [x] **INT-02**: README.md for internal/publisher following styleguide (event publishing with adapters)
-- [x] **INT-03**: README.md for internal/logger following styleguide (structured logging)
-- [x] **INT-04**: README.md for internal/announce following styleguide (announcement system)
-- [x] **INT-05**: README.md for internal/nwcache following styleguide (caching layer)
-- [x] **INT-06**: README.md for internal/redis following styleguide (Redis integration)
-- [x] **INT-07**: README.md for internal/controlflow following styleguide (control flow utilities)
-- [x] **INT-08**: README.md for internal/kinds following styleguide (Nostr event kind registry)
-- [ ] **INT-09**: README.md for internal/seed following styleguide (seed data management)
+- [ ] **EXP-01**: Relay rejects incoming event with `expiration` tag already in the past
+- [ ] **EXP-02**: Relay does not serve stored events whose `expiration` has passed (WARN level — spec uses SHOULD)
 
-### Known Limitations
+### NIP-45 COUNT
 
-- [ ] **LIMIT-01**: Each README surfaces relevant issues from CONCERNS.md in a "Known Limitations" section
-- [ ] **LIMIT-02**: Deprecated packages have prominent deprecation notice with link to replacement
+- [ ] **COUNT-01**: Relay responds to `["COUNT", id, ...filters]` with `["COUNT", id, {"count": N}]` or refuses with `CLOSED`
+- [ ] **COUNT-02**: COUNT response contains valid numeric `count` field
 
-### Claude Code Skills
+### NIP-70 Protected Events
 
-- [ ] **SKILL-01**: Monorepo operations skill covering adding packages, running tests, publishing, deploying
-- [ ] **SKILL-02**: Adapter creation skill for nocap adapters (DNS, Info, SSL, WebSocket, Geo)
-- [ ] **SKILL-03**: Adapter creation skill for publisher adapters (NostrTools pattern)
-- [ ] **SKILL-04**: Adapter creation skill for route66 adapters
-- [ ] **SKILL-05**: NIP-66 protocol skill covering event kinds, aggregation rules, publisher flow, validation
-- [ ] **SKILL-06**: Debugging skill for relay connection failures
-- [ ] **SKILL-07**: Debugging skill for state sync issues (route66/GUI stores)
-- [ ] **SKILL-08**: Debugging skill for pnpm workspace build failures
-- [ ] **SKILL-09**: Each README has "Agent Skills" section linking relevant .claude/skills/ paths
+- [ ] **PROT-01**: Relay rejects event with `["-"]` tag when client is not authenticated
+- [ ] **PROT-02**: Relay accepts event with `["-"]` tag when authenticated and pubkey matches
+- [ ] **PROT-03**: Relay rejects event with `["-"]` tag when authenticated but pubkey does not match
 
-### Deployment
+### NIP-13 PoW
 
-- [ ] **DEPLOY-01**: VitePress build command produces deployable static output from all package docs
-- [ ] **DEPLOY-02**: Bunny CDN deploy script uploads built docs to developers.nostr.watch
-- [ ] **DEPLOY-03**: GitHub Actions workflow builds and deploys docs on merge to main
+- [ ] **POW-01**: Relay rejects event with insufficient PoW when `min_pow_difficulty > 0` (conditional on NIP-11)
+- [ ] **POW-02**: Relay accepts event meeting PoW difficulty threshold
 
-## v2 Requirements
+### NIP-01 Extensions
 
-Deferred to future release. Tracked but not in current roadmap.
+- [ ] **MSG-01**: Relay uses machine-readable prefixes on OK failure messages (`duplicate:`, `pow:`, `blocked:`, `rate-limited:`, `invalid:`, `error:`)
+- [ ] **MSG-02**: Relay uses machine-readable prefixes on CLOSED messages (`auth-required:`, `restricted:`)
 
-### Enhanced Content
+### NIP-11 Limit Enforcement
 
-- **ENH-01**: docs/ subdirectory with deeper docs for complex packages (rstate, nocap, route66)
-- **ENH-02**: "When to use X vs Y" comparison pages for overlapping packages
-- **ENH-03**: Dependency graph section in package READMEs showing upstream/downstream
-- **ENH-04**: Automated README freshness checks flagging stale docs in CI
+- [ ] **LIM-01**: Relay enforces advertised `created_at_lower_limit` and `created_at_upper_limit`
+- [ ] **LIM-02**: Relay enforces advertised `max_message_length`
+- [ ] **LIM-03**: Relay enforces advertised `max_subscriptions`
+
+## Future Requirements
+
+Deferred to v2.x. Tracked but not in current roadmap.
+
+### Advanced NIPs
+
+- **ADV-01**: NIP-29 relay-based groups conformance testing
+- **ADV-02**: NIP-62 Request to Vanish enforcement testing
+- **ADV-03**: NIP-86 Relay Management API testing (HTTP-based)
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| Auto-generated API reference (TypeDoc/TSDoc) | Creates maintenance burden; manual prose summaries are more useful |
-| Versioned documentation | Single current version; adds infrastructure complexity |
-| User-facing end-user guides | Wrong audience; this is developer docs |
-| Internationalization | Not needed for technical contributor audience |
-| Interactive API playgrounds | High complexity, low value for relay monitoring stack |
-| Comprehensive tutorial sequences | Goes stale quickly; prefer minimal usage examples |
-| Changelog aggregation in site | Changelogs belong with code; duplicating creates drift |
+| Client-only NIPs (NIP-05, 06, 07, 19, 44, 46, etc.) | No relay behavior to test — 50+ NIPs explicitly excluded |
+| Deprecated NIPs (NIP-04, NIP-08, NIP-26) | Unrecommended; testing adds confusion |
+| NIP-96 HTTP File Storage | Separate file server protocol, not relay WebSocket |
+| NIP-43 Relay Access (invite codes) | Draft status, minimal adoption |
+| NIP-66 Publish audit results | About auditor output format, not relay testing — separate milestone |
+| Auditor base architecture refactoring | Existing Suite/SuiteTest pattern is sufficient |
+| Auto-detect mechanism changes | Keep existing NIP-11 approach |
 
 ## Traceability
 
@@ -113,68 +91,41 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FOUND-01 | Phase 1 | Complete |
-| FOUND-02 | Phase 1 | Complete |
-| FOUND-03 | Phase 1 | Complete |
-| FOUND-04 | Phase 1 | Complete |
-| FOUND-05 | Phase 1 | Complete |
-| FOUND-06 | Phase 1 | Complete |
-| FOUND-07 | Phase 1 | Complete |
-| FOUND-08 | Phase 4.1 | Pending |
-| LIMIT-01 | Phase 4.1 | Pending |
-| LIMIT-02 | Phase 4.1 | Pending |
-| INT-01 | Phase 2 | Complete |
-| INT-02 | Phase 2 | Complete |
-| INT-03 | Phase 2 | Complete |
-| INT-04 | Phase 2 | Complete |
-| INT-05 | Phase 2 | Complete |
-| INT-06 | Phase 2 | Complete |
-| INT-07 | Phase 2 | Complete |
-| INT-08 | Phase 2 | Complete |
-| INT-09 | Phase 4.1 | Pending |
-| LIB-01 | Phase 3 | Complete |
-| LIB-02 | Phase 3 | Complete |
-| LIB-03 | Phase 3 | Complete |
-| LIB-04 | Phase 3 | Complete |
-| LIB-05 | Phase 3 | Complete |
-| LIB-06 | Phase 3 | Complete |
-| LIB-07 | Phase 3 | Complete |
-| LIB-08 | Phase 3 | Complete |
-| LIB-09 | Phase 3 | Complete |
-| LIB-10 | Phase 3 | Complete |
-| LIB-11 | Phase 3 | Complete |
-| LIB-12 | Phase 3 | Complete |
-| LIB-13 | Phase 3 | Complete |
-| LIB-14 | Phase 3 | Complete |
-| LIB-15 | Phase 3 | Complete |
-| LIB-16 | Phase 3 | Complete |
-| LIB-17 | Phase 3 | Complete |
-| APP-01 | Phase 4 | Complete |
-| APP-02 | Phase 4 | Complete |
-| APP-03 | Phase 4 | Complete |
-| APP-04 | Phase 4 | Complete |
-| APP-05 | Phase 4 | Complete |
-| APP-06 | Phase 4 | Complete |
-| APP-07 | Phase 4 | Complete |
-| APP-08 | Phase 4 | Complete |
-| SKILL-01 | Phase 5 | Pending |
-| SKILL-02 | Phase 5 | Pending |
-| SKILL-03 | Phase 5 | Pending |
-| SKILL-04 | Phase 5 | Pending |
-| SKILL-05 | Phase 5 | Pending |
-| SKILL-06 | Phase 5 | Pending |
-| SKILL-07 | Phase 5 | Pending |
-| SKILL-08 | Phase 5 | Pending |
-| SKILL-09 | Phase 5 | Pending |
-| DEPLOY-01 | Phase 6 | Pending |
-| DEPLOY-02 | Phase 6 | Pending |
-| DEPLOY-03 | Phase 6 | Pending |
+| FOUND-01 | TBD | Pending |
+| FOUND-02 | TBD | Pending |
+| FOUND-03 | TBD | Pending |
+| FOUND-04 | TBD | Pending |
+| AUTH-01 | TBD | Pending |
+| AUTH-02 | TBD | Pending |
+| AUTH-03 | TBD | Pending |
+| AUTH-04 | TBD | Pending |
+| AUTH-05 | TBD | Pending |
+| AUTH-06 | TBD | Pending |
+| AUTH-07 | TBD | Pending |
+| DEL-01 | TBD | Pending |
+| DEL-02 | TBD | Pending |
+| DEL-03 | TBD | Pending |
+| DEL-04 | TBD | Pending |
+| EXP-01 | TBD | Pending |
+| EXP-02 | TBD | Pending |
+| COUNT-01 | TBD | Pending |
+| COUNT-02 | TBD | Pending |
+| PROT-01 | TBD | Pending |
+| PROT-02 | TBD | Pending |
+| PROT-03 | TBD | Pending |
+| POW-01 | TBD | Pending |
+| POW-02 | TBD | Pending |
+| MSG-01 | TBD | Pending |
+| MSG-02 | TBD | Pending |
+| LIM-01 | TBD | Pending |
+| LIM-02 | TBD | Pending |
+| LIM-03 | TBD | Pending |
 
 **Coverage:**
-- v1 requirements: 51 total
-- Mapped to phases: 51
-- Unmapped: 0
+- v2.0 requirements: 29 total
+- Mapped to phases: 0
+- Unmapped: 29 ⚠️
 
 ---
-*Requirements defined: 2026-03-04*
-*Last updated: 2026-03-04 after roadmap creation*
+*Requirements defined: 2026-03-12*
+*Last updated: 2026-03-12 after initial definition*

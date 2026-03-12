@@ -25,6 +25,7 @@ try {
       : config?.trawler?.db?.enableWAL,
     nostrawlOptions: {
       relaysPerBatch: config?.trawler?.relaysPerBatch || 10,
+      restDuration: config?.trawler?.restDuration,
       adapterOptions: {
         concurrency: config?.trawler?.concurrency || 2
       }

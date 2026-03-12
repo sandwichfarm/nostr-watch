@@ -167,7 +167,7 @@ export const trawl = async (options: TrawlOptions = {}) => {
     logger.error(`Error during seeding: ${e instanceof Error ? e.message : String(e)}`);
   }
   
-  setupStatusReporting(30);
+  setupStatusReporting(config?.trawler?.statusInterval || 30);
   
   const nostrawlOptions = {
     ...defaultNostrawlOptions,

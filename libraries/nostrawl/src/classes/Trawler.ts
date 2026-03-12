@@ -128,11 +128,32 @@ export default class NTTrawler extends EventEmitter {
     this.logger.info('Trawl completed for all relays in chunk');
   }
 
+  /**
+   * Race a promise against a timeout. Cleans up the timer and suppresses
+   * late rejections from the original promise (e.g. after relay.close()).
+   */
+  private withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+    let timer: ReturnType<typeof setTimeout>;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error(`Timeout after ${ms}ms: ${label}`)), ms);
+    });
+    return Promise.race([promise, timeoutPromise]).finally(() => {
+      clearTimeout(timer!);
+      // Suppress unhandled rejection from the original promise if it settles
+      // after the timeout (e.g. when relay.close() causes the observable to error).
+      promise.catch(() => {});
+    });
+  }
+
   private async trawlRelay(relayUrl: string, $job: any): Promise<void> {
     const relay = new Relay(relayUrl, {
       keepAlive: 0,
       ...this.options.relayOptions,
     });
+
+    // Per-relay timeout: prevents indefinitely hung WebSocket connections
+    // from blocking the entire queue.
+    const relayTimeout = 60_000;
 
     try {
       this.logger.debug(`Setting up fetch for relay: ${relayUrl}`);
@@ -152,7 +173,11 @@ export default class NTTrawler extends EventEmitter {
         const cached = this.getNip77Cache(relayUrl);
         if (!cached || cached.supported !== false) {
           try {
-            await this.trawlWithNegentropy(relay, relayUrl, progress, $job);
+            await this.withTimeout(
+              this.trawlWithNegentropy(relay, relayUrl, progress, $job),
+              relayTimeout,
+              `negentropy sync for ${relayUrl}`
+            );
             usedNegentropy = true;
             this.setNip77Cache(relayUrl, true);
           } catch (err) {
@@ -165,7 +190,11 @@ export default class NTTrawler extends EventEmitter {
       }
 
       if (!usedNegentropy) {
-        await this.trawlWithRequest(relay, relayUrl, progress, $job);
+        await this.withTimeout(
+          this.trawlWithRequest(relay, relayUrl, progress, $job),
+          relayTimeout,
+          `REQ fetch for ${relayUrl}`
+        );
       }
 
       // Final progress update when done with a relay

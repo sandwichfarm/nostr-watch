@@ -1,5 +1,6 @@
 export const nipManifest = {
   "Nip77": () => import('src/nips/Nip77/index.ts'),
+  "Nip70": () => import('src/nips/Nip70/index.ts'),
   "Nip65": () => import('src/nips/Nip65/index.ts'),
   "Nip50": () => import('src/nips/Nip50/index.ts'),
   "Nip45": () => import('src/nips/Nip45/index.ts'),

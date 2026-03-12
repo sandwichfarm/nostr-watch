@@ -1,5 +1,11 @@
 # @nostrwatch/nostrings
 
+## 0.4.0
+
+### Minor Changes
+
+- [`1cc5123`](https://github.com/sandwichfarm/nostr-watch/commit/1cc512389dc9e9657048ea41e108580cd4816399) Thanks [@dskvr](https://github.com/dskvr)! - add missing garbage URL case to @nostrwatch/nostrings
+
 ## 0.3.0
 
 ### Minor Changes

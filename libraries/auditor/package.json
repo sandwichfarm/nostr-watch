@@ -75,6 +75,6 @@
     "test": "vitest run",
     "build": "tsc && tsc-alias && node build.js",
     "dev": "tsc --watch & tsc-alias -w & node build.js --watch",
-    "prepare": "node ./scripts/generateIndices.js && node ./scripts/generateSuiteManifest.js && node ./scripts/generateSuiteTestManifests.js"
+    "prepare": "node ./scripts/generateIndices.js && node ./scripts/generateSuiteManifest.js && node ./scripts/generateSuiteTestManifests.js && node ./scripts/validateManifestConsistency.js"
   }
 }

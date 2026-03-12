@@ -95,7 +95,7 @@ const defaultNostrawlOptions: TrawlerOptions = {
   restDuration: 1000,
   sinceStrict: false,
   logLevel: 2,
-  relaysPerBatch: 10,
+  relaysPerBatch: 1,
   cache: {
     enabled: true,
     path: './cache'
@@ -106,8 +106,7 @@ const defaultNostrawlOptions: TrawlerOptions = {
   },
   negentropyEnabled: true,
   adapterOptions: {
-    concurrency: 5,
-    // p-queue specific options go here (concurrency, timeout, etc.)
+    concurrency: 3,
   }
 };
 
@@ -149,7 +148,7 @@ export const trawl = async (options: TrawlOptions = {}) => {
       const seeded = await seeder.seed();
       if (Array.isArray(seeded) && seeded.length > 0) {
         RELAYS = Array.from(new Set([...RELAYS, ...seeded]));
-        logger.info(`Seeding complete. Trawling ${RELAYS.length} relays`);
+        logger.info(`Seeding complete. ${RELAYS.length} relays in pool`);
       } else {
         logger.warn(`No relays returned by seeder; proceeding with ${RELAYS.length} defaults`);
       }
@@ -190,13 +189,16 @@ export const trawl = async (options: TrawlOptions = {}) => {
         trawlerStats.relaysScannedTotal.add(progress.relay);
       }
     })
+    .on('relay:complete', (relayUrl: string) => {
+      trawlerStats.scanningRelays.delete(relayUrl);
+    })
     .on('drained', () => {
       trawlerStats.scanningRelays.clear();
       logger.info(`Queue drained | ${formatCompactStats()}`);
     });
 
   trawler.run();
-  logger.info(`Trawler started with ${RELAYS.length} relays`);
+  logger.info(`Trawler started: ${RELAYS.length} relays in pool, ${nostrawlOptions.adapterOptions.concurrency} concurrent`);
 
   setInterval(updateQueueStats, 5000);
 };

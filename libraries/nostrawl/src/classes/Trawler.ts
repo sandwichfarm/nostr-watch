@@ -226,6 +226,7 @@ export default class NTTrawler extends EventEmitter {
       this.emit('error', error);
     } finally {
       relay.close();
+      this.emit('relay:complete', relayUrl);
     }
   }
 

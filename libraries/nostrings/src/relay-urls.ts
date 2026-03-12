@@ -154,6 +154,10 @@ export const qualifyRelayUrl = (maybeRelay: string): boolean => {
 
   if( hostname.includes("https/") || hostname.includes("http/") || hostname.includes("wss/") || hostname.includes("ws/") ) return false;
 
+  // Reject URLs where the hostname is itself a protocol name (e.g. wss://http//example.com
+  // parses as hostname="http", pathname="//example.com")
+  if ( /^(https?|wss?)$/i.test(hostname) ) return false;
+
   if( pathname.includes("https/") || pathname.includes("http/") || pathname.includes("wss/") || pathname.includes("ws/") ) return false;
 
   if( typeof maybeRelay !== "string" ) return false; 

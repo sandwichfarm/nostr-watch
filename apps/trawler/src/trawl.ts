@@ -182,18 +182,27 @@ export const trawl = async (options: TrawlOptions = {}) => {
     processRelayList(event);
   });
 
+  // Track relays that have completed in the current cycle so late
+  // progress events (from uncancelled Observable subscriptions) can't
+  // re-add a relay after relay:complete has already removed it.
+  const completedRelays = new Set<string>();
+
   trawler
     .on('progress', (progress: Progress) => {
       if (progress?.relay) {
-        trawlerStats.scanningRelays.add(progress.relay);
+        if (!completedRelays.has(progress.relay)) {
+          trawlerStats.scanningRelays.add(progress.relay);
+        }
         trawlerStats.relaysScannedTotal.add(progress.relay);
       }
     })
     .on('relay:complete', (relayUrl: string) => {
       trawlerStats.scanningRelays.delete(relayUrl);
+      completedRelays.add(relayUrl);
     })
     .on('drained', () => {
       trawlerStats.scanningRelays.clear();
+      completedRelays.clear();
       logger.info(`Queue drained | ${formatCompactStats()}`);
     });
 

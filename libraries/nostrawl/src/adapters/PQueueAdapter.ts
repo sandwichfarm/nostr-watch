@@ -153,24 +153,32 @@ export default class PQueueAdapter extends NTQueue {
 
     this.logger.info('Starting PQueueAdapter run');
     await this.openCache();
-    
-    // Add all jobs to the queue
-    this.logger.debug('Adding jobs for relay chunks');
+
+    // Pause queue while adding jobs to prevent premature 'idle' events.
+    // Without this, PQueue fires 'idle' after every single job completion
+    // (since jobs were being added and awaited one at a time), causing the
+    // repeat mechanism to spawn overlapping runs.
+    this.pause();
+
     const chunks = this.chunk_relays();
     for (let i = 0; i < chunks.length; i++) {
-      await this.addJob(i, chunks[i]);
+      // Don't await - just enqueue. PQueue manages execution order & concurrency.
+      this.addJob(i, chunks[i]);
     }
-    
-    // Start processing the queue
-    this.logger.info('Starting queue processing');
+
+    this.logger.info(`Added ${chunks.length} jobs to the queue`);
+    // Resume processing - PQueue will process jobs respecting concurrency
+    // and only emit 'idle' once ALL jobs are done.
     this.start();
   }
 
   async addJob(index: number, chunk: string[]): Promise<void> {
     this.logger.debug(`Adding job #${index} for ${chunk.length} relays: ${chunk.join(', ')}`);
     this.jobCount++;
-    
-    return this.queue.add(async () => {
+
+    // Fire-and-forget: add task to PQueue without returning/awaiting its
+    // completion promise.  PQueue manages concurrency internally.
+    this.queue.add(async () => {
       this.logger.debug(`Starting job #${index} for relays: ${chunk.join(', ')}`);
       try {
         await this.trawl(chunk, { id: index });
@@ -180,6 +188,9 @@ export default class PQueueAdapter extends NTQueue {
         this.logger.error(`Job #${index} failed`, error);
         throw error;
       }
+    }).catch((error: Error) => {
+      // Errors are also emitted via queue 'error' event listener.
+      // Catch here to prevent unhandled promise rejections.
     });
   }
 

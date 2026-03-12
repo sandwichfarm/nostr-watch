@@ -225,7 +225,7 @@ export default class NTTrawler extends EventEmitter {
       this.logger.error(`Error trawling relay: ${relayUrl}`, error);
       this.emit('error', error);
     } finally {
-      relay.close();
+      try { relay.close(); } catch (_) { /* ensure relay:complete always fires */ }
       this.emit('relay:complete', relayUrl);
     }
   }

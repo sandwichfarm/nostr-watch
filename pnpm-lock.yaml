@@ -481,18 +481,6 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.46.0)
 
-  demos/sandbox:
-    dependencies:
-      '@nostrwatch/nocap':
-        specifier: workspace:^
-        version: link:../../libraries/nocap
-      '@nostrwatch/nocap-every-adapter-default':
-        specifier: workspace:^
-        version: link:../../libraries/nocap/adapters/default/ZEveryAdapterDefault
-      '@nostrwatch/nocap-websocket-adapter-default':
-        specifier: workspace:^
-        version: link:../../libraries/nocap/adapters/default/WebsocketAdapterDefault
-
   internal/announce:
     dependencies:
       '@nostrwatch/logger':

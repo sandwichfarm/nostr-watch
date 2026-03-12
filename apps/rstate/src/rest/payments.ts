@@ -28,8 +28,10 @@ export const NAME_TO_ROUTE: Record<string, string> = {
   'relays/by/label':           '/relays/by/label',
   'relays/by/label/detailed':  '/relays/by/label/detailed',
   'relays/by/label/full':      '/relays/by/label/full',
-  'monitors/get':       '/monitors/:pubkey',
-  'monitors/list':      '/monitors',
+  'monitors/get':              '/monitors/:pubkey',
+  'monitors/list':             '/monitors',
+  'monitors/analytics':        '/monitors/analytics',
+  'monitors/analytics/get':    '/monitors/:pubkey/analytics',
 }
 
 function buildPolicyJson(entries: PricingEntry[]): any {

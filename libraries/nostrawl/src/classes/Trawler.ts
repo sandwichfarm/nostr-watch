@@ -155,6 +155,10 @@ export default class NTTrawler extends EventEmitter {
     // from blocking the entire queue.
     const relayTimeout = 60_000;
 
+    // Track active subscription cancel functions so we can clean up on
+    // timeout or completion — prevents late Observable events from leaking.
+    let activeCancel: (() => void) | null = null;
+
     try {
       this.logger.debug(`Setting up fetch for relay: ${relayUrl}`);
       const progress: Progress = {
@@ -173,14 +177,19 @@ export default class NTTrawler extends EventEmitter {
         const cached = this.getNip77Cache(relayUrl);
         if (!cached || cached.supported !== false) {
           try {
+            const neg = this.trawlWithNegentropy(relay, relayUrl, progress, $job);
+            activeCancel = neg.cancel;
             await this.withTimeout(
-              this.trawlWithNegentropy(relay, relayUrl, progress, $job),
+              neg.promise,
               relayTimeout,
               `negentropy sync for ${relayUrl}`
             );
             usedNegentropy = true;
             this.setNip77Cache(relayUrl, true);
           } catch (err) {
+            // Cancel the negentropy subscription before falling back to REQ
+            activeCancel?.();
+            activeCancel = null;
             this.logger.debug(`Negentropy failed for ${relayUrl}, falling back to REQ`, err);
             this.setNip77Cache(relayUrl, false);
           }
@@ -190,8 +199,10 @@ export default class NTTrawler extends EventEmitter {
       }
 
       if (!usedNegentropy) {
+        const req = this.trawlWithRequest(relay, relayUrl, progress, $job);
+        activeCancel = req.cancel;
         await this.withTimeout(
-          this.trawlWithRequest(relay, relayUrl, progress, $job),
+          req.promise,
           relayTimeout,
           `REQ fetch for ${relayUrl}`
         );
@@ -225,6 +236,9 @@ export default class NTTrawler extends EventEmitter {
       this.logger.error(`Error trawling relay: ${relayUrl}`, error);
       this.emit('error', error);
     } finally {
+      // Cancel any active subscription BEFORE closing the relay to prevent
+      // late Observable events from firing after relay:complete.
+      activeCancel?.();
       try { relay.close(); } catch (_) { /* ensure relay:complete always fires */ }
       this.emit('relay:complete', relayUrl);
     }
@@ -235,17 +249,20 @@ export default class NTTrawler extends EventEmitter {
     relayUrl: string,
     progress: Progress,
     $job: any
-  ): Promise<void> {
+  ): { promise: Promise<void>; cancel: () => void } {
     const filter = { ...this.options.filters };
     const cachedEvents = this.getCachedEvents();
 
     this.logger.debug(`Starting negentropy sync for ${relayUrl} with ${cachedEvents.length} cached events`);
 
-    return new Promise<void>((resolve, reject) => {
+    let subscription: any;
+    let cancelled = false;
+    const promise = new Promise<void>((resolve, reject) => {
       let lastProgressUpdate = 0;
 
-      relay.sync(cachedEvents, filter as any, SyncDirection.RECEIVE).subscribe({
+      subscription = relay.sync(cachedEvents, filter as any, SyncDirection.RECEIVE).subscribe({
         next: (event: any) => {
+          if (cancelled) return;
           this.processEvent(event, relayUrl, progress, $job);
 
           const now = Date.now();
@@ -258,6 +275,13 @@ export default class NTTrawler extends EventEmitter {
         complete: () => resolve()
       });
     });
+
+    const cancel = () => {
+      cancelled = true;
+      try { subscription?.unsubscribe?.(); } catch (_) {}
+    };
+
+    return { promise, cancel };
   }
 
   private trawlWithRequest(
@@ -265,17 +289,20 @@ export default class NTTrawler extends EventEmitter {
     relayUrl: string,
     progress: Progress,
     $job: any
-  ): Promise<void> {
+  ): { promise: Promise<void>; cancel: () => void } {
     const since = this.getSince(relayUrl);
     const filter = { ...this.options.filters, since };
 
     this.logger.debug(`Starting REQ fetch for ${relayUrl} with since=${since}`);
 
-    return new Promise<void>((resolve, reject) => {
+    let subscription: any;
+    let cancelled = false;
+    const promise = new Promise<void>((resolve, reject) => {
       let lastProgressUpdate = 0;
 
-      relay.request(filter as any, { reconnect: { count: 2, delay: 2000 } }).subscribe({
+      subscription = relay.request(filter as any, { reconnect: { count: 2, delay: 2000 } }).subscribe({
         next: (event: any) => {
+          if (cancelled) return;
           this.processEvent(event, relayUrl, progress, $job);
 
           const now = Date.now();
@@ -288,6 +315,13 @@ export default class NTTrawler extends EventEmitter {
         complete: () => resolve()
       });
     });
+
+    const cancel = () => {
+      cancelled = true;
+      try { subscription?.unsubscribe?.(); } catch (_) {}
+    };
+
+    return { promise, cancel };
   }
 
   private processEvent(

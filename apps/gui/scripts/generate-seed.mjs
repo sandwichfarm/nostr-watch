@@ -173,7 +173,9 @@ async function main() {
       .filter(Boolean)
   );
 
-  const maxWaitMs = envNumber('SEED_MAX_WAIT_MS', 120_000);
+  const maxWaitMs = envNumber('SEED_MAX_WAIT_MS', 30_000);
+  const registrationWaitMs = envNumber('SEED_REGISTRATION_WAIT_MS', 15_000);
+  const activityWaitMs = envNumber('SEED_ACTIVITY_WAIT_MS', 15_000);
   const maxActiveMonitors = envNumber('SEED_MAX_ACTIVE_MONITORS', 500);
   const checksPerMonitorLimit = envNumber('SEED_CHECKS_PER_MONITOR_LIMIT', 500);
   const maxCheckEvents = envNumber('SEED_MAX_CHECK_EVENTS', 100_000);
@@ -195,7 +197,7 @@ async function main() {
     pool,
     nip66Relays,
     [{ kinds: [10166], limit: 5000 }],
-    { maxWaitMs }
+    { maxWaitMs: registrationWaitMs }
   );
   if (registrationCloses.length) console.warn('[seed] registrations closes:', registrationCloses);
 
@@ -322,7 +324,7 @@ async function main() {
   }
 
   for (const filters of chunk(activityFilters, filtersPerReq)) {
-    const { events, closes } = await queryMany(pool, nip66Relays, filters, { maxWaitMs });
+    const { events, closes } = await queryMany(pool, nip66Relays, filters, { maxWaitMs: activityWaitMs });
     if (closes.length) console.warn('[seed] activity closes:', closes);
     for (const ev of events) {
       if (ev?.kind !== 30166) continue;
@@ -567,7 +569,16 @@ async function main() {
   });
 }
 
-main().catch((err) => {
-  console.error('[seed] failed', err);
-  process.exitCode = 1;
-});
+const scriptTimeoutMs = envNumber('SEED_SCRIPT_TIMEOUT_MS', 5 * 60 * 1000);
+const scriptTimer = setTimeout(() => {
+  console.error(`[seed] TIMEOUT: script exceeded ${scriptTimeoutMs / 1000}s limit — aborting`);
+  process.exit(1);
+}, scriptTimeoutMs);
+scriptTimer.unref();
+
+main()
+  .catch((err) => {
+    console.error('[seed] failed', err);
+    process.exitCode = 1;
+  })
+  .finally(() => clearTimeout(scriptTimer));

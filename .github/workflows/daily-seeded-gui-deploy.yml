@@ -28,6 +28,7 @@ jobs:
         run: pnpm --filter @nostrwatch/gui... build
 
       - name: Build Seeded GUI
+        timeout-minutes: 10
         run: pnpm --filter @nostrwatch/gui build:seeded
 
       - name: Check Artifact Size

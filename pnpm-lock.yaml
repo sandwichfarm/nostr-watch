@@ -1008,6 +1008,9 @@ importers:
       modern-isomorphic-ws:
         specifier: ^1.0.5
         version: 1.0.5(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))
+      nostr-tools:
+        specifier: ^2.19.4
+        version: 2.19.4(typescript@5.8.3)
       os-browserify:
         specifier: ^0.3.0
         version: 0.3.0

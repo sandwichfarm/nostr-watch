@@ -24,10 +24,10 @@ try {
       ? Deno.env.get('TRAWLER_DB_WAL') !== 'false'
       : config?.trawler?.db?.enableWAL,
     nostrawlOptions: {
-      relaysPerBatch: config?.trawler?.relaysPerBatch || 10,
+      relaysPerBatch: 1,
       restDuration: config?.trawler?.restDuration,
       adapterOptions: {
-        concurrency: config?.trawler?.concurrency || 2
+        concurrency: config?.trawler?.concurrency || 3
       }
     }
   };

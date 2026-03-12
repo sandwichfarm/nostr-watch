@@ -20,13 +20,6 @@ let RELAYS = [
   'wss://purplepag.es',
   'wss://user.kindpag.es',
   'wss://relaydiscovery.com'
-  // 'wss://relay.damus.io',
-  // 'wss://relay.nostr.band',
-  // 'wss://nos.lol',
-  // 'wss://nostrue.com',
-  // 'wss://relay.primal.net',
-  // 'wss://relay.snort.social',
-  // 'cache2.primal.net/v1'
 ];
 
 function dropProcessedEventsTable(): void {

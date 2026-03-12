@@ -323,7 +323,10 @@ export default class NTTrawler extends EventEmitter {
     this.logger.debug(`Received valid event ${event.id} from ${relayUrl}`);
 
     this.emit('event', event);
-    this.cache?.put(`event:${event.id}`, event);
+    // Store only minimal data for dedup + negentropy (id, created_at).
+    // Storing full events (especially kind 3 contact lists with huge tag arrays)
+    // causes OOM when getCachedEvents() loads them all into memory.
+    this.cache?.put(`event:${event.id}`, { id: event.id, created_at: event.created_at });
     progress.found++;
 
     if (this.options.parser) {
@@ -335,17 +338,20 @@ export default class NTTrawler extends EventEmitter {
   }
 
   /**
-   * Retrieve all cached events for use as the negentropy local store.
-   * Returns minimal NostrEvent objects (only id and created_at are used
-   * by the negentropy storage vector, but we include all fields).
+   * Retrieve cached events for use as the negentropy local store.
+   * Capped to prevent OOM — negentropy reconciliation works fine with a
+   * subset; it just means we may re-download some events we already have,
+   * which the dedup check in processEvent() will discard cheaply.
    */
   private getCachedEvents(): NostrEvent[] {
     if (!this.cache) return [];
 
+    const MAX_NEGENTROPY_EVENTS = 50_000;
     const events: NostrEvent[] = [];
     for (const { key, value } of this.cache.getRange()) {
       if (typeof key === 'string' && key.startsWith('event:') && value) {
         events.push(value as NostrEvent);
+        if (events.length >= MAX_NEGENTROPY_EVENTS) break;
       }
     }
 

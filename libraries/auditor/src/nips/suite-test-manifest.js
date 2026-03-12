@@ -7,6 +7,7 @@ export const suiteTests = {
   Nip42: () => import('src/nips/Nip42/tests/index.ts'),
   Nip40: () => import('src/nips/Nip40/tests/index.ts'),
   Nip22: () => import('src/nips/Nip22/tests/index.ts'),
+  Nip13: () => import('src/nips/Nip13/tests/index.ts'),
   Nip11: () => import('src/nips/Nip11/tests/index.ts'),
   Nip09: () => import('src/nips/Nip09/tests/index.ts'),
   Nip02: () => import('src/nips/Nip02/tests/index.ts'),

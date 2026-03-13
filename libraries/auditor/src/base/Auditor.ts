@@ -191,7 +191,7 @@ export class Auditor {
           Emitter.emit('auditor.suite:start', slug)
           let result: ISuiteResult
           try {
-            result = await $Suite.test(relay)
+            result = await $Suite.test()
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error)
             result = {...skippedSuiteResult('Error: ' + message), skipped: false}

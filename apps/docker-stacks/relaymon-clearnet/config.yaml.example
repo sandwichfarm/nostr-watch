@@ -1,0 +1,97 @@
+# RelayMon Clearnet — Application Configuration
+# Copy to config.yaml and customize before running docker compose up
+
+logLevel: info
+
+db:
+  path: /opt/data/relays.db
+  enableWAL: true
+
+monitor:
+  slug: my-relaymon            # Unique identifier for this monitor instance
+  info:
+    name: My Relay Monitor
+    about: Monitors nostr relay availability and performance
+    # nip05: monitor@example.com
+    # lud16: monitor@example.com
+  owner: <your-hex-pubkey>     # Your nostr public key (hex, not npub)
+  relays:                      # Relays where this monitor publishes its 30166 announcement
+    - 'wss://relay.nostr.watch'
+    - 'wss://relaypag.es'
+
+# Publisher: where check results (Kind 1066) and state changes (Kind 20166) are published
+publisher:
+  relays:
+    - 'wss://relay.nostr.watch'
+    - 'wss://relaypag.es'
+
+# Announce: where the monitor's relay list (Kind 10002) is published
+announce:
+  relays:
+    - 'wss://purplepag.es'
+    - 'wss://user.kindpag.es'
+
+relaymon:
+  networks:
+    - clearnet
+
+  # Backoff strategy for failed relay connections
+  retry:
+    expiry:
+      - max: 2
+        delay: 1m
+      - max: 5
+        delay: 20m
+      - max: 8
+        delay: 3h
+      - max: 22
+        delay: 24h
+      - max: 99
+        delay: 7d
+
+  # How the relay list is populated
+  seed:
+    interval: 1m
+    sources:
+      - events            # Fetch relay lists from 30166 events
+      # - config           # Use statically defined relay URLs (see options.config below)
+      # - db               # Read from a @nostrwatch/db sqlite database
+    options:
+      # config:
+      #   - 'wss://relay.example.com'
+      # db:
+      #   path: /opt/data/relays.db
+      events:
+        pubkeys:
+          - 9e81fadfe8c07351d806b47bc6c0d0dfb189343656e400e207a2be9b37411e79
+        relays:
+          - 'wss://relay.nostr.watch'
+          - 'wss://relaypag.es'
+
+  # Which checks to run and how often
+  checks:
+    enabled:
+      - open               # WebSocket open/connect check
+      - read               # Can the relay be read from
+      - info               # NIP-11 relay info document
+      - dns                # DNS resolution check
+    options:
+      expires: 1d          # How long before a check result expires
+      interval: 30s        # Time between check cycles
+      statusInterval: 100  # Log status every N relays checked
+      timeout:
+        open: 30000        # WebSocket open timeout (ms)
+        read: 5000         # Read timeout (ms)
+      max: 200             # Max concurrent checks
+
+# Optional: Health monitoring
+# health:
+#   enabled: true
+#   server:
+#     enabled: true
+#     host: "0.0.0.0"
+#     port: 8080
+#   thresholds:
+#     checkIdleMs: 5m
+#     publishBacklogMax: 100
+#     errorRatePerMin: 10

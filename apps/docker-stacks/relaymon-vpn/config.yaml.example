@@ -1,0 +1,74 @@
+# RelayMon VPN — Application Configuration
+# Copy to config.yaml and customize before running docker compose up
+# This is the same as relaymon-clearnet config — the VPN routing is handled
+# by the Gluetun container at the network level.
+
+logLevel: info
+
+db:
+  path: /opt/data/relays.db
+  enableWAL: true
+
+monitor:
+  slug: my-relaymon-vpn
+  info:
+    name: My Relay Monitor (VPN)
+    about: Monitors nostr relays via VPN
+  owner: <your-hex-pubkey>
+  relays:
+    - 'wss://relay.nostr.watch'
+    - 'wss://relaypag.es'
+
+publisher:
+  relays:
+    - 'wss://relay.nostr.watch'
+    - 'wss://relaypag.es'
+
+announce:
+  relays:
+    - 'wss://purplepag.es'
+    - 'wss://user.kindpag.es'
+
+relaymon:
+  networks:
+    - clearnet
+
+  retry:
+    expiry:
+      - max: 2
+        delay: 1m
+      - max: 5
+        delay: 20m
+      - max: 8
+        delay: 3h
+      - max: 22
+        delay: 24h
+      - max: 99
+        delay: 7d
+
+  seed:
+    interval: 1m
+    sources:
+      - events
+    options:
+      events:
+        pubkeys:
+          - 9e81fadfe8c07351d806b47bc6c0d0dfb189343656e400e207a2be9b37411e79
+        relays:
+          - 'wss://relay.nostr.watch'
+          - 'wss://relaypag.es'
+
+  checks:
+    enabled:
+      - open
+      - read
+      - info
+      - dns
+    options:
+      expires: 1d
+      interval: 30s
+      statusInterval: 100
+      timeout:
+        open: 30000
+        read: 5000
+      max: 200

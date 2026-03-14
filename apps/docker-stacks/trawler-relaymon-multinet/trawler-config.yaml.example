@@ -1,0 +1,24 @@
+# Trawler — Application Configuration (trawler-relaymon-multinet stack)
+# Copy to trawler-config.yaml and customize before running docker compose up
+# Trawler crawls nostr relay lists to discover new relays and writes them to the
+# shared database that RelayMon reads from.
+
+logLevel: info
+
+trawler:
+  logLevel: info
+  db:
+    path: /opt/data/relays.db   # Shared with RelayMon via the ./data volume
+    enableWAL: true
+  relaysPerBatch: 5
+  concurrency: 2
+
+  seed:
+    interval: 60000
+    sources: ["config"]
+    options:
+      allowedNetworks: ["clearnet"]
+      config:
+        - 'wss://relay.nostr.watch'
+        - 'wss://purplepag.es'
+        - 'wss://relaypag.es'

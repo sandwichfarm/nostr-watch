@@ -1,11 +1,14 @@
 # RelayMon — Application Configuration (trawler-relaymon-multinet stack)
 # Copy to relaymon-config.yaml and customize before running docker compose up
-# This config enables monitoring across clearnet, Tor, and I2P networks.
+#
+# IMPORTANT: RelayMon and Trawler use SEPARATE databases to avoid SQLite locking
+# conflicts. RelayMon has its own database (relaymon.db) and seeds its relay list
+# by reading from trawler's database (trawler.db) as a read-only source.
 
 logLevel: info
 
 db:
-  path: /opt/data/relays.db
+  path: /opt/data/relaymon.db   # RelayMon's own database (separate from trawler)
   enableWAL: true
 
 monitor:
@@ -48,7 +51,7 @@ relaymon:
       - max: 99
         delay: 7d
 
-  # Seed from the shared database populated by trawler
+  # Seed relay list from trawler's database (read-only) and from network events
   seed:
     interval: 1m
     sources:
@@ -56,7 +59,7 @@ relaymon:
       - events
     options:
       db:
-        path: /opt/data/relays.db
+        path: /opt/data/trawler.db   # Trawler's database (read-only seed source)
       events:
         pubkeys:
           - 9e81fadfe8c07351d806b47bc6c0d0dfb189343656e400e207a2be9b37411e79

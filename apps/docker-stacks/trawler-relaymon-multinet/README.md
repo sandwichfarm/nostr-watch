@@ -6,12 +6,12 @@ Runs Trawler and RelayMon with Tor and I2P proxy support. RelayMon uses [hedprox
 
 This stack runs four containers on a shared Docker bridge network (`relaymon-net`):
 
-- **Trawler** — Crawls relay lists over clearnet to discover new relays, writes them to the shared SQLite database
-- **RelayMon** — Runs in `multinet` mode, monitoring relays across all three networks. hedproxy routes connections based on URL scheme (`.onion` to Tor, `.i2p` to I2P, everything else direct)
+- **Trawler** — Crawls relay lists over clearnet to discover new relays, writes them to its own SQLite database (`trawler.db`)
+- **RelayMon** — Runs in `multinet` mode, maintaining its own database (`relaymon.db`) for check state. Seeds its relay list by reading from trawler's database as a read-only source. hedproxy routes connections based on URL scheme (`.onion` to Tor, `.i2p` to I2P, everything else direct)
 - **tor-proxy** — Tor daemon exposing SOCKS5 on port 9050
 - **i2pd** — I2P daemon with SAM bridge
 
-Trawler and RelayMon share the `./data` volume so discovered relays are immediately available for monitoring.
+Both services mount the same `./data` volume so RelayMon can read trawler's database, but each service writes to its own database file to avoid SQLite locking conflicts.
 
 ## Setup
 
@@ -47,7 +47,7 @@ docker compose logs -f
 | `config/danted.conf` | Dante SOCKS proxy config (routes through hedproxy) |
 | `config/proxychains.conf` | Proxychains config (routes through hedproxy) |
 | `config/torrc` | Tor daemon configuration |
-| `data/` | Shared persistent data directory (created automatically) |
+| `data/` | Persistent data directory containing both databases (created automatically) |
 
 ## Configuration
 
@@ -65,7 +65,17 @@ The default `docker-compose.yaml` does not mount a trawler `.env` file. If you n
 
 ### `relaymon-config.yaml` / `trawler-config.yaml`
 
-See the `.example` files for fully commented templates. The relaymon config enables all three networks (`clearnet`, `tor`, `i2pd`) and seeds from both the shared database and network events.
+See the `.example` files for fully commented templates. The relaymon config enables all three networks (`clearnet`, `tor`, `i2pd`) and seeds from trawler's database.
+
+### Database Architecture
+
+```
+./data/
+├── trawler.db      # Written by trawler, read by relaymon (seed source)
+└── relaymon.db     # Written and read by relaymon (check state)
+```
+
+SQLite does not handle concurrent writers well, so each service has its own database. RelayMon reads trawler's database only during seed cycles to import discovered relay URLs.
 
 ### Proxy Configuration (`config/`)
 

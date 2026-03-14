@@ -35,7 +35,7 @@ Each stack composes these services (and optional network proxies) into a ready-t
 | [`relaymon-clearnet/`](relaymon-clearnet/) | RelayMon | Standard clearnet relay monitoring |
 | [`relaymon-vpn/`](relaymon-vpn/) | RelayMon, Gluetun | Relay monitoring routed through a VPN |
 | [`relaymon-multinet/`](relaymon-multinet/) | RelayMon, Tor, I2P | Multi-network monitoring (clearnet + Tor + I2P) |
-| [`trawler-relaymon-clearnet/`](trawler-relaymon-clearnet/) | Trawler, RelayMon | Relay crawler and monitor on clearnet with shared database |
+| [`trawler-relaymon-clearnet/`](trawler-relaymon-clearnet/) | Trawler, RelayMon | Relay crawler and monitor on clearnet |
 | [`trawler-relaymon-multinet/`](trawler-relaymon-multinet/) | Trawler, RelayMon, Tor, I2P | Relay crawler and monitor with multi-network routing |
 
 Each stack directory contains its own README with detailed setup instructions.
@@ -114,14 +114,14 @@ These are set directly in the compose file and generally don't need changing:
 |----------|---------|-------------|
 | `RELAYMON_MODE` | varies | `clearnet` or `multinet` — determines proxy setup |
 | `RELAYMON_CONFIG_PATH` | `/opt/config.yaml` | Path to config file inside container |
-| `RELAYMON_DB_PATH` | `/opt/data/relays.db` | Path to SQLite database inside container |
+| `RELAYMON_DB_PATH` | `/opt/data/relays.db` | Path to RelayMon's SQLite database inside container |
 | `RELAYMON_SKIP_PID_CHECK` | `true` | Skip PID file check (needed in containers) |
 | `TRAWLER_CONFIG_PATH` | `/opt/trawler-config.yaml` | Trawler config path inside container |
-| `TRAWLER_DB_PATH` | `/opt/data/relays.db` | Trawler database path inside container |
+| `TRAWLER_DB_PATH` | `/opt/data/trawler.db` | Trawler database path inside container |
 
 ## Data Persistence
 
-All stacks mount `./data:/opt/data` for persistent storage. The SQLite database (`relays.db`) lives here. In trawler+relaymon stacks, both services share this volume so trawler's discovered relays are immediately available to relaymon.
+All stacks mount `./data:/opt/data` for persistent storage. In relaymon-only stacks, the database is `relays.db`. In trawler+relaymon stacks, each service has its own database (`trawler.db` and `relaymon.db`) on the same volume to avoid SQLite locking conflicts — RelayMon reads trawler's database as a read-only seed source.
 
 The `data/` directory is created automatically on first run.
 
@@ -149,7 +149,7 @@ docker compose down -v
 
 - **Multinet stacks require Tor and I2P routing infrastructure:** The multinet stacks include Tor and I2P containers, but firewall and network configuration may be required depending on your host environment.
 - **Images pulled from Docker Hub on first run:** All stacks use Docker Hub images (`nostrwatch/relaymon`, `nostrwatch/trawler`). An internet connection is required during the first `docker compose up`.
-- **Shared database concurrency:** In trawler+relaymon stacks, both services access the same SQLite database. WAL mode is enabled to support concurrent reads/writes.
+- **Separate databases in trawler stacks:** Trawler and RelayMon use separate SQLite databases to avoid locking conflicts. RelayMon reads trawler's database as a seed source only.
 
 ## Related Packages
 

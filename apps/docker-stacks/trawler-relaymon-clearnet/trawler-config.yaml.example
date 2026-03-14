@@ -1,21 +1,22 @@
 # Trawler — Application Configuration (trawler-relaymon-clearnet stack)
 # Copy to trawler-config.yaml and customize before running docker compose up
-# Trawler crawls nostr relay lists to discover new relays and writes them to the
-# shared database that RelayMon reads from.
+#
+# Trawler crawls nostr relay lists to discover new relays and writes them to its
+# own database. RelayMon seeds from this database (read-only) on a separate DB path.
 
 logLevel: info
 
 trawler:
   logLevel: info
   db:
-    path: /opt/data/relays.db   # Shared with RelayMon via the ./data volume
+    path: /opt/data/trawler.db   # Trawler's own database (separate from relaymon)
     enableWAL: true
-  relaysPerBatch: 5             # How many relays to query per batch
-  concurrency: 2                # Parallel crawl workers
+  relaysPerBatch: 5              # How many relays to query per batch
+  concurrency: 2                 # Parallel crawl workers
 
   seed:
-    interval: 60000             # Re-seed interval (ms)
-    sources: ["config"]         # Seed from statically configured relay URLs
+    interval: 60000              # Re-seed interval (ms)
+    sources: ["config"]          # Seed from statically configured relay URLs
     options:
       allowedNetworks: ["clearnet"]
       config:

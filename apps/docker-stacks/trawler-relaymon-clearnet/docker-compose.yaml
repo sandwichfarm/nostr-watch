@@ -11,7 +11,7 @@ services:
     environment:
       - RELAYMON_MODE=clearnet
       - RELAYMON_CONFIG_PATH=/opt/config.yaml
-      - RELAYMON_DB_PATH=/opt/data/relays.db
+      - RELAYMON_DB_PATH=/opt/data/relaymon.db
       - RELAYMON_SKIP_PID_CHECK=true
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -25,6 +25,6 @@ services:
       - ./trawler-config.yaml:/opt/trawler-config.yaml
     environment:
       - TRAWLER_CONFIG_PATH=/opt/trawler-config.yaml
-      - TRAWLER_DB_PATH=/opt/data/relays.db
+      - TRAWLER_DB_PATH=/opt/data/trawler.db
     extra_hosts:
       - "host.docker.internal:host-gateway"

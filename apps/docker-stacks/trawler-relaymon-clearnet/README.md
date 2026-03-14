@@ -1,15 +1,15 @@
 # Trawler + RelayMon Clearnet Stack
 
-Runs both Trawler and RelayMon in clearnet mode with a shared relay database.
+Runs both Trawler and RelayMon in clearnet mode with separate databases.
 
 ## How It Works
 
 This stack combines two services:
 
-- **Trawler** — Crawls nostr relay lists (Kind 10002 events) to discover new relay URLs and writes them to a shared SQLite database
-- **RelayMon** — Reads the relay list from the shared database and runs connectivity checks against each relay, publishing results as nostr events
+- **Trawler** — Crawls nostr relay lists (Kind 10002 events) to discover new relay URLs and writes them to its own SQLite database (`trawler.db`)
+- **RelayMon** — Maintains its own database (`relaymon.db`) for check state, and seeds its relay list by reading from trawler's database as a read-only source
 
-Both services mount the same `./data` volume, sharing `relays.db`. Trawler continuously discovers new relays, and RelayMon picks them up on its next seed cycle. The default `relaymon-config.yaml.example` has both `db` and `events` seed sources enabled so RelayMon reads from trawler's database as well as from 30166 events on the network.
+Both services mount the same `./data` volume so RelayMon can read trawler's database, but each service writes to its own database file to avoid SQLite locking conflicts. Trawler continuously discovers new relays, and RelayMon picks them up on its next seed cycle via the `db` seed source.
 
 ## Setup
 
@@ -39,7 +39,7 @@ docker compose logs -f
 | `relaymon-config.yaml.example` | Sample RelayMon config — copy to `relaymon-config.yaml` |
 | `trawler-config.yaml.example` | Sample Trawler config — copy to `trawler-config.yaml` |
 | `docker-compose.yaml` | Docker Compose service definition |
-| `data/` | Shared persistent data directory (created automatically) |
+| `data/` | Persistent data directory containing both databases (created automatically) |
 
 ## Configuration
 
@@ -57,4 +57,18 @@ The default `docker-compose.yaml` does not mount a trawler `.env` file. If you n
 
 ### `relaymon-config.yaml` / `trawler-config.yaml`
 
-See the `.example` files for fully commented templates. The relaymon config in this stack is pre-configured to seed from both the shared database and network events.
+See the `.example` files for fully commented templates. Key points:
+
+- Trawler writes to `/opt/data/trawler.db`
+- RelayMon writes to `/opt/data/relaymon.db`
+- RelayMon's `seed.options.db.path` points to `/opt/data/trawler.db` (read-only seed source)
+
+### Database Architecture
+
+```
+./data/
+├── trawler.db      # Written by trawler, read by relaymon (seed source)
+└── relaymon.db     # Written and read by relaymon (check state)
+```
+
+SQLite does not handle concurrent writers well, so each service has its own database. RelayMon reads trawler's database only during seed cycles to import discovered relay URLs.

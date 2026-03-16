@@ -30,6 +30,7 @@
     "isomorphic-ws": "^5.0.0",
     "isows": "^1.0.6",
     "modern-isomorphic-ws": "^1.0.5",
+    "nostr-tools": "^2.19.4",
     "os-browserify": "^0.3.0",
     "path-browserify": "^1.0.1",
     "power-assert": "^1.6.1",
@@ -74,6 +75,6 @@
     "test": "vitest run",
     "build": "tsc && tsc-alias && node build.js",
     "dev": "tsc --watch & tsc-alias -w & node build.js --watch",
-    "prepare": "node ./scripts/generateIndices.js && node ./scripts/generateSuiteManifest.js && node ./scripts/generateSuiteTestManifests.js"
+    "prepare": "node ./scripts/generateIndices.js && node ./scripts/generateSuiteManifest.js && node ./scripts/generateSuiteTestManifests.js && node ./scripts/validateManifestConsistency.js"
   }
 }

@@ -170,12 +170,63 @@ export class Auditor {
   }
 
   async test(relay: string): Promise<IAuditorResult> {
-    this.logger.info(`Auditor: ${relay}`);  
+    this.logger.info(`Auditor: ${relay}`);
     this.socket = new WebSocket(relay);
     const suites = Array.from(this.suites);
-    this.logger.debug(`Auditor: testing suites: ${suites.join(', ')}`);  
+    this.logger.debug(`Auditor: testing suites: ${suites.join(', ')}`);
 
-    for (const suiteKey of suites) { 
+    // AUTH-07: Run Nip42 pre-flight to detect auth-required relays
+    let relayRequiresAuth = false
+    const nip42Key = 'Nip42'
+
+    if (suites.includes(nip42Key)) {
+      // Run Nip42 first as pre-flight
+      try {
+        const mod = await nipManifest?.[nip42Key]?.()
+        if (mod) {
+          const SuiteCtor = resolveSuiteConstructor(mod, nip42Key)
+          const $Suite = new SuiteCtor(this.socket as WebSocket)
+          const slug = typeof $Suite?.slug === 'string' ? $Suite.slug : nip42Key
+
+          Emitter.emit('auditor.suite:start', slug)
+          let result: ISuiteResult
+          try {
+            result = await $Suite.test()
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error)
+            result = {...skippedSuiteResult('Error: ' + message), skipped: false}
+          }
+          Emitter.emit('auditor.suite:finish', slug, result)
+          this.resulter.set('suites', slug, result)
+          this.logger.info(`Auditor: Suite ${slug}: ${result.skipped ? 'skip' : result.pass ? 'pass' : 'fail'}`)
+
+          // Check if relay requires auth
+          relayRequiresAuth = result?.data?.authRequired === true
+          if (relayRequiresAuth) {
+            this.logger.info('Auditor: relay requires auth — skipping remaining suites')
+          }
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        const result = skippedSuiteResult('Skipped: ' + message)
+        Emitter.emit('auditor.suite:start', nip42Key)
+        Emitter.emit('auditor.suite:finish', nip42Key, result)
+        this.resulter.set('suites', nip42Key, result)
+      }
+    }
+
+    for (const suiteKey of suites) {
+      // Skip Nip42 in main loop — already ran as pre-flight
+      if (suiteKey === nip42Key) continue
+
+      // AUTH-07: Skip remaining suites if relay requires auth
+      if (relayRequiresAuth) {
+        const result = skippedSuiteResult('relay requires auth')
+        Emitter.emit('auditor.suite:start', suiteKey)
+        Emitter.emit('auditor.suite:finish', suiteKey, result)
+        this.resulter.set('suites', suiteKey, result)
+        continue
+      }
       let $Suite: any;
       try {
         const mod = await nipManifest?.[suiteKey]?.();
@@ -268,7 +319,7 @@ export const formatNip =( number: number | string): string  => {
   if (typeof number === 'string') {
       number = parseInt(number);
   }
-  if (number > 0 || number <= 9) {
+  if (number >= 0 && number <= 9) {
       number = number.toString().padStart(2, '0')
   }
   return `Nip${number}`;

@@ -6,6 +6,8 @@ import { Ingestor } from "#base/Ingestor.js";
 import Logger from '#base/Logger.js';
 import type { ISuite, ISuiteSampleData } from "#base/Suite.js";
 import { generateSubId } from "#src/utils/nostr.js";
+import type { ImpactLevel, StressLevel } from '#utils/impact.js'
+export type { ImpactLevel, StressLevel } from '#utils/impact.js'
 
 import { UniversalWebSocket as WebSocket } from "@nostrwatch/websocket";
 
@@ -48,6 +50,8 @@ export const defaultSuiteTestResult: ISuiteTestResult = {
 
 export interface ISuiteTest {
   slug: string;
+  impact: ImpactLevel;
+  stress: StressLevel;
   data: any;
   events: Note[];
   resulter: SuiteTestResulter;
@@ -60,7 +64,9 @@ export interface ISuiteTest {
 
 export abstract class SuiteTest implements ISuiteTest {
   readonly slug: string = 'unset';
-  
+  readonly impact: ImpactLevel = 'write';   // TAX-04: most restrictive default
+  readonly stress: StressLevel = 'stress';  // TAX-05: most restrictive default
+
   private logger: Logger = new Logger('@nostrwatch/auditor', {
     showTimer: false,
     showNamespace: false,

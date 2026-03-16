@@ -39,7 +39,9 @@ function dereferenceJsonSchemasPlugin() {
 const babelPlugin = {
     name: 'babel',
     setup(build) {
-        build.onLoad({ filter: /assert|power-assert/ }, async (args) => {
+        build.onLoad({ filter: /assert|power-assert/, namespace: 'file' }, async (args) => {
+            if (args.path.includes('node_modules')) return;
+
             const source = await fsp.readFile(args.path, 'utf8');
             const result = await babel.transformAsync(source, {
                 babelrc: true,

@@ -1,3 +1,6 @@
+ARG DENO_VERSION=2.7.5
+FROM denoland/deno:bin-${DENO_VERSION} AS deno-bin
+
 FROM debian:bookworm-slim
 
 WORKDIR /app
@@ -40,8 +43,7 @@ RUN ARCH=$(uname -m) && \
     websocat --version
 
 # Install Deno (pinned version, no @latest)
-ARG DENO_VERSION=2.7.5
-COPY --from=denoland/deno:bin-${DENO_VERSION} /deno /usr/local/bin/deno
+COPY --from=deno-bin /deno /usr/local/bin/deno
 RUN deno --version
 
 # Build hedproxy from source

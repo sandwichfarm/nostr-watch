@@ -1,3 +1,6 @@
+ARG DENO_VERSION=2.7.5
+FROM denoland/deno:bin-${DENO_VERSION} AS deno-bin
+
 FROM debian:bullseye-slim
 
 WORKDIR /app
@@ -41,9 +44,8 @@ RUN ARCH=$(uname -m) && \
     chmod +x /usr/local/bin/websocat && \
     websocat --version
 
-# Install Deno
-ARG DENO_VERSION=2.7.5
-COPY --from=denoland/deno:bin-${DENO_VERSION} /deno /usr/local/bin/deno
+# Install Deno (pinned version via multi-arch stage)
+COPY --from=deno-bin /deno /usr/local/bin/deno
 RUN deno --version
 
 # Install hedproxy

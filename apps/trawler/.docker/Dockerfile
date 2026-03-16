@@ -1,3 +1,6 @@
+ARG DENO_VERSION=2.7.5
+FROM denoland/deno:bin-${DENO_VERSION} AS deno-bin
+
 FROM debian:bookworm-slim
 
 WORKDIR /app
@@ -15,9 +18,8 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Deno
-ARG DENO_VERSION=2.7.5
-COPY --from=denoland/deno:bin-${DENO_VERSION} /deno /usr/local/bin/deno
+# Install Deno (pinned version via multi-arch stage)
+COPY --from=deno-bin /deno /usr/local/bin/deno
 RUN deno --version
 
 # Create data directory

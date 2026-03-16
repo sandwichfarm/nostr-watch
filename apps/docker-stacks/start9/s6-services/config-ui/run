@@ -1,0 +1,4 @@
+#!/bin/sh
+# Placeholder until Phase 16 implements the config web UI.
+# Runs sleep infinity so s6 does not count this as a crash.
+exec sleep infinity

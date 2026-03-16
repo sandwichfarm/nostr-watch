@@ -1,0 +1,10 @@
+#!/bin/sh
+# $1 = exit code, $2 = signal that caused exit
+# Checkpoint SQLite WAL to prevent data loss on container shutdown
+sqlite3 /opt/data/relaymon.db "PRAGMA wal_checkpoint(TRUNCATE);" 2>/dev/null || true
+
+# Write exit code to container results so the platform can inspect crash history.
+# s6 handles restart by default; this is purely for observability.
+if [ "$1" -ne 0 ] && [ -f /run/s6-linux-init-container-results/exitcode ]; then
+  echo "$1" > /run/s6-linux-init-container-results/exitcode
+fi

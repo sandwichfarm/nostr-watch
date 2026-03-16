@@ -1,0 +1,4 @@
+#!/bin/sh
+exec 2>&1
+cd /app/nostr-watch/apps/trawler
+exec deno run --allow-all --unstable-sloppy-imports src/main.ts

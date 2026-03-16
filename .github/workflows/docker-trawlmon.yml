@@ -1,0 +1,213 @@
+name: Publish trawlmon Docker images
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Version tag override (defaults to version from deno.json)'
+        required: false
+        type: string
+  push:
+    tags:
+      - 'trawlmon-v*'
+
+env:
+  DOCKERHUB_IMAGE: nostrwatch/trawlmon
+  GHCR_IMAGE: ghcr.io/sandwichfarm/trawlmon
+
+jobs:
+  build-amd64:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version
+        id: version
+        shell: bash
+        run: |
+          if [[ -n "${{ inputs.tag }}" ]]; then
+            VERSION="${{ inputs.tag }}"
+          elif [[ "${{ github.ref_type }}" == "tag" ]]; then
+            VERSION="${GITHUB_REF_NAME#trawlmon-v}"
+          else
+            VERSION="$(grep -oP '"version"\s*:\s*"\K[^"]+' apps/relaymon/deno.json)"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push trawlmon amd64 image by digest
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/docker-stacks/start9/Dockerfile
+          platforms: linux/amd64
+          outputs: type=image,"name=${{ env.DOCKERHUB_IMAGE }},${{ env.GHCR_IMAGE }}",push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=trawlmon-amd64
+          cache-to: type=gha,mode=max,scope=trawlmon-amd64
+
+      - name: Export digest
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          mkdir -p /tmp/digests
+          touch "/tmp/digests/${DIGEST#sha256:}"
+
+      - name: Upload digest artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-trawlmon-linux-amd64
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  build-arm64:
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version
+        id: version
+        shell: bash
+        run: |
+          if [[ -n "${{ inputs.tag }}" ]]; then
+            VERSION="${{ inputs.tag }}"
+          elif [[ "${{ github.ref_type }}" == "tag" ]]; then
+            VERSION="${GITHUB_REF_NAME#trawlmon-v}"
+          else
+            VERSION="$(grep -oP '"version"\s*:\s*"\K[^"]+' apps/relaymon/deno.json)"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push trawlmon arm64 image by digest
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/docker-stacks/start9/Dockerfile
+          platforms: linux/arm64
+          outputs: type=image,"name=${{ env.DOCKERHUB_IMAGE }},${{ env.GHCR_IMAGE }}",push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=trawlmon-arm64
+          cache-to: type=gha,mode=max,scope=trawlmon-arm64
+
+      - name: Verify arm64 image
+        run: |
+          docker run --rm --entrypoint="" \
+            ${{ steps.build.outputs.imageid }} \
+            sh -c "deno --version && uname -m && file /usr/local/bin/hedproxy"
+
+      - name: Export digest
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          mkdir -p /tmp/digests
+          touch "/tmp/digests/${DIGEST#sha256:}"
+
+      - name: Upload digest artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-trawlmon-linux-arm64
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge:
+    needs: [build-amd64, build-arm64]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version
+        id: version
+        shell: bash
+        run: |
+          if [[ -n "${{ inputs.tag }}" ]]; then
+            VERSION="${{ inputs.tag }}"
+          elif [[ "${{ github.ref_type }}" == "tag" ]]; then
+            VERSION="${GITHUB_REF_NAME#trawlmon-v}"
+          else
+            VERSION="$(grep -oP '"version"\s*:\s*"\K[^"]+' apps/relaymon/deno.json)"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: digests-trawlmon-*
+          merge-multiple: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create and push multi-arch manifests
+        working-directory: /tmp/digests
+        run: |
+          docker buildx imagetools create \
+            -t ${{ env.DOCKERHUB_IMAGE }}:${{ steps.version.outputs.version }} \
+            -t ${{ env.DOCKERHUB_IMAGE }}:latest \
+            $(printf '${{ env.DOCKERHUB_IMAGE }}@sha256:%s ' *)
+          docker buildx imagetools create \
+            -t ${{ env.GHCR_IMAGE }}:${{ steps.version.outputs.version }} \
+            -t ${{ env.GHCR_IMAGE }}:latest \
+            $(printf '${{ env.GHCR_IMAGE }}@sha256:%s ' *)
+
+      - name: Inspect manifests
+        run: |
+          echo "## Docker Hub Manifest" >> $GITHUB_STEP_SUMMARY
+          docker buildx imagetools inspect ${{ env.DOCKERHUB_IMAGE }}:${{ steps.version.outputs.version }}
+          echo "## GHCR Manifest" >> $GITHUB_STEP_SUMMARY
+          docker buildx imagetools inspect ${{ env.GHCR_IMAGE }}:${{ steps.version.outputs.version }}

@@ -83,7 +83,7 @@ RUN deno cache --reload --unstable-sloppy-imports index.ts
 
 # Cache trawler dependencies
 WORKDIR /app/nostr-watch/apps/trawler
-RUN deno cache --reload src/main.ts
+RUN deno cache --reload --unstable-sloppy-imports src/main.ts
 
 # Copy s6 service definitions from build context
 COPY apps/docker-stacks/start9/s6-services/relaymon /etc/s6-overlay/s6-rc.d/relaymon

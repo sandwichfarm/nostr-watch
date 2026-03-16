@@ -29,14 +29,22 @@ RUN apt-get update && apt-get install -y \
     && chmod +x /usr/sbin/danted
 
 # Install websocat for WebSocket testing
-RUN wget -q https://github.com/vi/websocat/releases/download/v1.11.0/websocat.x86_64-unknown-linux-musl -O /usr/local/bin/websocat \
-    && chmod +x /usr/local/bin/websocat \
-    && websocat --version
+ARG WEBSOCAT_VERSION=1.14.1
+RUN ARCH=$(uname -m) && \
+    case "$ARCH" in \
+      x86_64)  WARCH="x86_64-unknown-linux-musl" ;; \
+      aarch64) WARCH="aarch64-unknown-linux-musl" ;; \
+      *) echo "Unsupported arch: $ARCH" && exit 1 ;; \
+    esac && \
+    wget -q "https://github.com/vi/websocat/releases/download/v${WEBSOCAT_VERSION}/websocat.${WARCH}" \
+        -O /usr/local/bin/websocat && \
+    chmod +x /usr/local/bin/websocat && \
+    websocat --version
 
 # Install Deno
-RUN curl -fsSL https://deno.land/x/install/install.sh | sh
-ENV DENO_INSTALL="/root/.deno"
-ENV PATH="${DENO_INSTALL}/bin:${PATH}"
+ARG DENO_VERSION=2.7.5
+COPY --from=denoland/deno:bin-${DENO_VERSION} /deno /usr/local/bin/deno
+RUN deno --version
 
 # Install hedproxy
 ENV GOPATH="/root/go"
@@ -68,6 +76,6 @@ COPY . .
 
 # Cache dependencies offline without trying to verify remote
 WORKDIR /app/nostr-watch/apps/relaymon
-RUN deno cache --reload --no-remote --unstable-sloppy-imports index.ts || echo "Dependency caching failed, will try at runtime"
+RUN deno cache --reload --unstable-sloppy-imports index.ts
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

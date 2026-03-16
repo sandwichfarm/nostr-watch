@@ -4,6 +4,12 @@
 # Include relaymon app
 !apps/relaymon/
 
+# Include trawler app
+!apps/trawler/
+
+# Include docker-stacks (s6-services, compose files, configs)
+!apps/docker-stacks/
+
 # Include workspace dependencies (referenced by apps/relaymon/deno.json import map)
 !libraries/nocap/
 !libraries/websocket/

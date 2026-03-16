@@ -1,0 +1,30 @@
+services:
+  relaymon:
+    build:
+      context: ../../../
+      dockerfile: apps/relaymon/.docker/Dockerfile
+    container_name: umbrel-relaymon
+    restart: unless-stopped
+    stop_grace_period: 15s
+    volumes:
+      - ${APP_DATA_DIR}/data:/opt/data
+      - ${APP_DATA_DIR}/config.yaml:/opt/config.yaml
+    environment:
+      - RELAYMON_MODE=clearnet
+      - RELAYMON_CONFIG_PATH=/opt/config.yaml
+      - RELAYMON_DB_PATH=/opt/data/relaymon.db
+      - RELAYMON_SKIP_PID_CHECK=true
+    ports:
+      - "8080:8080"
+
+  trawler:
+    build:
+      context: ../../../
+      dockerfile: apps/trawler/.docker/Dockerfile
+    container_name: umbrel-trawler
+    restart: unless-stopped
+    stop_grace_period: 15s
+    volumes:
+      - ${APP_DATA_DIR}/data:/opt/data
+    environment:
+      - TRAWLER_DB_PATH=/opt/data/trawler.db

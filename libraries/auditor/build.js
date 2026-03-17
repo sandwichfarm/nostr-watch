@@ -187,6 +187,9 @@ const browserConfig = {
     format: 'esm',
     allowOverwrite: true,
     external: ['src/nips/*/index.js'],
+    alias: {
+        'power-assert': 'assert',
+    },
     plugins: [
         babelPlugin,
         mockPlugin,

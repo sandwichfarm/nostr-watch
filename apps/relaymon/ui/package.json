@@ -1,0 +1,30 @@
+{
+  "name": "@nostrwatch/config-ui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "svelte": "^5.0.0",
+    "yaml": "^2.0.0",
+    "nostr-tools": "^2.11.0"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^5.0.0",
+    "vite": "^6.0.0",
+    "tailwindcss": "^3.4.0",
+    "postcss": "^8.4.0",
+    "autoprefixer": "^10.0.0",
+    "svelte-check": "^4.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^2.0.0",
+    "@testing-library/svelte": "^5.0.0",
+    "jsdom": "^25.0.0"
+  }
+}

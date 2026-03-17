@@ -19,6 +19,7 @@
 
       "config-ui": "deno run --allow-net --allow-env --allow-read --allow-write src/config-ui/server.ts",
       "test:config-ui": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write tests/unit/config-ui-server.test.ts",
+      "test:config-watcher": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-all tests/unit/config-watcher.test.ts",
 
       "test:config-types": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/config-types.test.ts",
       "test:database": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/database.test.ts",

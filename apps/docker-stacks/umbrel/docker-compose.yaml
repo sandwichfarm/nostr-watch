@@ -14,6 +14,7 @@ services:
       - RELAYMON_CONFIG_PATH=/opt/config.yaml
       - RELAYMON_DB_PATH=/opt/data/relaymon.db
       - RELAYMON_SKIP_PID_CHECK=true
+      - RELAYMON_HEALTH_HOST=0.0.0.0
     ports:
       - "8080:8080"
 
@@ -28,3 +29,24 @@ services:
       - ${APP_DATA_DIR}/data:/opt/data
     environment:
       - TRAWLER_DB_PATH=/opt/data/trawler.db
+
+  config-ui:
+    build:
+      context: ../../../
+      dockerfile: apps/relaymon/.docker/Dockerfile
+    container_name: umbrel-config-ui
+    restart: unless-stopped
+    command: ["deno", "run", "--allow-net", "--allow-env", "--allow-read", "--allow-write", "--no-lock", "--no-check", "--unstable-sloppy-imports", "src/config-ui/server.ts"]
+    working_dir: /opt/relaymon
+    volumes:
+      - ${APP_DATA_DIR}/data:/opt/data
+      - ${APP_DATA_DIR}/config.yaml:/opt/config.yaml
+    environment:
+      - CONFIG_UI_PORT=3000
+      - RELAYMON_CONFIG_PATH=/opt/config.yaml
+      - RELAYMON_HEALTH_URL=http://relaymon:8080
+      - CONFIG_UI_STATIC_DIR=/opt/relaymon/ui/dist
+    ports:
+      - "3000:3000"
+    depends_on:
+      - relaymon

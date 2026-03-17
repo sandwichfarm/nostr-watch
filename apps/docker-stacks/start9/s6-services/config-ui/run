@@ -1,4 +1,11 @@
 #!/bin/sh
-# Placeholder until Phase 16 implements the config web UI.
-# Runs sleep infinity so s6 does not count this as a crash.
-exec sleep infinity
+# Config web UI — Deno HTTP server serving static assets + REST API
+exec /usr/local/bin/deno run \
+  --allow-net \
+  --allow-env \
+  --allow-read \
+  --allow-write \
+  --no-lock \
+  --no-check \
+  --unstable-sloppy-imports \
+  /opt/relaymon/src/config-ui/server.ts

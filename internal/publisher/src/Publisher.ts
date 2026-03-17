@@ -22,14 +22,19 @@ export class Publisher {
   }
 
   async publishEvent(signedEvent: any): Promise<any> {
-    return Promise.any(this.pool.publish(this.relays, signedEvent))
-      .then((publish: any) => {
-        return publish;
+    // Attach .catch() to each individual relay promise so that rejections from
+    // closed connections (e.g. SendingOnClosedConnection) don't leak as unhandled.
+    const promises = this.pool.publish(this.relays, signedEvent).map(p =>
+      p.catch((err: any) => {
+        this.logger.log(`Publish to relay failed: ${err?.message || err}`, 'warn');
+        throw err; // re-throw so Promise.any still sees it as rejected
       })
+    );
+    return Promise.any(promises)
       .catch((err: any) => {
-        console.log('err', err);
+        this.logger.log(`All publish relays failed: ${err?.message || err}`, 'error');
         throw err;
-      })
+      });
   }
 
   async publishEvents(signedEvents: AsyncIterable<any>): Promise<any[]> {

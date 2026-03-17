@@ -86,6 +86,9 @@ export async function runDaemon(config: Config): Promise<void> {
   });
 
   self.addEventListener("unhandledrejection", (event) => {
+    // Prevent Deno from terminating the process on unhandled rejections
+    // (e.g. nostr-tools SimplePool can leak rejections from closed WebSocket connections)
+    event.preventDefault();
     processError(event.reason, "unhandled promise rejection");
   });
 

@@ -191,6 +191,19 @@ const browserConfig = {
         'power-assert': 'assert',
     },
     plugins: [
+        {
+            name: 'replace-power-assert',
+            setup(build) {
+                build.onResolve({ filter: /^power-assert$/ }, (args) => ({
+                    path: args.path,
+                    namespace: 'power-assert-shim',
+                }));
+                build.onLoad({ filter: /.*/, namespace: 'power-assert-shim' }, () => ({
+                    contents: `import assert from 'assert'; export default assert;`,
+                    loader: 'js',
+                }));
+            },
+        },
         babelPlugin,
         mockPlugin,
         polyfillNode({

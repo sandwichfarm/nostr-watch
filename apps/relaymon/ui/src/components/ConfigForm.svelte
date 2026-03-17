@@ -2,6 +2,8 @@
   import { configState, setMode } from '../lib/configState.svelte.ts';
   import type { ConfigMode } from '../lib/types.ts';
   import SimpleMode from './SimpleMode.svelte';
+  import AdvancedMode from './AdvancedMode.svelte';
+  import RawYamlMode from './RawYamlMode.svelte';
 
   const TABS: { id: ConfigMode; label: string }[] = [
     { id: 'simple', label: 'Simple' },
@@ -14,7 +16,7 @@
 
   <!-- Mode selector tabs -->
   <div class="border-b border-gray-200 dark:border-dark-border px-6 pt-4">
-    <div class="flex gap-1" role="tablist" aria-label="Config editing mode">
+    <div class="flex items-center gap-1" role="tablist" aria-label="Config editing mode">
       {#each TABS as tab}
         <button
           type="button"
@@ -34,6 +36,18 @@
           {/if}
         </button>
       {/each}
+
+      <!-- Unsaved changes indicator -->
+      {#if configState.dirty}
+        <span
+          class="ml-2 inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 font-medium"
+          title="You have unsaved changes"
+          aria-live="polite"
+        >
+          <span class="inline-block w-2 h-2 rounded-full bg-amber-500 dark:bg-amber-400"></span>
+          Unsaved
+        </span>
+      {/if}
     </div>
   </div>
 
@@ -73,9 +87,25 @@
         id="tab-panel-advanced"
         role="tabpanel"
         aria-labelledby="tab-advanced"
-        class="py-8 text-center"
       >
-        <p class="text-gray-400 dark:text-dark-muted text-sm">Advanced mode — coming next</p>
+        {#if configState.loading && !configState.data}
+          <div class="space-y-4">
+            {#each [1, 2, 3] as _}
+              <div class="h-16 rounded-xl bg-gray-100 dark:bg-slate-800 animate-pulse"></div>
+            {/each}
+          </div>
+        {:else if configState.saveError && !configState.data}
+          <div class="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-4 text-center">
+            <p class="text-sm text-red-700 dark:text-red-400 font-medium">Failed to load configuration</p>
+            <p class="mt-1 text-xs text-red-600 dark:text-red-400">{configState.saveError}</p>
+          </div>
+        {:else if configState.data}
+          <AdvancedMode />
+        {:else}
+          <div class="text-center py-8 text-sm text-gray-400 dark:text-dark-muted">
+            Loading configuration...
+          </div>
+        {/if}
       </div>
 
     {:else if configState.mode === 'raw'}
@@ -83,9 +113,16 @@
         id="tab-panel-raw"
         role="tabpanel"
         aria-labelledby="tab-raw"
-        class="py-8 text-center"
       >
-        <p class="text-gray-400 dark:text-dark-muted text-sm">Raw YAML — coming next</p>
+        {#if configState.loading && !configState.rawYaml}
+          <div class="space-y-4">
+            {#each [1, 2, 3] as _}
+              <div class="h-16 rounded-xl bg-gray-100 dark:bg-slate-800 animate-pulse"></div>
+            {/each}
+          </div>
+        {:else}
+          <RawYamlMode />
+        {/if}
       </div>
     {/if}
 

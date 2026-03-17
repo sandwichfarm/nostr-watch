@@ -5,6 +5,7 @@
   import ThemeToggle from './components/ThemeToggle.svelte';
   import StatsBar from './components/StatsBar.svelte';
   import StatsCards from './components/StatsCards.svelte';
+  import ConfigForm from './components/ConfigForm.svelte';
 
   onMount(async () => {
     initTheme();
@@ -40,10 +41,8 @@
       <StatsCards />
     </div>
 
-    <!-- Config form placeholder (Plan 16-04) -->
-    <div class="bg-white dark:bg-dark-card rounded-xl shadow-sm ring-1 ring-gray-200 dark:ring-dark-border p-8 text-center transition-colors duration-200">
-      <p class="text-gray-400 dark:text-dark-muted text-sm">Config form will appear here</p>
-    </div>
+    <!-- Config form (Plans 16-04+) -->
+    <ConfigForm />
 
   </main>
 </div>

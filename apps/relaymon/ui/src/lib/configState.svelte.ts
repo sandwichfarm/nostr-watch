@@ -60,19 +60,23 @@ function getInitialMode(): ConfigMode {
 export const configState = $state<{
   data: Config | null;
   rawYaml: string;
+  nsec: string;
   dirty: boolean;
   mode: ConfigMode;
   loading: boolean;
   saveError: string | null;
+  saveSuccess: boolean;
   validationErrors: string[];
   isFirstRun: boolean;
 }>({
   data: null,
   rawYaml: '',
+  nsec: '',
   dirty: false,
   mode: getInitialMode(),
   loading: false,
   saveError: null,
+  saveSuccess: false,
   validationErrors: [],
   isFirstRun: false,
 });
@@ -102,7 +106,12 @@ export async function loadConfig(): Promise<void> {
     } else {
       configState.rawYaml = result.yaml;
       try {
-        const parsed = parse(result.yaml) as Config;
+        const parsed = parse(result.yaml) as Config & { nsec?: string };
+        // Extract top-level nsec (sensitive — stored separately from Config type)
+        if (typeof parsed.nsec === 'string') {
+          configState.nsec = parsed.nsec;
+          delete parsed.nsec;
+        }
         configState.data = parsed;
         configState.isFirstRun = false;
       } catch (parseErr: unknown) {
@@ -127,6 +136,7 @@ export async function loadConfig(): Promise<void> {
 export async function saveCurrentConfig(): Promise<void> {
   configState.loading = true;
   configState.saveError = null;
+  configState.saveSuccess = false;
 
   try {
     let yamlToSave: string;
@@ -138,7 +148,12 @@ export async function saveCurrentConfig(): Promise<void> {
         configState.saveError = 'No config data to save';
         return;
       }
-      yamlToSave = stringify(configState.data);
+      // Include nsec as top-level key in YAML output (sensitive field, stored separately from Config type)
+      const toSerialize: Record<string, unknown> = { ...configState.data };
+      if (configState.nsec) {
+        toSerialize.nsec = configState.nsec;
+      }
+      yamlToSave = stringify(toSerialize);
     }
 
     const result = await saveConfig(yamlToSave);
@@ -148,6 +163,7 @@ export async function saveCurrentConfig(): Promise<void> {
     } else {
       configState.dirty = false;
       configState.saveError = null;
+      configState.saveSuccess = true;
 
       if (configState.isFirstRun) {
         configState.isFirstRun = false;
@@ -157,6 +173,11 @@ export async function saveCurrentConfig(): Promise<void> {
           // Ignore storage errors
         }
       }
+
+      // Auto-clear success message after 3 seconds
+      setTimeout(() => {
+        configState.saveSuccess = false;
+      }, 3000);
     }
   } finally {
     configState.loading = false;

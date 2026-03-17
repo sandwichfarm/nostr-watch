@@ -6,6 +6,7 @@
     label: string;
     placeholder?: string;
     minItems?: number;
+    onchange?: (urls: string[]) => void;
   }
 
   let {
@@ -13,6 +14,7 @@
     label,
     placeholder = 'wss://relay.example.com',
     minItems = 0,
+    onchange,
   }: Props = $props();
 
   let inputValue = $state('');
@@ -39,7 +41,9 @@
 
   function addUrl(): void {
     if (!validateInput()) return;
-    urls = [...urls, inputValue.trim()];
+    const newUrls = [...urls, inputValue.trim()];
+    urls = newUrls;
+    onchange?.(newUrls);
     inputValue = '';
     inputError = null;
     duplicateWarning = false;
@@ -47,7 +51,9 @@
 
   function removeUrl(idx: number): void {
     if (minItems > 0 && urls.length <= minItems) return;
-    urls = urls.filter((_, i) => i !== idx);
+    const newUrls = urls.filter((_, i) => i !== idx);
+    urls = newUrls;
+    onchange?.(newUrls);
   }
 
   function onKeyDown(e: KeyboardEvent): void {
@@ -65,8 +71,8 @@
     }
   }
 
-  const inputId = `relay-url-input-${label.replace(/\s+/g, '-').toLowerCase()}`;
-  const errorId = `${inputId}-error`;
+  const inputId = $derived(`relay-url-input-${label.replace(/\s+/g, '-').toLowerCase()}`);
+  const errorId = $derived(`${inputId}-error`);
 
   const isAddDisabled = $derived(
     inputValue.trim() === '' || !!validateRelayUrl(inputValue.trim()) || urls.includes(inputValue.trim())

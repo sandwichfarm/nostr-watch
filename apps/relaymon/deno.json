@@ -17,6 +17,9 @@
       "test:publish-retry": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/publish-retry.test.ts",
       "test:simple-retry": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/simple-retry.test.ts",
 
+      "config-ui": "deno run --allow-net --allow-env --allow-read --allow-write src/config-ui/server.ts",
+      "test:config-ui": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write tests/unit/config-ui-server.test.ts",
+
       "test:config-types": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/config-types.test.ts",
       "test:database": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/database.test.ts",
       "test:deletion": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/deletion.test.ts",
@@ -93,6 +96,9 @@
       "js-yaml": "npm:js-yaml@4.1.1",
       "std/flags": "https://deno.land/std@0.218.2/flags/mod.ts",
       "std/fs": "https://deno.land/std@0.218.2/fs/mod.ts",
+      "@std/http": "jsr:@std/http@^1.0.0",
+      "@std/yaml": "jsr:@std/yaml@^1.0.0",
+      "@std/path": "jsr:@std/path@^1.0.0",
       "chalk": "npm:chalk@5.6.2",
 
       "npm:@nostrwatch/utils": "../../internal/utils/src/index.ts",

@@ -53,7 +53,8 @@ describe('validateNpub', () => {
 
 describe('validateNsec', () => {
   it('returns null for valid nsec', () => {
-    expect(validateNsec('nsec1vl029mgpspedva04g90vltkh6fvh240zqtv9k3lvlrc3a0z57qsyy2zpr')).toBeNull();
+    // Generated valid nsec (nsec1 + 58 bech32 chars = 63 total)
+    expect(validateNsec('nsec1de6squ927da3s08p2wquy8f6zhspenl2c8m67gt0d2ychwga3a4s6vlu5e')).toBeNull();
   });
 
   it('returns error string for empty string', () => {

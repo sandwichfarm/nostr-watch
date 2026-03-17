@@ -964,8 +964,8 @@ importers:
         specifier: ^2.1.0
         version: 2.1.0
       '@nostrability/schemata':
-        specifier: ^0.1.6
-        version: 0.1.8(esbuild@0.25.12)(typescript@5.8.3)
+        specifier: ^0.2.5
+        version: 0.2.5(esbuild@0.25.12)(typescript@5.8.3)
       '@nostrwatch/websocket':
         specifier: workspace:^
         version: link:../websocket
@@ -4516,13 +4516,13 @@ packages:
   '@nostr-fetch/kernel@0.17.0':
     resolution: {integrity: sha512-r0EdueKQlMRqCqOIPUS53UrVl8AbWWnV03PNQn78MLvwCPqq9c+IPY93dh9nL3GWZOB0oTRkBJ3/sgIzDL3iOw==}
 
-  '@nostrability/schemata@0.1.8':
-    resolution: {integrity: sha512-kPisoNFA+VZO9mdE4zqzwqlO8ZqKA2Tzv93AtPSFkbN0teCGKjBZMD067h24ihn5NEKkEuYhPQzRb6OW9ySfLA==}
+  '@nostrability/schemata@0.2.3':
+    resolution: {integrity: sha512-DgivK5FHwoT/OMp2p7TKfLmxGwzP29qUaGWjG4gSeDYOdj2WPuRthqWyO/76e0E50TFQ1zxsKINTIWYYNsOblw==}
     peerDependencies:
       typescript: ^4.5.2
 
-  '@nostrability/schemata@0.2.3':
-    resolution: {integrity: sha512-DgivK5FHwoT/OMp2p7TKfLmxGwzP29qUaGWjG4gSeDYOdj2WPuRthqWyO/76e0E50TFQ1zxsKINTIWYYNsOblw==}
+  '@nostrability/schemata@0.2.5':
+    resolution: {integrity: sha512-RwTcycCTGmkce82V99qtzkXkbiqtG2u7GxmmeFdbay22+8k9CMv5repjPTAQIwExoTcaPNUNBhFN82mCf7ZKmw==}
     peerDependencies:
       typescript: ^4.5.2
 
@@ -15889,7 +15889,7 @@ snapshots:
       '@noble/curves': 1.6.0
       '@noble/hashes': 1.5.0
 
-  '@nostrability/schemata@0.1.8(esbuild@0.25.12)(typescript@5.8.3)':
+  '@nostrability/schemata@0.2.3(esbuild@0.25.12)(typescript@5.8.3)':
     dependencies:
       '@apidevtools/json-schema-ref-parser': 11.9.3
       ajv: 8.17.1
@@ -15898,8 +15898,8 @@ snapshots:
       quicktype: 23.0.170(@swc/core@1.11.24(@swc/helpers@0.5.17))
       quicktype-core: 23.0.170
       typescript: 5.8.3
-      webpack: 5.93.0(esbuild@0.25.12)(webpack-cli@5.1.4(webpack@5.93.0(esbuild@0.25.12)))
-      webpack-cli: 5.1.4(webpack@5.93.0(esbuild@0.25.12))
+      webpack: 5.93.0(esbuild@0.25.12)(webpack-cli@5.1.4)
+      webpack-cli: 5.1.4(webpack@5.93.0)
       webpack-merge: 6.0.1
       webpack-node-externals: 3.0.0
       yaml: 2.4.5
@@ -15914,7 +15914,7 @@ snapshots:
       - webpack-bundle-analyzer
       - webpack-dev-server
 
-  '@nostrability/schemata@0.2.3(esbuild@0.25.12)(typescript@5.8.3)':
+  '@nostrability/schemata@0.2.5(esbuild@0.25.12)(typescript@5.8.3)':
     dependencies:
       '@apidevtools/json-schema-ref-parser': 11.9.3
       ajv: 8.17.1
@@ -15923,8 +15923,8 @@ snapshots:
       quicktype: 23.0.170(@swc/core@1.11.24(@swc/helpers@0.5.17))
       quicktype-core: 23.0.170
       typescript: 5.8.3
-      webpack: 5.93.0(esbuild@0.25.12)(webpack-cli@5.1.4)
-      webpack-cli: 5.1.4(webpack@5.93.0)
+      webpack: 5.93.0(esbuild@0.25.12)(webpack-cli@5.1.4(webpack@5.93.0(esbuild@0.25.12)))
+      webpack-cli: 5.1.4(webpack@5.93.0(esbuild@0.25.12))
       webpack-merge: 6.0.1
       webpack-node-externals: 3.0.0
       yaml: 2.4.5

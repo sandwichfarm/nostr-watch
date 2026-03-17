@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@jspm/core": "^2.1.0",
-    "@nostrability/schemata": "^0.1.6",
+    "@nostrability/schemata": "^0.2.5",
     "@nostrwatch/websocket": "workspace:^",
     "ajv": "^8.17.1",
     "ajv-errors": "^3.0.0",

@@ -34,19 +34,26 @@ const stripNestedSchemaIds = (schema: unknown): void => {
 
 export class SchemaValidator<T> {
   private ajv = new Ajv({
-    strict: false, 
+    strict: false,
     allErrors: true
   });
-  private validateFn: ValidateFunction;
+  private validateFn: ValidateFunction | null = null;
+  private compileError: string | null = null;
 
   constructor(schema: any) {
     ajvErrors(this.ajv)
     const cleaned = cloneSchema(schema);
     stripNestedSchemaIds(cleaned);
-    this.validateFn = this.ajv.compile<T>(cleaned);
+    try {
+      this.validateFn = this.ajv.compile<T>(cleaned);
+    } catch (e: any) {
+      this.compileError = e?.message ?? String(e);
+      console.warn(`SchemaValidator: failed to compile schema: ${this.compileError}`);
+    }
   }
 
   validate(data: T): boolean {
+    if (!this.validateFn) return false;
     return this.validateFn(data) as boolean;
   }
 }

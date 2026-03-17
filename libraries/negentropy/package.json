@@ -1,5 +1,6 @@
 {
-  "name": "@nostrwatch/negentropy-utils",
+  "name": "@nostrwatch/negentropy",
+  "version": "0.0.1",
   "packageManager": "pnpm run@4.5.1",
   "scripts": {
     "build": "npm run build:node && npm run build:browser",

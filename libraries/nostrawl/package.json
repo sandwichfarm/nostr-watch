@@ -1,5 +1,5 @@
 {
-  "name": "nostrawl",
+  "name": "@nostrwatch/nostrawl",
   "version": "0.2.0",
   "description": "A nostr library for continously retrieving events from nostr relays based on a set of filters.",
   "main": "dist/index.js",

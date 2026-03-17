@@ -1,5 +1,5 @@
 
-import { nostrawl, TrawlerOptions, Progress } from 'npm:nostrawl';
+import { nostrawl, TrawlerOptions, Progress } from 'npm:@nostrwatch/nostrawl';
 import { relaysFromRelayList } from './helpers.ts';
 import { getLogger, setGlobalLogLevel, LogLevel } from './logger.ts';
 import { trawlerStats, setupStatusReporting, formatCompactStats } from './status.ts';

@@ -26,13 +26,13 @@ export class Publisher {
     // closed connections (e.g. SendingOnClosedConnection) don't leak as unhandled.
     const promises = this.pool.publish(this.relays, signedEvent).map(p =>
       p.catch((err: any) => {
-        this.logger.log(`Publish to relay failed: ${err?.message || err}`, 'warn');
+        this.logger.warn(`Publish to relay failed: ${err?.message || err}`);
         throw err; // re-throw so Promise.any still sees it as rejected
       })
     );
     return Promise.any(promises)
       .catch((err: any) => {
-        this.logger.log(`All publish relays failed: ${err?.message || err}`, 'error');
+        this.logger.error(`All publish relays failed: ${err?.message || err}`);
         throw err;
       });
   }

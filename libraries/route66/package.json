@@ -1,6 +1,6 @@
 {
   "name": "@nostrwatch/route66",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A NIP-66 implementation written in typescript.",
   "type": "module",
   "keywords": [

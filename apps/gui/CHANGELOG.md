@@ -1,5 +1,22 @@
 # @careswitch/svelte-data-table
 
+## 0.6.78
+
+### Patch Changes
+
+- Updated dependencies [[`0e865bf`](https://github.com/sandwichfarm/nostr-watch/commit/0e865bfccd307f39e87433f1823c00e457383459)]:
+  - @nostrwatch/utils@0.2.0
+  - @nostrwatch/memory-relay@2.0.0
+  - @nostrwatch/nocap@0.9.2
+  - @nostrwatch/route66@0.0.2
+  - @nostrwatch/schemata-js-ajv@1.0.2
+  - @nostrwatch/worker-relay@1.3.1
+  - @nostrwatch/nocap-dns-adapter-default@1.1.6
+  - @nostrwatch/nocap-info-adapter-default@1.2.1
+  - @nostrwatch/nocap-websocket-adapter-default@1.4.1
+  - @nostrwatch/route66-cacheadapter-nostrsqlite@0.0.2
+  - @nostrwatch/route66-wsadapter-nostrtools@0.0.2
+
 ## 0.6.3
 
 ### Patch Changes

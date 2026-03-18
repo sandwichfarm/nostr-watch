@@ -54,10 +54,10 @@ function buildPolicyJson(entries: PricingEntry[]): any {
   }
 }
 
-let helper: any | null = null
+let cached: { gw: any; paidRouteKeys: Set<string> } | null = null
 
-async function initGateway(): Promise<any | null> {
-  if (helper) return helper
+async function initGateway(): Promise<{ gw: any; paidRouteKeys: Set<string> } | null> {
+  if (cached) return cached
   if (!isFeatureEnabled('FEATURE_402')) return null
 
   // Load policy from unified pricing config, or fall back to legacy JSON
@@ -150,13 +150,17 @@ async function initGateway(): Promise<any | null> {
   const metrics = new PromMetrics({ collectDefaults: true })
   const breaker = { l402: { failureThreshold: 3, cooldownMs: 30000 }, p2pk: { failureThreshold: 3, cooldownMs: 30000 } }
   const rateLimit = { windowMs: 60_000, max: 5 }
-  helper = new RestGatewayHelper({ policy, lightning: lnd, receipts, l402RootKeyHex, cashu, cashuP2pkPubkey, metrics, breaker, rateLimit })
-  return helper
+  const gw = new RestGatewayHelper({ policy, lightning: lnd, receipts, l402RootKeyHex, cashu, cashuP2pkPubkey, metrics, breaker, rateLimit })
+  const paidRouteKeys = new Set(Object.keys(json.routes))
+  cached = { gw, paidRouteKeys }
+  return cached
 }
 
 export async function getPaymentsPreHandler() {
-  const gw = await initGateway()
-  if (!gw) return undefined
+  const result = await initGateway()
+  if (!result) return undefined
+
+  const { gw, paidRouteKeys } = result
 
   return async function preHandler(req: FastifyRequest, reply: FastifyReply) {
     try {
@@ -165,6 +169,12 @@ export async function getPaymentsPreHandler() {
 
       // Skip docs/meta routes
       if (routeKey === '/' || routeKey.startsWith('/openapi.') || routeKey.startsWith('/health/')) return
+
+      // Fast-path: unlisted routes are free, skip gateway entirely
+      if (!paidRouteKeys.has(routeKey)) {
+        logger.debug({ routeKey }, 'Unlisted route, skipping payment')
+        return
+      }
 
       // If the route is free, do nothing
       const clientId = req.ip || (req.socket && (req.socket as any).remoteAddress) || 'unknown'
@@ -184,11 +194,16 @@ export async function getPaymentsPreHandler() {
       }
 
       // No/invalid Authorization → emit challenge
+      logger.debug({ routeKey }, 'Payment challenge issued')
       Object.entries(challenge.headers).forEach(([k, v]) => reply.header(k, v))
       return reply.code(402).send({ error: 'Payment Required' })
     } catch (e) {
-      // Fail closed: require payment if configured
-      return reply.code(402).send({ error: 'Payment Required' })
+      logger.error({ routeKey: (req as any).routeOptions?.url || req.url.split('?')[0], err: e }, 'Payment check failed')
+      // Fail closed only for known-paid routes; let free/unlisted routes through
+      if (paidRouteKeys.has((req as any).routeOptions?.url || (req as any).routerPath || req.url.split('?')[0] || '')) {
+        return reply.code(402).send({ error: 'Payment Required', message: 'Payment system temporarily unavailable' })
+      }
+      return
     }
   }
 }

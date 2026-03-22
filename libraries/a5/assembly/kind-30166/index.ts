@@ -12,7 +12,7 @@
  *   - Up to 5 monitor pubkeys (authors)
  *   - Network type (#n): clearnet, tor, i2p
  *   - Supported NIP (#N): any NIP number as string
- *   - Capability flag (#R): auth, !auth, payment, !payment, ssl, !ssl, pow, !pow
+ *   - Relay requirements (#R): "requires auth" → R:auth, "does_not_require payment" → R:!payment
  *   - Software (#s): relay software name
  *   - Geohash (#g): location prefix match
  *   - NIP-32 labels (#L namespace + #l value): generic label filter
@@ -32,11 +32,12 @@
  *  10.  monitor5        (public_key, optional) — additional monitor
  *  11.  network         (string, optional)     — network type: "clearnet", "tor", "i2p"
  *  12.  supported_nips  (string, optional)     — supported NIP number (e.g. "42")
- *  13.  requirements    (string, optional)     — relay requirements: "auth", "!auth", "payment", "!payment", "ssl", "!ssl", "pow", "!pow"
- *  14.  software        (string, optional)     — relay software name (e.g. "strfry", "nostr-rs-relay")
- *  15.  geohash         (string, optional)     — geohash location prefix
- *  16.  label_namespace (string, optional)     — NIP-32 label namespace (e.g. "countryCode", "host.isp", "dns.ipv4")
- *  17.  label_value     (string, optional)     — NIP-32 label value (e.g. "US", "Contabo GmbH")
+ *  13.  requires        (string, optional)     — relay must require: "auth", "payment", "pow", "ssl"
+ *  14.  does_not_require (string, optional)    — relay must NOT require: "auth", "payment", "pow", "ssl"
+ *  15.  software        (string, optional)     — relay software name (e.g. "strfry", "nostr-rs-relay")
+ *  16.  geohash         (string, optional)     — geohash location prefix
+ *  17.  label_namespace (string, optional)     — NIP-32 label namespace (e.g. "countryCode", "host.isp", "dns.ipv4")
+ *  18.  label_value     (string, optional)     — NIP-32 label value (e.g. "US", "Contabo GmbH")
  */
 import {
   req_new,
@@ -106,6 +107,25 @@ function addTagFilter(req: i32, tagName: string, basePtr: usize, offset: usize):
   return nextOffset;
 }
 
+/** Add a negated tag filter: prepends "!" to the value before adding as tag filter */
+function addNegatedTagFilter(req: i32, tagName: string, basePtr: usize, offset: usize): usize {
+  const param = readStringParam(basePtr, offset);
+  const strLen = param[1];
+  const nextOffset = param[2];
+  if (strLen > 0) {
+    // Read the raw string value from params buffer
+    const rawValue = String.UTF8.decodeUnsafe(param[0], strLen);
+    // Prepend "!" and encode
+    const negated = "!" + rawValue;
+    const negBuf = encodeString(negated);
+    const negPtr = changetype<usize>(negBuf);
+    const tag = encodeString(tagName);
+    const tagPtr = changetype<usize>(tag);
+    req_add_tag(req, <i32>tagPtr, tag.byteLength, <i32>negPtr, negBuf.byteLength);
+  }
+  return nextOffset;
+}
+
 export function alloc(size: usize): usize {
   return heap.alloc(size);
 }
@@ -153,8 +173,9 @@ export function run(paramsPtr: usize): void {
   // Add string-based tag filters
   let off: usize = STRINGS_OFFSET;
   off = addTagFilter(req, "n", paramsPtr, off); // network
-  off = addTagFilter(req, "N", paramsPtr, off); // NIP
-  off = addTagFilter(req, "R", paramsPtr, off); // capability
+  off = addTagFilter(req, "N", paramsPtr, off); // supported_nips
+  off = addTagFilter(req, "R", paramsPtr, off); // requires (value passed as-is)
+  off = addNegatedTagFilter(req, "R", paramsPtr, off); // does_not_require (prepends "!")
   off = addTagFilter(req, "s", paramsPtr, off); // software
   off = addTagFilter(req, "g", paramsPtr, off); // geohash
   off = addTagFilter(req, "L", paramsPtr, off); // NIP-32 label namespace

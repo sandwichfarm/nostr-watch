@@ -2,14 +2,29 @@
  * NIP-A5 WASM: Kind 10166 — Monitor Announcement Viewer
  *
  * Subscribes to kind 10166 (relay monitor announcements) and displays them.
+ * Kind 10166 is replaceable (one per pubkey) — declares a monitor's existence,
+ * frequency, networks, check types, timeouts, and location.
  *
- * Parameters:
- *   - monitor_pubkey (public_key, optional): filter by a specific monitor's pubkey
+ * Optionally filters by up to 5 monitor pubkeys. Zero-filled slots are skipped.
+ * When no pubkeys are provided, returns all monitors.
+ *
+ * Parameters (in order):
+ *   1. monitor1 (public_key, optional) — filter by this monitor
+ *   2. monitor2 (public_key, optional) — additional monitor
+ *   3. monitor3 (public_key, optional) — additional monitor
+ *   4. monitor4 (public_key, optional) — additional monitor
+ *   5. monitor5 (public_key, optional) — additional monitor
+ *
+ * Buffer layout: 5 × 32 = 160 bytes
  *
  * NIP-A5 event tags:
  *   ["name", "nip66-monitors"]
  *   ["description", "View NIP-66 relay monitor announcements"]
- *   ["param", "monitor_pubkey", "monitor to view", "public_key", ""]
+ *   ["param", "monitor1", "monitor to view", "public_key", ""]
+ *   ["param", "monitor2", "additional monitor", "public_key", ""]
+ *   ["param", "monitor3", "additional monitor", "public_key", ""]
+ *   ["param", "monitor4", "additional monitor", "public_key", ""]
+ *   ["param", "monitor5", "additional monitor", "public_key", ""]
  */
 import {
   req_new,
@@ -23,6 +38,8 @@ import {
 } from "../common/nostr";
 import { log, isPubkeyZero } from "../common/utils";
 
+const MAX_MONITORS: i32 = 5;
+
 export function alloc(size: usize): usize {
   return heap.alloc(size);
 }
@@ -33,10 +50,18 @@ export function run(paramsPtr: usize): void {
   const req = req_new();
   req_add_kind(req, 10166);
 
-  // If monitor_pubkey param is provided (first 32 bytes), filter by author
-  if (!isPubkeyZero(paramsPtr, 0)) {
-    req_add_author(req, <i32>paramsPtr);
-    log("filtering by monitor pubkey");
+  // Add monitor pubkey filters (skip zero-filled slots)
+  let monitorCount: i32 = 0;
+  for (let i: i32 = 0; i < MAX_MONITORS; i++) {
+    const pkOffset: usize = <usize>i * 32;
+    if (!isPubkeyZero(paramsPtr, pkOffset)) {
+      req_add_author(req, <i32>(paramsPtr + pkOffset));
+      monitorCount++;
+    }
+  }
+
+  if (monitorCount > 0) {
+    log("filtering by monitor pubkeys");
   }
 
   req_set_limit(req, 50);

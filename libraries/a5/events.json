@@ -4,7 +4,11 @@
     "tags": [
       ["name", "nip66-monitors"],
       ["description", "View NIP-66 relay monitor announcements (kind 10166)"],
-      ["param", "monitor_pubkey", "monitor to view (leave empty for all)", "public_key", ""]
+      ["param", "monitor1", "monitor to view", "public_key", ""],
+      ["param", "monitor2", "additional monitor", "public_key", ""],
+      ["param", "monitor3", "additional monitor", "public_key", ""],
+      ["param", "monitor4", "additional monitor", "public_key", ""],
+      ["param", "monitor5", "additional monitor", "public_key", ""]
     ]
   },
   "kind-30166": {

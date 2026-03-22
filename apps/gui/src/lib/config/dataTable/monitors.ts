@@ -77,16 +77,19 @@ export const tableFormatters: Formatters = {
         return `<span class="block text-center">${formatSeconds(frequency)}</span>`
     },
     reportingOnline: (reportingOnline) => {
+        if (reportingOnline === null) return '<span class="block text-center text-gray-500">-</span>';
         const value = reportingOnline ?? 0;
         const colorClass = value > 0 ? 'text-green-400' : 'text-gray-500';
         return `<span class="block text-center font-medium ${colorClass}">${value}</span>`;
     },
     reportingOffline: (reportingOffline) => {
+        if (reportingOffline === null) return '<span class="block text-center text-gray-500">-</span>';
         const value = reportingOffline ?? 0;
         const colorClass = value > 0 ? 'text-orange-400' : 'text-gray-500';
         return `<span class="block text-center font-medium ${colorClass}">${value}</span>`;
     },
     likelyDead: (likelyDead) => {
+        if (likelyDead === null) return '<span class="block text-center text-gray-500">-</span>';
         const value = likelyDead ?? 0;
         const colorClass = value > 0 ? 'text-red-400' : 'text-gray-500';
         return `<span class="block text-center font-medium ${colorClass}">${value}</span>`;

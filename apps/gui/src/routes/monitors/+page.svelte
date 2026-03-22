@@ -5,7 +5,7 @@
     import MonitorsActions from '$lib/components/partials/MonitorActions.svelte';
     import * as Alert from "$lib/components/ui/alert/index.js";
     
-    import { monitorRows } from '$lib/stores/monitors.js';
+    import { monitorRows, monitors } from '$lib/stores/monitors.js';
 
     import { StateManager } from '@nostrwatch/route66';
     import { doBootstrap } from '$lib/stores/routines';
@@ -144,6 +144,10 @@
 			showViewSelector={false}
             actionsComponent={MonitorsActions}
         />
+    {:else if !$monitors.length}
+        <div class="px-10 mt-20 text-center">
+            <p class="text-gray-500 text-lg">No monitors found</p>
+        </div>
     {/if}
 {/if}
 </main>

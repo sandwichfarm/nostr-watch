@@ -16,21 +16,19 @@
  *   3. monitor3 (public_key, optional) — additional monitor
  *   4. monitor4 (public_key, optional) — additional monitor
  *   5. monitor5 (public_key, optional) — additional monitor
- *   6. network  (string, optional)     — filter by network: "clearnet", "tor", "i2p"
- *   7. check    (string, optional)     — filter by check type: "open", "read", "write", etc.
+ *   6. network    (string, optional)   — network type: "clearnet", "tor", "i2p"
+ *   7. check_type (string, optional)   — check performed: "open", "read", "write", "ssl", "dns", "geo", "info"
  *
  * Buffer layout: 5×32 + 2 string params = 160 + variable
  *
  * NIP-A5 event tags:
- *   ["name", "nip66-monitors"]
- *   ["description", "View NIP-66 relay monitor announcements"]
- *   ["param", "monitor1", "monitor to view", "public_key", ""]
- *   ["param", "monitor2", "additional monitor", "public_key", ""]
- *   ["param", "monitor3", "additional monitor", "public_key", ""]
- *   ["param", "monitor4", "additional monitor", "public_key", ""]
- *   ["param", "monitor5", "additional monitor", "public_key", ""]
- *   ["param", "network", "clearnet, tor, or i2p", "string", ""]
- *   ["param", "check", "check type: open, read, write, ssl, dns, geo, info", "string", ""]
+ *   ["param", "monitor1", "monitor pubkey to filter by", "public_key", ""]
+ *   ["param", "monitor2", "additional monitor pubkey", "public_key", ""]
+ *   ["param", "monitor3", "additional monitor pubkey", "public_key", ""]
+ *   ["param", "monitor4", "additional monitor pubkey", "public_key", ""]
+ *   ["param", "monitor5", "additional monitor pubkey", "public_key", ""]
+ *   ["param", "network", "network type: clearnet, tor, or i2p", "string", ""]
+ *   ["param", "check_type", "check performed: open, read, write, ssl, dns, geo, info", "string", ""]
  */
 import {
   req_new,

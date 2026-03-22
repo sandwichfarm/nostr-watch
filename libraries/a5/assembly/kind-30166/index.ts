@@ -30,13 +30,13 @@
  *   8.  monitor3        (public_key, optional) — additional monitor
  *   9.  monitor4        (public_key, optional) — additional monitor
  *  10.  monitor5        (public_key, optional) — additional monitor
- *  11.  network         (string, optional)     — filter by network: "clearnet", "tor", "i2p"
- *  12.  nip             (string, optional)     — filter by supported NIP number (e.g. "42")
- *  13.  capability      (string, optional)     — filter by R tag (e.g. "!auth", "ssl")
- *  14.  software        (string, optional)     — filter by relay software name
- *  15.  geohash         (string, optional)     — filter by geohash prefix
- *  16.  label_namespace (string, optional)     — NIP-32 label namespace (#L filter)
- *  17.  label_value     (string, optional)     — NIP-32 label value (#l filter)
+ *  11.  network         (string, optional)     — network type: "clearnet", "tor", "i2p"
+ *  12.  supported_nips  (string, optional)     — supported NIP number (e.g. "42")
+ *  13.  requirements    (string, optional)     — relay requirements: "auth", "!auth", "payment", "!payment", "ssl", "!ssl", "pow", "!pow"
+ *  14.  software        (string, optional)     — relay software name (e.g. "strfry", "nostr-rs-relay")
+ *  15.  geohash         (string, optional)     — geohash location prefix
+ *  16.  label_namespace (string, optional)     — NIP-32 label namespace (e.g. "countryCode", "host.isp", "dns.ipv4")
+ *  17.  label_value     (string, optional)     — NIP-32 label value (e.g. "US", "Contabo GmbH")
  */
 import {
   req_new,

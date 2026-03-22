@@ -167,39 +167,17 @@ export const monitorsEvents: Readable<Record<string, IEvent[]>> = derived(
 export const monitorsMap: Writable<Map<string, Monitor>> = writable(monitorsMapFromCache());
 
 export const monitors = derived(
-  ([monitorsMap]), 
+  [monitorsMap],
   ([$monitorsMap]) => {
     const liveData = $route66?.services?.monitors?.sortedMonitors
-    let arr: Monitor[] = []
-    if(liveData?.length) {
-      if(liveData && liveData.length) {
-        arr = liveData
-      }
-      if(!arr.length) {
-        arr = Array.from(monitorsMapFromCache().values());
-      }
-    }
-    else if($monitorsMap.size) {
-      arr = Array.from($monitorsMap.values());
-    }
-    if(arr.length){
-      const toCache = arr.map(( monitor: Monitor) => monitor.toCache())
-      if (!suppressMonitorsCachePersist && get(tabState) === 'leader') {
-        try {
-          StateManager.set(MONITORS_CACHE_KEY, toCache);
-        } catch {}
-      }
-    }
-    return arr;
+    if (liveData?.length) return liveData
+    if ($monitorsMap.size) return Array.from($monitorsMap.values())
+    return []
   }
 )
 
-export const monitorsSorted = derived(
-  monitors,
-  ($monitors) => {
-    return $route66?.services?.monitors?.sortedMonitors || $monitors;
-  }
-);
+/** @deprecated Use `monitors` directly. Kept as alias for backward compatibility. */
+export const monitorsSorted = monitors
 
 export const monitorNip05s = derived(
   monitors,
@@ -366,7 +344,7 @@ function scheduleRelayLivenessCompute(delayMs = 250) {
 }
 
 async function computeAndUpdateRelayLiveness(): Promise<void> {
-  const monitorsList = get(monitorsSorted) as Monitor[];
+  const monitorsList = get(monitors) as Monitor[];
   if (!Array.isArray(monitorsList) || monitorsList.length === 0) return;
 
   const result = await computeRelayLivenessFromCache(monitorsList);
@@ -409,12 +387,25 @@ async function computeAndUpdateRelayLiveness(): Promise<void> {
 }
 
 if (typeof window !== "undefined") {
+  // Persist monitors to cache as a side effect, NOT inside the derived store.
+  // Only the leader tab writes; the `suppressMonitorsCachePersist` flag prevents
+  // feedback loops when applying cache from other tabs.
+  monitors.subscribe(($monitors) => {
+    if (!$monitors.length) return
+    if (suppressMonitorsCachePersist) return
+    if (get(tabState) !== 'leader') return
+    try {
+      const toCache = $monitors.map((monitor: Monitor) => monitor.toCache())
+      StateManager.set(MONITORS_CACHE_KEY, toCache)
+    } catch {}
+  })
+
   // Re-compute when monitors change or on a timer
   // Use a longer initial delay to give the cache time to seed
   let isFirstMonitorUpdate = true;
-  monitorsSorted.subscribe((monitors) => {
+  monitors.subscribe((monitorsList) => {
     // Skip if no monitors yet
-    if (!monitors?.length) return;
+    if (!monitorsList?.length) return;
     // Use longer delay on first update to allow cache to fully seed
     const delay = isFirstMonitorUpdate ? 2000 : 500;
     isFirstMonitorUpdate = false;
@@ -439,11 +430,11 @@ if (typeof window !== "undefined") {
 export const monitorsChecked: Writable<boolean> = writable(false);
 
 export const monitorRows = derived(
-  [monitorsSorted, monitorRelayLivenessCounts, nip05s, statsAsOf],
-  ([$monitorsSorted, $monitorRelayLivenessCounts, _nip05s, $statsAsOf]) => {
+  [monitors, monitorRelayLivenessCounts, nip05s, statsAsOf],
+  ([$monitors, $monitorRelayLivenessCounts, _nip05s, $statsAsOf]) => {
     const wallNow = Math.round(Date.now() / 1000);
     const now = $statsAsOf > 0 ? Math.min(wallNow, $statsAsOf) : wallNow;
-    return $monitorsSorted.map((monitor: Monitor) => {
+    return $monitors.map((monitor: Monitor) => {
       const row: Record<string, any> = new Object();
       const liveness = $monitorRelayLivenessCounts?.[monitor.pubkey] ?? { online: 0, offline: 0, dead: 0 };
       row.id = monitor.pubkey;

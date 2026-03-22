@@ -15,25 +15,28 @@
  *   - Capability flag (#R): auth, !auth, payment, !payment, ssl, !ssl, pow, !pow
  *   - Software (#s): relay software name
  *   - Geohash (#g): location prefix match
- *   - Country (#l): ISO country code label
+ *   - NIP-32 labels (#L namespace + #l value): generic label filter
+ *     e.g. L="countryCode" l="US", L="host.isp" l="Contabo GmbH",
+ *          L="dns.ipv4" l="207.244.244.88", L="nip11.version" l="0.9.6"
  *
  * Parameters (in order):
- *   1.  mode           (number, required)     — 0 = online, 1 = offline, 2 = dead
- *   2.  frequency      (number, required)     — monitor check frequency in seconds
- *   3.  staleness      (number, optional)     — multiplier (default 1, min 1). 0 = use default.
- *   4.  dead_threshold (number, optional)     — dead cutoff in seconds (default 2592000 = 30d). 0 = use default.
- *   5.  now            (timestamp, required)  — current unix timestamp
- *   6.  monitor1       (public_key, optional) — filter by this monitor
- *   7.  monitor2       (public_key, optional) — additional monitor
- *   8.  monitor3       (public_key, optional) — additional monitor
- *   9.  monitor4       (public_key, optional) — additional monitor
- *  10.  monitor5       (public_key, optional) — additional monitor
- *  11.  network        (string, optional)     — filter by network: "clearnet", "tor", "i2p"
- *  12.  nip            (string, optional)     — filter by supported NIP number (e.g. "42")
- *  13.  capability     (string, optional)     — filter by R tag (e.g. "!auth", "ssl")
- *  14.  software       (string, optional)     — filter by relay software name
- *  15.  geohash        (string, optional)     — filter by geohash prefix
- *  16.  country        (string, optional)     — filter by country code label (e.g. "US", "DE")
+ *   1.  mode            (number, required)     — 0 = online, 1 = offline, 2 = dead
+ *   2.  frequency       (number, required)     — monitor check frequency in seconds
+ *   3.  staleness       (number, optional)     — multiplier (default 1, min 1). 0 = use default.
+ *   4.  dead_threshold  (number, optional)     — dead cutoff in seconds (default 2592000 = 30d). 0 = use default.
+ *   5.  now             (timestamp, required)  — current unix timestamp
+ *   6.  monitor1        (public_key, optional) — filter by this monitor
+ *   7.  monitor2        (public_key, optional) — additional monitor
+ *   8.  monitor3        (public_key, optional) — additional monitor
+ *   9.  monitor4        (public_key, optional) — additional monitor
+ *  10.  monitor5        (public_key, optional) — additional monitor
+ *  11.  network         (string, optional)     — filter by network: "clearnet", "tor", "i2p"
+ *  12.  nip             (string, optional)     — filter by supported NIP number (e.g. "42")
+ *  13.  capability      (string, optional)     — filter by R tag (e.g. "!auth", "ssl")
+ *  14.  software        (string, optional)     — filter by relay software name
+ *  15.  geohash         (string, optional)     — filter by geohash prefix
+ *  16.  label_namespace (string, optional)     — NIP-32 label namespace (#L filter)
+ *  17.  label_value     (string, optional)     — NIP-32 label value (#l filter)
  */
 import {
   req_new,
@@ -154,7 +157,8 @@ export function run(paramsPtr: usize): void {
   off = addTagFilter(req, "R", paramsPtr, off); // capability
   off = addTagFilter(req, "s", paramsPtr, off); // software
   off = addTagFilter(req, "g", paramsPtr, off); // geohash
-  off = addTagFilter(req, "l", paramsPtr, off); // country label
+  off = addTagFilter(req, "L", paramsPtr, off); // NIP-32 label namespace
+  off = addTagFilter(req, "l", paramsPtr, off); // NIP-32 label value
 
   // Set time window based on mode
   if (mode == MODE_ONLINE) {

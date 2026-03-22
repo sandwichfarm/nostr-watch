@@ -33,7 +33,8 @@
       ["param", "capability", "R tag: auth, !auth, payment, !payment, ssl, !ssl, pow, !pow", "string", ""],
       ["param", "software", "relay software name", "string", ""],
       ["param", "geohash", "geohash prefix for location filter", "string", ""],
-      ["param", "country", "ISO country code label (e.g. US, DE, BR)", "string", ""]
+      ["param", "label_namespace", "NIP-32 label namespace (e.g. countryCode, host.isp, dns.ipv4)", "string", ""],
+      ["param", "label_value", "NIP-32 label value (e.g. US, Contabo GmbH, 207.244.244.88)", "string", ""]
     ]
   },
   "kind-1066": {

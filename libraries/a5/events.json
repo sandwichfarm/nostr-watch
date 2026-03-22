@@ -8,7 +8,9 @@
       ["param", "monitor2", "additional monitor", "public_key", ""],
       ["param", "monitor3", "additional monitor", "public_key", ""],
       ["param", "monitor4", "additional monitor", "public_key", ""],
-      ["param", "monitor5", "additional monitor", "public_key", ""]
+      ["param", "monitor5", "additional monitor", "public_key", ""],
+      ["param", "network", "clearnet, tor, or i2p", "string", ""],
+      ["param", "check", "check type: open, read, write, ssl, dns, geo, info", "string", ""]
     ]
   },
   "kind-30166": {
@@ -25,7 +27,13 @@
       ["param", "monitor2", "additional monitor", "public_key", ""],
       ["param", "monitor3", "additional monitor", "public_key", ""],
       ["param", "monitor4", "additional monitor", "public_key", ""],
-      ["param", "monitor5", "additional monitor", "public_key", ""]
+      ["param", "monitor5", "additional monitor", "public_key", ""],
+      ["param", "network", "clearnet, tor, or i2p", "string", ""],
+      ["param", "nip", "supported NIP number (e.g. 42)", "string", ""],
+      ["param", "capability", "R tag: auth, !auth, payment, !payment, ssl, !ssl, pow, !pow", "string", ""],
+      ["param", "software", "relay software name", "string", ""],
+      ["param", "geohash", "geohash prefix for location filter", "string", ""],
+      ["param", "country", "ISO country code label (e.g. US, DE, BR)", "string", ""]
     ]
   },
   "kind-1066": {

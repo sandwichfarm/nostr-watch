@@ -8,26 +8,38 @@
  *   OFFLINE: since = now - dead_threshold,            until = now - (frequency * staleness)
  *   DEAD:    since = 0,                               until = now - dead_threshold
  *
- * Optionally filters by up to 5 monitor pubkeys (authors). Zero-filled slots are skipped.
+ * Supports filtering by:
+ *   - Up to 5 monitor pubkeys (authors)
+ *   - Network type (#n): clearnet, tor, i2p
+ *   - Supported NIP (#N): any NIP number as string
+ *   - Capability flag (#R): auth, !auth, payment, !payment, ssl, !ssl, pow, !pow
+ *   - Software (#s): relay software name
+ *   - Geohash (#g): location prefix match
+ *   - Country (#l): ISO country code label
  *
  * Parameters (in order):
- *   1. mode           (number, required)     — 0 = online, 1 = offline, 2 = dead
- *   2. frequency      (number, required)     — monitor check frequency in seconds
- *   3. staleness      (number, optional)     — multiplier (default 1, min 1). 0 = use default.
- *   4. dead_threshold (number, optional)     — dead cutoff in seconds (default 2592000 = 30d). 0 = use default.
- *   5. now            (timestamp, required)  — current unix timestamp
- *   6. monitor1       (public_key, optional) — filter by this monitor
- *   7. monitor2       (public_key, optional) — additional monitor
- *   8. monitor3       (public_key, optional) — additional monitor
- *   9. monitor4       (public_key, optional) — additional monitor
- *  10. monitor5       (public_key, optional) — additional monitor
- *
- * Buffer layout: 4+4+4+4+4 + 5×32 = 180 bytes
+ *   1.  mode           (number, required)     — 0 = online, 1 = offline, 2 = dead
+ *   2.  frequency      (number, required)     — monitor check frequency in seconds
+ *   3.  staleness      (number, optional)     — multiplier (default 1, min 1). 0 = use default.
+ *   4.  dead_threshold (number, optional)     — dead cutoff in seconds (default 2592000 = 30d). 0 = use default.
+ *   5.  now            (timestamp, required)  — current unix timestamp
+ *   6.  monitor1       (public_key, optional) — filter by this monitor
+ *   7.  monitor2       (public_key, optional) — additional monitor
+ *   8.  monitor3       (public_key, optional) — additional monitor
+ *   9.  monitor4       (public_key, optional) — additional monitor
+ *  10.  monitor5       (public_key, optional) — additional monitor
+ *  11.  network        (string, optional)     — filter by network: "clearnet", "tor", "i2p"
+ *  12.  nip            (string, optional)     — filter by supported NIP number (e.g. "42")
+ *  13.  capability     (string, optional)     — filter by R tag (e.g. "!auth", "ssl")
+ *  14.  software       (string, optional)     — filter by relay software name
+ *  15.  geohash        (string, optional)     — filter by geohash prefix
+ *  16.  country        (string, optional)     — filter by country code label (e.g. "US", "DE")
  */
 import {
   req_new,
   req_add_kind,
   req_add_author,
+  req_add_tag,
   req_set_limit,
   req_set_since,
   req_set_until,
@@ -36,7 +48,7 @@ import {
   display,
   drop
 } from "../common/nostr";
-import { log, isPubkeyZero } from "../common/utils";
+import { log, isPubkeyZero, encodeString } from "../common/utils";
 
 // Defaults
 const DEFAULT_STALENESS: i32 = 1;
@@ -47,9 +59,10 @@ const MODE_ONLINE: i32 = 0;
 const MODE_OFFLINE: i32 = 1;
 const MODE_DEAD: i32 = 2;
 
-// Monitor slots
+// Layout constants
 const MAX_MONITORS: i32 = 5;
 const MONITORS_OFFSET: usize = 20; // after mode(4)+freq(4)+stale(4)+dead(4)+now(4)
+const STRINGS_OFFSET: usize = 180; // after monitors (20 + 5*32)
 
 /** Read a big-endian i32 from the params buffer at a byte offset */
 function readI32(ptr: usize, offset: usize): i32 {
@@ -61,12 +74,41 @@ function readI32(ptr: usize, offset: usize): i32 {
   );
 }
 
+/** Read a string param (u32_be length + UTF-8 bytes) and return [ptr, len, nextOffset] */
+function readStringParam(basePtr: usize, offset: usize): usize[] {
+  const len: u32 = (
+    (<u32>load<u8>(basePtr + offset, 0) << 24) |
+    (<u32>load<u8>(basePtr + offset, 1) << 16) |
+    (<u32>load<u8>(basePtr + offset, 2) << 8)  |
+    (<u32>load<u8>(basePtr + offset, 3))
+  );
+  const result = new Array<usize>(3);
+  result[0] = basePtr + offset + 4; // ptr to string data
+  result[1] = <usize>len;           // string length
+  result[2] = offset + 4 + <usize>len; // next param offset
+  return result;
+}
+
+/** Add a single-letter tag filter if the string param is non-empty */
+function addTagFilter(req: i32, tagName: string, basePtr: usize, offset: usize): usize {
+  const param = readStringParam(basePtr, offset);
+  const strPtr = param[0];
+  const strLen = param[1];
+  const nextOffset = param[2];
+  if (strLen > 0) {
+    const tag = encodeString(tagName);
+    const tagPtr = changetype<usize>(tag);
+    req_add_tag(req, <i32>tagPtr, tag.byteLength, <i32>strPtr, <i32>strLen);
+  }
+  return nextOffset;
+}
+
 export function alloc(size: usize): usize {
   return heap.alloc(size);
 }
 
 export function run(paramsPtr: usize): void {
-  // Read numeric params
+  // Read numeric params (first 20 bytes)
   const mode = readI32(paramsPtr, 0);
   const frequency = readI32(paramsPtr, 4);
   let staleness = readI32(paramsPtr, 8);
@@ -98,14 +140,21 @@ export function run(paramsPtr: usize): void {
   req_add_kind(req, 30166);
 
   // Add monitor pubkey filters (skip zero-filled slots)
-  let monitorCount: i32 = 0;
   for (let i: i32 = 0; i < MAX_MONITORS; i++) {
     const pkOffset: usize = MONITORS_OFFSET + <usize>i * 32;
     if (!isPubkeyZero(paramsPtr, pkOffset)) {
       req_add_author(req, <i32>(paramsPtr + pkOffset));
-      monitorCount++;
     }
   }
+
+  // Add string-based tag filters
+  let off: usize = STRINGS_OFFSET;
+  off = addTagFilter(req, "n", paramsPtr, off); // network
+  off = addTagFilter(req, "N", paramsPtr, off); // NIP
+  off = addTagFilter(req, "R", paramsPtr, off); // capability
+  off = addTagFilter(req, "s", paramsPtr, off); // software
+  off = addTagFilter(req, "g", paramsPtr, off); // geohash
+  off = addTagFilter(req, "l", paramsPtr, off); // country label
 
   // Set time window based on mode
   if (mode == MODE_ONLINE) {

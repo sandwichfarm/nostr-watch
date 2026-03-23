@@ -151,3 +151,13 @@
     {/if}
 {/if}
 </main>
+
+<style>
+  :global(.liveness-pending) {
+    transition: color 500ms ease, opacity 500ms ease;
+  }
+  :global(.liveness-fresh) {
+    transition: color 500ms ease;
+    animation: none;
+  }
+</style>

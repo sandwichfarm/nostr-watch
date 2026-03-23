@@ -38,10 +38,15 @@ const config: Config = {
     				'100%': {
     					backgroundColor: 'rgba(238,130,238, 0)'
     				}
-    			}
+    			},
+    			'liveness-pulse': {
+    				'0%, 100%': { opacity: '0.4' },
+    				'50%': { opacity: '0.7' },
+    			},
     		},
     		animation: {
-    			flash: 'flash 1s ease-out'
+    			flash: 'flash 1s ease-out',
+    			'liveness-pulse': 'liveness-pulse 1.8s ease-in-out infinite',
     		},
     		boxShadow: {
     			'offset-20': '20px 20px 0px rgba(255,255,255,0.03)',

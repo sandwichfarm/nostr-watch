@@ -76,23 +76,32 @@ export const tableFormatters: Formatters = {
     frequency: (frequency) => {
         return `<span class="block text-center">${formatSeconds(frequency)}</span>`
     },
-    reportingOnline: (reportingOnline) => {
+    reportingOnline: (reportingOnline, row) => {
         if (reportingOnline === null) return '<span class="block text-center text-gray-500">-</span>';
         const value = reportingOnline ?? 0;
+        if (!row?.livenessFresh) {
+            return `<span class="block text-center font-medium text-gray-400 animate-liveness-pulse liveness-pending">${value}</span>`;
+        }
         const colorClass = value > 0 ? 'text-green-400' : 'text-gray-500';
-        return `<span class="block text-center font-medium ${colorClass}">${value}</span>`;
+        return `<span class="block text-center font-medium ${colorClass} liveness-fresh">${value}</span>`;
     },
-    reportingOffline: (reportingOffline) => {
+    reportingOffline: (reportingOffline, row) => {
         if (reportingOffline === null) return '<span class="block text-center text-gray-500">-</span>';
         const value = reportingOffline ?? 0;
+        if (!row?.livenessFresh) {
+            return `<span class="block text-center font-medium text-gray-400 animate-liveness-pulse liveness-pending">${value}</span>`;
+        }
         const colorClass = value > 0 ? 'text-orange-400' : 'text-gray-500';
-        return `<span class="block text-center font-medium ${colorClass}">${value}</span>`;
+        return `<span class="block text-center font-medium ${colorClass} liveness-fresh">${value}</span>`;
     },
-    likelyDead: (likelyDead) => {
+    likelyDead: (likelyDead, row) => {
         if (likelyDead === null) return '<span class="block text-center text-gray-500">-</span>';
         const value = likelyDead ?? 0;
+        if (!row?.livenessFresh) {
+            return `<span class="block text-center font-medium text-gray-400 animate-liveness-pulse liveness-pending">${value}</span>`;
+        }
         const colorClass = value > 0 ? 'text-red-400' : 'text-gray-500';
-        return `<span class="block text-center font-medium ${colorClass}">${value}</span>`;
+        return `<span class="block text-center font-medium ${colorClass} liveness-fresh">${value}</span>`;
     },
     lastActive: (lastActive) => {
         if(lastActive < 0) {

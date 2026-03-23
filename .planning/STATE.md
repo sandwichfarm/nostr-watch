@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v2.2
 milestone_name: Fix Monitors Page
 status: unknown
-stopped_at: "Completed 16-00-PLAN.md"
-last_updated: "2026-03-23T13:32:01Z"
+stopped_at: Completed 16-01-PLAN.md
+last_updated: "2026-03-23T13:35:48.083Z"
 progress:
   total_phases: 3
   completed_phases: 2
   total_plans: 6
-  completed_plans: 4
+  completed_plans: 5
 ---
 
 # Project State
@@ -51,6 +51,7 @@ Plan: 2 of 3
 | Phase 15 P02 | 5 | 2 tasks | 3 files |
 | Phase 15-aggregation-and-loading P02 | 5 | 3 tasks | 3 files |
 | Phase 16-data-integrity P00 | 3 | 2 tasks | 2 files |
+| Phase 16 P01 | 5 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -68,6 +69,8 @@ Plan: 2 of 3
 - [Phase 15-aggregation-and-loading]: Checkpoint:human-verify approved: monitors page shows progressive reveal with '-' count columns until livenessReady, resolving to real numbers after first computation
 - [Phase 16-data-integrity]: TDD RED scaffolds use vi.mock() for localStorage-dependent store imports in test environment; computeActive pure function in test file validates formula contract Plan 01 must implement
 - [Phase 16-data-integrity]: monitorFreshness store tests use dynamic import() + manual cleanup; dataTable tests mock $lib/stores/monitors.js to prevent module-level localStorage crash
+- [Phase 16-data-integrity]: monitorFreshness is ephemeral — never persisted to StateManager/localStorage to avoid stale fresh-flags across sessions
+- [Phase 16-data-integrity]: monitorsLivenessLeniency added as reactive derived input to monitorRows so leniency changes instantly re-derive all rows without separate trigger
 
 ### Pending Todos
 
@@ -79,6 +82,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-23T13:32:01Z
-Stopped at: Completed 16-00-PLAN.md
-Resume file: .planning/phases/16-data-integrity/16-01-PLAN.md
+Last session: 2026-03-23T13:35:48.080Z
+Stopped at: Completed 16-01-PLAN.md
+Resume file: None

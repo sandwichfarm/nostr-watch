@@ -223,6 +223,26 @@ export const monitorRelayLivenessCounts: Writable<MonitorRelayLivenessMap> = wri
 /** True after the first successful liveness computation completes. */
 export const livenessReady: Writable<boolean> = writable(false);
 
+/**
+ * Tracks which monitors have completed their backfill sync this session.
+ * Ephemeral — starts empty each session, never persisted to localStorage.
+ * Monitors in this set have authoritative (fresh) liveness counts.
+ */
+export const monitorFreshness: Writable<Set<string>> = writable(new Set());
+
+/**
+ * Mark monitors as having completed their backfill chunk.
+ * Called from backfillMonitorChecks() after each chunk resolves.
+ * Always creates a new Set reference to trigger Svelte reactivity.
+ */
+export function markMonitorsFresh(pubkeys: string[]): void {
+  monitorFreshness.update(existing => {
+    const next = new Set(existing);
+    for (const pk of pubkeys) next.add(pk);
+    return next;
+  });
+}
+
 // If we loaded liveness from cache that has real data, mark as ready immediately
 if (typeof window !== "undefined") {
   const initial = get(monitorRelayLivenessCounts);
@@ -446,8 +466,8 @@ if (typeof window !== "undefined") {
 export const monitorsChecked: Writable<boolean> = writable(false);
 
 export const monitorRows = derived(
-  [monitors, monitorRelayLivenessCounts, nip05s, statsAsOf, livenessReady],
-  ([$monitors, $monitorRelayLivenessCounts, _nip05s, $statsAsOf, $livenessReady]) => {
+  [monitors, monitorRelayLivenessCounts, nip05s, statsAsOf, livenessReady, monitorFreshness, monitorsLivenessLeniency],
+  ([$monitors, $monitorRelayLivenessCounts, _nip05s, $statsAsOf, $livenessReady, $monitorFreshness, $leniency]) => {
     const wallNow = Math.round(Date.now() / 1000);
     const now = $statsAsOf > 0 ? Math.min(wallNow, $statsAsOf) : wallNow;
     return $monitors.map((monitor: Monitor) => {
@@ -459,7 +479,7 @@ export const monitorRows = derived(
       const lastActive = monitor?.lastActive ?? -1;
       const frequency = monitor?.frequency ?? 0;
       row.active = typeof lastActive === "number" && lastActive > 0 && typeof frequency === "number" && frequency > 0
-        ? now - frequency < lastActive
+        ? now - (frequency * $leniency) < lastActive
         : false;
       row.pubkey = monitor.pubkey;
       row.name = monitor.profile?.name ?? null
@@ -478,6 +498,7 @@ export const monitorRows = derived(
       row.reportingOnline = liveness.online
       row.reportingOffline = liveness.offline
       row.likelyDead = liveness.dead
+      row.livenessFresh = $monitorFreshness.has(monitor.pubkey)
       return row;
     })
   }

@@ -10,6 +10,7 @@ import { delay } from "@nostrwatch/utils";
 import { relaysWithNip11s$, relaysWithoutNip11s$ } from "$stores/helpers/helpers-nip11s";
 import { isBootstrapping, lastCompleteSync, setStatsAsOf } from "$lib/stores/app";
 import { StateManager } from "@nostrwatch/route66";
+import { markMonitorsFresh } from '$lib/stores/monitors';
 
 export const fetchMonitors = async () => {
     const $route66 = await instance();
@@ -106,7 +107,14 @@ export const backfillMonitorChecks = async () => {
         });
     }
 
-    if (!filters.length) return;
+    if (!filters.length) {
+        // No filters means no backfill work — current cache state is authoritative
+        const allPubkeys = enabledMonitors
+            .map((m: any) => m.pubkey)
+            .filter((pk: any): pk is string => typeof pk === 'string' && pk.length > 0);
+        markMonitorsFresh(allPubkeys);
+        return;
+    }
 
     const relays = monitorService.nip66Relays || [];
     const options: WebsocketAdapterOptions = {
@@ -126,9 +134,21 @@ export const backfillMonitorChecks = async () => {
         } catch (e) {
             console.warn('[backfillMonitorChecks] chunk failed:', e);
         }
+        // Signal freshness for the monitors whose filters were in this chunk
+        const chunkPubkeys = chunk
+            .map(f => (f.authors as string[])?.[0])
+            .filter((pk): pk is string => typeof pk === 'string' && pk.length > 0);
+        markMonitorsFresh(chunkPubkeys);
         // Yield to browser between chunks
         await delay(100);
     }
+
+    // After all chunks, mark any remaining enabled monitors as fresh.
+    // Monitors with no historical events still have authoritative (empty) data.
+    const allPubkeys = enabledMonitors
+        .map((m: any) => m.pubkey)
+        .filter((pk: any): pk is string => typeof pk === 'string' && pk.length > 0);
+    markMonitorsFresh(allPubkeys);
 };
 
 export const fetchOperators = async (pubkeys?: string[]) => {

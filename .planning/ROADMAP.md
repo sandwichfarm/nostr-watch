@@ -69,7 +69,7 @@ Plans:
   1. A monitor whose most recent Kind 30166 event is older than its declared frequency window is shown as inactive, not active
   2. When fresh data is fetched and contradicts a cached value, the UI reflects the fresh data — the stale cached value is not preserved
   3. The distinction between "loading" and "inactive monitor with no data" is visually clear to a user on the monitors listing page
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 
 Plans:
 - [ ] 16-00-PLAN.md -- Create test scaffolds for active detection leniency and formatter pending/fresh states (Wave 0)
@@ -84,4 +84,4 @@ Plans:
 |-------|-----------|----------------|--------|-----------|
 | 14. Revert Broken Bugfix | 1/1 | Complete    | 2026-03-19 | - |
 | 15. Aggregation and Loading | 2/2 | Complete    | 2026-03-23 | - |
-| 16. Data Integrity | v2.2 | 0/3 | Not started | - |
+| 16. Data Integrity | 1/3 | In Progress|  | - |

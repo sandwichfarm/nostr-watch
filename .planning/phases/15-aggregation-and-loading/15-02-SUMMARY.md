@@ -55,8 +55,8 @@ completed: 2026-03-22
 
 - **Duration:** 5 min
 - **Started:** 2026-03-22T21:35:24Z
-- **Completed:** 2026-03-22T21:40:00Z
-- **Tasks:** 2 (Task 3 is checkpoint:human-verify — awaiting user verification)
+- **Completed:** 2026-03-23
+- **Tasks:** 3 (all complete including human-verify checkpoint, approved by user)
 - **Files modified:** 3
 
 ## Accomplishments
@@ -67,12 +67,13 @@ completed: 2026-03-22
 
 ## Task Commits
 
-Each task was committed atomically:
+Each task were committed atomically:
 
 1. **Task 1: Add livenessReady flag and integrate into monitorRows** - `f3c5cc26` (feat)
 2. **Task 2: Update page with progressive reveal, loading columns, and empty state** - `6c220f15` (feat)
+3. **Task 3: Verify monitors page behavior end-to-end** - checkpoint:human-verify, approved by user
 
-**Plan metadata:** (docs commit below)
+**Plan metadata:** `2fb732d9` (docs: complete progressive reveal and empty state plan)
 
 ## Files Created/Modified
 - `apps/gui/src/lib/stores/monitors.ts` - Added livenessReady store, cache-aware initialization, updated monitorRows derived
@@ -97,9 +98,9 @@ None.
 None - no external service configuration required.
 
 ## Next Phase Readiness
-- Task 3 (checkpoint:human-verify) is pending user verification of the monitors page behavior
-- After user approval: phase 15 is complete and the monitors page fix milestone (v2.2) is done
-- The monitors page now has correct progressive reveal, accurate counts, and an empty state
+- Phase 15 is complete. The monitors page fix milestone (v2.2) is done.
+- The monitors page now has correct progressive reveal, accurate counts, and an empty state.
+- User approved the visual behavior at the checkpoint: monitor rows appear immediately, count columns resolve from '-' to real numbers after liveness computation, and the empty state message appears when no monitors exist.
 
 ---
 *Phase: 15-aggregation-and-loading*

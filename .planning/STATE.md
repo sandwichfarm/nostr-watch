@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v2.2
 milestone_name: Fix Monitors Page
 status: unknown
-stopped_at: "Completed 15-aggregation-and-loading-02-PLAN.md — awaiting checkpoint:human-verify for Task 3"
-last_updated: "2026-03-22T21:37:56.785Z"
+stopped_at: Completed 15-aggregation-and-loading-02-PLAN.md — Phase 15 complete, milestone v2.2 done
+last_updated: "2026-03-23T10:57:21.770Z"
 progress:
   total_phases: 3
   completed_phases: 2
@@ -49,6 +49,7 @@ Plan: 2 of 2
 | Phase 14-revert-broken-bugfix P01 | 6 | 2 tasks | 2 files |
 | Phase 15-aggregation-and-loading P01 | 2 | 2 tasks | 2 files |
 | Phase 15 P02 | 5 | 2 tasks | 3 files |
+| Phase 15-aggregation-and-loading P02 | 5 | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -63,6 +64,7 @@ Plan: 2 of 2
 - [Phase 15-aggregation-and-loading]: null sentinel for uninitialized liveness counts: enables formatters to show '-' vs '0' for uninitialized state
 - [Phase 15-aggregation-and-loading]: livenessReady initialized from cache at startup: returning users with warm cache skip loading dashes
 - [Phase 15-aggregation-and-loading]: empty state checks monitors.length not monitorRows.length: discriminates no-monitors from rows-still-computing
+- [Phase 15-aggregation-and-loading]: Checkpoint:human-verify approved: monitors page shows progressive reveal with '-' count columns until livenessReady, resolving to real numbers after first computation
 
 ### Pending Todos
 
@@ -74,6 +76,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-22T21:37:56.783Z
-Stopped at: Completed 15-aggregation-and-loading-02-PLAN.md — awaiting checkpoint:human-verify for Task 3
+Last session: 2026-03-23T10:57:21.768Z
+Stopped at: Completed 15-aggregation-and-loading-02-PLAN.md — Phase 15 complete, milestone v2.2 done
 Resume file: None

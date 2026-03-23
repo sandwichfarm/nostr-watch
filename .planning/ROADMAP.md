@@ -58,8 +58,8 @@ Plans:
 **Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 15-01-PLAN.md -- Collapse store chain, extract cache persistence side effect, fix liveness computation
-- [ ] 15-02-PLAN.md -- Add progressive reveal loading states, empty state, and livenessReady flag
+- [x] 15-01-PLAN.md -- Collapse store chain, extract cache persistence side effect, fix liveness computation
+- [x] 15-02-PLAN.md -- Add progressive reveal loading states, empty state, and livenessReady flag
 
 ### Phase 16: Data Integrity
 **Goal**: The monitors page reflects truthful, current data — inactive monitors are identified correctly and stale cache entries do not corrupt displayed values
@@ -69,7 +69,12 @@ Plans:
   1. A monitor whose most recent Kind 30166 event is older than its declared frequency window is shown as inactive, not active
   2. When fresh data is fetched and contradicts a cached value, the UI reflects the fresh data — the stale cached value is not preserved
   3. The distinction between "loading" and "inactive monitor with no data" is visually clear to a user on the monitors listing page
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 16-00-PLAN.md -- Create test scaffolds for active detection leniency and formatter pending/fresh states (Wave 0)
+- [ ] 16-01-PLAN.md -- Fix active detection leniency bug, add monitorFreshness store, wire backfill freshness signals
+- [ ] 16-02-PLAN.md -- Add pending/fresh visual states to count formatters with pulse animation and color transition
 
 ## Progress
 
@@ -78,5 +83,5 @@ Plans:
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 14. Revert Broken Bugfix | 1/1 | Complete    | 2026-03-19 | - |
-| 15. Aggregation and Loading | 2/2 | Complete   | 2026-03-23 | - |
-| 16. Data Integrity | v2.2 | 0/TBD | Not started | - |
+| 15. Aggregation and Loading | 2/2 | Complete    | 2026-03-23 | - |
+| 16. Data Integrity | v2.2 | 0/3 | Not started | - |

@@ -27,7 +27,7 @@ Phases 10-13 planned but shelved. Phase 10 (taxonomy types) shipped. Phases 11-1
 
 - [x] **Phase 14: Revert Broken Bugfix** - Remove the compound return type and broken merge logic introduced by bugfix/monitor-pages-aggregation (PR #861) (completed 2026-03-19)
 - [x] **Phase 15: Aggregation and Loading** - Restore correct liveness count computation and clean up the initialization control flow (completed 2026-03-22)
-- [ ] **Phase 16: Data Integrity** - Ensure active/inactive monitor detection is accurate and stale data is never silently preserved
+- [x] **Phase 16: Data Integrity** - Ensure active/inactive monitor detection is accurate and stale data is never silently preserved (completed 2026-03-24)
 
 ## Phase Details
 
@@ -69,7 +69,7 @@ Plans:
   1. A monitor whose most recent Kind 30166 event is older than its declared frequency window is shown as inactive, not active
   2. When fresh data is fetched and contradicts a cached value, the UI reflects the fresh data — the stale cached value is not preserved
   3. The distinction between "loading" and "inactive monitor with no data" is visually clear to a user on the monitors listing page
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [ ] 16-00-PLAN.md -- Create test scaffolds for active detection leniency and formatter pending/fresh states (Wave 0)
@@ -84,4 +84,4 @@ Plans:
 |-------|-----------|----------------|--------|-----------|
 | 14. Revert Broken Bugfix | 1/1 | Complete    | 2026-03-19 | - |
 | 15. Aggregation and Loading | 2/2 | Complete    | 2026-03-23 | - |
-| 16. Data Integrity | 2/3 | In Progress|  | - |
+| 16. Data Integrity | 3/3 | Complete   | 2026-03-24 | - |

@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v2.2
 milestone_name: Fix Monitors Page
 status: unknown
-stopped_at: Completed 16-01-PLAN.md
-last_updated: "2026-03-23T13:35:48.083Z"
+stopped_at: Completed 16-02-PLAN.md
+last_updated: "2026-03-24T00:00:00.000Z"
 progress:
   total_phases: 3
   completed_phases: 2
   total_plans: 6
-  completed_plans: 5
+  completed_plans: 6
 ---
 
 # Project State
@@ -23,8 +23,8 @@ See: .planning/PROJECT.md (updated 2026-03-19)
 
 ## Current Position
 
-Phase: 16 (data-integrity) — EXECUTING
-Plan: 2 of 3
+Phase: 16 (data-integrity) — COMPLETE
+Plan: 3 of 3 (all plans complete)
 
 ## Performance Metrics
 
@@ -52,6 +52,7 @@ Plan: 2 of 3
 | Phase 15-aggregation-and-loading P02 | 5 | 3 tasks | 3 files |
 | Phase 16-data-integrity P00 | 3 | 2 tasks | 2 files |
 | Phase 16 P01 | 5 | 2 tasks | 5 files |
+| Phase 16-data-integrity P02 | ~45 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -71,6 +72,7 @@ Plan: 2 of 3
 - [Phase 16-data-integrity]: monitorFreshness store tests use dynamic import() + manual cleanup; dataTable tests mock $lib/stores/monitors.js to prevent module-level localStorage crash
 - [Phase 16-data-integrity]: monitorFreshness is ephemeral — never persisted to StateManager/localStorage to avoid stale fresh-flags across sessions
 - [Phase 16-data-integrity]: monitorsLivenessLeniency added as reactive derived input to monitorRows so leniency changes instantly re-derive all rows without separate trigger
+- [Phase 16-data-integrity P02]: Freshness signal driven by liveness computation completion, not bootstrap lifecycle — avoids premature fresh state on cached-only rows
 
 ### Pending Todos
 
@@ -82,6 +84,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-23T13:35:48.080Z
-Stopped at: Completed 16-01-PLAN.md
+Last session: 2026-03-24T00:00:00.000Z
+Stopped at: Completed 16-02-PLAN.md
 Resume file: None

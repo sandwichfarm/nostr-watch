@@ -484,7 +484,7 @@ export const monitorRows = derived(
         : { online: null, offline: null, dead: null };
       row.id = monitor.pubkey;
       const lastActive = monitor?.lastActive ?? -1;
-      const frequency = monitor?.frequency ?? 0;
+      const frequency = monitorFrequencySeconds(monitor);
       row.active = typeof lastActive === "number" && lastActive > 0 && typeof frequency === "number" && frequency > 0
         ? now - (frequency * $leniency) < lastActive
         : false;

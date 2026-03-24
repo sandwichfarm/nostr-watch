@@ -409,6 +409,12 @@ async function computeAndUpdateRelayLiveness(): Promise<void> {
   // Signal that at least one computation has completed
   if (!get(livenessReady)) livenessReady.set(true);
 
+  // Mark monitors with non-zero counts as fresh — they have authoritative data.
+  const freshPubkeys = Object.entries(result)
+    .filter(([_, counts]) => counts.online > 0 || counts.offline > 0 || counts.dead > 0)
+    .map(([pk]) => pk);
+  if (freshPubkeys.length > 0) markMonitorsFresh(freshPubkeys);
+
   // Cache the result (leader tab only)
   if (get(tabState) === "leader" && get(doAggregateCache)) {
     try {
@@ -461,6 +467,7 @@ if (typeof window !== "undefined") {
   setInterval(() => {
     scheduleRelayLivenessCompute(100);
   }, 30000); // Refresh every 30 seconds
+
 }
 
 export const monitorsChecked: Writable<boolean> = writable(false);

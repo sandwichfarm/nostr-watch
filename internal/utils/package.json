@@ -1,6 +1,6 @@
 {
   "name": "@nostrwatch/utils",
-  "version": "0.1.9",
+  "version": "0.2.0",
   "license": "MIT",
   "type": "module",
   "module": "src/index.ts",
@@ -75,8 +75,12 @@
     "@noble/hashes": ">=1.0.0"
   },
   "peerDependenciesMeta": {
-    "nostr-tools": { "optional": true },
-    "@noble/hashes": { "optional": true }
+    "nostr-tools": {
+      "optional": true
+    },
+    "@noble/hashes": {
+      "optional": true
+    }
   },
   "engines": {
     "node": ">=14.0.0"

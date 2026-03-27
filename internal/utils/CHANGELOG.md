@@ -1,5 +1,11 @@
 # @nostrwatch/utils
 
+## 0.2.0
+
+### Minor Changes
+
+- [`0e865bf`](https://github.com/sandwichfarm/nostr-watch/commit/0e865bfccd307f39e87433f1823c00e457383459) Thanks [@dskvr](https://github.com/dskvr)! - Compatiblity updates to @nostrwatch/utils
+
 ## 0.1.9
 
 ### Patch Changes

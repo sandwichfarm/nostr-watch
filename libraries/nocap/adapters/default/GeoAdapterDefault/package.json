@@ -1,6 +1,6 @@
 {
   "name": "@nostrwatch/nocap-geo-adapter-default",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "type": "module",
   "main": "dist/server/cjs/index.cjs.js",
   "module": "dist/server/index.js",

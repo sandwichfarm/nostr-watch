@@ -1,6 +1,6 @@
 {
   "name": "@nostrwatch/route66-wsadapter-nostrtools",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "nostr-tools websocket adapter for @nostrwatch/route66",
   "type": "module",
   "author": "bread@sandwich.farm",

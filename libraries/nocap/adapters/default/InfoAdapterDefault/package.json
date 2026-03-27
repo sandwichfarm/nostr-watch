@@ -1,6 +1,6 @@
 {
   "name": "@nostrwatch/nocap-info-adapter-default",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "type": "module",
   "license": "MIT",
   "main": "dist/server/cjs/index.cjs.js",
@@ -38,7 +38,7 @@
     "tor-request": "^3.1.0",
     "@nostrwatch/nocap": "workspace:^"
   },
-  "peerDependencies": {    },
+  "peerDependencies": {},
   "devDependencies": {
     "@babel/core": "^7.26.0",
     "@babel/plugin-transform-modules-commonjs": "7.23.3",

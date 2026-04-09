@@ -167,39 +167,17 @@ export const monitorsEvents: Readable<Record<string, IEvent[]>> = derived(
 export const monitorsMap: Writable<Map<string, Monitor>> = writable(monitorsMapFromCache());
 
 export const monitors = derived(
-  ([monitorsMap]), 
+  [monitorsMap],
   ([$monitorsMap]) => {
     const liveData = $route66?.services?.monitors?.sortedMonitors
-    let arr: Monitor[] = []
-    if(liveData?.length) {
-      if(liveData && liveData.length) {
-        arr = liveData
-      }
-      if(!arr.length) {
-        arr = Array.from(monitorsMapFromCache().values());
-      }
-    }
-    else if($monitorsMap.size) {
-      arr = Array.from($monitorsMap.values());
-    }
-    if(arr.length){
-      const toCache = arr.map(( monitor: Monitor) => monitor.toCache())
-      if (!suppressMonitorsCachePersist && get(tabState) === 'leader') {
-        try {
-          StateManager.set(MONITORS_CACHE_KEY, toCache);
-        } catch {}
-      }
-    }
-    return arr;
+    if (liveData?.length) return liveData
+    if ($monitorsMap.size) return Array.from($monitorsMap.values())
+    return []
   }
 )
 
-export const monitorsSorted = derived(
-  monitors,
-  ($monitors) => {
-    return $route66?.services?.monitors?.sortedMonitors || $monitors;
-  }
-);
+/** @deprecated Use `monitors` directly. Kept as alias for backward compatibility. */
+export const monitorsSorted = monitors
 
 export const monitorNip05s = derived(
   monitors,
@@ -229,17 +207,6 @@ export type MonitorRelayLivenessCounts = {
 
 export type MonitorRelayLivenessMap = Record<string, MonitorRelayLivenessCounts>;
 
-export type MonitorRelayDetail = {
-  relay: string;
-  liveness: "online" | "offline" | "dead";
-  lastSeen: number;
-  rtt?: number;
-  software?: string;
-};
-
-export type MonitorRelayDetailsMap = Record<string, MonitorRelayDetail[]>;
-export const monitorRelayDetails: Writable<MonitorRelayDetailsMap> = writable({});
-
 const MONITOR_RELAY_LIVENESS_CACHE_KEY = "aggregate:monitors:relayLiveness:v1";
 
 function readCachedRelayLiveness(): MonitorRelayLivenessMap {
@@ -252,6 +219,38 @@ function readCachedRelayLiveness(): MonitorRelayLivenessMap {
 }
 
 export const monitorRelayLivenessCounts: Writable<MonitorRelayLivenessMap> = writable(readCachedRelayLiveness());
+
+/** True after the first successful liveness computation completes. */
+export const livenessReady: Writable<boolean> = writable(false);
+
+/**
+ * Tracks which monitors have completed their backfill sync this session.
+ * Ephemeral — starts empty each session, never persisted to localStorage.
+ * Monitors in this set have authoritative (fresh) liveness counts.
+ */
+export const monitorFreshness: Writable<Set<string>> = writable(new Set());
+
+/**
+ * Mark monitors as having completed their backfill chunk.
+ * Called from backfillMonitorChecks() after each chunk resolves.
+ * Always creates a new Set reference to trigger Svelte reactivity.
+ */
+export function markMonitorsFresh(pubkeys: string[]): void {
+  monitorFreshness.update(existing => {
+    const next = new Set(existing);
+    for (const pk of pubkeys) next.add(pk);
+    return next;
+  });
+}
+
+// If we loaded liveness from cache that has real data, mark as ready immediately
+if (typeof window !== "undefined") {
+  const initial = get(monitorRelayLivenessCounts);
+  const hasInitialData = Object.values(initial).some(
+    (c) => c.online > 0 || c.offline > 0 || c.dead > 0
+  );
+  if (hasInitialData) livenessReady.set(true);
+}
 
 if (typeof window !== "undefined") {
   // Ensure monitor selection changes propagate across tabs, including into the leader tab.
@@ -286,22 +285,11 @@ function monitorFrequencySeconds(monitor: Monitor): number {
  * and classifying by timestamp. Fetches all monitors' events in a single query for efficiency.
  * Uses the user-configurable leniency and dead threshold from stores.
  */
-export type MonitorLastSeenMap = Record<string, number>;
-export const monitorLastSeenFromCache: Writable<MonitorLastSeenMap> = writable({});
-
-type ComputeRelayLivenessResult = {
-  counts: MonitorRelayLivenessMap;
-  details: MonitorRelayDetailsMap;
-  lastSeen: MonitorLastSeenMap;
-};
-
 async function computeRelayLivenessFromCache(
   monitorsList: Monitor[]
-): Promise<ComputeRelayLivenessResult> {
+): Promise<MonitorRelayLivenessMap> {
   const result: MonitorRelayLivenessMap = {};
-  const details: MonitorRelayDetailsMap = {};
-  const lastSeen: MonitorLastSeenMap = {};
-  if (!$route66?.adapters?.cacheAdapter) return { counts: result, details, lastSeen };
+  if (!$route66?.adapters?.cacheAdapter) return result;
 
   const cacheAdapter = $route66.adapters.cacheAdapter;
 
@@ -323,10 +311,9 @@ async function computeRelayLivenessFromCache(
     pubkeys.push(pubkey);
     // Initialize result
     result[pubkey] = { online: 0, offline: 0, dead: 0 };
-    details[pubkey] = [];
   }
 
-  if (pubkeys.length === 0) return { counts: result, details, lastSeen };
+  if (pubkeys.length === 0) return result;
 
   // Fetch ALL check events for all monitors in a single query
   const filter = { kinds: [30166], authors: pubkeys };
@@ -334,10 +321,10 @@ async function computeRelayLivenessFromCache(
   try {
     events = await cacheAdapter.REQ([filter]) as IEvent[];
   } catch {
-    return { counts: result, details, lastSeen };
+    return result;
   }
 
-  if (!Array.isArray(events) || events.length === 0) return { counts: result, details, lastSeen };
+  if (!Array.isArray(events) || events.length === 0) return result;
 
   // Group events by (monitor pubkey, relay d-tag) and keep only the latest
   // Key format: "pubkey:relay"
@@ -358,48 +345,23 @@ async function computeRelayLivenessFromCache(
     const monitor = monitorMap.get(event.pubkey);
     if (!monitor) continue;
 
-    const relay = event.tags?.find(t => t[0] === 'd')?.[1];
-    if (!relay) continue;
-
     const timestamp = event.created_at as number;
-
-    // Track max timestamp per monitor
-    if (!lastSeen[event.pubkey] || timestamp > lastSeen[event.pubkey]) {
-      lastSeen[event.pubkey] = timestamp;
-    }
 
     // Calculate thresholds using store values
     const frequency = monitorFrequencySeconds(monitor);
     const onlineAfter = now - Math.round(frequency * leniency);
     const deadBefore = now - deadThresholdSeconds;
 
-    let liveness: "online" | "offline" | "dead";
     if (timestamp >= onlineAfter) {
       result[event.pubkey].online++;
-      liveness = "online";
     } else if (timestamp < deadBefore) {
       result[event.pubkey].dead++;
-      liveness = "dead";
     } else {
       result[event.pubkey].offline++;
-      liveness = "offline";
     }
-
-    // Extract RTT and software from event tags
-    const rttTag = event.tags?.find(t => t[0] === 'rtt-open')?.[1];
-    const softwareTag = event.tags?.find(t => t[0] === 's')?.[1];
-    const rtt = rttTag ? Number(rttTag) : undefined;
-
-    details[event.pubkey].push({
-      relay,
-      liveness,
-      lastSeen: timestamp,
-      rtt: rtt && Number.isFinite(rtt) ? rtt : undefined,
-      software: softwareTag || undefined,
-    });
   }
 
-  return { counts: result, details, lastSeen };
+  return result;
 }
 
 let relayLivenessScheduled: ReturnType<typeof setTimeout> | null = null;
@@ -414,65 +376,78 @@ function scheduleRelayLivenessCompute(delayMs = 250) {
 }
 
 async function computeAndUpdateRelayLiveness(): Promise<void> {
-  const monitorsList = get(monitorsSorted) as Monitor[];
+  const monitorsList = get(monitors) as Monitor[];
   if (!Array.isArray(monitorsList) || monitorsList.length === 0) return;
 
-  const { counts: result, details: detailsResult, lastSeen: lastSeenResult } = await computeRelayLivenessFromCache(monitorsList);
+  const result = await computeRelayLivenessFromCache(monitorsList);
 
-  // Don't overwrite cached values with empty results
-  // This can happen if the cache adapter isn't ready yet
-  const hasAnyData = Object.values(result).some(counts =>
-    counts.online > 0 || counts.offline > 0 || counts.dead > 0
-  );
-  if (Object.keys(result).length === 0 || !hasAnyData) {
-    return;
-  }
+  // If the cache adapter isn't ready yet (result has no keys), skip the update so we
+  // don't flash zeros before the first real computation. Once the adapter is
+  // ready, computeRelayLivenessFromCache will return real data.
+  if (Object.keys(result).length === 0) return;
 
-  // Merge with existing cached values - only update monitors that have non-zero counts
-  // This prevents overwriting good cached data with zeros when cache is still loading
-  const existingCounts = get(monitorRelayLivenessCounts);
-  const merged: MonitorRelayLivenessMap = { ...existingCounts };
-  const existingDetails = get(monitorRelayDetails);
-  const mergedDetails: MonitorRelayDetailsMap = { ...existingDetails };
-  const existingLastSeen = get(monitorLastSeenFromCache);
-  const mergedLastSeen: MonitorLastSeenMap = { ...existingLastSeen };
+  // Apply dead-threshold zeroing: if a monitor's lastActive exceeds the dead
+  // threshold, force its counts to zero regardless of what the cache says.
+  const deadThresholdStr = get(monitorsLivenessDeadThreshold);
+  const deadThresholdSeconds = parseDeadThresholdSeconds(deadThresholdStr);
+  const wallNow = Math.round(Date.now() / 1000);
+  const refNow = get(statsAsOf);
+  const now = refNow > 0 ? Math.min(wallNow, refNow) : wallNow;
 
-  for (const [pubkey, counts] of Object.entries(result)) {
-    const hasData = counts.online > 0 || counts.offline > 0 || counts.dead > 0;
-    if (hasData) {
-      merged[pubkey] = counts;
-      mergedDetails[pubkey] = detailsResult[pubkey] ?? [];
-      if (lastSeenResult[pubkey]) {
-        mergedLastSeen[pubkey] = lastSeenResult[pubkey];
-      }
+  for (const monitor of monitorsList) {
+    const pubkey = monitor?.pubkey;
+    if (!pubkey || !result[pubkey]) continue;
+    const lastActive = monitor?.lastActive ?? -1;
+    if (typeof lastActive === "number" && lastActive > 0 && (now - lastActive) > deadThresholdSeconds) {
+      result[pubkey] = { online: 0, offline: 0, dead: 0 };
     }
-    // If no data for this monitor but we have existing cached data, keep the cached data
   }
 
-  monitorRelayLivenessCounts.set(merged);
-  monitorRelayDetails.set(mergedDetails);
-  monitorLastSeenFromCache.set(mergedLastSeen);
+  // Overwrite entirely — no merge with stale cached values.
+  monitorRelayLivenessCounts.set(result);
 
-  // Cache the merged result (leader tab only)
+  // Signal that at least one computation has completed
+  if (!get(livenessReady)) livenessReady.set(true);
+
+  // Mark monitors with non-zero counts as fresh — they have authoritative data.
+  const freshPubkeys = Object.entries(result)
+    .filter(([_, counts]) => counts.online > 0 || counts.offline > 0 || counts.dead > 0)
+    .map(([pk]) => pk);
+  if (freshPubkeys.length > 0) markMonitorsFresh(freshPubkeys);
+
+  // Cache the result (leader tab only)
   if (get(tabState) === "leader" && get(doAggregateCache)) {
     try {
       const cachedJson = StateManager.get(MONITOR_RELAY_LIVENESS_CACHE_KEY);
       const existingJson = cachedJson ? JSON.stringify(cachedJson) : "";
-      const mergedJson = JSON.stringify(merged);
-      if (existingJson !== mergedJson) {
-        StateManager.set(MONITOR_RELAY_LIVENESS_CACHE_KEY, merged);
+      const resultJson = JSON.stringify(result);
+      if (existingJson !== resultJson) {
+        StateManager.set(MONITOR_RELAY_LIVENESS_CACHE_KEY, result);
       }
     } catch {}
   }
 }
 
 if (typeof window !== "undefined") {
+  // Persist monitors to cache as a side effect, NOT inside the derived store.
+  // Only the leader tab writes; the `suppressMonitorsCachePersist` flag prevents
+  // feedback loops when applying cache from other tabs.
+  monitors.subscribe(($monitors) => {
+    if (!$monitors.length) return
+    if (suppressMonitorsCachePersist) return
+    if (get(tabState) !== 'leader') return
+    try {
+      const toCache = $monitors.map((monitor: Monitor) => monitor.toCache())
+      StateManager.set(MONITORS_CACHE_KEY, toCache)
+    } catch {}
+  })
+
   // Re-compute when monitors change or on a timer
   // Use a longer initial delay to give the cache time to seed
   let isFirstMonitorUpdate = true;
-  monitorsSorted.subscribe((monitors) => {
+  monitors.subscribe((monitorsList) => {
     // Skip if no monitors yet
-    if (!monitors?.length) return;
+    if (!monitorsList?.length) return;
     // Use longer delay on first update to allow cache to fully seed
     const delay = isFirstMonitorUpdate ? 2000 : 500;
     isFirstMonitorUpdate = false;
@@ -492,23 +467,26 @@ if (typeof window !== "undefined") {
   setInterval(() => {
     scheduleRelayLivenessCompute(100);
   }, 30000); // Refresh every 30 seconds
+
 }
 
 export const monitorsChecked: Writable<boolean> = writable(false);
 
 export const monitorRows = derived(
-  [monitorsSorted, monitorRelayLivenessCounts, monitorLastSeenFromCache, nip05s, statsAsOf],
-  ([$monitorsSorted, $monitorRelayLivenessCounts, $monitorLastSeenFromCache, _nip05s, $statsAsOf]) => {
+  [monitors, monitorRelayLivenessCounts, nip05s, statsAsOf, livenessReady, monitorFreshness, monitorsLivenessLeniency],
+  ([$monitors, $monitorRelayLivenessCounts, _nip05s, $statsAsOf, $livenessReady, $monitorFreshness, $leniency]) => {
     const wallNow = Math.round(Date.now() / 1000);
     const now = $statsAsOf > 0 ? Math.min(wallNow, $statsAsOf) : wallNow;
-    return $monitorsSorted.map((monitor: Monitor) => {
+    return $monitors.map((monitor: Monitor) => {
       const row: Record<string, any> = new Object();
-      const liveness = $monitorRelayLivenessCounts?.[monitor.pubkey] ?? { online: 0, offline: 0, dead: 0 };
+      const liveness = $livenessReady
+        ? ($monitorRelayLivenessCounts?.[monitor.pubkey] ?? { online: 0, offline: 0, dead: 0 })
+        : { online: null, offline: null, dead: null };
       row.id = monitor.pubkey;
-      const lastActive = monitor?.lastActive ?? $monitorLastSeenFromCache[monitor.pubkey] ?? -1;
-      const frequency = monitor?.frequency ?? 0;
+      const lastActive = monitor?.lastActive ?? -1;
+      const frequency = monitorFrequencySeconds(monitor);
       row.active = typeof lastActive === "number" && lastActive > 0 && typeof frequency === "number" && frequency > 0
-        ? now - frequency < lastActive
+        ? now - (frequency * $leniency) < lastActive
         : false;
       row.pubkey = monitor.pubkey;
       row.name = monitor.profile?.name ?? null
@@ -520,13 +498,14 @@ export const monitorRows = derived(
       row.checks = monitor?.registration?.checks ?? null
       row.networks = monitor?.registration?.networks ?? null
       row.frequency = monitor?.registration?.frequency ?? null
-      row.lastActive = monitor?.lastActive ?? $monitorLastSeenFromCache[monitor.pubkey] ?? null
+      row.lastActive = monitor?.lastActive ?? null
       row.relays = monitor.relays ?? null
       row.enabled = monitor.enabled ?? false
       row.priority = monitor.priority ?? 0
-      row.reportingOnline = liveness?.online ?? 0
-      row.reportingOffline = liveness?.offline ?? 0
-      row.likelyDead = liveness?.dead ?? 0
+      row.reportingOnline = liveness.online
+      row.reportingOffline = liveness.offline
+      row.likelyDead = liveness.dead
+      row.livenessFresh = $monitorFreshness.has(monitor.pubkey)
       return row;
     })
   }

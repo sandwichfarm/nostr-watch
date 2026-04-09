@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 import { sveltekit } from '@sveltejs/kit/vite';
 import path from 'path';
 import fs from 'fs';
@@ -36,6 +36,10 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
+    test: {
+      environment: 'jsdom',
+      setupFiles: ['./src/test-setup.ts'],
+    },
     // middlewareMode: true,
     build: {
       minify: isProd? 'terser': false, 

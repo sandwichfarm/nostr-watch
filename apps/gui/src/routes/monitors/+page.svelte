@@ -5,7 +5,7 @@
     import MonitorsActions from '$lib/components/partials/MonitorActions.svelte';
     import * as Alert from "$lib/components/ui/alert/index.js";
     
-    import { monitorRows, monitorsSorted } from '$lib/stores/monitors.js';
+    import { monitorRows, monitors } from '$lib/stores/monitors.js';
 
     import { StateManager } from '@nostrwatch/route66';
     import { doBootstrap } from '$lib/stores/routines';
@@ -96,11 +96,6 @@
     $: warnHasMoreThanRecommendedMonitors = countEnabledMonitors > 8;
 </script>
 <main class="mt-10">
-<!-- {$ready? 'true': 'false'}
-<pre>{countEnabledMonitors}</pre>
-<pre>{JSON.stringify($monitorRows, null, 2)}</pre>
-<pre>{JSON.stringify($monitorsSorted, null, 2)}</pre> -->
-<!-- <pre>{JSON.stringify($monitorsSorted.map( monitor => monitor), null, 2)}</pre> -->
 {#if $ready}
     {#if $monitorRows.length}
         <div class="px-10">
@@ -149,6 +144,20 @@
 			showViewSelector={false}
             actionsComponent={MonitorsActions}
         />
+    {:else if !$monitors.length}
+        <div class="px-10 mt-20 text-center">
+            <p class="text-gray-500 text-lg">No monitors found</p>
+        </div>
     {/if}
 {/if}
 </main>
+
+<style>
+  :global(.liveness-pending) {
+    transition: color 500ms ease, opacity 500ms ease;
+  }
+  :global(.liveness-fresh) {
+    transition: color 500ms ease;
+    animation: none;
+  }
+</style>

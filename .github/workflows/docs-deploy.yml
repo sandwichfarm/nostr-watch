@@ -54,3 +54,5 @@ jobs:
           enable-purge-pull-zone: true
           pull-zone-id: ${{ secrets.BUNNY_DOCS_PULL_ZONE_ID }}
           replication-timeout: "15000"
+          request-timeout: "30000"
+          retry-limit: "5"

@@ -106,3 +106,5 @@ jobs:
           enable-purge-pull-zone: true
           pull-zone-id: "3313140"
           replication-timeout: "15000"
+          request-timeout: "30000"
+          retry-limit: "5"

@@ -47,7 +47,7 @@ jobs:
           purge: true
 
       - name: Deploy to Bunny
-        uses: R-J-dev/bunny-deploy@v2.0.3
+        uses: R-J-dev/bunny-deploy@v2.1.1
         with:
           access-key: ${{ secrets.BUNNY_API_KEY }}
           directory-to-upload: "./apps/gui/dist"

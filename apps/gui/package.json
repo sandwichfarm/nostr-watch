@@ -146,7 +146,7 @@
 		"json-source-map": "^0.6.1",
 		"leaflet": "^1.9.4",
 		"light-bolt11-decoder": "^3.2.0",
-		"lodash": "^4.17.23",
+		"lodash": "^4.18.1",
 		"lucide-react": "^0.474.0",
 		"lucide-svelte": "^0.462.0",
 		"marked": "^15.0.3",

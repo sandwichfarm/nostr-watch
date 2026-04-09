@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply bg-white text-gray-900 dark:bg-dark-bg dark:text-dark-text;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  body {
+    @apply min-h-screen font-sans antialiased;
+  }
+}

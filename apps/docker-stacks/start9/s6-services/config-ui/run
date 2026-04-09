@@ -1,0 +1,11 @@
+#!/bin/sh
+# Config web UI — Deno HTTP server serving static assets + REST API
+exec /usr/local/bin/deno run \
+  --allow-net \
+  --allow-env \
+  --allow-read \
+  --allow-write \
+  --no-lock \
+  --no-check \
+  --unstable-sloppy-imports \
+  /opt/relaymon/src/config-ui/server.ts

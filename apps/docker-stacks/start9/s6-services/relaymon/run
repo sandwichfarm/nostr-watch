@@ -1,0 +1,4 @@
+#!/bin/sh
+exec 2>&1
+cd /app/nostr-watch/apps/relaymon
+exec deno run --allow-all --unstable-sloppy-imports index.ts -c /opt/config.yaml

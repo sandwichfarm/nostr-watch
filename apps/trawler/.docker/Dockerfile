@@ -1,3 +1,6 @@
+ARG DENO_VERSION=2.7.5
+FROM denoland/deno:bin-${DENO_VERSION} AS deno-bin
+
 FROM debian:bookworm-slim
 
 WORKDIR /app
@@ -15,10 +18,9 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Deno
-RUN curl -fsSL https://deno.land/x/install/install.sh | sh
-ENV DENO_INSTALL="/root/.deno"
-ENV PATH="${DENO_INSTALL}/bin:${PATH}"
+# Install Deno (pinned version via multi-arch stage)
+COPY --from=deno-bin /deno /usr/local/bin/deno
+RUN deno --version
 
 # Create data directory
 RUN mkdir -p /app/data
@@ -27,10 +29,9 @@ RUN mkdir -p /app/data
 WORKDIR /app/nostr-watch
 COPY . .
 
-# Cache dependencies (trawler uses remote esm.sh imports, so no --no-remote)
+# Cache dependencies (deno.lock is preserved for reproducible builds)
 WORKDIR /app/nostr-watch/apps/trawler
-RUN rm -f deno.lock && \
-    deno cache --reload src/main.ts || echo "Dependency caching failed, will try at runtime"
+RUN deno cache --reload src/main.ts
 
 # Run trawler
 CMD ["deno", "run", "--allow-all", "--unstable-sloppy-imports", "src/main.ts"]

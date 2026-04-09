@@ -1,0 +1,18 @@
+services:
+  relay-monitor:
+    build:
+      context: ../../../
+      dockerfile: apps/docker-stacks/start9/Dockerfile
+    container_name: relay-monitor
+    restart: unless-stopped
+    stop_grace_period: 15s
+    volumes:
+      - ./data:/opt/data
+      - ./config.yaml:/opt/config.yaml
+    ports:
+      - "8080:8080"
+    environment:
+      - RELAYMON_MODE=clearnet
+      - RELAYMON_CONFIG_PATH=/opt/config.yaml
+      - RELAYMON_DB_PATH=/opt/data/relaymon.db
+      - TRAWLER_DB_PATH=/opt/data/trawler.db

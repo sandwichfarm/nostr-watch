@@ -1,4 +1,4 @@
-name: Publish trawler Docker images
+name: Publish trawlmon Docker images
 
 on:
   workflow_dispatch:
@@ -9,11 +9,11 @@ on:
         type: string
   push:
     tags:
-      - 'trawler-v*'
+      - 'trawlmon-v*'
 
 env:
-  DOCKERHUB_IMAGE: nostrwatch/trawler
-  GHCR_IMAGE: ghcr.io/sandwichfarm/trawler
+  DOCKERHUB_IMAGE: nostrwatch/trawlmon
+  GHCR_IMAGE: ghcr.io/sandwichfarm/trawlmon
 
 jobs:
   build-amd64:
@@ -31,9 +31,9 @@ jobs:
           if [[ -n "${{ inputs.tag }}" ]]; then
             VERSION="${{ inputs.tag }}"
           elif [[ "${{ github.ref_type }}" == "tag" ]]; then
-            VERSION="${GITHUB_REF_NAME#trawler-v}"
+            VERSION="${GITHUB_REF_NAME#trawlmon-v}"
           else
-            VERSION="$(grep -oP '"version"\s*:\s*"\K[^"]+' apps/trawler/deno.json)"
+            VERSION="$(grep -oP '"version"\s*:\s*"\K[^"]+' apps/relaymon/deno.json)"
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
@@ -53,16 +53,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build & push trawler amd64 image by digest
+      - name: Build & push trawlmon amd64 image by digest
         id: build
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: apps/trawler/.docker/Dockerfile
+          file: apps/docker-stacks/start9/Dockerfile
           platforms: linux/amd64
           outputs: type=image,"name=${{ env.DOCKERHUB_IMAGE }},${{ env.GHCR_IMAGE }}",push-by-digest=true,name-canonical=true,push=true
-          cache-from: type=gha,scope=trawler-amd64
-          cache-to: type=gha,mode=max,scope=trawler-amd64
+          cache-from: type=gha,scope=trawlmon-amd64
+          cache-to: type=gha,mode=max,scope=trawlmon-amd64
 
       - name: Export digest
         env:
@@ -74,7 +74,7 @@ jobs:
       - name: Upload digest artifact
         uses: actions/upload-artifact@v4
         with:
-          name: digests-trawler-linux-amd64
+          name: digests-trawlmon-linux-amd64
           path: /tmp/digests/*
           if-no-files-found: error
           retention-days: 1
@@ -94,9 +94,9 @@ jobs:
           if [[ -n "${{ inputs.tag }}" ]]; then
             VERSION="${{ inputs.tag }}"
           elif [[ "${{ github.ref_type }}" == "tag" ]]; then
-            VERSION="${GITHUB_REF_NAME#trawler-v}"
+            VERSION="${GITHUB_REF_NAME#trawlmon-v}"
           else
-            VERSION="$(grep -oP '"version"\s*:\s*"\K[^"]+' apps/trawler/deno.json)"
+            VERSION="$(grep -oP '"version"\s*:\s*"\K[^"]+' apps/relaymon/deno.json)"
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
@@ -116,22 +116,22 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build & push trawler arm64 image by digest
+      - name: Build & push trawlmon arm64 image by digest
         id: build
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: apps/trawler/.docker/Dockerfile
+          file: apps/docker-stacks/start9/Dockerfile
           platforms: linux/arm64
           outputs: type=image,"name=${{ env.DOCKERHUB_IMAGE }},${{ env.GHCR_IMAGE }}",push-by-digest=true,name-canonical=true,push=true
-          cache-from: type=gha,scope=trawler-arm64
-          cache-to: type=gha,mode=max,scope=trawler-arm64
+          cache-from: type=gha,scope=trawlmon-arm64
+          cache-to: type=gha,mode=max,scope=trawlmon-arm64
 
       - name: Verify arm64 image
         run: |
           docker run --rm --entrypoint="" \
             ${{ steps.build.outputs.imageid }} \
-            sh -c "deno --version && uname -m"
+            sh -c "deno --version && uname -m && file /usr/local/bin/hedproxy"
 
       - name: Export digest
         env:
@@ -143,7 +143,7 @@ jobs:
       - name: Upload digest artifact
         uses: actions/upload-artifact@v4
         with:
-          name: digests-trawler-linux-arm64
+          name: digests-trawlmon-linux-arm64
           path: /tmp/digests/*
           if-no-files-found: error
           retention-days: 1
@@ -164,9 +164,9 @@ jobs:
           if [[ -n "${{ inputs.tag }}" ]]; then
             VERSION="${{ inputs.tag }}"
           elif [[ "${{ github.ref_type }}" == "tag" ]]; then
-            VERSION="${GITHUB_REF_NAME#trawler-v}"
+            VERSION="${GITHUB_REF_NAME#trawlmon-v}"
           else
-            VERSION="$(grep -oP '"version"\s*:\s*"\K[^"]+' apps/trawler/deno.json)"
+            VERSION="$(grep -oP '"version"\s*:\s*"\K[^"]+' apps/relaymon/deno.json)"
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
@@ -174,7 +174,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: /tmp/digests
-          pattern: digests-trawler-*
+          pattern: digests-trawlmon-*
           merge-multiple: true
 
       - name: Set up Docker Buildx

@@ -1,0 +1,3 @@
+#!/bin/sh
+# Checkpoint trawler's SQLite WAL on exit to prevent data loss
+sqlite3 /opt/data/trawler.db "PRAGMA wal_checkpoint(TRUNCATE);" 2>/dev/null || true

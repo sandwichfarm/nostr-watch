@@ -1,5 +1,6 @@
 import { header } from "../utils/header.ts";
 import { loadConfig } from "../config/config.ts";
+import { startConfigWatcher } from "../config/watcher.ts";
 import { runDaemon, getPrivateKey, heartbeatTracker, errorTracker } from "./daemon.ts";
 import { existsSync } from "https://deno.land/std@0.218.2/fs/mod.ts";
 import { join } from "https://deno.land/std@0.218.2/path/mod.ts";
@@ -73,15 +74,24 @@ const PID_FILE = getPidFilePath();
 // Flag to track shutdown status
 let isShuttingDown = false;
 
+// Config watcher stop function (set after watcher is started)
+let stopConfigWatcher: (() => void) | null = null;
+
 /**
  * Clean up resources and exit gracefully
  */
 async function shutdown(signal?: string): Promise<void> {
   if (isShuttingDown) return; // Prevent multiple shutdown attempts
   isShuttingDown = true;
-  
+
   console.log(`\nReceived ${signal || 'shutdown'} signal. Cleaning up...`);
-  
+
+  // Stop config watcher before exiting
+  if (stopConfigWatcher !== null) {
+    stopConfigWatcher();
+    stopConfigWatcher = null;
+  }
+
   try {
     // Clean up PID file
     if (existsSync(PID_FILE)) {
@@ -91,7 +101,7 @@ async function shutdown(signal?: string): Promise<void> {
   } catch (error) {
     console.error(`Error during cleanup: ${error}`);
   }
-  
+
   console.log("Exiting gracefully.");
   Deno.exit(0);
 }
@@ -446,6 +456,20 @@ export async function main() {
   if (args.includes("-m") || args.includes("--migrate")) {
     await migrateNetworks(config.db.path);
   }
+
+  // Start config file watcher for hot reload
+  stopConfigWatcher = startConfigWatcher({
+    configPath,
+    onReload: (newConfig) => {
+      // Apply the new config to running relaymon (best-effort hot-reload)
+      // For now, log the reload; future phases can wire into actual config application
+      logger.info("Config reloaded — applying changes");
+      // TODO: wire into actual relaymon config application (varies by what changed)
+    },
+    onError: (error) => {
+      logger.warn(`Config reload failed: ${error.message}`);
+    },
+  });
 
   // Start the daemon
   await runDaemon(config);

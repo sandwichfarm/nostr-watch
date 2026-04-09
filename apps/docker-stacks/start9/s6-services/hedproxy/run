@@ -1,0 +1,9 @@
+#!/bin/sh
+exec 2>&1
+# hedproxy provides a unified SOCKS5 proxy for Tor/I2P/clearnet routing.
+# In clearnet-only mode it still runs but acts as a passthrough.
+# Tor and I2P upstream flags will be configurable via env vars in Phase 16/17/18.
+exec hedproxy \
+    -proto socks \
+    -bind "0.0.0.0:12345" \
+    -passthrough clearnet

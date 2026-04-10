@@ -2,6 +2,7 @@
   "version": "5",
   "specifiers": {
     "npm:@types/node@*": "22.15.15",
+    "npm:murmurhash@2.0.1": "2.0.1",
     "npm:nostr-fetch@0.17.0": "0.17.0"
   },
   "npm": {
@@ -26,6 +27,9 @@
       "dependencies": [
         "undici-types"
       ]
+    },
+    "murmurhash@2.0.1": {
+      "integrity": "sha512-5vQEh3y+DG/lMPM0mCGPDnyV8chYg/g7rl6v3Gd8WMF9S429ox3Xk8qrk174kWhG767KQMqqxLD1WnGd77hiew=="
     },
     "nostr-fetch@0.17.0": {
       "integrity": "sha512-Q0k12uTB5Cj4zTe5ZNsyr7dBMxZrncU+7UNH8G9Z6zyEERVoPT5Z49vNCVDw8yvFwzslKiWeoT143NF/9FlKbQ==",
@@ -311,6 +315,7 @@
   },
   "workspace": {
     "dependencies": [
+      "npm:murmurhash@2.0.1",
       "npm:nostr-fetch@0.17.0"
     ]
   }

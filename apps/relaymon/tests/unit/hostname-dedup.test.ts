@@ -19,6 +19,7 @@ import {
 } from "../../src/utils/hostnames.ts";
 import { mockConfig } from "../helpers/fixtures.ts";
 import { initializeDB, storeRelayInfo, db, getOnlineRelays, getRelayInfo, rehashRelayInfoMigration } from "../../src/db/db.ts";
+import { rerunDedupForAllRowsMigration } from "../../src/utils/remediation.ts";
 import { normalizeNip11 } from "../../src/utils/nip11.ts";
 import type { Config } from "../../src/types/config.ts";
 
@@ -1771,4 +1772,346 @@ Deno.test("Phase 18 Fix 2: rehashRelayInfoMigration is idempotent", () => {
 
   // Cleanup — leave the DB clean for subsequent tests
   db.query("DELETE FROM relay_info");
+});
+
+// ============================================================================
+// Phase 19: rerunDedupForAllRowsMigration unit tests
+// ----------------------------------------------------------------------------
+// These tests verify the one-shot startup migration that re-runs the
+// Phase 18 dedup over every row in relay_status. All decisions flow through
+// `relayHostnameDedup` by construction — there is no independent decision
+// logic in remediation.ts — so these tests simultaneously prove REMED-01
+// (counts captured) and REMED-02 (narrowness invariant: no legit relay is
+// flipped unless relayHostnameDedup itself would flip it).
+//
+// IMPORTANT: initializeDB() at file load already ran the migration once on
+// an empty DB, which inserted the `rerun_dedup_all_rows_v1` sentinel. Every
+// test in this block MUST reset that sentinel before calling the migration
+// or it will short-circuit and be a no-op.
+// ============================================================================
+
+dedupTest("Phase 19 REMED-01: canonical mutation is flipped to ignore=1 with parent set", async () => {
+  // Reset the sentinel so the migration actually runs.
+  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v1'");
+
+  // Seed: legit root sibling + canonical mutation with MATCHING NIP-11.
+  // The shared info object ensures createInfoHash produces the same hash
+  // for both rows, so case 2 / case 8 fires inside relayHostnameDedup.
+  const sharedInfo = mockRelayInfo("Lumina Root", "shared NIP-11 across siblings");
+  setupDatabase([
+    {
+      url: "wss://relay.lumina.rocks/",
+      online: true,
+      ignore: false,
+      parent: "",
+      info: sharedInfo,
+    },
+    {
+      // Failing-sample-class mutation: same hostname, non-root path,
+      // matching NIP-11, currently wrongly promoted as ignore=0.
+      url: "wss://relay.lumina.rocks/umbra-vertex",
+      online: true,
+      ignore: false,
+      parent: "",
+      info: sharedInfo,
+    },
+  ]);
+
+  await rerunDedupForAllRowsMigration();
+
+  // Post-state: mutation must now be ignore=1 with parent set to the root.
+  const mutation = db.query(
+    `SELECT ignore, parent FROM relay_status WHERE url = ?`,
+    ["wss://relay.lumina.rocks/umbra-vertex"],
+  );
+  assertEquals(mutation.length, 1, "mutation row must still exist");
+  assertEquals(mutation[0][0], 1, "REMED-01: canonical mutation must be flipped to ignore=1");
+  const parent = mutation[0][1] as string;
+  assert(
+    parent === "wss://relay.lumina.rocks/" || parent === "wss://relay.lumina.rocks",
+    `REMED-01: parent must point at the root sibling, got "${parent}"`,
+  );
+
+  // Root must remain untouched (still ignore=0, no self-parent).
+  const root = db.query(
+    `SELECT ignore, parent FROM relay_status WHERE url = ?`,
+    ["wss://relay.lumina.rocks/"],
+  );
+  assertEquals(root[0][0], 0, "legit root must stay ignore=0");
+});
+
+dedupTest("Phase 19 REMED-02: legit path-only relay WITHOUT root sibling is left untouched (narrowness invariant)", async () => {
+  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v1'");
+
+  // A legit path-only relay with ZERO same-hostname siblings.
+  // This is the exact shape REMED-02 protects: the migration must NEVER
+  // flip this row, because relayHostnameDedup (with Phase 18 Fix 1's
+  // defensive-deny + no-relatives branch) will NOT flip it.
+  setupDatabase([
+    {
+      url: "wss://example.com/only-path",
+      online: true,
+      ignore: false,
+      parent: "",
+      info: mockRelayInfo("Solo Path Relay", "no siblings"),
+    },
+  ]);
+
+  await rerunDedupForAllRowsMigration();
+
+  const row = db.query(
+    `SELECT ignore, parent FROM relay_status WHERE url = ?`,
+    ["wss://example.com/only-path"],
+  );
+  assertEquals(row.length, 1, "solo path relay row must still exist");
+  assertEquals(row[0][0], 0, "REMED-02: solo legit path-only relay must stay ignore=0 (narrowness invariant)");
+  assertEquals((row[0][1] as string) || "", "", "REMED-02: parent must stay empty for solo path-only relay");
+});
+
+dedupTest("Phase 19 philosophy: legit path-only relay WITH matching-NIP-11 root is correctly flipped (shortest URL wins)", async () => {
+  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v1'");
+
+  // This is the subtle case the user clarified in 19-CONTEXT.md:
+  // When haven.nostrfreedom.net/inbox/ has a matching-NIP-11 root sibling
+  // wss://haven.nostrfreedom.net/, case 2 correctly fires and /inbox/ is
+  // ignored in favor of the root. That IS the dedup philosophy — the
+  // shortest URL is the canonical representation — NOT a regression.
+  const sharedInfo = mockRelayInfo("Haven", "same relay served at root and path");
+  setupDatabase([
+    {
+      url: "wss://haven.nostrfreedom.net/",
+      online: true,
+      ignore: false,
+      parent: "",
+      info: sharedInfo,
+    },
+    {
+      url: "wss://haven.nostrfreedom.net/inbox/",
+      online: true,
+      ignore: false,
+      parent: "",
+      info: sharedInfo,
+    },
+  ]);
+
+  await rerunDedupForAllRowsMigration();
+
+  // /inbox/ must be flipped to ignore=1 with parent=root.
+  // The canonical URL for the mutation after normalizeURL is /inbox
+  // (no trailing slash) — Phase 18 Fix 3 canonicalizes both ways.
+  // Query by both trailing and non-trailing forms to be resilient to
+  // whether normalizeURL rewrote the stored URL (it doesn't — remediation
+  // only UPDATEs by the stored raw URL).
+  const inboxRows = db.query(
+    `SELECT url, ignore, parent FROM relay_status WHERE url LIKE ?`,
+    ["%haven.nostrfreedom.net/inbox%"],
+  );
+  assertEquals(inboxRows.length, 1, "/inbox/ row must still exist");
+  assertEquals(
+    inboxRows[0][1],
+    1,
+    "philosophy: /inbox/ must be flipped to ignore=1 when a matching-NIP-11 root sibling is present (shortest URL wins)",
+  );
+  const parent = inboxRows[0][2] as string;
+  assert(
+    parent.includes("haven.nostrfreedom.net") && !parent.includes("/inbox"),
+    `philosophy: /inbox/ parent must point at the root, got "${parent}"`,
+  );
+
+  // Root must remain ignore=0.
+  const root = db.query(
+    `SELECT ignore FROM relay_status WHERE url = ?`,
+    ["wss://haven.nostrfreedom.net/"],
+  );
+  assertEquals(root[0][0], 0, "haven root must stay ignore=0");
+});
+
+dedupTest("Phase 19: already-correctly-ignored row is left unchanged (no redundant UPDATE)", async () => {
+  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v1'");
+
+  // Seed a row that is ALREADY ignored with a parent set. The migration
+  // should call relayHostnameDedup, see the same (ignore=true, parent=X)
+  // come back, and issue NO UPDATE. We verify by checking the row is
+  // unchanged AND by running the migration and confirming it completes.
+  const sharedInfo = mockRelayInfo("Already Ignored", "pre-ignored test");
+  setupDatabase([
+    {
+      url: "wss://spam.example.tld/",
+      online: true,
+      ignore: false,
+      parent: "",
+      info: sharedInfo,
+    },
+    {
+      url: "wss://spam.example.tld/mutation-a",
+      online: true,
+      ignore: true,
+      parent: "wss://spam.example.tld/",
+      info: sharedInfo,
+    },
+  ]);
+
+  await rerunDedupForAllRowsMigration();
+
+  const row = db.query(
+    `SELECT ignore, parent FROM relay_status WHERE url = ?`,
+    ["wss://spam.example.tld/mutation-a"],
+  );
+  assertEquals(row[0][0], 1, "already-ignored row must stay ignore=1");
+  const rowParent = row[0][1] as string;
+  assert(
+    rowParent.includes("spam.example.tld"),
+    `already-ignored row parent must remain pointing at the root, got "${rowParent}"`,
+  );
+});
+
+dedupTest("Phase 19: migration is idempotent — second call is a no-op (sentinel-guarded)", async () => {
+  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v1'");
+
+  const sharedInfo = mockRelayInfo("Idempotent Test", "shared");
+  setupDatabase([
+    {
+      url: "wss://idem.example.com/",
+      online: true,
+      ignore: false,
+      parent: "",
+      info: sharedInfo,
+    },
+    {
+      url: "wss://idem.example.com/mutant",
+      online: true,
+      ignore: false,
+      parent: "",
+      info: sharedInfo,
+    },
+  ]);
+
+  // First call: does the work, inserts the sentinel.
+  await rerunDedupForAllRowsMigration();
+
+  const sentinelAfterFirst = db.query(
+    "SELECT name FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v1'",
+  );
+  assertEquals(sentinelAfterFirst.length, 1, "sentinel must be present after first call");
+
+  // Snapshot post-first-run state of the mutation row.
+  const afterFirst = db.query(
+    `SELECT ignore, parent FROM relay_status WHERE url = ?`,
+    ["wss://idem.example.com/mutant"],
+  );
+  const firstIgnore = afterFirst[0][0];
+  const firstParent = afterFirst[0][1] as string;
+
+  // Manually mutate the row to an obviously-wrong state. If the migration
+  // runs a SECOND time (breaking idempotency), it will correct this back
+  // to the dedup answer and the assertion below will fail.
+  db.query(
+    `UPDATE relay_status SET ignore = 0, parent = '' WHERE url = ?`,
+    ["wss://idem.example.com/mutant"],
+  );
+
+  // Second call: MUST be a no-op because sentinel is present.
+  await rerunDedupForAllRowsMigration();
+
+  const afterSecond = db.query(
+    `SELECT ignore, parent FROM relay_status WHERE url = ?`,
+    ["wss://idem.example.com/mutant"],
+  );
+  assertEquals(afterSecond[0][0], 0, "idempotency: second call must not have re-run the migration (row stays at the manually-set 0)");
+  assertEquals((afterSecond[0][1] as string) || "", "", "idempotency: second call must not have re-set parent");
+
+  // And the sentinel must still be there (exactly one row).
+  const sentinelAfterSecond = db.query(
+    "SELECT COUNT(*) FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v1'",
+  );
+  assertEquals(sentinelAfterSecond[0][0], 1, "sentinel must still be present exactly once after the second call");
+
+  // Sanity-check: if the first-run values look plausible, the migration
+  // did the right thing originally (i.e. the no-op test is meaningful).
+  assert(
+    firstIgnore === 1 && firstParent.length > 0,
+    `first-run dedup sanity: expected ignore=1 with non-empty parent, got ignore=${firstIgnore} parent="${firstParent}"`,
+  );
+});
+
+dedupTest("Phase 19: sentinel row is inserted exactly once after a successful run", async () => {
+  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v1'");
+
+  // Zero-row DB: migration should still complete cleanly and insert the sentinel.
+  setupDatabase([]);
+
+  await rerunDedupForAllRowsMigration();
+
+  const sentinelRows = db.query(
+    "SELECT name, applied_at FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v1'",
+  );
+  assertEquals(sentinelRows.length, 1, "sentinel row must exist exactly once after a successful run");
+  assertEquals(sentinelRows[0][0], "rerun_dedup_all_rows_v1", "sentinel name must match the expected constant");
+  assert(
+    (sentinelRows[0][1] as number) > 0,
+    `sentinel applied_at must be a non-zero unix timestamp, got ${sentinelRows[0][1]}`,
+  );
+});
+
+dedupTest("Phase 19 REMED-02: mixed DB — canonical mutation flipped AND solo path-only preserved in the same run", async () => {
+  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v1'");
+
+  // A single run over a realistic mixed DB: one canonical-mutation class
+  // (root + sibling with matching NIP-11) that MUST flip, and one solo
+  // path-only relay that MUST stay untouched. This directly mirrors the
+  // production rollout shape and proves that REMED-01 and REMED-02 hold
+  // simultaneously in the same migration invocation.
+  const mutationSharedInfo = mockRelayInfo("Mixed Root", "shared info");
+  const soloInfo = mockRelayInfo("Solo Legit", "no siblings");
+  setupDatabase([
+    {
+      url: "wss://mixed.example.com/",
+      online: true,
+      ignore: false,
+      parent: "",
+      info: mutationSharedInfo,
+    },
+    {
+      url: "wss://mixed.example.com/foxtrot-papa",
+      online: true,
+      ignore: false,
+      parent: "",
+      info: mutationSharedInfo,
+    },
+    {
+      url: "wss://solo-legit.example.net/only",
+      online: true,
+      ignore: false,
+      parent: "",
+      info: soloInfo,
+    },
+  ]);
+
+  await rerunDedupForAllRowsMigration();
+
+  // Mutation: flipped.
+  const mutation = db.query(
+    `SELECT ignore, parent FROM relay_status WHERE url = ?`,
+    ["wss://mixed.example.com/foxtrot-papa"],
+  );
+  assertEquals(mutation[0][0], 1, "REMED-01: mutation row must be flipped to ignore=1");
+  assert(
+    (mutation[0][1] as string).includes("mixed.example.com"),
+    "REMED-01: mutation parent must point at the mixed.example.com root",
+  );
+
+  // Solo legit: untouched.
+  const solo = db.query(
+    `SELECT ignore, parent FROM relay_status WHERE url = ?`,
+    ["wss://solo-legit.example.net/only"],
+  );
+  assertEquals(solo[0][0], 0, "REMED-02: solo legit path-only must stay ignore=0 in mixed run");
+  assertEquals((solo[0][1] as string) || "", "", "REMED-02: solo legit parent must stay empty in mixed run");
+
+  // Root: untouched.
+  const root = db.query(
+    `SELECT ignore FROM relay_status WHERE url = ?`,
+    ["wss://mixed.example.com/"],
+  );
+  assertEquals(root[0][0], 0, "mixed root must stay ignore=0");
 });

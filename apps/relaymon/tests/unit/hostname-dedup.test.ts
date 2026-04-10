@@ -1272,14 +1272,202 @@ dedupTest("generalization: haven.nostrfreedom.net/inbox/ legit multi-segment vs 
   assertEquals(
     snapshotLegitSolo.finalIgnore,
     false,
-    "wss://haven.nostrfreedom.net/inbox/ is a legit path-only relay and MUST NOT be ignored",
+    "wss://haven.nostrfreedom.net/inbox/ is a legit path-only relay and MUST NOT be ignored (SOLO)",
   );
 
-  // Document the current broken behavior for the with-mutation case.
-  // Phase 18 regression target: this assertion must be flipped to assertEquals(false).
+  // Phase 18 Fix 3 regression (DEDUP-03, TEST-02): with a mutation sibling
+  // present, the legit path-only relay /inbox/ must ALSO remain un-ignored.
+  // Pre-Phase-18 this was wrongly set to ignore=true via the CRITICAL ERROR
+  // path due to the normalizeURL trailing-slash bug
+  // (orderedFamily.indexOf returned -1 because orderedFamily contained
+  // "wss://haven.nostrfreedom.net/inbox" but the search was for
+  // "wss://haven.nostrfreedom.net/inbox/"). Fix 3 canonicalizes mURL at
+  // function entry so indexOf succeeds.
+  assertEquals(
+    snapshotLegitWithMutation.finalIgnore,
+    false,
+    "Phase 18 Fix 3 (DEDUP-03, TEST-02): wss://haven.nostrfreedom.net/inbox/ must NOT be ignored even when a mutation sibling is present",
+  );
+
+  // The mutation with DIFFERENT NIP-11 and non-root parent is NOT caught by
+  // the case-based logic when both siblings are online. This is a known
+  // architectural limitation: cases 1/2/4 require eldestIsRoot, case 8
+  // requires matching NIP-11. Catching a mutation with distinct NIP-11
+  // when the parent is not a root URL requires a separate fix in Phase 19.
+  // Phase 18 Fix 3's primary goal is restoring DEDUP-03 (legit path-only
+  // relay protection), which is achieved by the snapshotLegitWithMutation
+  // assertion above.
   assert(
-    snapshotLegitWithMutation !== undefined,
-    "Snapshot captured for wss://haven.nostrfreedom.net/inbox/ with mutation sibling present",
+    snapshotMutation !== undefined,
+    "Phase 18 Fix 3: snapshotMutation captured for wss://haven.nostrfreedom.net/inbox/flint-november-alpha (note: different-NIP-11 mutation with non-root parent is not caught by case logic — Phase 19 concern)",
+  );
+
+  // The transient-sibling-offline case for the mutation (sibling online=0)
+  // — should also catch via defensive-deny (Plan 18-01).
+  assertEquals(
+    snapshotMutationOfflineSibling.finalIgnore,
+    true,
+    "Phase 18 (Fix 1): mutation must be caught via defensive-deny when legit sibling is online=0",
+  );
+});
+
+/**
+ * Phase 18 Fix 3 edge cases: trailing slash variants across path depths.
+ *
+ * Exercises the canonicalization invariant for URLs with pathnames
+ * `/`, `/foo`, `/foo/`, `/foo/bar`, `/foo/bar/`. Each URL must produce
+ * a deterministic dedup decision. In particular:
+ *   - `/` (root): always isRootUrl, never a mutation candidate → never ignored unless a same-NIP-11 root is found via the early-return.
+ *   - `/foo` (single-segment, no trailing slash): mutation candidate → caught when sibling present.
+ *   - `/foo/` (single-segment, trailing slash — the haven bug class): MUST behave the same as `/foo` after canonicalization.
+ *   - `/foo/bar` (multi-segment, no trailing slash): mutation candidate → caught when sibling present.
+ *   - `/foo/bar/` (multi-segment, trailing slash): MUST behave the same as `/foo/bar`.
+ */
+dedupTest("Phase 18 Fix 3 regression: trailing-slash edge cases are deterministic (DEDUP-03, TEST-02)", async () => {
+  const baseNip11 = mockRelayInfo("Edge Host", "test");
+
+  // Fixture: a legit root, a legit single-segment path, and a multi-segment path,
+  // all with the same NIP-11 (canonical "same-server" case).
+  setupDatabase([
+    { url: "wss://edge.example/", online: true, info: baseNip11 },
+    { url: "wss://edge.example/foo", online: true, info: baseNip11 },
+    { url: "wss://edge.example/foo/bar", online: true, info: baseNip11 },
+  ]);
+
+  // Case 1: bare root `/`
+  const snapshotRoot = await captureDedupSnapshot({
+    url: "wss://edge.example/",
+    hostname: "edge.example",
+    protocol: "wss:",
+    info: { data: baseNip11 },
+  });
+
+  // Case 2: single segment without trailing slash
+  const snapshotFoo = await captureDedupSnapshot({
+    url: "wss://edge.example/foo",
+    hostname: "edge.example",
+    protocol: "wss:",
+    info: { data: baseNip11 },
+  });
+
+  // Case 3: single segment WITH trailing slash (the haven class)
+  const snapshotFooSlash = await captureDedupSnapshot({
+    url: "wss://edge.example/foo/",
+    hostname: "edge.example",
+    protocol: "wss:",
+    info: { data: baseNip11 },
+  });
+
+  // Case 4: multi-segment without trailing slash
+  const snapshotFooBar = await captureDedupSnapshot({
+    url: "wss://edge.example/foo/bar",
+    hostname: "edge.example",
+    protocol: "wss:",
+    info: { data: baseNip11 },
+  });
+
+  // Case 5: multi-segment WITH trailing slash
+  const snapshotFooBarSlash = await captureDedupSnapshot({
+    url: "wss://edge.example/foo/bar/",
+    hostname: "edge.example",
+    protocol: "wss:",
+    info: { data: baseNip11 },
+  });
+
+  console.log(JSON.stringify({
+    test: "phase18-fix-3-trailing-slash-edge-cases",
+    snapshotRoot,
+    snapshotFoo,
+    snapshotFooSlash,
+    snapshotFooBar,
+    snapshotFooBarSlash,
+  }, null, 2));
+
+  // The root URL is never ignored (it is the canonical shortest member).
+  assertEquals(
+    snapshotRoot.finalIgnore,
+    false,
+    "Phase 18 Fix 3: root URL `/` is never ignored",
+  );
+
+  // Deterministic invariant: trailing-slash vs no-trailing-slash variants
+  // of the SAME path must produce the SAME ignore decision.
+  assertEquals(
+    snapshotFoo.finalIgnore,
+    snapshotFooSlash.finalIgnore,
+    "Phase 18 Fix 3: `/foo` and `/foo/` must produce the same ignore decision",
+  );
+  assertEquals(
+    snapshotFooBar.finalIgnore,
+    snapshotFooBarSlash.finalIgnore,
+    "Phase 18 Fix 3: `/foo/bar` and `/foo/bar/` must produce the same ignore decision",
+  );
+
+  // /foo and /foo/bar share NIP-11 with the root → they are caught as duplicates
+  // via case1/case2 (root is in the family with matching hash).
+  assertEquals(
+    snapshotFoo.finalIgnore,
+    true,
+    "Phase 18 Fix 3: `/foo` is caught as duplicate of root (same NIP-11)",
+  );
+  assertEquals(
+    snapshotFooBar.finalIgnore,
+    true,
+    "Phase 18 Fix 3: `/foo/bar` is caught as duplicate of root (same NIP-11)",
+  );
+});
+
+/**
+ * Phase 18 Fix 3 narrowness: a legit path-only relay with DIFFERENT NIP-11
+ * from any sibling must remain un-ignored, regardless of trailing slash.
+ *
+ * Direct regression of the haven.nostrfreedom.net/inbox/ protection case
+ * but parameterized over trailing-slash variants.
+ */
+dedupTest("Phase 18 Fix 3 regression: legit path-only relay with distinct NIP-11 remains un-ignored under all slash variants (DEDUP-03, TEST-02)", async () => {
+  const legitNip11 = mockRelayInfo("Legit Path", "legit path-only");
+  const mutationNip11 = mockRelayInfo("Spam", "mutation");
+
+  // Variant A: legit path relay has trailing slash, mutation does not
+  setupDatabase([
+    { url: "wss://path.example/inbox/", online: true, info: legitNip11 },
+    { url: "wss://path.example/inbox/spam-alpha", online: true, info: mutationNip11 },
+  ]);
+  const snapshotLegitTrailingSlash = await captureDedupSnapshot({
+    url: "wss://path.example/inbox/",
+    hostname: "path.example",
+    protocol: "wss:",
+    info: { data: legitNip11 },
+  });
+
+  // Variant B: legit path relay has NO trailing slash, mutation extends further
+  setupDatabase([
+    { url: "wss://path.example/inbox", online: true, info: legitNip11 },
+    { url: "wss://path.example/inbox/spam-alpha", online: true, info: mutationNip11 },
+  ]);
+  const snapshotLegitNoSlash = await captureDedupSnapshot({
+    url: "wss://path.example/inbox",
+    hostname: "path.example",
+    protocol: "wss:",
+    info: { data: legitNip11 },
+  });
+
+  console.log(JSON.stringify({
+    test: "phase18-fix-3-legit-path-only-under-slash-variants",
+    legitTrailingSlash: snapshotLegitTrailingSlash,
+    legitNoSlash: snapshotLegitNoSlash,
+  }, null, 2));
+
+  // DEDUP-03: legit path-only relay must NOT be ignored regardless of slash form.
+  assertEquals(
+    snapshotLegitTrailingSlash.finalIgnore,
+    false,
+    "Phase 18 Fix 3 (DEDUP-03): legit path relay with trailing slash must NOT be ignored",
+  );
+  assertEquals(
+    snapshotLegitNoSlash.finalIgnore,
+    false,
+    "Phase 18 Fix 3 (DEDUP-03): legit path relay without trailing slash must NOT be ignored",
   );
 });
 

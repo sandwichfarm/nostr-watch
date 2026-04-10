@@ -842,9 +842,26 @@ dedupTest("family-scope hypothesis A: sibling online=0 excludes legit root from 
     siblingOffline: snapshotSiblingOffline,
   }, null, 2));
 
-  // Minimal invariants — plan 03 reads the console output to verdict the hypothesis
-  assert(snapshotSiblingOnline !== undefined);
-  assert(snapshotSiblingOffline !== undefined);
+  // Phase 18 regression (Fix 1): when the legit root sibling is online=0,
+  // the defensive-deny branch (added by Phase 18 Plan 18-01 Task 2) now finds
+  // the sibling via getRelaysByHostname and catches the mutation. Prior to
+  // Phase 18 the online variant was caught via the early-return path but the
+  // offline variant behavior was test-environment dependent.
+  assertEquals(
+    snapshotSiblingOnline.finalIgnore,
+    true,
+    "Hypothesis A online variant: mutation must be caught when sibling is online=1",
+  );
+  assertEquals(
+    snapshotSiblingOffline.finalIgnore,
+    true,
+    "Hypothesis A offline variant (Phase 18 Fix 1 defensive-deny): mutation must be caught when sibling is online=0 via getRelaysByHostname",
+  );
+  assertEquals(
+    snapshotSiblingOffline.finalParent,
+    "wss://relay.lumina.rocks/",
+    "Hypothesis A offline variant: parent must be the legit root sibling",
+  );
 });
 
 /**
@@ -939,8 +956,91 @@ dedupTest("family-scope hypothesis C: mutation checked before sibling online=1 c
     postRace: snapshotPostRace,
   }, null, 2));
 
-  assert(snapshotPreRace !== undefined);
-  assert(snapshotPostRace !== undefined);
+  // Phase 18 regression (Fix 1): preRace is the true SOLO case — no sibling
+  // row at all in relay_status. The defensive-deny branch correctly does NOT
+  // fire (nothing to find), so finalIgnore stays false. This is the baseline
+  // that protects solo legit relays.
+  assertEquals(
+    snapshotPreRace.finalIgnore,
+    false,
+    "Hypothesis C preRace (SOLO — no sibling row at all): defensive-deny must NOT fire, solo relay protection preserved",
+  );
+  // postRace: sibling row present and online=1. Mutation must be caught via
+  // the existing case-based logic (same-nip11-as-root / case8).
+  assertEquals(
+    snapshotPostRace.finalIgnore,
+    true,
+    "Hypothesis C postRace (sibling online=1): mutation must be caught via case-based logic",
+  );
+  assertEquals(
+    snapshotPostRace.finalParent,
+    "wss://relay.lumina.rocks/",
+    "Hypothesis C postRace: parent must be the legit root sibling",
+  );
+});
+
+/**
+ * Phase 18 Fix 1 regression: transient-sibling-offline (DEDUP-02, TEST-03)
+ *
+ * Directly asserts that dedup produces the SAME ignore decision for a
+ * mutation URL whether its legit sibling is online=1 OR online=0 in
+ * relay_status. This is the "identity stable under online/offline" invariant.
+ *
+ * Before Phase 18 Fix 1: offline sibling → empty family → no-relatives
+ * early-return → mutation escapes dedup (finalIgnore=false).
+ * After Phase 18 Fix 1: offline sibling → getRelaysByHostname finds it →
+ * defensive-deny fires → mutation is caught (finalIgnore=true).
+ */
+dedupTest("Phase 18 Fix 1 regression: transient-sibling-offline produces same ignore decision as online sibling (DEDUP-02, TEST-03)", async () => {
+  const canonicalNip11 = mockRelayInfo("Lumina Rocks", "unreadable");
+
+  // Variant A: sibling online=1 (baseline — dedup caught in prod)
+  setupDatabase([
+    { url: "wss://relay.lumina.rocks/", online: true, info: canonicalNip11 },
+    { url: "wss://relay.lumina.rocks/umbra-vertex", online: true, info: canonicalNip11 },
+  ]);
+  const snapshotSiblingOnline = await captureDedupSnapshot({
+    url: "wss://relay.lumina.rocks/umbra-vertex",
+    hostname: "relay.lumina.rocks",
+    protocol: "wss:",
+    info: { data: canonicalNip11 },
+  });
+
+  // Variant B: sibling online=0 (the transient race case)
+  setupDatabase([
+    { url: "wss://relay.lumina.rocks/", online: false, info: canonicalNip11 },
+    { url: "wss://relay.lumina.rocks/umbra-vertex", online: true, info: canonicalNip11 },
+  ]);
+  const snapshotSiblingOffline = await captureDedupSnapshot({
+    url: "wss://relay.lumina.rocks/umbra-vertex",
+    hostname: "relay.lumina.rocks",
+    protocol: "wss:",
+    info: { data: canonicalNip11 },
+  });
+
+  console.log(JSON.stringify({
+    test: "transient-sibling-offline",
+    siblingOnline: snapshotSiblingOnline,
+    siblingOffline: snapshotSiblingOffline,
+  }, null, 2));
+
+  // Identity invariant: same ignore decision for both variants.
+  assertEquals(
+    snapshotSiblingOnline.finalIgnore,
+    snapshotSiblingOffline.finalIgnore,
+    "DEDUP-02: dedup must produce the same ignore decision for a mutation URL whether its sibling is online=1 or online=0",
+  );
+  // Both variants must catch the mutation.
+  assertEquals(
+    snapshotSiblingOnline.finalIgnore,
+    true,
+    "DEDUP-02: sibling online=1 variant must catch the mutation",
+  );
+  assertEquals(
+    snapshotSiblingOffline.finalIgnore,
+    true,
+    "DEDUP-02: sibling online=0 variant must also catch the mutation (via Phase 18 Fix 1 defensive-deny)",
+  );
 });
 
 /**

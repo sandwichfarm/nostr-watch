@@ -1,6 +1,7 @@
 import { db, initDB } from "npm:@nostrwatch/db";
 import { getLogger } from "../utils/logger.ts";
 import type { RelayInfo } from "../types/relay.ts";
+import { createInfoHash } from "../utils/hostnames.ts";
 
 const logger = getLogger("DB");
 let isInitialized = false;
@@ -33,6 +34,18 @@ export function initializeDB(dbPath?: string, enableWAL: boolean = true): void {
     logger.info("Created relay_info table if it didn't exist");
   } catch (e) {
     logger.error(`Failed to create relay_info table: ${e}`);
+  }
+
+  // Phase 18 Fix 2: schema migration tracking for one-shot migrations
+  try {
+    db.query(`
+      CREATE TABLE IF NOT EXISTS relaymon_migrations (
+        name TEXT PRIMARY KEY,
+        applied_at INTEGER
+      )
+    `);
+  } catch (e) {
+    logger.error(`Failed to create relaymon_migrations table: ${e}`);
   }
 
   // Create the relay_delta_state table for tracking state changes
@@ -84,6 +97,15 @@ export function initializeDB(dbPath?: string, enableWAL: boolean = true): void {
     logger.error(`Failed to create relay_period_snapshots table: ${e}`);
   }
 
+  // Phase 18 Fix 2: re-hash existing relay_info rows using the new
+  // normalizeNip11-aware createInfoHash. Idempotent via relaymon_migrations
+  // sentinel.
+  try {
+    rehashRelayInfoMigration();
+  } catch (e) {
+    logger.error(`rehashRelayInfoMigration threw: ${e}`);
+  }
+
   isInitialized = true;
 }
 
@@ -107,6 +129,67 @@ export function storeRelayInfo(url: string, info: RelayInfo, infoHash: string): 
     logger.debug(`Stored NIP-11 info for ${url} with hash ${infoHash}`);
   } catch (e) {
     logger.error(`Failed to store relay info for ${url}: ${e}`);
+  }
+}
+
+/**
+ * Phase 18 Fix 2: re-hash every row in relay_info using the new
+ * normalizeNip11 → createInfoHash pipeline.
+ *
+ * Idempotent: the sentinel row in relaymon_migrations ensures this runs
+ * exactly once per database lifetime. Also, re-running on an already-
+ * migrated DB produces identical hashes (the pipeline is deterministic).
+ *
+ * Resilient: malformed info_json rows are logged and skipped.
+ */
+export function rehashRelayInfoMigration(): void {
+  const migrationName = "phase18_rehash_relay_info_normalizeNip11_v1";
+  try {
+    const existing = db.query(
+      `SELECT applied_at FROM relaymon_migrations WHERE name = ?`,
+      [migrationName],
+    );
+    if (existing.length > 0) {
+      logger.debug(`Migration ${migrationName} already applied, skipping`);
+      return;
+    }
+
+    logger.info(`Running migration: ${migrationName}`);
+    const rows = db.query(`SELECT url, info_json FROM relay_info`);
+    let updated = 0;
+    let skipped = 0;
+    for (const [url, infoJson] of rows) {
+      try {
+        if (!infoJson || typeof infoJson !== "string") {
+          skipped++;
+          continue;
+        }
+        const info = JSON.parse(infoJson);
+        const newHash = createInfoHash(info);
+        if (!newHash) {
+          skipped++;
+          continue;
+        }
+        db.query(
+          `UPDATE relay_info SET info_hash = ? WHERE url = ?`,
+          [newHash, url as string],
+        );
+        updated++;
+      } catch (e) {
+        logger.warn(`Failed to rehash relay_info row for ${url}: ${e}`);
+        skipped++;
+      }
+    }
+
+    db.query(
+      `INSERT INTO relaymon_migrations (name, applied_at) VALUES (?, ?)`,
+      [migrationName, Math.floor(Date.now() / 1000)],
+    );
+    logger.info(
+      `Migration ${migrationName} complete: ${updated} rows re-hashed, ${skipped} skipped`,
+    );
+  } catch (e) {
+    logger.error(`Migration ${migrationName} failed: ${e}`);
   }
 }
 

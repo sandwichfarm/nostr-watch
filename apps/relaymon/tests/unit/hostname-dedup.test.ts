@@ -18,7 +18,8 @@ import {
   reevaluateAllDeduplication,
 } from "../../src/utils/hostnames.ts";
 import { mockConfig } from "../helpers/fixtures.ts";
-import { initializeDB, storeRelayInfo, db, getOnlineRelays, getRelayInfo } from "../../src/db/db.ts";
+import { initializeDB, storeRelayInfo, db, getOnlineRelays, getRelayInfo, rehashRelayInfoMigration } from "../../src/db/db.ts";
+import { normalizeNip11 } from "../../src/utils/nip11.ts";
 import type { Config } from "../../src/types/config.ts";
 
 // Helper to create mock relay info
@@ -912,6 +913,19 @@ dedupTest("family-scope hypothesis B: NIP-11 hash stability across volatile fiel
   assert(snapshotVolatile !== undefined);
   // Do NOT assert hashA !== hashB — if they ARE equal, that is itself evidence
   // ruling out hypothesis B. Plan 03 reads the log to verdict.
+
+  // Phase 18 Fix 2 hard assertion: hashes must now be equal after normalization.
+  assertEquals(
+    hashA,
+    hashB,
+    "Phase 18 Fix 2 (Hypothesis B promoted): createInfoHash must produce identical hashes for same-server NIP-11 that differs only in volatile fields",
+  );
+  // And the mutation must be caught.
+  assertEquals(
+    snapshotVolatile.finalIgnore,
+    true,
+    "Phase 18 Fix 2: mutation with volatile NIP-11 must be caught after hash normalization",
+  );
 });
 
 /**
@@ -1368,4 +1382,205 @@ dedupTest("generalization: succeeding-sample controls (relay.jerseyplebs.com/whi
     true,
     "Control sample relay.shawnyeager.com/november-anchor-tango should be caught under sibling online=1",
   );
+});
+
+// ============================================================================
+// Phase 18 Plan 02 Task 4: normalizeNip11 unit tests + Hypothesis B regression
+// ============================================================================
+
+Deno.test("normalizeNip11 - preserves benign keys", () => {
+  const input = {
+    name: "Test Relay",
+    description: "A test",
+    software: "strfry",
+    version: "1.0.0",
+    supported_nips: [1, 2, 11],
+  };
+  const out = normalizeNip11(input);
+  assertEquals(out.name, "Test Relay");
+  assertEquals(out.description, "A test");
+  assertEquals(out.software, "strfry");
+  assertEquals(out.version, "1.0.0");
+  assertEquals(Array.isArray(out.supported_nips), true);
+});
+
+Deno.test("normalizeNip11 - strips exact-key volatile (timestamp)", () => {
+  const out = normalizeNip11({ name: "X", timestamp: 123 });
+  assertEquals(out, { name: "X" });
+});
+
+Deno.test("normalizeNip11 - strips exact-key volatile (url reflection)", () => {
+  const out = normalizeNip11({ name: "X", url: "wss://x.com" });
+  assertEquals(out, { name: "X" });
+});
+
+Deno.test("normalizeNip11 - strips last_ prefix", () => {
+  const out = normalizeNip11({ name: "X", last_seen: "2026-04-10", last_updated: 123 });
+  assertEquals(out, { name: "X" });
+});
+
+Deno.test("normalizeNip11 - strips current_ prefix", () => {
+  const out = normalizeNip11({ name: "X", current_time: 999, current_load: 0.5 });
+  assertEquals(out, { name: "X" });
+});
+
+Deno.test("normalizeNip11 - strips count substring (counters, event_count)", () => {
+  const out = normalizeNip11({ name: "X", counters: { m: 1 }, event_count: 5 });
+  assertEquals(out, { name: "X" });
+});
+
+Deno.test("normalizeNip11 - case-insensitive matching", () => {
+  const out = normalizeNip11({ name: "X", Timestamp: 123, LAST_SEEN: "now" });
+  assertEquals(out, { name: "X" });
+});
+
+Deno.test("normalizeNip11 - null and undefined safe", () => {
+  assertEquals(normalizeNip11(null), {});
+  assertEquals(normalizeNip11(undefined), {});
+});
+
+Deno.test("normalizeNip11 - does not mutate input", () => {
+  const input = { name: "X", timestamp: 123 };
+  normalizeNip11(input);
+  assertEquals(input.timestamp, 123, "input.timestamp should still be present");
+});
+
+Deno.test("normalizeNip11 - idempotent", () => {
+  const x = { name: "X", description: "Y", timestamp: 123, counters: { m: 1 } };
+  const once = normalizeNip11(x);
+  const twice = normalizeNip11(once);
+  assertEquals(once, twice);
+});
+
+Deno.test("Phase 18 Fix 2 regression: createInfoHash stable across volatile field deltas (Hypothesis B)", () => {
+  const stable = { name: "Lumina", description: "test", software: "strfry", version: "1.0.0" };
+  const volatile1 = { ...stable, timestamp: Date.now(), counters: { messages: 12345 } };
+  const volatile2 = { ...stable, timestamp: Date.now() + 1000, counters: { messages: 99999 }, last_seen: "2026-04-10" };
+
+  const hashStable = createInfoHash(stable);
+  const hashVolatile1 = createInfoHash(volatile1);
+  const hashVolatile2 = createInfoHash(volatile2);
+
+  assert(hashStable !== "", "stable hash must not be empty");
+  assertEquals(
+    hashStable,
+    hashVolatile1,
+    "Phase 18 Fix 2 (Hypothesis B): hash must be stable when only volatile fields (timestamp, counters) differ",
+  );
+  assertEquals(
+    hashStable,
+    hashVolatile2,
+    "Phase 18 Fix 2 (Hypothesis B): hash must be stable when multiple volatile fields differ (timestamp, counters, last_seen)",
+  );
+});
+
+Deno.test("Phase 18 Fix 2 regression: createInfoHash still differentiates distinct servers", () => {
+  const a = { name: "A", description: "alpha", software: "strfry", version: "1.0.0" };
+  const b = { name: "B", description: "bravo", software: "strfry", version: "1.0.0" };
+  const hashA = createInfoHash(a);
+  const hashB = createInfoHash(b);
+  assert(hashA !== "", "hashA must not be empty");
+  assert(hashB !== "", "hashB must not be empty");
+  assert(
+    hashA !== hashB,
+    "createInfoHash must still produce different hashes for servers with different names/descriptions",
+  );
+});
+
+dedupTest("Phase 18 Fix 2 regression: volatile NIP-11 mutation is caught via case-based logic (Hypothesis B promoted)", async () => {
+  const stableNip11 = mockRelayInfo("Lumina Rocks", "unreadable");
+  // Mutation URL has additional volatile fields but represents the same server
+  const volatileNip11 = {
+    ...mockRelayInfo("Lumina Rocks", "unreadable"),
+    timestamp: Date.now(),
+    counters: { messages: 12345 },
+  };
+
+  // Family: sibling online with stable NIP-11
+  setupDatabase([
+    { url: "wss://relay.lumina.rocks/", online: true, info: stableNip11 },
+    { url: "wss://relay.lumina.rocks/hotel", online: true, info: stableNip11 },
+  ]);
+
+  // Mutation: checked with volatile NIP-11. After Phase 18 Fix 2, the
+  // hashes normalize to identical values and case1/case2/case8 fires.
+  const snapshot = await captureDedupSnapshot({
+    url: "wss://relay.lumina.rocks/umbra-vertex",
+    hostname: "relay.lumina.rocks",
+    protocol: "wss:",
+    info: { data: volatileNip11 },
+  });
+
+  console.log(JSON.stringify({
+    test: "phase18-fix-2-volatile-mutation-caught",
+    snapshot,
+  }, null, 2));
+
+  assertEquals(
+    snapshot.finalIgnore,
+    true,
+    "Phase 18 Fix 2: mutation with volatile NIP-11 fields must be caught because hash normalizes to match sibling family",
+  );
+  assertEquals(
+    snapshot.finalParent,
+    "wss://relay.lumina.rocks/",
+    "Phase 18 Fix 2: parent must be the legit root sibling",
+  );
+});
+
+Deno.test("Phase 18 Fix 2: rehashRelayInfoMigration is idempotent", () => {
+  // The test bootstrap already called initializeDB which ran the migration
+  // once on an empty DB. Seed a few rows and run it again — this time with
+  // data. Verify a third call is a no-op.
+
+  // Clear any prior state
+  db.query("DELETE FROM relay_info");
+  db.query("DELETE FROM relaymon_migrations WHERE name = 'phase18_rehash_relay_info_normalizeNip11_v1'");
+
+  // Seed 3 rows with stale hashes (pretend they were hashed pre-Phase-18
+  // by storing a dummy hash string directly)
+  const info1 = { name: "A", description: "alpha", software: "strfry" };
+  const info2 = { name: "B", description: "bravo", software: "strfry" };
+  const info3 = { name: "C", description: "charlie", software: "strfry" };
+  db.query(
+    `INSERT INTO relay_info (url, info_json, info_hash, last_updated) VALUES (?, ?, ?, ?)`,
+    ["wss://a.example/", JSON.stringify(info1), "STALE_HASH_A", 0],
+  );
+  db.query(
+    `INSERT INTO relay_info (url, info_json, info_hash, last_updated) VALUES (?, ?, ?, ?)`,
+    ["wss://b.example/", JSON.stringify(info2), "STALE_HASH_B", 0],
+  );
+  db.query(
+    `INSERT INTO relay_info (url, info_json, info_hash, last_updated) VALUES (?, ?, ?, ?)`,
+    ["wss://c.example/", JSON.stringify(info3), "STALE_HASH_C", 0],
+  );
+
+  // First call: should update all 3 rows
+  rehashRelayInfoMigration();
+
+  // Collect hashes after first migration
+  const hashesAfterFirst: Record<string, string> = {};
+  for (const [url, hash] of db.query("SELECT url, info_hash FROM relay_info ORDER BY url")) {
+    hashesAfterFirst[url as string] = hash as string;
+  }
+  assert(hashesAfterFirst["wss://a.example/"] !== "STALE_HASH_A", "row A should have been re-hashed");
+  assert(hashesAfterFirst["wss://b.example/"] !== "STALE_HASH_B", "row B should have been re-hashed");
+  assert(hashesAfterFirst["wss://c.example/"] !== "STALE_HASH_C", "row C should have been re-hashed");
+
+  // Verify sentinel was inserted
+  const sentinel = db.query(
+    "SELECT name FROM relaymon_migrations WHERE name = 'phase18_rehash_relay_info_normalizeNip11_v1'",
+  );
+  assertEquals(sentinel.length, 1, "migration sentinel should exist after first run");
+
+  // Second call: should be a no-op due to sentinel
+  rehashRelayInfoMigration();
+  const hashesAfterSecond: Record<string, string> = {};
+  for (const [url, hash] of db.query("SELECT url, info_hash FROM relay_info ORDER BY url")) {
+    hashesAfterSecond[url as string] = hash as string;
+  }
+  assertEquals(hashesAfterFirst, hashesAfterSecond, "Phase 18 Fix 2: second migration call must be a no-op (idempotent)");
+
+  // Cleanup — leave the DB clean for subsequent tests
+  db.query("DELETE FROM relay_info");
 });

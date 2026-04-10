@@ -7,6 +7,7 @@ import { deleteRelayCheckEvent } from "./deletion.ts";
 import type { Config } from "../config/config.ts";
 import type { RelayCheckResult, RelayInfo } from "../types/relay.ts";
 import { getErrorMessage } from "../types/errors.ts";
+import { normalizeNip11 } from "./nip11.ts";
 
 // Force console output for debugging
 
@@ -109,10 +110,23 @@ export function createInfoHash(infoData: RelayInfo | Record<string, unknown> | n
   }
 
   try {
+    // Phase 18 Fix 2: strip volatile NIP-11 fields BEFORE sorting/hashing.
+    // Phase 17 Hypothesis B confirmed that volatile fields (timestamps,
+    // counters, last_*, current_*) cause the same server to produce
+    // different hashes across check cycles, defeating case1/case2/case8.
+    const stripped = normalizeNip11(infoData as Record<string, unknown>);
+
+    // After stripping, the object may be empty (e.g., if every field was
+    // volatile). In that case return "" to match the early-return contract
+    // above and avoid a universal "empty-normalized" hash collision.
+    if (Object.keys(stripped).length === 0) {
+      return "";
+    }
+
     // Sort the keys to ensure consistent hashing regardless of object property order
     const normalized: Record<string, unknown> = {};
-    Object.keys(infoData).sort().forEach(key => {
-      normalized[key] = (infoData as Record<string, unknown>)[key];
+    Object.keys(stripped).sort().forEach(key => {
+      normalized[key] = stripped[key];
     });
     return `RelayCheckInfo@${hash(normalized)}`;
   } catch (e) {

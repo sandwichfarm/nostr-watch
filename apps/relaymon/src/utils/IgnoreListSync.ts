@@ -357,8 +357,8 @@ export class IgnoreListSync {
       };
 
       // Sign the event
-      const { finishEvent } = await import("npm:nostr-tools");
-      const signedEvent = finishEvent(event, hexToBytes(privkey));
+      const { finalizeEvent } = await import("npm:nostr-tools");
+      const signedEvent = finalizeEvent(event, hexToBytes(privkey));
 
       // Publish to configured relays
       const publishPromises = this.listRelays.map(async (relay) => {

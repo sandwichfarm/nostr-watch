@@ -65,10 +65,10 @@
       "nostr-geotags": "https://esm.sh/nostr-geotags@latest",
 
       "npm:nostr-fetch": "npm:nostr-fetch@0.17.0",
-      "npm:nostr-tools": "https://esm.sh/nostr-tools@latest",
-      "nostr-tools": "https://esm.sh/nostr-tools@latest",
-      "nostr-tools/pure": "https://esm.sh/nostr-tools@latest/pure",
-      "nostr-tools/nip19": "https://esm.sh/nostr-tools@latest/nip19",
+      "npm:nostr-tools": "https://esm.sh/nostr-tools@2.23.3",
+      "nostr-tools": "https://esm.sh/nostr-tools@2.23.3",
+      "nostr-tools/pure": "https://esm.sh/nostr-tools@2.23.3/pure",
+      "nostr-tools/nip19": "https://esm.sh/nostr-tools@2.23.3/nip19",
     
       "npm:murmurhash": "npm:murmurhash@2.0.1",
       "npm:p-queue": "https://esm.sh/p-queue@latest",

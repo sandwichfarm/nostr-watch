@@ -17,7 +17,7 @@ import {
   setConfig,
 } from "../../src/utils/hostnames.ts";
 import { mockConfig } from "../helpers/fixtures.ts";
-import { initializeDB, storeRelayInfo, db } from "../../src/db/db.ts";
+import { initializeDB, storeRelayInfo, db, getOnlineRelays, getRelayInfo } from "../../src/db/db.ts";
 import type { Config } from "../../src/types/config.ts";
 
 // Helper to create mock relay info
@@ -562,4 +562,229 @@ dedupTest("relayHostnameDedup - different hostnames are NOT deduped", async () =
 
   // Should NOT be deduped because hostname is different
   assertEquals(dedupResult.ignore, false);
+});
+
+// ============================================================================
+// Phase 17: relay-dedup-family-scope split-outcome reproduction
+//
+// Reproduces the observed split-outcome behavior where dedup catches some
+// URL-path mutations on a hostname (e.g. wss://relay.lumina.rocks/hotel)
+// and misses others on the same hostname (e.g. /umbra-vertex). Scaffolding
+// only — hypothesis-isolating tests live in a later plan.
+//
+// DO NOT remove these tests after Phase 17 ships. Per 17-CONTEXT.md, they
+// become the seed for Phase 18's TEST-01/02/03 regression tests.
+// ============================================================================
+
+/**
+ * Structured snapshot of what relayHostnameDedup did for a given URL.
+ * Captured post-hoc by querying the in-memory DB state after the dedup call.
+ * JSON-serializable — suitable for console.log output in CI.
+ */
+type DedupSnapshot = {
+  url: string;
+  finalIgnore: boolean;
+  finalParent: string;
+  // What the dedup function saw at decision time, derived by re-querying the
+  // test DB after the fact (getOnlineRelays, getRelayInfo per sibling):
+  familyComposition: {
+    onlineCount: number;
+    hostnameFamilyUrls: string[];      // siblings with same hostname+protocol, online=1
+    hostnameFamilyInfoHashes: Record<string, string>;
+  };
+  currentInfoHash: string;
+  // Classification of which branch the dedup result is consistent with.
+  // Use the known branches enumerated in hostnames.ts. If multiple branches
+  // could explain the outcome, list all candidates.
+  branchHypothesis: string[];  // e.g. ["case8"], ["index-0-cleared"], ["no-relatives"]
+};
+
+/**
+ * Runs relayHostnameDedup on the provided input and returns a structured
+ * DedupSnapshot describing what the function did. No assertions inside this
+ * helper — it is purely observational scaffolding for Phase 17 diagnosis.
+ */
+async function captureDedupSnapshot(
+  input: {
+    url: string;
+    hostname: string;
+    protocol: string;
+    info?: { data: any };
+  }
+): Promise<DedupSnapshot> {
+  const resultObj = {
+    url: input.url,
+    hostname: input.hostname,
+    protocol: input.protocol,
+    online: true,
+    ignore: false,
+    parent: "",
+    checked_at: Date.now(),
+    network: "clearnet" as const,
+    ...(input.info ? { info: input.info } : {})
+  };
+
+  const dedupResult = await relayHostnameDedup(resultObj as any);
+
+  // Re-query the DB to reconstruct what the family looked like.
+  // Note: relayHostnameDedup may have stored/updated relay_info rows for input.url,
+  // so we query sibling URLs (url !== input.url) with same hostname+protocol.
+  const allOnline = getOnlineRelays();
+  const hostnameFamilyUrls = allOnline.filter(url => {
+    try {
+      const parsed = new URL(url);
+      return parsed.hostname === input.hostname &&
+        parsed.protocol === input.protocol &&
+        url !== input.url;
+    } catch {
+      return false;
+    }
+  });
+
+  const hostnameFamilyInfoHashes: Record<string, string> = {};
+  for (const siblingUrl of hostnameFamilyUrls) {
+    const relayInfoRow = getRelayInfo(siblingUrl);
+    if (relayInfoRow?.info) {
+      const h = createInfoHash(relayInfoRow.info);
+      if (h) hostnameFamilyInfoHashes[siblingUrl] = h;
+    }
+  }
+
+  const currentInfoHash = input.info?.data ? createInfoHash(input.info.data) : "";
+
+  // Classify branchHypothesis post-hoc from returned result + family state.
+  const finalIgnore = Boolean(dedupResult.ignore);
+  const finalParent = (dedupResult.parent as string) || "";
+  const branchHypothesis: string[] = [];
+
+  if (finalIgnore && finalParent === "") {
+    // Ignore set but no parent — synced ignore list branch
+    branchHypothesis.push("synced-ignore-list");
+  } else if (hostnameFamilyUrls.length === 0 && !finalIgnore && finalParent === "") {
+    // No siblings visible online → no-relatives early return
+    branchHypothesis.push("no-relatives");
+  } else if (!finalIgnore && finalParent === "" && hostnameFamilyUrls.length > 0) {
+    // Has relatives but not ignored and no parent — ambiguous:
+    // either index===0 branch cleared it, or fall-through-not-ignored, or same-nip11-as-shorter
+    // where this URL is the shortest (so it was NOT the one ignored).
+    branchHypothesis.push("index-0-cleared");
+    branchHypothesis.push("fall-through-not-ignored");
+  } else if (finalIgnore && finalParent !== "") {
+    // Was ignored with a parent. Classify by what hash/family state suggests.
+    const familyHashes = Object.values(hostnameFamilyInfoHashes);
+
+    // Check early-return paths (same-nip11-as-root / same-nip11-as-shorter)
+    // These fire before the getOnlineRelays() path in hostnames.ts
+    const parentIsRoot = (() => {
+      try {
+        const p = new URL(finalParent);
+        return p.pathname === "/" || p.pathname === "";
+      } catch { return false; }
+    })();
+
+    if (parentIsRoot && currentInfoHash && familyHashes.includes(currentInfoHash)) {
+      branchHypothesis.push("same-nip11-as-root");
+    } else if (!parentIsRoot && currentInfoHash && familyHashes.includes(currentInfoHash) &&
+               finalParent.length < input.url.length) {
+      branchHypothesis.push("same-nip11-as-shorter");
+    }
+
+    // Check for case-based branches (require index > 0 in ordered family)
+    if (currentInfoHash && familyHashes.includes(currentInfoHash)) {
+      // NIP-11 match with some relative → case1, case2, case8 candidates
+      if (parentIsRoot) {
+        branchHypothesis.push("case1");
+        branchHypothesis.push("case2");
+      }
+      // case8: path URL + NIP-11 matches any relative (no root requirement)
+      branchHypothesis.push("case8");
+    }
+
+    // case4: parent has NIP-11 but current does not
+    if (parentIsRoot && !currentInfoHash && familyHashes.length > 0) {
+      branchHypothesis.push("case4");
+    }
+
+    // case5: neither eldest nor current has NIP-11
+    if (!parentIsRoot && !currentInfoHash && familyHashes.length === 0) {
+      branchHypothesis.push("case5");
+    }
+
+    // case6/case7: pubkey or hostname in path
+    try {
+      const pathname = new URL(input.url).pathname;
+      if (/[0-9a-fA-F]{64}/.test(pathname)) {
+        branchHypothesis.push("case6");
+      }
+      if (pathname.includes(input.hostname)) {
+        branchHypothesis.push("case7");
+      }
+    } catch { /* ignore parse errors */ }
+
+    if (branchHypothesis.length === 0) {
+      branchHypothesis.push("unknown-case");
+    }
+  }
+
+  return {
+    url: input.url,
+    finalIgnore,
+    finalParent,
+    familyComposition: {
+      onlineCount: allOnline.length,
+      hostnameFamilyUrls,
+      hostnameFamilyInfoHashes
+    },
+    currentInfoHash,
+    branchHypothesis
+  };
+}
+
+/**
+ * Scaffolding test: canonical lumina.rocks pair
+ *
+ * Runs both URLs through relayHostnameDedup against an in-memory DB seeded
+ * with three siblings (root, /hotel, /umbra-vertex) that all carry the same
+ * NIP-11 info. Captures DedupSnapshot for each and logs JSON to CI output
+ * so plan 17-03 can cite the branch classification verbatim.
+ *
+ * No assertions on split-outcome correctness — plan 17-02 handles that.
+ */
+dedupTest("relay-dedup-family-scope split-outcome reproduction: canonical lumina.rocks pair captures dedup branches", async () => {
+  const canonicalNip11 = mockRelayInfo("Lumina Rocks", "relay.lumina.rocks unreadable");
+
+  setupDatabase([
+    { url: "wss://relay.lumina.rocks/", online: true, info: canonicalNip11 },        // root sibling
+    { url: "wss://relay.lumina.rocks/hotel", online: true, info: canonicalNip11 },   // caught in prod
+    { url: "wss://relay.lumina.rocks/umbra-vertex", online: true, info: canonicalNip11 }  // missed in prod
+  ]);
+
+  const hotelSnapshot = await captureDedupSnapshot({
+    url: "wss://relay.lumina.rocks/hotel",
+    hostname: "relay.lumina.rocks",
+    protocol: "wss:",
+    info: { data: canonicalNip11 }
+  });
+
+  const umbraVertexSnapshot = await captureDedupSnapshot({
+    url: "wss://relay.lumina.rocks/umbra-vertex",
+    hostname: "relay.lumina.rocks",
+    protocol: "wss:",
+    info: { data: canonicalNip11 }
+  });
+
+  const snapshots = {
+    hotel: hotelSnapshot,
+    umbraVertex: umbraVertexSnapshot
+  };
+
+  console.log(JSON.stringify(snapshots, null, 2));
+
+  // Minimal infrastructure invariants — not outcome assertions
+  assert(snapshots.hotel !== undefined);
+  assert(snapshots.umbraVertex !== undefined);
+  assertEquals(typeof snapshots.hotel.finalIgnore, "boolean");
+  assertEquals(typeof snapshots.umbraVertex.finalIgnore, "boolean");
+  assert(Array.isArray(snapshots.hotel.branchHypothesis));
+  assert(Array.isArray(snapshots.umbraVertex.branchHypothesis));
 });

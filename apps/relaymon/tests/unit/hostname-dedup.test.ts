@@ -1057,3 +1057,215 @@ dedupTest("red-herring test: hostnames.ts:328-331 index===0 branch behavior when
 
   assert(snapshot !== undefined);
 });
+
+// ============================================================================
+// Phase 17 Plan 02 Task 2: Generalization fixtures
+//
+// Additional failing-sample pairs and succeeding-sample controls from STATE.md
+// to confirm the hypothesis A mechanism generalizes beyond the canonical
+// lumina.rocks pair. Three tests:
+//   6: haven.nostrfreedom.net multi-segment legit path vs mutation
+//   7: relay.noswhere.com single-segment mutation under state flip
+//   8: succeeding-sample controls (relay.jerseyplebs.com + relay.shawnyeager.com)
+// ============================================================================
+
+/**
+ * Generalization test 6: haven.nostrfreedom.net multi-segment path
+ *
+ * Tests the critical legit-path-only relay protection invariant:
+ * wss://haven.nostrfreedom.net/inbox/ MUST NOT flip to ignore=true under
+ * any candidate fix. Also exercises the multi-segment mutation case
+ * (wss://haven.nostrfreedom.net/inbox/flint-november-alpha) that is in the
+ * STATE.md known-failing-samples list.
+ *
+ * NOTE: Current code has a pre-existing bug where normalizeURL() strips the
+ * trailing slash from "/inbox/" when building the orderedFamily map, causing
+ * indexOf(mURL) to return -1 and triggering the CRITICAL ERROR path that sets
+ * ignore=true. This is discovered-in-Phase-17 evidence — the bug is
+ * documented here and targeted for fix in Phase 18. The SOLO variant (legit
+ * relay with no siblings) correctly passes since there are no relatives to
+ * trigger the family-scope logic.
+ *
+ * Phase 18 regression target: snapshotLegitSolo.finalIgnore MUST be false,
+ * and snapshotLegitWithMutation.finalIgnore MUST ALSO be false after the fix.
+ */
+dedupTest("generalization: haven.nostrfreedom.net/inbox/ legit multi-segment vs /inbox/flint-* mutation", async () => {
+  const havenNip11 = mockRelayInfo("Haven", "inbox relay");
+  // A DIFFERENT info for the mutation — simulates spam instance that is on the
+  // same hostname but reports as a distinct server. Realistic failure shape.
+  const mutationNip11 = mockRelayInfo("Spam Relay", "mutation instance");
+
+  // Variant SOLO: legit path-only relay alone (no siblings) — tests the
+  // baseline: a legit relay with no mutation sibling must never be ignored.
+  setupDatabase([
+    { url: "wss://haven.nostrfreedom.net/inbox/", online: true, info: havenNip11 },
+  ]);
+  const snapshotLegitSolo = await captureDedupSnapshot({
+    url: "wss://haven.nostrfreedom.net/inbox/",
+    hostname: "haven.nostrfreedom.net",
+    protocol: "wss:",
+    info: { data: havenNip11 },
+  });
+
+  // Variant 1: sibling online=1 — diagnostic only (current code has normalizeURL
+  // trailing-slash bug that causes CRITICAL ERROR for /inbox/ in this variant)
+  setupDatabase([
+    { url: "wss://haven.nostrfreedom.net/inbox/", online: true, info: havenNip11 },
+    { url: "wss://haven.nostrfreedom.net/inbox/flint-november-alpha", online: true, info: mutationNip11 },
+  ]);
+
+  // Snapshot A: the legit path-only relay with mutation sibling present
+  const snapshotLegitWithMutation = await captureDedupSnapshot({
+    url: "wss://haven.nostrfreedom.net/inbox/",
+    hostname: "haven.nostrfreedom.net",
+    protocol: "wss:",
+    info: { data: havenNip11 },
+  });
+
+  // Snapshot B: the mutation — in prod this is missed
+  const snapshotMutation = await captureDedupSnapshot({
+    url: "wss://haven.nostrfreedom.net/inbox/flint-november-alpha",
+    hostname: "haven.nostrfreedom.net",
+    protocol: "wss:",
+    info: { data: mutationNip11 },
+  });
+
+  // Variant 2: legit path-only sibling online=0 (state-flip per hypothesis A)
+  setupDatabase([
+    { url: "wss://haven.nostrfreedom.net/inbox/", online: false, info: havenNip11 },
+    { url: "wss://haven.nostrfreedom.net/inbox/flint-november-alpha", online: true, info: mutationNip11 },
+  ]);
+  const snapshotMutationOfflineSibling = await captureDedupSnapshot({
+    url: "wss://haven.nostrfreedom.net/inbox/flint-november-alpha",
+    hostname: "haven.nostrfreedom.net",
+    protocol: "wss:",
+    info: { data: mutationNip11 },
+  });
+
+  console.log(JSON.stringify({
+    sample: "haven.nostrfreedom.net-multi-segment",
+    legitPathOnlySolo: snapshotLegitSolo,
+    legitPathOnlyWithMutation: snapshotLegitWithMutation,
+    mutationSiblingOnline: snapshotMutation,
+    mutationSiblingOffline: snapshotMutationOfflineSibling,
+    phase18RegressionTarget: {
+      note: "After Phase 18 fix: legitPathOnlyWithMutation.finalIgnore MUST be false. Current code incorrectly sets it true via CRITICAL ERROR path (normalizeURL trailing-slash bug).",
+    },
+  }, null, 2));
+
+  // CRITICAL narrowness invariant: solo legit relay (no mutation sibling) must
+  // NEVER be ignored. Phase 18 must not break this.
+  assertEquals(
+    snapshotLegitSolo.finalIgnore,
+    false,
+    "wss://haven.nostrfreedom.net/inbox/ is a legit path-only relay and MUST NOT be ignored",
+  );
+
+  // Document the current broken behavior for the with-mutation case.
+  // Phase 18 regression target: this assertion must be flipped to assertEquals(false).
+  assert(
+    snapshotLegitWithMutation !== undefined,
+    "Snapshot captured for wss://haven.nostrfreedom.net/inbox/ with mutation sibling present",
+  );
+});
+
+/**
+ * Generalization test 7: relay.noswhere.com single-segment mutation
+ *
+ * Exercises the single-segment path mutation case (golf-quebec-marble) from
+ * STATE.md's known-failing-samples list under the online=1 and online=0 sibling
+ * state variants to test hypothesis A generalization.
+ */
+dedupTest("generalization: relay.noswhere.com/golf-quebec-marble single-segment mutation under state flip", async () => {
+  const noswhereNip11 = mockRelayInfo("Noswhere", "relay.noswhere.com");
+
+  // Variant 1: legit sibling online=1
+  setupDatabase([
+    { url: "wss://relay.noswhere.com/", online: true, info: noswhereNip11 },
+    { url: "wss://relay.noswhere.com/golf-quebec-marble", online: true, info: noswhereNip11 },
+  ]);
+  const snapshotSiblingOnline = await captureDedupSnapshot({
+    url: "wss://relay.noswhere.com/golf-quebec-marble",
+    hostname: "relay.noswhere.com",
+    protocol: "wss:",
+    info: { data: noswhereNip11 },
+  });
+
+  // Variant 2: legit sibling online=0
+  setupDatabase([
+    { url: "wss://relay.noswhere.com/", online: false, info: noswhereNip11 },
+    { url: "wss://relay.noswhere.com/golf-quebec-marble", online: true, info: noswhereNip11 },
+  ]);
+  const snapshotSiblingOffline = await captureDedupSnapshot({
+    url: "wss://relay.noswhere.com/golf-quebec-marble",
+    hostname: "relay.noswhere.com",
+    protocol: "wss:",
+    info: { data: noswhereNip11 },
+  });
+
+  console.log(JSON.stringify({
+    sample: "relay.noswhere.com-single-segment",
+    siblingOnline: snapshotSiblingOnline,
+    siblingOffline: snapshotSiblingOffline,
+  }, null, 2));
+
+  assert(snapshotSiblingOnline !== undefined);
+  assert(snapshotSiblingOffline !== undefined);
+});
+
+/**
+ * Generalization test 8: succeeding-sample controls
+ *
+ * Exercises two URLs that dedup correctly caught in production (per STATE.md's
+ * known-succeeding-samples list) under the canonical "sibling online=1, same
+ * NIP-11 hash" fixture. These controls contrast with the failing-sample behavior
+ * to confirm that hypothesis A's evidence is not an artifact of the test setup.
+ */
+dedupTest("generalization: succeeding-sample controls (relay.jerseyplebs.com/whiskey, relay.shawnyeager.com/november-anchor-tango)", async () => {
+  const jerseyNip11 = mockRelayInfo("JerseyPlebs", "relay.jerseyplebs.com");
+  const shawnNip11 = mockRelayInfo("ShawnYeager", "relay.shawnyeager.com");
+
+  // Control 1 — legit sibling online=1 (caught in prod per STATE.md)
+  setupDatabase([
+    { url: "wss://relay.jerseyplebs.com/", online: true, info: jerseyNip11 },
+    { url: "wss://relay.jerseyplebs.com/whiskey", online: true, info: jerseyNip11 },
+  ]);
+  const snapshotJersey = await captureDedupSnapshot({
+    url: "wss://relay.jerseyplebs.com/whiskey",
+    hostname: "relay.jerseyplebs.com",
+    protocol: "wss:",
+    info: { data: jerseyNip11 },
+  });
+
+  // Control 2 — legit sibling online=1 (caught in prod)
+  setupDatabase([
+    { url: "wss://relay.shawnyeager.com/", online: true, info: shawnNip11 },
+    { url: "wss://relay.shawnyeager.com/november-anchor-tango", online: true, info: shawnNip11 },
+  ]);
+  const snapshotShawn = await captureDedupSnapshot({
+    url: "wss://relay.shawnyeager.com/november-anchor-tango",
+    hostname: "relay.shawnyeager.com",
+    protocol: "wss:",
+    info: { data: shawnNip11 },
+  });
+
+  console.log(JSON.stringify({
+    sample: "succeeding-sample-controls",
+    jersey: snapshotJersey,
+    shawn: snapshotShawn,
+  }, null, 2));
+
+  // Controls should be caught (finalIgnore=true with a parent) when fixtures
+  // match the canonical "sibling online=1, same hash" shape. This contrast is
+  // what makes the hypothesis A evidence meaningful.
+  assertEquals(
+    snapshotJersey.finalIgnore,
+    true,
+    "Control sample relay.jerseyplebs.com/whiskey should be caught under sibling online=1",
+  );
+  assertEquals(
+    snapshotShawn.finalIgnore,
+    true,
+    "Control sample relay.shawnyeager.com/november-anchor-tango should be caught under sibling online=1",
+  );
+});

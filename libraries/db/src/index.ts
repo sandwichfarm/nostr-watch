@@ -1,5 +1,6 @@
 import { DB } from "https://deno.land/x/sqlite/mod.ts";
 import Logger from "npm:@nostrwatch/logger";
+import { normalizeURL } from "https://esm.sh/nostr-tools@2.23.3/utils";
 
 const logger = new Logger("DB");
 export let db: DB;
@@ -249,7 +250,11 @@ export function seedNewRelay(url: string, network: string): boolean {
 export function getAllRelays(): Set<string> {
   const onlineRelays: Set<string> = new Set();
   for (const [url] of db.query("SELECT url FROM relay_status")) {
-    onlineRelays.add(url as string);
+    try {
+      onlineRelays.add(normalizeURL(url as string));
+    } catch {
+      onlineRelays.add(url as string); // fall back to raw if normalizeURL throws
+    }
   }
   return onlineRelays;
 }
@@ -257,7 +262,11 @@ export function getAllRelays(): Set<string> {
 export function getOnlineRelays(): string[] {
     const onlineRelays: string[] = [];
     for (const [url] of db.query("SELECT url FROM relay_status WHERE online = 1")) {
-      onlineRelays.push(url as string);
+      try {
+        onlineRelays.push(normalizeURL(url as string));
+      } catch {
+        onlineRelays.push(url as string);
+      }
     }
     return onlineRelays;
 }
@@ -289,7 +298,11 @@ export function getRelaysByHostname(hostname: string, protocol?: string): string
         const parsed = new URL(url as string);
         if (parsed.hostname !== hostname) continue;
         if (protocol && parsed.protocol !== protocol) continue;
-        matches.push(url as string);
+        try {
+          matches.push(normalizeURL(url as string));
+        } catch {
+          matches.push(url as string);
+        }
       } catch {
         // skip malformed URL rows silently
       }

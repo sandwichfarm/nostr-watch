@@ -15,6 +15,7 @@ import {
   relayArrToHostnameProtocolKeyedMap,
   createInfoHash,
   setConfig,
+  reevaluateAllDeduplication,
 } from "../../src/utils/hostnames.ts";
 import { mockConfig } from "../helpers/fixtures.ts";
 import { initializeDB, storeRelayInfo, db, getOnlineRelays, getRelayInfo } from "../../src/db/db.ts";
@@ -787,4 +788,272 @@ dedupTest("relay-dedup-family-scope split-outcome reproduction: canonical lumina
   assertEquals(typeof snapshots.umbraVertex.finalIgnore, "boolean");
   assert(Array.isArray(snapshots.hotel.branchHypothesis));
   assert(Array.isArray(snapshots.umbraVertex.branchHypothesis));
+});
+
+// ============================================================================
+// Phase 17 Plan 02: Hypothesis-isolating tests
+//
+// Each test flips exactly one variable against the canonical fixture and
+// captures the dedup outcome via captureDedupSnapshot. Five tests total:
+//   A: family scope coupled to online=1
+//   B: NIP-11 hash instability under volatile field deltas
+//   C: first-check race within a single batch
+//   D: reevaluateAllDeduplication reuses narrow scope
+//   red-herring: hostnames.ts:328-331 index===0 branch
+// ============================================================================
+
+/**
+ * Hypothesis A: family scope coupled to online=1
+ *
+ * Flips the sibling root from online=1 to online=0 — single variable change.
+ * If hypothesis A holds, the mutation URL escapes dedup when the root is offline
+ * because getOnlineRelays() excludes offline relays from the family.
+ */
+dedupTest("family-scope hypothesis A: sibling online=0 excludes legit root from family", async () => {
+  const canonicalNip11 = mockRelayInfo("Lumina Rocks", "relay.lumina.rocks unreadable");
+
+  // Variant 1: sibling online=1 (the "caught" configuration)
+  setupDatabase([
+    { url: "wss://relay.lumina.rocks/", online: true, info: canonicalNip11 },
+    { url: "wss://relay.lumina.rocks/umbra-vertex", online: true, info: canonicalNip11 },
+  ]);
+  const snapshotSiblingOnline = await captureDedupSnapshot({
+    url: "wss://relay.lumina.rocks/umbra-vertex",
+    hostname: "relay.lumina.rocks",
+    protocol: "wss:",
+    info: { data: canonicalNip11 },
+  });
+
+  // Variant 2: sibling online=0 — SINGLE VARIABLE FLIPPED
+  setupDatabase([
+    { url: "wss://relay.lumina.rocks/", online: false, info: canonicalNip11 },  // THE FLIP
+    { url: "wss://relay.lumina.rocks/umbra-vertex", online: true, info: canonicalNip11 },
+  ]);
+  const snapshotSiblingOffline = await captureDedupSnapshot({
+    url: "wss://relay.lumina.rocks/umbra-vertex",
+    hostname: "relay.lumina.rocks",
+    protocol: "wss:",
+    info: { data: canonicalNip11 },
+  });
+
+  console.log(JSON.stringify({
+    hypothesis: "A",
+    siblingOnline: snapshotSiblingOnline,
+    siblingOffline: snapshotSiblingOffline,
+  }, null, 2));
+
+  // Minimal invariants — plan 03 reads the console output to verdict the hypothesis
+  assert(snapshotSiblingOnline !== undefined);
+  assert(snapshotSiblingOffline !== undefined);
+});
+
+/**
+ * Hypothesis B: NIP-11 hash instability under volatile field deltas
+ *
+ * Compares hashes produced by createInfoHash() when volatile fields (timestamp,
+ * counters) are added to an otherwise identical NIP-11 object. If hashesEqual
+ * is false, hypothesis B is supported — the early-return path at lines 160-207
+ * would fail to match a relay whose NIP-11 gained new volatile fields since the
+ * last check.
+ */
+dedupTest("family-scope hypothesis B: NIP-11 hash stability across volatile field deltas", async () => {
+  // Build two NIP-11 objects that represent "same server" but with fields
+  // that commonly vary across checks (adjust if hostnames.ts/createInfoHash normalizes them):
+  const nip11Stable = { ...mockRelayInfo("Lumina Rocks", "unreadable") };
+  const nip11Volatile = {
+    ...mockRelayInfo("Lumina Rocks", "unreadable"),
+    // Candidate volatile additions — createInfoHash sorts keys but does not
+    // strip any. If any of these hash-diverges from nip11Stable, that is
+    // evidence for hypothesis B.
+    timestamp: Date.now(),
+    counters: { messages: 12345 },
+  };
+
+  const hashA = createInfoHash(nip11Stable);
+  const hashB = createInfoHash(nip11Volatile);
+
+  // Run dedup with stable family info but give the current relay the volatile variant
+  setupDatabase([
+    { url: "wss://relay.lumina.rocks/", online: true, info: nip11Stable },
+    { url: "wss://relay.lumina.rocks/hotel", online: true, info: nip11Stable },
+  ]);
+  const snapshotVolatile = await captureDedupSnapshot({
+    url: "wss://relay.lumina.rocks/umbra-vertex",
+    hostname: "relay.lumina.rocks",
+    protocol: "wss:",
+    info: { data: nip11Volatile },
+  });
+
+  console.log(JSON.stringify({
+    hypothesis: "B",
+    hashStable: hashA,
+    hashVolatile: hashB,
+    hashesEqual: hashA === hashB,
+    snapshot: snapshotVolatile,
+  }, null, 2));
+
+  assert(snapshotVolatile !== undefined);
+  // Do NOT assert hashA !== hashB — if they ARE equal, that is itself evidence
+  // ruling out hypothesis B. Plan 03 reads the log to verdict.
+});
+
+/**
+ * Hypothesis C: first-check race within a single batch
+ *
+ * Simulates the case where the mutation URL's dedup runs before the legit
+ * sibling's current-cycle online=1 commit appears in relay_status. The
+ * "pre-race" fixture has no sibling row at all.
+ */
+dedupTest("family-scope hypothesis C: mutation checked before sibling online=1 commit appears family-less", async () => {
+  const canonicalNip11 = mockRelayInfo("Lumina Rocks", "unreadable");
+
+  // Pre-race state: sibling row does not yet exist in relay_status at all
+  // (simulating the mutation being dedup'd BEFORE the legit sibling's batch
+  // entry has been committed this cycle).
+  setupDatabase([
+    { url: "wss://relay.lumina.rocks/umbra-vertex", online: true, info: canonicalNip11 },
+    // NOTE: no sibling row at all — simulates pre-commit race
+  ]);
+  const snapshotPreRace = await captureDedupSnapshot({
+    url: "wss://relay.lumina.rocks/umbra-vertex",
+    hostname: "relay.lumina.rocks",
+    protocol: "wss:",
+    info: { data: canonicalNip11 },
+  });
+
+  // Post-race state: sibling row exists and is online
+  setupDatabase([
+    { url: "wss://relay.lumina.rocks/", online: true, info: canonicalNip11 },
+    { url: "wss://relay.lumina.rocks/umbra-vertex", online: true, info: canonicalNip11 },
+  ]);
+  const snapshotPostRace = await captureDedupSnapshot({
+    url: "wss://relay.lumina.rocks/umbra-vertex",
+    hostname: "relay.lumina.rocks",
+    protocol: "wss:",
+    info: { data: canonicalNip11 },
+  });
+
+  console.log(JSON.stringify({
+    hypothesis: "C",
+    preRace: snapshotPreRace,
+    postRace: snapshotPostRace,
+  }, null, 2));
+
+  assert(snapshotPreRace !== undefined);
+  assert(snapshotPostRace !== undefined);
+});
+
+/**
+ * Hypothesis D: reevaluateAllDeduplication reuses getOnlineRelays narrow scope
+ *
+ * Seeds the DB with an offline root (legit sibling) and an online mutation
+ * URL that has not been caught (ignore=0, parent=""). Calls
+ * reevaluateAllDeduplication with a very long TTL (1 year) so the NIP-11
+ * cache is considered fresh — no network calls. If hypothesis D holds, the
+ * re-evaluation run also misses the mutation because it still uses the same
+ * getOnlineRelays() narrow scope.
+ *
+ * NOTE: reevaluateAllDeduplication does an unconditional dynamic import of
+ * @nostrwatch/nocap at its top. With sanitizeOps: false and needsNip11Refresh=false
+ * (since checked_at is fresh and relay_info is populated by setupDatabase),
+ * the import resolves but no network connection is opened.
+ */
+dedupTest("family-scope hypothesis D: reevaluateAllDeduplication reuses getOnlineRelays narrow scope", async () => {
+  const canonicalNip11 = mockRelayInfo("Lumina Rocks", "unreadable");
+
+  // Configuration: legit sibling currently online=0 (spam-promoted URL is online=1 and
+  // was previously marked ignore=0, parent=""). If hypothesis D holds, re-running
+  // dedup across all online relays will STILL miss the mutation because the offline
+  // sibling is invisible to getOnlineRelays().
+  setupDatabase([
+    { url: "wss://relay.lumina.rocks/", online: false, info: canonicalNip11 },  // offline sibling
+    {
+      url: "wss://relay.lumina.rocks/umbra-vertex",
+      online: true,
+      ignore: false,
+      parent: "",
+      info: canonicalNip11,
+    },
+  ]);
+
+  // Capture the pre-reevaluate state via snapshot (single check)
+  const snapshotBefore = await captureDedupSnapshot({
+    url: "wss://relay.lumina.rocks/umbra-vertex",
+    hostname: "relay.lumina.rocks",
+    protocol: "wss:",
+    info: { data: canonicalNip11 },
+  });
+
+  // Invoke reevaluateAllDeduplication. Seed a large TTL so the
+  // NIP-11 cache is considered fresh (no network call). The import at plan 01
+  // already brings in hostnames helpers — reevaluateAllDeduplication is added
+  // to the same import statement in this plan.
+  const changedRelays = await reevaluateAllDeduplication(365 * 24 * 60 * 60 * 1000); // 1 year TTL
+
+  // Capture post-reevaluate state by re-reading the DB directly for the mutation URL
+  const postRow = db.query(
+    "SELECT ignore, parent FROM relay_status WHERE url = ?",
+    ["wss://relay.lumina.rocks/umbra-vertex"],
+  );
+  const postIgnore = postRow.length > 0 ? postRow[0][0] : null;
+  const postParent = postRow.length > 0 ? postRow[0][1] : null;
+
+  console.log(JSON.stringify({
+    hypothesis: "D",
+    before: snapshotBefore,
+    reevaluateChangedRelays: changedRelays.length,
+    reevaluateChangedUrls: changedRelays.map((r: any) => r.url),
+    afterIgnore: postIgnore,
+    afterParent: postParent,
+  }, null, 2));
+
+  assert(snapshotBefore !== undefined);
+  assert(Array.isArray(changedRelays));
+});
+
+/**
+ * Red-herring test: hostnames.ts:328-331 index===0 branch
+ *
+ * Tests the specific branch at lines 328-331 that resets ignore=false and
+ * parent="" when the URL is the ordered family's index===0 member. Seeds a URL
+ * with ignore=1 and parent set to a sibling that no longer exists. Runs dedup
+ * and observes whether the result flips back to ignore=false.
+ *
+ * If finalIgnore flips to false: the index===0 branch IS active in the defect path.
+ * If finalIgnore stays true: the line is a red herring for this failure mode.
+ */
+dedupTest("red-herring test: hostnames.ts:328-331 index===0 branch behavior when target was previously ignore=1", async () => {
+  const canonicalNip11 = mockRelayInfo("Test Relay", "test");
+
+  // Setup: target URL was previously ignore=1, parent='wss://sibling.tld/'.
+  // Now the sibling is gone from relay_status entirely. Target is the only
+  // online entry — it WILL become the ordered family's index 0 member.
+  setupDatabase([
+    {
+      url: "wss://relay.lumina.rocks/orphaned-mutation",
+      online: true,
+      ignore: true,
+      parent: "wss://sibling.tld/",
+      info: canonicalNip11,
+    },
+  ]);
+
+  const snapshot = await captureDedupSnapshot({
+    url: "wss://relay.lumina.rocks/orphaned-mutation",
+    hostname: "relay.lumina.rocks",
+    protocol: "wss:",
+    info: { data: canonicalNip11 },
+  });
+
+  console.log(JSON.stringify({
+    hypothesis: "328-331-red-herring",
+    snapshot,
+    interpretation: {
+      flippedBackToIgnoreFalse: snapshot.finalIgnore === false,
+      clearedParent: snapshot.finalParent === "",
+      note: "If flippedBackToIgnoreFalse is true, the index===0 branch IS active in the defect path. If false, the line is a red herring for this failure mode.",
+    },
+  }, null, 2));
+
+  assert(snapshot !== undefined);
 });

@@ -2,7 +2,7 @@
 import { getLogger, LogLevel } from "./logger.ts";
 import { normalizeURL } from "npm:nostr-tools/utils";
 import hash from "npm:object-hash";
-import { getOnlineRelays, getRelayInfo, storeRelayInfo, getRelaysWithSameInfo } from "../db/db.ts";
+import { getOnlineRelays, getRelayInfo, storeRelayInfo, getRelaysWithSameInfo, getRelaysByHostname } from "../db/db.ts";
 import { deleteRelayCheckEvent } from "./deletion.ts";
 import type { Config } from "../config/config.ts";
 import type { RelayCheckResult, RelayInfo } from "../types/relay.ts";
@@ -252,7 +252,35 @@ export const relayHostnameDedup = async (result: RelayCheckResult): Promise<Rela
     });
 
     if (!hostnameRelatives?.length) {
-      logger.debug(`No relatives found for ${mURL}, returning without modification`);
+      // Phase 18 Fix 1: defensive-deny against the no-relatives race.
+      // Phase 17 Hypothesis C confirmed that when a mutation URL's dedup runs
+      // before its legit sibling's relay_status online=1 commit is visible,
+      // the family is empty and the mutation escapes. Before giving up, check
+      // for ANY sibling of the same hostname+protocol in relay_status (online
+      // or offline). If found, mark the current URL as a duplicate of the
+      // shortest known sibling.
+      const allKnownSiblings = getRelaysByHostname(HOSTNAME, PROTOCOL).filter(
+        (u) => u !== mURL
+      );
+      if (allKnownSiblings.length > 0) {
+        allKnownSiblings.sort((a, b) => {
+          if (a.length !== b.length) return a.length - b.length;
+          return a < b ? -1 : a > b ? 1 : 0;
+        });
+        const shortestSibling = allKnownSiblings[0];
+        result.ignore = true;
+        result.parent = shortestSibling;
+        const reason = `hostname has known siblings (defensive deny — Phase 18 Fix 1, parent: ${shortestSibling})`;
+        logger.warn(`${mURL} | Ignored because: ${reason}`);
+        if (ignoreListSyncInstance) {
+          ignoreListSyncInstance.addToIgnoreList(mURL, reason);
+        }
+        if (appConfig) {
+          await deleteRelayCheckEvent(mURL, reason, appConfig);
+        }
+        return result;
+      }
+      logger.debug(`No relatives or known siblings found for ${mURL}, returning without modification`);
       return result;
     }
 

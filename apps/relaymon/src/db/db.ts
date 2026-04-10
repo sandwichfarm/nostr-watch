@@ -2,6 +2,7 @@ import { db, initDB } from "npm:@nostrwatch/db";
 import { getLogger } from "../utils/logger.ts";
 import type { RelayInfo } from "../types/relay.ts";
 import { createInfoHash } from "../utils/hostnames.ts";
+import { rerunDedupForAllRowsMigration } from "../utils/remediation.ts";
 
 const logger = getLogger("DB");
 let isInitialized = false;
@@ -105,6 +106,17 @@ export function initializeDB(dbPath?: string, enableWAL: boolean = true): void {
   } catch (e) {
     logger.error(`rehashRelayInfoMigration threw: ${e}`);
   }
+
+  // Phase 19 REMED-01/REMED-02: re-run dedup over every row in
+  // relay_status using the now-fixed relayHostnameDedup (Phase 18 Fixes
+  // 1–3). Idempotent via relaymon_migrations sentinel. MUST run AFTER
+  // rehashRelayInfoMigration so the re-dedup sees stable hashes.
+  // Fire-and-forget async — initializeDB is sync, but the migration is
+  // async because relayHostnameDedup is async. Any error is swallowed
+  // inside the migration itself (never crashes startup).
+  rerunDedupForAllRowsMigration().catch((e) => {
+    logger.error(`rerunDedupForAllRowsMigration threw: ${e}`);
+  });
 
   isInitialized = true;
 }

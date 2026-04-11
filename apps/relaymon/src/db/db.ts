@@ -2,7 +2,10 @@ import { db, initDB } from "npm:@nostrwatch/db";
 import { getLogger } from "../utils/logger.ts";
 import type { RelayInfo } from "../types/relay.ts";
 import { createInfoHash } from "../utils/hostnames.ts";
-import { rerunDedupForAllRowsMigration } from "../utils/remediation.ts";
+import {
+  rerunDedupForAllRowsMigration,
+  rerunNostringsSweepMigration,
+} from "../utils/remediation.ts";
 
 const logger = getLogger("DB");
 let isInitialized = false;
@@ -140,6 +143,20 @@ export async function initializeDB(dbPath?: string, enableWAL: boolean = true): 
     await rerunDedupForAllRowsMigration();
   } catch (e) {
     logger.error(`rerunDedupForAllRowsMigration threw: ${e}`);
+  }
+
+  // Nostrings sweep: re-run @nostrwatch/nostrings qualification over
+  // every row in relay_status, hard-deleting unparseable garbage and
+  // soft-ignoring parseable-but-disqualified URLs. Sentinel-gated per
+  // nostrings VERSION so each library bump re-triggers the sweep
+  // exactly once per DB. MUST run AFTER rerunDedupForAllRowsMigration
+  // because dedup walks every row and should not have rows added
+  // underneath it — the sweep only removes/ignores, so appending here
+  // is safe. Spec: docs/superpowers/specs/2026-04-11-nostrings-sweep-migration-design.md
+  try {
+    await rerunNostringsSweepMigration();
+  } catch (e) {
+    logger.error(`rerunNostringsSweepMigration threw: ${e}`);
   }
 
   isInitialized = true;

@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v2.3
 milestone_name: Relay Dedup Family Scope
-status: in_progress
-stopped_at: Phase 20 pending (17/18/19 complete on disk)
-last_updated: "2026-04-11T00:00:00.000Z"
+status: Ready to execute
+stopped_at: Completed 20-01-override-scaffold-PLAN.md
+last_updated: "2026-04-11T22:14:01.795Z"
 progress:
   total_phases: 4
-  completed_phases: 3
-  total_plans: 8
-  completed_plans: 8
+  completed_phases: 0
+  total_plans: 12
+  completed_plans: 6
 ---
 
 # Project State
@@ -23,8 +23,8 @@ See: .planning/PROJECT.md (updated 2026-03-19)
 
 ## Current Position
 
-Phase: 20 (Dedup Performance & Overrides) — NOT STARTED
-Plan: 0 of 0 (planning pending)
+Phase: 20 (Dedup Performance & Overrides) — EXECUTING
+Plan: 3 of 4
 
 Phases 17, 18, 19 complete on disk (artifacts under `.planning/phases/`). v2.3 roadmap entry added to ROADMAP.md in this commit to catch up documentation to shipped state.
 
@@ -55,6 +55,8 @@ Phases 17, 18, 19 complete on disk (artifacts under `.planning/phases/`). v2.3 r
 | Phase 16-data-integrity P00 | 3 | 2 tasks | 2 files |
 | Phase 16 P01 | 5 | 2 tasks | 5 files |
 | Phase 16-data-integrity P02 | ~45 | 2 tasks | 3 files |
+| Phase 20-dedup-performance-overrides P02 | 2min | 1 tasks | 1 files |
+| Phase 20-dedup-performance-overrides P01 | 4min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -75,6 +77,9 @@ Phases 17, 18, 19 complete on disk (artifacts under `.planning/phases/`). v2.3 r
 - [Phase 16-data-integrity]: monitorFreshness is ephemeral — never persisted to StateManager/localStorage to avoid stale fresh-flags across sessions
 - [Phase 16-data-integrity]: monitorsLivenessLeniency added as reactive derived input to monitorRows so leniency changes instantly re-derive all rows without separate trigger
 - [Phase 16-data-integrity P02]: Freshness signal driven by liveness computation completion, not bootstrap lifecycle — avoids premature fresh state on cached-only rows
+- [Phase 20-dedup-performance-overrides]: Plan 20-02: Default applied via validateConfig mutation, not processConfigTimeValues — keeps Plan inside strict single-file constraint and matches existing lazy conversion pattern for nip11_cache_ttl
+- [Phase 20-dedup-performance-overrides]: DedupOverrideRule locked to 4 fields (name/test/action/reason); evaluator parses URL once + per-rule try/catch; static barrel + first-match-wins, no priority field
+- [Phase 20-dedup-performance-overrides]: Per-rule isolation: each override rule has its own source file AND its own test file; no cross-test imports — adding a new override = create one source + one test + add one barrel line
 
 ### Pending Todos
 
@@ -86,6 +91,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-24T00:00:00.000Z
-Stopped at: Completed 16-02-PLAN.md
+Last session: 2026-04-11T22:13:54.113Z
+Stopped at: Completed 20-01-override-scaffold-PLAN.md
 Resume file: None

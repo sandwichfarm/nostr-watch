@@ -392,5 +392,110 @@ function softIgnoreRow(url: string, reason: string): void {
  * as the existing migrations.
  */
 export async function rerunNostringsSweepMigration(): Promise<void> {
-  throw new Error("rerunNostringsSweepMigration: not yet implemented");
+  // Top-level try: never let this migration crash startup.
+  try {
+    // Idempotency guard: sentinel row in relaymon_migrations means we
+    // already ran on this DB for the current nostrings VERSION. Return
+    // silently. A nostrings version bump changes the sentinel name and
+    // naturally re-triggers the sweep.
+    const existing = db.query(
+      `SELECT applied_at FROM relaymon_migrations WHERE name = ?`,
+      [NOSTRINGS_SWEEP_MIGRATION_NAME],
+    );
+    if (existing.length > 0) {
+      logger.debug(
+        `Migration ${NOSTRINGS_SWEEP_MIGRATION_NAME} already applied, skipping`,
+      );
+      return;
+    }
+
+    logger.info(`Running migration: ${NOSTRINGS_SWEEP_MIGRATION_NAME}`);
+    const startTime = Date.now();
+
+    // Pull just the url column — we don't need anything else to decide.
+    const rows = db.query(`SELECT url FROM relay_status`);
+
+    let evaluated = 0;
+    let hardDeleted = 0;
+    let softIgnored = 0;
+    let unchanged = 0;
+
+    for (const [urlRaw] of rows) {
+      const url = urlRaw as string;
+      evaluated++;
+
+      try {
+        // Garbage-URL branch: unparseable → hard delete. qualifyRelayUrl
+        // would also return false here, but we want the distinct
+        // hard-delete action for "row should never have existed".
+        let parseable = true;
+        try {
+          new URL(url);
+        } catch {
+          parseable = false;
+        }
+
+        if (!parseable) {
+          hardDeleteRow(
+            url,
+            `Garbage URL rejected by nostrings v${VERSION}`,
+          );
+          hardDeleted++;
+          continue;
+        }
+
+        // Disqualified-but-parseable branch: soft-ignore tombstone.
+        // Keeps the row around so IgnoreListSync can short-circuit
+        // future re-ingestion of the same string.
+        if (!qualifyRelayUrl(url)) {
+          softIgnoreRow(
+            url,
+            `Rejected by nostrings v${VERSION}: disqualified`,
+          );
+          softIgnored++;
+          continue;
+        }
+
+        // Still valid under the current rules — leave alone.
+        unchanged++;
+      } catch (e) {
+        // Per-row defensive catch: one bad row must not abort the
+        // sweep. The specific failure mode we care about is a
+        // transaction failure inside hardDeleteRow — rollback already
+        // happened there, we just need to log and continue.
+        logger.error(
+          `Nostrings sweep: failed to evaluate ${url}: ${e}`,
+        );
+      }
+    }
+
+    const durationMs = Date.now() - startTime;
+
+    // Structured JSON summary — single greppable line. Field names
+    // stable for post-rollout grep.
+    logger.info(
+      JSON.stringify({
+        migration: NOSTRINGS_SWEEP_MIGRATION_NAME,
+        rows_evaluated: evaluated,
+        hard_deleted: hardDeleted,
+        soft_ignored: softIgnored,
+        unchanged: unchanged,
+        duration_ms: durationMs,
+      }),
+    );
+
+    // Insert sentinel ONLY after successful completion so a partial
+    // run (crash, SIGKILL) is retried on the next startup.
+    db.query(
+      `INSERT INTO relaymon_migrations (name, applied_at) VALUES (?, ?)`,
+      [NOSTRINGS_SWEEP_MIGRATION_NAME, Math.floor(Date.now() / 1000)],
+    );
+
+    logger.info(
+      `Migration ${NOSTRINGS_SWEEP_MIGRATION_NAME} complete: ${evaluated} evaluated, ${hardDeleted} hard-deleted, ${softIgnored} soft-ignored, ${unchanged} unchanged, ${durationMs}ms`,
+    );
+  } catch (e) {
+    // Top-level: never crash startup.
+    logger.error(`Migration ${NOSTRINGS_SWEEP_MIGRATION_NAME} failed: ${e}`);
+  }
 }

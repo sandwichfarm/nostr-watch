@@ -6,15 +6,27 @@
  * row in relay_status. See the spec at
  * docs/superpowers/specs/2026-04-11-nostrings-sweep-migration-design.md
  *
+ * URL taxonomy used in these tests (all verified against nostrings v0.4.0):
+ *   - UNPARSEABLE — throws on `new URL()`. Examples: `"not a url"`,
+ *     `"wss:// has spaces"`, `"wss://"`. Sweep hits the hardDeleteRow branch.
+ *   - DISQUALIFIED — parses via `new URL()` but qualifyRelayUrl returns
+ *     false. The easiest stable example is a URL whose hostname matches
+ *     the protocol-name regex /^(https?|wss?)$/i, e.g. "wss://https/catbox.moe"
+ *     (hostname="https", path="/catbox.moe"). Sweep hits softIgnoreRow.
+ *   - VALID — qualifies. Example: "wss://relay.example.com/".
+ *
+ * NOTE: nostrings declares a `blocklist` array containing echo.websocket.org
+ * but never consults it inside `qualifyRelayUrl`, so that URL currently
+ * passes qualification. Do not use it as a "disqualified" fixture here —
+ * that is a latent nostrings bug, tracked separately.
+ *
  * Covers 8 behavioral cases:
- *   1. Garbage URL (unparseable hostname like wss://https/catbox.moe)
- *      → hard-deleted from relay_status + all satellite tables
- *   2. Unparseable URL (throws on `new URL()`)
- *      → hard-deleted
- *   3. Parseable-but-disqualified URL (blocklist hit)
- *      → soft-ignored, satellite tables untouched, queued for kind:5
+ *   1. Unparseable URL → hard-deleted from relay_status + all satellite tables
+ *   2. Unparseable URL (whitespace variant) → hard-deleted
+ *   3. Disqualified-but-parseable URL → soft-ignored, satellites untouched,
+ *      queued for kind:5
  *   4. Valid URL → unchanged
- *   5. Mixed DB: garbage + disqualified + valid in one run
+ *   5. Mixed DB: unparseable + disqualified + valid in one run
  *      → each row processed per its branch, loop iterates all rows
  *   6. Idempotency: second call is a no-op (sentinel-guarded)
  *   7. Version bump: old sentinel present does NOT prevent a run
@@ -127,12 +139,21 @@ function queueEntriesFor(url: string): number {
 }
 
 // ============================================================================
-// Case 1: Garbage URL → hard-deleted + all satellite tables cleared
+// Case 1: Unparseable URL → hard-deleted + all satellite tables cleared
 // ============================================================================
-sweepTest("Case 1: garbage URL is hard-deleted from all tables and queued for kind:5", async () => {
+sweepTest("Case 1: unparseable URL is hard-deleted from all tables and queued for kind:5", async () => {
   resetSweepState();
 
-  const url = "wss://https/catbox.moe"; // nostrings v0.4.0 rejects this
+  // "not a url" truly throws on `new URL()` — verified below. Seeded
+  // with satellite-table rows so we can prove the hard-delete path
+  // atomically clears relay_info / relay_delta_state / relay_period_snapshots
+  // in addition to relay_status.
+  const url = "not a url";
+  // Precondition sanity: new URL() really does throw on this input.
+  let threw = false;
+  try { new URL(url); } catch { threw = true; }
+  assert(threw, "test precondition: new URL('not a url') must throw");
+
   seedRow({
     url,
     info: { name: "garbage", description: "", software: "strfry", version: "1" },
@@ -192,9 +213,10 @@ sweepTest("Case 2: unparseable URL (whitespace) is hard-deleted", async () => {
 sweepTest("Case 3: disqualified-but-parseable URL is soft-ignored, row stays, satellites untouched", async () => {
   resetSweepState();
 
-  // nostrings ships a blocklist that rejects echo.websocket.org.
-  // The URL parses fine; qualifyRelayUrl returns false on the hostname match.
-  const url = "wss://echo.websocket.org";
+  // "wss://https/catbox.moe" parses (hostname="https", path="/catbox.moe")
+  // but qualifyRelayUrl returns false because hostname matches the
+  // protocol-name regex /^(https?|wss?)$/i. Soft-ignore branch.
+  const url = "wss://https/catbox.moe";
   seedRow({
     url,
     info: { name: "echo", description: "", software: "strfry", version: "1" },
@@ -268,11 +290,11 @@ sweepTest("Case 4: valid URL is left entirely alone (unchanged counter)", async 
 // by proving the loop iterates ALL rows in a single pass. If any row
 // aborted the loop, subsequent rows would be unprocessed and the
 // assertions below would fail.
-sweepTest("Case 5: mixed DB — one garbage + one disqualified + one valid row in one run", async () => {
+sweepTest("Case 5: mixed DB — one unparseable + one disqualified + one valid row in one run", async () => {
   resetSweepState();
 
-  const garbage = "wss://https/catbox.moe";
-  const disqualified = "wss://echo.websocket.org";
+  const garbage = "not a url"; // unparseable → hard-delete
+  const disqualified = "wss://https/catbox.moe"; // parseable, hostname="https" → soft-ignore
   const valid = "wss://relay.example.com/";
 
   seedRow({ url: garbage });
@@ -309,7 +331,7 @@ sweepTest("Case 5: mixed DB — one garbage + one disqualified + one valid row i
 sweepTest("Case 6: second call is a no-op — sentinel blocks re-execution", async () => {
   resetSweepState();
 
-  const disqualified = "wss://echo.websocket.org";
+  const disqualified = "wss://https/catbox.moe";
   seedRow({ url: disqualified });
 
   // First run: soft-ignores the row and inserts the sentinel.
@@ -365,7 +387,7 @@ sweepTest("Case 7: old-version sentinel does NOT prevent a new-version sweep", a
     [oldSentinel, Math.floor(Date.now() / 1000) - 86400],
   );
 
-  const disqualified = "wss://echo.websocket.org";
+  const disqualified = "wss://https/catbox.moe";
   seedRow({ url: disqualified });
 
   // Current-version sentinel is absent → sweep MUST run.

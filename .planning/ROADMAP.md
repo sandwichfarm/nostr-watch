@@ -106,10 +106,10 @@ Plans:
   6. Each override file has its own isolated unit test file at `apps/relaymon/tests/unit/dedup-overrides/{override-name}.test.ts` that exercises only that rule
   7. At least two initial overrides ship and pass unit tests: `allow-known-paths.ts` (always allows `/inbox` and `/outbox` to win over shorter spam siblings regardless of NIP-11 state) and `lang-relays-land.ts` (allows each `lang.relays.land/<two-letter-code>` path as an independent relay rather than a dedup child of a shorter sibling)
   8. Regression: `wss://haven.nostrfreedom.net/inbox/` and every Phase 18 failing-sample test still passes after the override system is introduced — no pre-existing dedup behavior is broken
-**Plans:** 2/4 plans executed
+**Plans:** 3/4 plans executed
   - [x] 20-01-override-scaffold-PLAN.md — Create dedup-overrides/ directory with types, rules, evaluator, and isolated unit tests
   - [x] 20-02-config-extension-PLAN.md — Extend DeduplicationConfig with nip11_stale_skip timestring field + default + conversion
-  - [ ] 20-03-hostnames-integration-PLAN.md — Wire override evaluator into relayHostnameDedup + add DedupContext param + reevaluateAllDeduplication stale-skip + Phase 19 philosophy test lockstep update
+  - [x] 20-03-hostnames-integration-PLAN.md — Wire override evaluator into relayHostnameDedup + add DedupContext param + reevaluateAllDeduplication stale-skip + Phase 19 philosophy test lockstep update
   - [ ] 20-04-migration-scope-PLAN.md — Narrow rerunDedupForAllRowsMigration SQL scope + rename sentinel + cache getOnlineRelays + ctx plumbing
 
 ## Progress
@@ -119,4 +119,4 @@ Plans:
 | 17. Diagnose Dedup Family Scope Failure | 3/3 | Complete | 2026-04-10 |
 | 18. Fix Dedup Family Scope | 3/3 | Complete | 2026-04-10 |
 | 19. Remediate Affected Rows | 2/2 | Complete | 2026-04-10 |
-| 20. Dedup Performance & Overrides | 2/4 | In Progress|  |
+| 20. Dedup Performance & Overrides | 3/4 | In Progress|  |

@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v2.3
 milestone_name: Relay Dedup Family Scope
 status: Ready to execute
-stopped_at: Completed 20-02-config-extension-PLAN.md
-last_updated: "2026-04-11T22:15:11.898Z"
+stopped_at: Completed 20-03-hostnames-integration-PLAN.md
+last_updated: "2026-04-11T22:29:43.686Z"
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 12
-  completed_plans: 6
+  completed_plans: 7
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-19)
 ## Current Position
 
 Phase: 20 (Dedup Performance & Overrides) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 
 Phases 17, 18, 19 complete on disk (artifacts under `.planning/phases/`). v2.3 roadmap entry added to ROADMAP.md in this commit to catch up documentation to shipped state.
 
@@ -57,6 +57,7 @@ Phases 17, 18, 19 complete on disk (artifacts under `.planning/phases/`). v2.3 r
 | Phase 16-data-integrity P02 | ~45 | 2 tasks | 3 files |
 | Phase 20-dedup-performance-overrides P02 | 2min | 1 tasks | 1 files |
 | Phase 20-dedup-performance-overrides P01 | 4min | 2 tasks | 8 files |
+| Phase 20 P03 | 9min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -80,6 +81,9 @@ Phases 17, 18, 19 complete on disk (artifacts under `.planning/phases/`). v2.3 r
 - [Phase 20-dedup-performance-overrides]: Plan 20-02: Default applied via validateConfig mutation, not processConfigTimeValues — keeps Plan inside strict single-file constraint and matches existing lazy conversion pattern for nip11_cache_ttl
 - [Phase 20-dedup-performance-overrides]: DedupOverrideRule locked to 4 fields (name/test/action/reason); evaluator parses URL once + per-rule try/catch; static barrel + first-match-wins, no priority field
 - [Phase 20-dedup-performance-overrides]: Per-rule isolation: each override rule has its own source file AND its own test file; no cross-test imports — adding a new override = create one source + one test + add one barrel line
+- [Phase 20]: Override hook placed immediately after canonicalMURL normalization and BEFORE the same-NIP-11 early-return — covers all downstream cases with a single short-circuit, per Plan 20-03
+- [Phase 20]: Consumer-side lazy timestring conversion via local parseStaleSkipTimestring helper (not importing from core/daemon.ts) — keeps hostnames.ts self-contained, matches the deferred-conversion pattern established by Plan 20-02
+- [Phase 20]: Per-group granularity for the stale-skip gate (not per-row) with structural-proxy test assertions — avoids refactoring nocap.check injection point while still guaranteeing zero-call invariant via LOCKED INTERPRETATION comment
 
 ### Pending Todos
 
@@ -91,6 +95,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-11T22:15:11.865Z
-Stopped at: Completed 20-02-config-extension-PLAN.md
+Last session: 2026-04-11T22:29:43.683Z
+Stopped at: Completed 20-03-hostnames-integration-PLAN.md
 Resume file: None

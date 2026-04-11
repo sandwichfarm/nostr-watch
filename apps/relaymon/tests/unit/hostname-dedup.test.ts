@@ -1059,6 +1059,135 @@ dedupTest("Phase 18 Fix 1 regression: transient-sibling-offline produces same ig
 });
 
 /**
+ * Defensive-deny narrowness regressions
+ *
+ * The defensive-deny branch at the `!hostnameRelatives?.length` site must
+ * NEVER flip a URL that is already the canonical (shortest) form for its
+ * hostname. Specifically:
+ *
+ *   1. A root URL (pathname === "/" or "") must never be ignored by the
+ *      defensive-deny path, regardless of what sibling path URLs exist.
+ *   2. A non-root URL that is the shortest known form for its hostname must
+ *      never be ignored by the defensive-deny path.
+ *   3. A non-root URL tied in length with the "shortest" sibling must never
+ *      be ignored — the tiebreaker rule protects the URL under check.
+ *
+ * The earlier shipped version of this branch sorted siblings by length
+ * without comparing against mURL's own length, so when a root URL was
+ * dedup'd with only longer child paths known, the "shortest sibling" was a
+ * longer child, and the root was wrongly marked ignore=true with a child as
+ * parent. That is the exact inversion of the shorter-URL-wins bias.
+ */
+dedupTest("defensive-deny must NOT flip a root URL when only child siblings exist (shorter-URL-wins invariant)", async () => {
+  // Setup: root URL plus one longer child path. The child is OFFLINE so
+  // hostnameFamily is empty → the no-relatives branch fires. Before the
+  // length guard, defensive-deny would sort `allKnownSiblings` (which only
+  // contains the longer child since mURL is filtered out) and assign that
+  // longer child as parent of the root. Absurd inversion of shorter-wins.
+  //
+  // Real production observation (pre-fix):
+  //   ws://...onion/ was wrongly ignored with parent=...onion/haven-mike
+  //   wss://bostr.bitcointxoko.com/ was wrongly ignored with parent=/<path>
+  setupDatabase([
+    { url: "wss://bostr.bitcointxoko.com/some-child-path", online: false },
+  ]);
+  const snapshotRoot = await captureDedupSnapshot({
+    url: "wss://bostr.bitcointxoko.com/",
+    hostname: "bostr.bitcointxoko.com",
+    protocol: "wss:",
+  });
+  console.log(JSON.stringify({ test: "defensive-deny-root-protected", snapshot: snapshotRoot }, null, 2));
+  assertEquals(
+    snapshotRoot.finalIgnore,
+    false,
+    "root URL must never be flipped by defensive-deny — shorter-URL-wins is absolute",
+  );
+  assertEquals(
+    snapshotRoot.finalParent,
+    "",
+    "root URL must never receive a parent assignment from defensive-deny",
+  );
+});
+
+dedupTest("defensive-deny must NOT flip a root onion URL when only child siblings exist", async () => {
+  // Real production example: an onion root was wrongly ignored with a
+  // /haven-mike child as parent. Sibling is offline to force the
+  // no-relatives branch.
+  setupDatabase([
+    { url: "ws://agwwuih4l66mb6oxnqk42lfsubhatux3bmcnpmki6cd7nmx5lz2ys6yd.onion/haven-mike", online: false },
+  ]);
+  const snapshot = await captureDedupSnapshot({
+    url: "ws://agwwuih4l66mb6oxnqk42lfsubhatux3bmcnpmki6cd7nmx5lz2ys6yd.onion/",
+    hostname: "agwwuih4l66mb6oxnqk42lfsubhatux3bmcnpmki6cd7nmx5lz2ys6yd.onion",
+    protocol: "ws:",
+  });
+  console.log(JSON.stringify({ test: "defensive-deny-onion-root-protected", snapshot }, null, 2));
+  assertEquals(
+    snapshot.finalIgnore,
+    false,
+    "onion root URL must never be flipped by defensive-deny",
+  );
+  assertEquals(
+    snapshot.finalParent,
+    "",
+    "onion root URL must never receive a parent assignment from defensive-deny",
+  );
+});
+
+dedupTest("defensive-deny must NOT flip a non-root mURL that is the shortest known form for its hostname", async () => {
+  // Setup: two path URLs on the same hostname, no root. The shorter one is
+  // the mURL under check; the longer is offline to force the no-relatives
+  // branch. Defensive-deny must NOT flip the shorter mURL to point at the
+  // longer sibling — shorter-URL-wins still applies to non-root paths.
+  setupDatabase([
+    { url: "wss://paths.example.com/a-longer-suffix", online: false },
+  ]);
+  const snapshot = await captureDedupSnapshot({
+    url: "wss://paths.example.com/a",
+    hostname: "paths.example.com",
+    protocol: "wss:",
+  });
+  console.log(JSON.stringify({ test: "defensive-deny-shortest-nonroot-protected", snapshot }, null, 2));
+  assertEquals(
+    snapshot.finalIgnore,
+    false,
+    "the shortest non-root URL for its hostname must never be flipped by defensive-deny",
+  );
+  assertEquals(
+    snapshot.finalParent,
+    "",
+    "the shortest non-root URL must never receive a parent assignment from defensive-deny",
+  );
+});
+
+dedupTest("defensive-deny must NOT flip mURL when it ties in length with the shortest sibling", async () => {
+  // Setup: two equal-length path URLs. mURL is one of them; the other is
+  // offline to force the no-relatives branch. Without the length guard,
+  // defensive-deny would mark mURL as a duplicate of its equal-length
+  // sibling — but the shorter-URL-wins bias requires a STRICTLY shorter
+  // sibling to flip.
+  setupDatabase([
+    { url: "wss://ties.example.com/bbbb", online: false },
+  ]);
+  const snapshot = await captureDedupSnapshot({
+    url: "wss://ties.example.com/aaaa",
+    hostname: "ties.example.com",
+    protocol: "wss:",
+  });
+  console.log(JSON.stringify({ test: "defensive-deny-tied-length-protected", snapshot }, null, 2));
+  assertEquals(
+    snapshot.finalIgnore,
+    false,
+    "equal-length siblings must never flip each other via defensive-deny — STRICTLY shorter is required",
+  );
+  assertEquals(
+    snapshot.finalParent,
+    "",
+    "equal-length siblings must never receive a parent assignment from defensive-deny",
+  );
+});
+
+/**
  * Hypothesis D: reevaluateAllDeduplication reuses getOnlineRelays narrow scope
  *
  * Seeds the DB with an offline root (legit sibling) and an online mutation

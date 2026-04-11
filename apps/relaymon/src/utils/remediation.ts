@@ -32,8 +32,7 @@
  */
 
 import { db, getRelayInfo, clearDeltaState, clearPeriodSnapshots } from "../db/db.ts";
-import { VERSION } from "@nostrwatch/nostrings";
-import { qualifyRelayUrl } from "../../../../libraries/nostrings/src/relay-urls.ts";
+import { VERSION, qualifyRelayUrl } from "@nostrwatch/nostrings";
 import { relayHostnameDedup } from "./hostnames.ts";
 import { getLogger } from "./logger.ts";
 import type { RelayCheckResult } from "../types/relay.ts";

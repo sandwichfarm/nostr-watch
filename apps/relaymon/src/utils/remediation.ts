@@ -31,7 +31,7 @@
  * the stable, normalizeNip11-scrubbed hashes. See db.ts `initializeDB`.
  */
 
-import { db, getRelayInfo, clearDeltaState, clearPeriodSnapshots } from "../db/db.ts";
+import { db, getOnlineRelays, getRelayInfo, clearDeltaState, clearPeriodSnapshots } from "../db/db.ts";
 import { VERSION, qualifyRelayUrl } from "@nostrwatch/nostrings";
 import { relayHostnameDedup } from "./hostnames.ts";
 import { getLogger } from "./logger.ts";
@@ -41,12 +41,19 @@ import type { Config } from "../types/config.ts";
 
 const logger = getLogger("Remediation");
 
-// Bumped to v2 after the synced-ignore-list override bug was fixed in
-// relayHostnameDedup. v1 ran under the broken early-return, which meant
-// every tainted-root row was short-circuited to ignore=true/parent=""
-// instead of being re-evaluated by local logic. v2 forces a fresh pass
-// so all rows see the corrected dedup path.
-const MIGRATION_NAME = "rerun_dedup_all_rows_v2";
+// Phase 19 used MIGRATION_NAME = "rerun_dedup_all_rows_v2" which scanned
+// every row in relay_status. Phase 20 (this file) narrows the scope to
+// online+unignored rows at the SQL layer via a new sentinel — see below.
+// The v2 constant is NOT retained because no code path references it
+// after the rename. The v2 sentinel ROW in the relaymon_migrations table
+// remains forever as a history record; the v2 NAME constant is gone.
+//
+// Phase 20 PERF-01: new sentinel so deployed DBs re-run under the new
+// online+unignored scope. The Phase 19 sentinel "rerun_dedup_all_rows_v2"
+// is LEFT IN PLACE as a history record — it is NEVER deleted, nor
+// referenced below. Deployed DBs that already carry the v2 row will add
+// this v1 row on first Phase 20 startup and carry both rows forever.
+const MIGRATION_NAME = "rerun_dedup_online_unignored_v1";
 
 // Sentinel for the nostrings sweep. Embeds the current nostrings
 // VERSION so each library bump creates a fresh sentinel row and
@@ -73,19 +80,45 @@ export async function rerunDedupForAllRowsMigration(): Promise<void> {
     logger.info(`Running migration: ${MIGRATION_NAME}`);
     const startTime = Date.now();
 
-    // Iterate every row in relay_status regardless of online state. We
-    // need `ignore_reason` and `network` from the row because we
+    // Phase 20 PERF-01: SQL-layer scope narrowing. Only evaluate rows that
+    // are currently online AND unignored. The ~30k row scan is reduced to
+    // the hot set (typically a few thousand rows). Excluded rows:
+    //   - offline rows: not candidates for ignore-flipping in this batch
+    //     pass; when they come back online their next live check re-runs
+    //     relayHostnameDedup naturally.
+    //   - already-ignored rows: flipping an ignored row back to unignored
+    //     would require an override rule to fire; the override path runs
+    //     on every live check via relayHostnameDedup, so this batch does
+    //     not need to revisit historically-ignored rows at startup scale.
+    // We need `ignore_reason` and `network` from the row because we
     // construct a full RelayCheckResult to hand to relayHostnameDedup —
     // the function asserts required fields via TypeScript.
     const rows = db.query(
       `SELECT url, ignore, parent, online, ignore_reason, network, checked_at
-       FROM relay_status`,
+       FROM relay_status
+       WHERE online = 1 AND ignore = 0`,
     );
 
     let evaluated = 0;
     let newlyIgnored = 0;
     let newlyUnignored = 0;
     let unchanged = 0;
+
+    // Phase 20 PERF-02: cache onlineUrls ONCE per migration run. Passed
+    // into relayHostnameDedup via ctx on every per-row call so dedup does
+    // not re-query the DB O(N) times. Safe because:
+    //   1. initializeDB runs this migration BEFORE the daemon wires live
+    //      checks — no concurrent writer can mutate `online` mid-run.
+    //   2. This migration NEVER writes to relay_status.online — only to
+    //      .ignore and .parent — so the snapshot cannot become stale
+    //      against its own writes.
+    // If a future refactor moves this migration to run concurrently with
+    // live checks, this cache must become per-row (or be invalidated at
+    // write boundaries). Document any such change in this comment.
+    const cachedOnline = getOnlineRelays();
+    logger.info(
+      `Phase 20 PERF-02: cached ${cachedOnline.length} online URLs for migration run`,
+    );
 
     for (const row of rows) {
       const [
@@ -147,7 +180,12 @@ export async function rerunDedupForAllRowsMigration(): Promise<void> {
           info: infoForDedup,
         };
 
-        const deduped = await relayHostnameDedup(result);
+        // Phase 20 PERF-02: pass cached onlineUrls snapshot so dedup does
+        // NOT re-query getOnlineRelays() on every row. See DedupContext in
+        // hostnames.ts (Plan 20-03).
+        const deduped = await relayHostnameDedup(result, {
+          onlineUrls: cachedOnline,
+        });
 
         const newIgnore = deduped.ignore;
         const newParent = deduped.parent || "";
@@ -193,9 +231,13 @@ export async function rerunDedupForAllRowsMigration(): Promise<void> {
 
     // Structured JSON summary — single greppable line. Field names
     // are stable for the operator's post-rollout grep.
+    // Phase 20: JSON summary includes `scope: "online_unignored"` for
+    // post-rollout grepping so operators can distinguish Phase 19 runs
+    // from Phase 20 runs in historical logs.
     logger.info(
       JSON.stringify({
         migration: MIGRATION_NAME,
+        scope: "online_unignored",
         rows_evaluated: evaluated,
         newly_ignored: newlyIgnored,
         newly_unignored: newlyUnignored,

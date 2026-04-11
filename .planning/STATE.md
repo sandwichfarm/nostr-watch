@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.2
-milestone_name: Fix Monitors Page
-status: unknown
-stopped_at: Completed 16-02-PLAN.md
-last_updated: "2026-03-24T01:23:52.837Z"
+milestone: v2.3
+milestone_name: Relay Dedup Family Scope
+status: in_progress
+stopped_at: Phase 20 pending (17/18/19 complete on disk)
+last_updated: "2026-04-11T00:00:00.000Z"
 progress:
-  total_phases: 3
+  total_phases: 4
   completed_phases: 3
-  total_plans: 6
-  completed_plans: 6
+  total_plans: 8
+  completed_plans: 8
 ---
 
 # Project State
@@ -19,12 +19,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-19)
 
 **Core value:** Anyone can run their own relay monitor — from watching a handful of personal relays to scanning the entire network — with a one-click install on self-hosted platforms.
-**Current focus:** Phase 16 — data-integrity
+**Current focus:** Phase 20 — Dedup Performance & Overrides
 
 ## Current Position
 
-Phase: 16 (data-integrity) — COMPLETE
-Plan: 3 of 3 (all plans complete)
+Phase: 20 (Dedup Performance & Overrides) — NOT STARTED
+Plan: 0 of 0 (planning pending)
+
+Phases 17, 18, 19 complete on disk (artifacts under `.planning/phases/`). v2.3 roadmap entry added to ROADMAP.md in this commit to catch up documentation to shipped state.
 
 ## Performance Metrics
 

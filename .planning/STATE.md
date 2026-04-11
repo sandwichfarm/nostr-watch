@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v2.3
 milestone_name: Relay Dedup Family Scope
-status: Ready to execute
-stopped_at: Completed 20-03-hostnames-integration-PLAN.md
-last_updated: "2026-04-11T22:29:43.686Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 20-04-migration-scope-PLAN.md
+last_updated: "2026-04-11T22:43:06.018Z"
 progress:
   total_phases: 4
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 12
-  completed_plans: 7
+  completed_plans: 8
 ---
 
 # Project State
@@ -58,6 +58,7 @@ Phases 17, 18, 19 complete on disk (artifacts under `.planning/phases/`). v2.3 r
 | Phase 20-dedup-performance-overrides P02 | 2min | 1 tasks | 1 files |
 | Phase 20-dedup-performance-overrides P01 | 4min | 2 tasks | 8 files |
 | Phase 20 P03 | 9min | 2 tasks | 2 files |
+| Phase 20-dedup-performance-overrides P04 | 5min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -84,6 +85,9 @@ Phases 17, 18, 19 complete on disk (artifacts under `.planning/phases/`). v2.3 r
 - [Phase 20]: Override hook placed immediately after canonicalMURL normalization and BEFORE the same-NIP-11 early-return — covers all downstream cases with a single short-circuit, per Plan 20-03
 - [Phase 20]: Consumer-side lazy timestring conversion via local parseStaleSkipTimestring helper (not importing from core/daemon.ts) — keeps hostnames.ts self-contained, matches the deferred-conversion pattern established by Plan 20-02
 - [Phase 20]: Per-group granularity for the stale-skip gate (not per-row) with structural-proxy test assertions — avoids refactoring nocap.check injection point while still guaranteeing zero-call invariant via LOCKED INTERPRETATION comment
+- [Phase 20-dedup-performance-overrides]: Plan 20-04: Migration sentinel renamed to rerun_dedup_online_unignored_v1 (Phase 19 v2 row stays as history); SQL-layer scope narrowing via WHERE online=1 AND ignore=0; cachedOnline snapshot passed via ctx.onlineUrls on every per-row relayHostnameDedup call
+- [Phase 20-dedup-performance-overrides]: Plan 20-04: Lockstep sentinel literal rename across 12 occurrences in hostname-dedup.test.ts — including the Plan-20-03-Task-2-inserted literal at line 2007 in the Phase 20 philosophy test block which 20-03 deliberately left unchanged pending this plan
+- [Phase 20-dedup-performance-overrides]: Plan 20-04: db.query monkey-patch + exact-SQL regex as the PERF-02 query-count assertion mechanism (mutable singleton pattern); try/finally guarantees originalQuery restored before subsequent tests
 
 ### Pending Todos
 
@@ -95,6 +99,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-11T22:29:43.683Z
-Stopped at: Completed 20-03-hostnames-integration-PLAN.md
+Last session: 2026-04-11T22:43:06.015Z
+Stopped at: Completed 20-04-migration-scope-PLAN.md
 Resume file: None

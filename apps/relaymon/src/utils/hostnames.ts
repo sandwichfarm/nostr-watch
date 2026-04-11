@@ -279,13 +279,18 @@ export const relayHostnameDedup = async (result: RelayCheckResult): Promise<Rela
     });
 
     if (!hostnameRelatives?.length) {
-      // Phase 18 Fix 1: defensive-deny against the no-relatives race.
-      // Phase 17 Hypothesis C confirmed that when a mutation URL's dedup runs
-      // before its legit sibling's relay_status online=1 commit is visible,
-      // the family is empty and the mutation escapes. Before giving up, check
-      // for ANY sibling of the same hostname+protocol in relay_status (online
-      // or offline). If found, mark the current URL as a duplicate of the
-      // shortest known sibling.
+      // Defensive-deny against the no-relatives race: when a mutation URL's
+      // dedup runs before its legit sibling's relay_status online=1 commit is
+      // visible, the online family is empty and the mutation would escape.
+      // Before giving up, check for ANY sibling of the same hostname+protocol
+      // in relay_status (online or offline). Only mark the current URL as a
+      // duplicate when there is a STRICTLY SHORTER sibling — never flip a
+      // root URL, never flip a URL that is already the shortest known form
+      // for its hostname. The shortest-URL-wins bias is absolute here.
+      if (isRootUrl(canonicalMURL)) {
+        logger.debug(`${mURL} is a root URL — skipping defensive-deny`);
+        return result;
+      }
       const allKnownSiblings = getRelaysByHostname(HOSTNAME, PROTOCOL).filter(
         (u) => u !== canonicalMURL
       );
@@ -295,9 +300,13 @@ export const relayHostnameDedup = async (result: RelayCheckResult): Promise<Rela
           return a < b ? -1 : a > b ? 1 : 0;
         });
         const shortestSibling = allKnownSiblings[0];
+        if (shortestSibling.length >= canonicalMURL.length) {
+          logger.debug(`${mURL} is the shortest known form for ${HOSTNAME} — skipping defensive-deny`);
+          return result;
+        }
         result.ignore = true;
         result.parent = shortestSibling;
-        const reason = `hostname has known siblings (defensive deny — Phase 18 Fix 1, parent: ${shortestSibling})`;
+        const reason = `shorter sibling exists for ${HOSTNAME}: ${shortestSibling}`;
         logger.warn(`${mURL} | Ignored because: ${reason}`);
         if (ignoreListSyncInstance) {
           ignoreListSyncInstance.addToIgnoreList(mURL, reason);

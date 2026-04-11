@@ -1920,14 +1920,14 @@ Deno.test("Phase 18 Fix 2: rehashRelayInfoMigration is idempotent", () => {
 // flipped unless relayHostnameDedup itself would flip it).
 //
 // IMPORTANT: initializeDB() at file load already ran the migration once on
-// an empty DB, which inserted the `rerun_dedup_all_rows_v2` sentinel. Every
+// an empty DB, which inserted the `rerun_dedup_online_unignored_v1` sentinel. Every
 // test in this block MUST reset that sentinel before calling the migration
 // or it will short-circuit and be a no-op.
 // ============================================================================
 
 dedupTest("Phase 19 REMED-01: canonical mutation is flipped to ignore=1 with parent set", async () => {
   // Reset the sentinel so the migration actually runs.
-  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v2'");
+  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_online_unignored_v1'");
 
   // Seed: legit root sibling + canonical mutation with MATCHING NIP-11.
   // The shared info object ensures createInfoHash produces the same hash
@@ -1976,7 +1976,7 @@ dedupTest("Phase 19 REMED-01: canonical mutation is flipped to ignore=1 with par
 });
 
 dedupTest("Phase 19 REMED-02: legit path-only relay WITHOUT root sibling is left untouched (narrowness invariant)", async () => {
-  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v2'");
+  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_online_unignored_v1'");
 
   // A legit path-only relay with ZERO same-hostname siblings.
   // This is the exact shape REMED-02 protects: the migration must NEVER
@@ -2004,7 +2004,7 @@ dedupTest("Phase 19 REMED-02: legit path-only relay WITHOUT root sibling is left
 });
 
 dedupTest("Phase 20 philosophy: allow-known-paths overrides shortest-URL-wins for /inbox/", async () => {
-  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v2'");
+  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_online_unignored_v1'");
 
   // Phase 20 inversion of the Phase 19 philosophy test:
   // Even when haven.nostrfreedom.net/inbox/ has a matching-NIP-11 root
@@ -2067,7 +2067,7 @@ dedupTest("Phase 20 philosophy: allow-known-paths overrides shortest-URL-wins fo
 });
 
 dedupTest("Phase 19: already-correctly-ignored row is left unchanged (no redundant UPDATE)", async () => {
-  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v2'");
+  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_online_unignored_v1'");
 
   // Seed a row that is ALREADY ignored with a parent set. The migration
   // should call relayHostnameDedup, see the same (ignore=true, parent=X)
@@ -2106,7 +2106,7 @@ dedupTest("Phase 19: already-correctly-ignored row is left unchanged (no redunda
 });
 
 dedupTest("Phase 19: migration is idempotent — second call is a no-op (sentinel-guarded)", async () => {
-  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v2'");
+  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_online_unignored_v1'");
 
   const sharedInfo = mockRelayInfo("Idempotent Test", "shared");
   setupDatabase([
@@ -2130,7 +2130,7 @@ dedupTest("Phase 19: migration is idempotent — second call is a no-op (sentine
   await rerunDedupForAllRowsMigration();
 
   const sentinelAfterFirst = db.query(
-    "SELECT name FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v2'",
+    "SELECT name FROM relaymon_migrations WHERE name = 'rerun_dedup_online_unignored_v1'",
   );
   assertEquals(sentinelAfterFirst.length, 1, "sentinel must be present after first call");
 
@@ -2162,7 +2162,7 @@ dedupTest("Phase 19: migration is idempotent — second call is a no-op (sentine
 
   // And the sentinel must still be there (exactly one row).
   const sentinelAfterSecond = db.query(
-    "SELECT COUNT(*) FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v2'",
+    "SELECT COUNT(*) FROM relaymon_migrations WHERE name = 'rerun_dedup_online_unignored_v1'",
   );
   assertEquals(sentinelAfterSecond[0][0], 1, "sentinel must still be present exactly once after the second call");
 
@@ -2175,7 +2175,7 @@ dedupTest("Phase 19: migration is idempotent — second call is a no-op (sentine
 });
 
 dedupTest("Phase 19: sentinel row is inserted exactly once after a successful run", async () => {
-  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v2'");
+  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_online_unignored_v1'");
 
   // Zero-row DB: migration should still complete cleanly and insert the sentinel.
   setupDatabase([]);
@@ -2183,10 +2183,10 @@ dedupTest("Phase 19: sentinel row is inserted exactly once after a successful ru
   await rerunDedupForAllRowsMigration();
 
   const sentinelRows = db.query(
-    "SELECT name, applied_at FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v2'",
+    "SELECT name, applied_at FROM relaymon_migrations WHERE name = 'rerun_dedup_online_unignored_v1'",
   );
   assertEquals(sentinelRows.length, 1, "sentinel row must exist exactly once after a successful run");
-  assertEquals(sentinelRows[0][0], "rerun_dedup_all_rows_v2", "sentinel name must match the expected constant");
+  assertEquals(sentinelRows[0][0], "rerun_dedup_online_unignored_v1", "sentinel name must match the expected constant");
   assert(
     (sentinelRows[0][1] as number) > 0,
     `sentinel applied_at must be a non-zero unix timestamp, got ${sentinelRows[0][1]}`,
@@ -2194,7 +2194,7 @@ dedupTest("Phase 19: sentinel row is inserted exactly once after a successful ru
 });
 
 dedupTest("Phase 19 REMED-02: mixed DB — canonical mutation flipped AND solo path-only preserved in the same run", async () => {
-  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v2'");
+  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_online_unignored_v1'");
 
   // A single run over a realistic mixed DB: one canonical-mutation class
   // (root + sibling with matching NIP-11) that MUST flip, and one solo
@@ -2454,4 +2454,136 @@ dedupTest("Phase 20 PERF-02: reevaluateAllDeduplication skips nocap.check when a
     0,
     "Phase 20 PERF: all-ignored group must produce zero changes (structural proxy for zero nocap.check invocations — see rationale block above)",
   );
+});
+
+// =========================================================================
+// Phase 20: Migration scope narrowing (PERF-01) + cached getOnlineRelays (PERF-02)
+// -------------------------------------------------------------------------
+// These tests exercise rerunDedupForAllRowsMigration end-to-end against a
+// :memory: DB seeded by setupDatabase(). They prove the Plan 20-04 edits
+// to remediation.ts:
+//   1. The SQL row-scan is narrowed via WHERE online = 1 AND ignore = 0
+//      so only in-scope rows are evaluated. Out-of-scope rows (offline or
+//      already-ignored) are untouched by the migration.
+//   2. getOnlineRelays() fires exactly once per migration run because the
+//      per-row loop passes a cached snapshot via ctx.onlineUrls instead of
+//      re-querying for every row.
+//   3. A Phase 18 failing-sample regression still flips under the new scope
+//      — narrowing does not regress the set of mutation-class rows that
+//      Phase 19 was shipped to correct.
+// =========================================================================
+
+dedupTest("Phase 20 PERF-01: migration touches ONLY online+unignored rows (scope narrowing)", async () => {
+  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_online_unignored_v1'");
+
+  const sharedInfo = mockRelayInfo("Shared", "same info");
+  const rootInfo = mockRelayInfo("Root", "root info");
+
+  // Seed mixed fixture:
+  //   (A) online + unignored + CANONICAL mutation (should get flipped)
+  //   (B) online + already-ignored (should be SKIPPED — not in SELECT)
+  //   (C) offline + unignored (should be SKIPPED — not in SELECT)
+  //   (D) offline + ignored (should be SKIPPED — not in SELECT)
+  setupDatabase([
+    // Group A: root + mutation, both online+unignored. Mutation gets flipped.
+    { url: "wss://a-host.example.com/", online: true, ignore: false, parent: "", info: sharedInfo },
+    { url: "wss://a-host.example.com/mut-abc", online: true, ignore: false, parent: "", info: sharedInfo },
+    // Group B: online + already-ignored. Should be skipped by the SELECT.
+    { url: "wss://b-host.example.com/already-ignored", online: true, ignore: true, parent: "wss://b-host.example.com/", info: rootInfo },
+    // Group C: offline + unignored. Should be skipped by the SELECT.
+    { url: "wss://c-host.example.com/offline-unignored", online: false, ignore: false, parent: "", info: rootInfo },
+    // Group D: offline + ignored. Should be skipped by the SELECT.
+    { url: "wss://d-host.example.com/offline-ignored", online: false, ignore: true, parent: "wss://d-host.example.com/", info: rootInfo },
+  ]);
+
+  // Snapshot pre-migration state of B, C, D to confirm no changes.
+  const preB = db.query(`SELECT ignore, parent FROM relay_status WHERE url = ?`, ["wss://b-host.example.com/already-ignored"]);
+  const preC = db.query(`SELECT ignore, parent FROM relay_status WHERE url = ?`, ["wss://c-host.example.com/offline-unignored"]);
+  const preD = db.query(`SELECT ignore, parent FROM relay_status WHERE url = ?`, ["wss://d-host.example.com/offline-ignored"]);
+
+  await rerunDedupForAllRowsMigration();
+
+  // Assert A mutation was flipped (it's in-scope).
+  const postAmut = db.query(`SELECT ignore, parent FROM relay_status WHERE url = ?`, ["wss://a-host.example.com/mut-abc"]);
+  assertEquals(postAmut.length, 1);
+  assertEquals(postAmut[0][0], 1, "PERF-01: in-scope mutation row must be flipped to ignore=1");
+  assert((postAmut[0][1] as string).length > 0, "PERF-01: in-scope mutation must have a parent set");
+
+  // Assert B, C, D are UNTOUCHED (their rows match the pre-migration snapshot).
+  const postB = db.query(`SELECT ignore, parent FROM relay_status WHERE url = ?`, ["wss://b-host.example.com/already-ignored"]);
+  const postC = db.query(`SELECT ignore, parent FROM relay_status WHERE url = ?`, ["wss://c-host.example.com/offline-unignored"]);
+  const postD = db.query(`SELECT ignore, parent FROM relay_status WHERE url = ?`, ["wss://d-host.example.com/offline-ignored"]);
+
+  assertEquals(postB[0][0], preB[0][0], "PERF-01: online+ignored row must be untouched (out of scope)");
+  assertEquals((postB[0][1] as string) || "", (preB[0][1] as string) || "", "PERF-01: online+ignored parent must be untouched");
+  assertEquals(postC[0][0], preC[0][0], "PERF-01: offline+unignored row must be untouched (out of scope)");
+  assertEquals((postC[0][1] as string) || "", (preC[0][1] as string) || "", "PERF-01: offline+unignored parent must be untouched");
+  assertEquals(postD[0][0], preD[0][0], "PERF-01: offline+ignored row must be untouched (out of scope)");
+  assertEquals((postD[0][1] as string) || "", (preD[0][1] as string) || "", "PERF-01: offline+ignored parent must be untouched");
+});
+
+dedupTest("Phase 20 PERF-02: getOnlineRelays query fires exactly once per migration run (not once per row)", async () => {
+  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_online_unignored_v1'");
+
+  const sharedInfo = mockRelayInfo("SharedRoot", "shared");
+  // Seed ≥5 online+unignored rows so the migration has real work and the
+  // per-row loop runs at least 5 iterations. Without PERF-02 plumbing,
+  // getOnlineRelays would fire 5 times; with it, exactly once.
+  setupDatabase([
+    { url: "wss://a.example.com/", online: true, ignore: false, parent: "", info: sharedInfo },
+    { url: "wss://a.example.com/mut1", online: true, ignore: false, parent: "", info: sharedInfo },
+    { url: "wss://b.example.com/", online: true, ignore: false, parent: "", info: sharedInfo },
+    { url: "wss://b.example.com/mut2", online: true, ignore: false, parent: "", info: sharedInfo },
+    { url: "wss://c.example.com/", online: true, ignore: false, parent: "", info: sharedInfo },
+  ]);
+
+  // Install a counter around db.query. getOnlineRelays issues the query
+  // `SELECT url FROM relay_status WHERE online = 1` — match that exact text
+  // (case-insensitive whitespace-tolerant) via regex on the normalized
+  // query string.
+  const originalQuery = db.query.bind(db);
+  let onlineRelaysQueryCount = 0;
+  (db as any).query = (sql: string, params?: unknown[]) => {
+    const normalized = sql.trim().replace(/\s+/g, " ");
+    if (/^SELECT url FROM relay_status WHERE online = 1$/i.test(normalized)) {
+      onlineRelaysQueryCount++;
+    }
+    return originalQuery(sql, params);
+  };
+
+  try {
+    await rerunDedupForAllRowsMigration();
+  } finally {
+    (db as any).query = originalQuery;
+  }
+
+  assertEquals(
+    onlineRelaysQueryCount,
+    1,
+    "PERF-02: getOnlineRelays must fire exactly once per migration run — cachedOnline is reused for all rows",
+  );
+});
+
+dedupTest("Phase 20 PERF-01+PERF-02: Phase 18 failing-sample regression still passes under new migration scope", async () => {
+  // Regression guard: pick one Phase 18 failing-sample URL and assert the
+  // new-scope migration still flips it. This test duplicates a small slice
+  // of the Phase 18 test surface to guarantee the narrower scope does NOT
+  // accidentally un-flip something that should remain flipped.
+  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_online_unignored_v1'");
+
+  const sharedInfo = mockRelayInfo("Lumina", "lumina hostname");
+  setupDatabase([
+    { url: "wss://relay.lumina.rocks/", online: true, ignore: false, parent: "", info: sharedInfo },
+    { url: "wss://relay.lumina.rocks/hotel", online: true, ignore: false, parent: "", info: sharedInfo },
+  ]);
+
+  await rerunDedupForAllRowsMigration();
+
+  const hotelRow = db.query(
+    `SELECT ignore, parent FROM relay_status WHERE url = ?`,
+    ["wss://relay.lumina.rocks/hotel"],
+  );
+  assertEquals(hotelRow.length, 1, "hotel row must still exist");
+  assertEquals(hotelRow[0][0], 1, "Phase 18 regression: /hotel mutation must still be flipped under new-scope migration");
+  assert((hotelRow[0][1] as string).length > 0, "Phase 18 regression: /hotel must have parent set");
 });

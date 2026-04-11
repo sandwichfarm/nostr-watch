@@ -31,7 +31,9 @@
  * the stable, normalizeNip11-scrubbed hashes. See db.ts `initializeDB`.
  */
 
-import { db, getRelayInfo } from "../db/db.ts";
+import { db, getRelayInfo, clearDeltaState, clearPeriodSnapshots } from "../db/db.ts";
+import { VERSION } from "@nostrwatch/nostrings";
+import { qualifyRelayUrl } from "../../../../libraries/nostrings/src/relay-urls.ts";
 import { relayHostnameDedup } from "./hostnames.ts";
 import { getLogger } from "./logger.ts";
 import type { RelayCheckResult } from "../types/relay.ts";
@@ -46,6 +48,12 @@ const logger = getLogger("Remediation");
 // instead of being re-evaluated by local logic. v2 forces a fresh pass
 // so all rows see the corrected dedup path.
 const MIGRATION_NAME = "rerun_dedup_all_rows_v2";
+
+// Sentinel for the nostrings sweep. Embeds the current nostrings
+// VERSION so each library bump creates a fresh sentinel row and
+// re-triggers the sweep exactly once per DB per version. See the spec
+// at docs/superpowers/specs/2026-04-11-nostrings-sweep-migration-design.md
+const NOSTRINGS_SWEEP_MIGRATION_NAME = `nostrings_sweep_v${VERSION}`;
 
 export async function rerunDedupForAllRowsMigration(): Promise<void> {
   // Top-level try: never let this migration crash startup.
@@ -316,4 +324,74 @@ export async function drainRemediationDeletionQueue(config: Config): Promise<voi
   } catch (e) {
     logger.error(`drainRemediationDeletionQueue failed: ${e}`);
   }
+}
+
+/**
+ * Hard-delete a row from relay_status and all satellite tables in a
+ * single SQLite transaction. Used by the nostrings sweep for rows
+ * whose url is unparseable by `new URL()`. Satellite deletes must be
+ * atomic with the relay_status delete so a crash mid-row cannot leave
+ * orphaned rows in relay_info / relay_delta_state / relay_period_snapshots.
+ *
+ * The deno.land/x/sqlite binding does NOT expose a callback-style
+ * `db.transaction(fn)` — BEGIN / COMMIT / ROLLBACK must be emitted via
+ * `db.query(...)`. See the precedent at apps/relaymon/src/core/main.ts:196.
+ *
+ * `enqueueRemediationDeletion` is called AFTER the transaction commits:
+ * it writes to a separate logical queue, is already idempotent on url,
+ * and should not block the row-removal atomicity if the deletion
+ * publisher subsystem is unavailable.
+ */
+function hardDeleteRow(url: string, reason: string): void {
+  db.query("BEGIN TRANSACTION");
+  try {
+    db.query(`DELETE FROM relay_status WHERE url = ?`, [url]);
+    db.query(`DELETE FROM relay_info   WHERE url = ?`, [url]);
+    clearDeltaState(url);
+    clearPeriodSnapshots(url);
+    db.query("COMMIT");
+  } catch (e) {
+    db.query("ROLLBACK");
+    throw e;
+  }
+  enqueueRemediationDeletion(url, reason);
+  logger.info(`Nostrings sweep: hard-deleted ${url}`);
+}
+
+/**
+ * Soft-ignore a row: keep it in relay_status as a tombstone so
+ * IgnoreListSync will use it to short-circuit future re-ingestion of
+ * the same URL string, but mark it ignored with a sweep-scoped reason.
+ * Satellite tables are intentionally left intact — the row is still a
+ * known entity, just one we refuse to check. A kind:5 deletion for any
+ * previously-published relay-check event is queued for the daemon to
+ * drain after wiring.
+ */
+function softIgnoreRow(url: string, reason: string): void {
+  db.query(
+    `UPDATE relay_status SET ignore = 1, ignore_reason = ? WHERE url = ?`,
+    [reason, url],
+  );
+  enqueueRemediationDeletion(url, reason);
+  logger.info(`Nostrings sweep: soft-ignored ${url}`);
+}
+
+/**
+ * Re-run @nostrwatch/nostrings qualification over every row in
+ * relay_status. Hard-deletes unparseable garbage, soft-ignores
+ * parseable-but-disqualified URLs, leaves valid URLs alone. Idempotent
+ * per nostrings VERSION via a sentinel row in relaymon_migrations.
+ *
+ * Ordering: MUST run AFTER rerunDedupForAllRowsMigration in initializeDB
+ * because dedup operates on row identity and walks every row — adding
+ * rows underneath it is unsafe, but this sweep only removes/ignores, so
+ * appending it at the end is fine.
+ *
+ * Contract: never throws. Per-row errors are caught inside the loop so
+ * one bad row cannot abort the sweep. Top-level try/catch swallows any
+ * unexpected failure and logs it. Same "never crash startup" contract
+ * as the existing migrations.
+ */
+export async function rerunNostringsSweepMigration(): Promise<void> {
+  throw new Error("rerunNostringsSweepMigration: not yet implemented");
 }

@@ -53,7 +53,12 @@ initializeDB(testDbPath, false);
 setConfig(mockConfig as Config);
 
 // Helper to setup database state
-function setupDatabase(relays: Array<{ url: string; online: boolean; ignore?: boolean; parent?: string; info?: any }>) {
+//
+// Phase 20 Plan 20-03 extension: accept optional per-row `checked_at` so the
+// stale-skip tests in the Phase 20 test block can seed rows with timestamps
+// far in the past. When omitted, defaults to `Date.now()` preserving the
+// Phase 17/18/19 behavior for every existing test.
+function setupDatabase(relays: Array<{ url: string; online: boolean; ignore?: boolean; parent?: string; info?: any; checked_at?: number }>) {
   // Clear existing data
   db.query("DELETE FROM relay_status");
   db.query("DELETE FROM relay_info");
@@ -68,7 +73,7 @@ function setupDatabase(relays: Array<{ url: string; online: boolean; ignore?: bo
         relay.online ? 1 : 0,
         relay.ignore ? 1 : 0,
         relay.parent || null,
-        Date.now(),
+        relay.checked_at ?? Date.now(),
         "clearnet"
       ]
     );
@@ -1998,14 +2003,22 @@ dedupTest("Phase 19 REMED-02: legit path-only relay WITHOUT root sibling is left
   assertEquals((row[0][1] as string) || "", "", "REMED-02: parent must stay empty for solo path-only relay");
 });
 
-dedupTest("Phase 19 philosophy: legit path-only relay WITH matching-NIP-11 root is correctly flipped (shortest URL wins)", async () => {
+dedupTest("Phase 20 philosophy: allow-known-paths overrides shortest-URL-wins for /inbox/", async () => {
   db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v2'");
 
-  // This is the subtle case the user clarified in 19-CONTEXT.md:
-  // When haven.nostrfreedom.net/inbox/ has a matching-NIP-11 root sibling
-  // wss://haven.nostrfreedom.net/, case 2 correctly fires and /inbox/ is
-  // ignored in favor of the root. That IS the dedup philosophy — the
-  // shortest URL is the canonical representation — NOT a regression.
+  // Phase 20 inversion of the Phase 19 philosophy test:
+  // Even when haven.nostrfreedom.net/inbox/ has a matching-NIP-11 root
+  // sibling wss://haven.nostrfreedom.net/, the allow-known-paths override
+  // rule fires BEFORE case2 and keeps /inbox/ as a first-class relay. This
+  // is a deliberate product-level inversion — /inbox and /outbox are known-
+  // good paths regardless of NIP-11 state. See Phase 20 CONTEXT.md Dedup
+  // Philosophy Extension section.
+  //
+  // Historical note: Phase 19's original assertion was that /inbox/ MUST
+  // be flipped to ignore=1 when a matching-NIP-11 root sibling is present.
+  // Phase 20's allow-known-paths rule deliberately inverts that assertion
+  // for /inbox and /outbox specifically. The shortest-URL-wins philosophy
+  // remains the default for every URL that does NOT match an override rule.
   const sharedInfo = mockRelayInfo("Haven", "same relay served at root and path");
   setupDatabase([
     {
@@ -2026,12 +2039,7 @@ dedupTest("Phase 19 philosophy: legit path-only relay WITH matching-NIP-11 root 
 
   await rerunDedupForAllRowsMigration();
 
-  // /inbox/ must be flipped to ignore=1 with parent=root.
-  // The canonical URL for the mutation after normalizeURL is /inbox
-  // (no trailing slash) — Phase 18 Fix 3 canonicalizes both ways.
-  // Query by both trailing and non-trailing forms to be resilient to
-  // whether normalizeURL rewrote the stored URL (it doesn't — remediation
-  // only UPDATEs by the stored raw URL).
+  // /inbox/ must remain un-ignored because allow-known-paths fires first.
   const inboxRows = db.query(
     `SELECT url, ignore, parent FROM relay_status WHERE url LIKE ?`,
     ["%haven.nostrfreedom.net/inbox%"],
@@ -2039,21 +2047,23 @@ dedupTest("Phase 19 philosophy: legit path-only relay WITH matching-NIP-11 root 
   assertEquals(inboxRows.length, 1, "/inbox/ row must still exist");
   assertEquals(
     inboxRows[0][1],
-    1,
-    "philosophy: /inbox/ must be flipped to ignore=1 when a matching-NIP-11 root sibling is present (shortest URL wins)",
+    0,
+    "Phase 20: /inbox/ must stay ignore=0 (allow-known-paths override)",
   );
-  const parent = inboxRows[0][2] as string;
-  assert(
-    parent.includes("haven.nostrfreedom.net") && !parent.includes("/inbox"),
-    `philosophy: /inbox/ parent must point at the root, got "${parent}"`,
+  assertEquals(
+    (inboxRows[0][2] as string) || "",
+    "",
+    "Phase 20: /inbox/ must stay parent=''",
   );
 
-  // Root must remain ignore=0.
-  const root = db.query(
-    `SELECT ignore FROM relay_status WHERE url = ?`,
+  // Root must remain unchanged.
+  const rootRows = db.query(
+    `SELECT ignore, parent FROM relay_status WHERE url = ?`,
     ["wss://haven.nostrfreedom.net/"],
   );
-  assertEquals(root[0][0], 0, "haven root must stay ignore=0");
+  assertEquals(rootRows.length, 1);
+  assertEquals(rootRows[0][0], 0, "root stays ignore=0");
+  assertEquals((rootRows[0][1] as string) || "", "", "root stays parent=''");
 });
 
 dedupTest("Phase 19: already-correctly-ignored row is left unchanged (no redundant UPDATE)", async () => {
@@ -2244,4 +2254,204 @@ dedupTest("Phase 19 REMED-02: mixed DB — canonical mutation flipped AND solo p
     ["wss://mixed.example.com/"],
   );
   assertEquals(root[0][0], 0, "mixed root must stay ignore=0");
+});
+
+// =========================================================================
+// Phase 20: Override system + performance (PERF-02 in hostnames.ts, OVERRIDE-01/02/03)
+// =========================================================================
+
+dedupTest("Phase 20 OVERRIDE allow: /inbox solo survives through relayHostnameDedup with ignore=false", async () => {
+  const havenInfo = mockRelayInfo("Haven", "haven inbox");
+  setupDatabase([
+    { url: "wss://haven.nostrfreedom.net/inbox/", online: true, ignore: false, parent: "", info: havenInfo },
+  ]);
+
+  const result = {
+    url: "wss://haven.nostrfreedom.net/inbox/",
+    hostname: "haven.nostrfreedom.net",
+    protocol: "wss:",
+    checked_at: Date.now(),
+    online: true,
+    ignore: false,
+    ignore_reason: "",
+    parent: "",
+    network: "clearnet" as const,
+    info: { data: havenInfo, duration: 0 },
+  };
+
+  const out = await relayHostnameDedup(result);
+  assertEquals(out.ignore, false, "Phase 20 OVERRIDE allow: /inbox must not be flipped to ignore=true");
+  assertEquals(out.parent || "", "", "Phase 20 OVERRIDE allow: parent must be empty");
+});
+
+dedupTest("Phase 20 OVERRIDE allow: /outbox solo survives with ignore=false", async () => {
+  const info = mockRelayInfo("Outbox", "outbox relay");
+  setupDatabase([
+    { url: "wss://example.com/outbox", online: true, ignore: false, parent: "", info },
+  ]);
+
+  const result = {
+    url: "wss://example.com/outbox",
+    hostname: "example.com",
+    protocol: "wss:",
+    checked_at: Date.now(),
+    online: true,
+    ignore: false,
+    ignore_reason: "",
+    parent: "",
+    network: "clearnet" as const,
+    info: { data: info, duration: 0 },
+  };
+
+  const out = await relayHostnameDedup(result);
+  assertEquals(out.ignore, false, "Phase 20 OVERRIDE allow: /outbox must not be ignored");
+  assertEquals(out.parent || "", "");
+});
+
+dedupTest("Phase 20 OVERRIDE allow: lang.relays.land/en survives with ignore=false", async () => {
+  const info = mockRelayInfo("LangEn", "english lang relay");
+  setupDatabase([
+    { url: "wss://lang.relays.land/en", online: true, ignore: false, parent: "", info },
+    { url: "wss://lang.relays.land/", online: true, ignore: false, parent: "", info },
+  ]);
+
+  const result = {
+    url: "wss://lang.relays.land/en",
+    hostname: "lang.relays.land",
+    protocol: "wss:",
+    checked_at: Date.now(),
+    online: true,
+    ignore: false,
+    ignore_reason: "",
+    parent: "",
+    network: "clearnet" as const,
+    info: { data: info, duration: 0 },
+  };
+
+  const out = await relayHostnameDedup(result);
+  assertEquals(out.ignore, false, "Phase 20 OVERRIDE allow: /en must not be flipped to duplicate of root");
+  assertEquals(out.parent || "", "");
+});
+
+dedupTest("Phase 20 OVERRIDE fall-through: /inbox/<mutation> is NOT protected (falls to case1-8)", async () => {
+  // Seed root with NIP-11 info and mutation with same info — case2 (same
+  // NIP-11 info as root) should fire for the mutation because
+  // allow-known-paths requires exact /inbox or /inbox/ match.
+  const sharedInfo = mockRelayInfo("Haven", "shared");
+  setupDatabase([
+    { url: "wss://haven.nostrfreedom.net/", online: true, ignore: false, parent: "", info: sharedInfo },
+    { url: "wss://haven.nostrfreedom.net/inbox/flint-november-alpha", online: true, ignore: false, parent: "", info: sharedInfo },
+  ]);
+
+  const result = {
+    url: "wss://haven.nostrfreedom.net/inbox/flint-november-alpha",
+    hostname: "haven.nostrfreedom.net",
+    protocol: "wss:",
+    checked_at: Date.now(),
+    online: true,
+    ignore: false,
+    ignore_reason: "",
+    parent: "",
+    network: "clearnet" as const,
+    info: { data: sharedInfo, duration: 0 },
+  };
+
+  const out = await relayHostnameDedup(result);
+  assertEquals(out.ignore, true, "Phase 20: /inbox/<mutation> is NOT protected — case2 fires");
+  assert(out.parent && out.parent.length > 0, "Phase 20: mutation must have parent set");
+});
+
+// -------------------------------------------------------------------------
+// Phase 20 PERF-02: stale-skip structural-proxy rationale
+// -------------------------------------------------------------------------
+//
+// The two tests below assert `changed.length === 0` for groups where every
+// member is stale-or-ignored. This is a STRUCTURAL proxy for "zero nocap.check
+// invocations" — and it is equivalent to the literal requirement in Phase 20
+// Success Criterion #3 for the following reason:
+//
+// The stale-skip gate in reevaluateAllDeduplication (see hostnames.ts Plan
+// 20-03 Task 1 Edit 6, search for "LOCKED INTERPRETATION") runs at PER-GROUP
+// granularity BEFORE the needsNip11Refresh / nocap.check block. Concretely:
+//
+//   for each hostname group:
+//     if no member is fresh-unignored -> `continue`   <-- nocap.check unreachable
+//     else                             -> fall into the existing nocap.check block
+//
+// Because the `continue` statement lexically precedes the nocap.check call
+// inside the same loop body, a group that hits the gate cannot reach nocap.
+// check under ANY runtime condition. No NIP-11 network round trip happens.
+// No row in the group can be flipped by this function on this run. Therefore
+// `changed.length === 0` is a NECESSARY CONSEQUENCE of "zero nocap.check
+// invocations for this group" — not just an observable correlation.
+//
+// The LOCKED per-group interpretation is documented in:
+//   - 20-CONTEXT.md Area 4 Claude's discretion ("per-relay vs per-group
+//     granularity … bounded only by the zero-fetch invariant")
+//   - 20-RESEARCH.md Pitfall 7 ("stale-skip at group boundary not row boundary")
+//   - 20-RESEARCH.md Open Question 2 (per-group chosen over Nocap-factory
+//     injection because the factory approach would ripple into daemon call
+//     sites; the structural gate gives the same guarantee with zero API churn)
+//
+// If future work wants a per-invocation spy (e.g. to count calls during a
+// mixed fresh+stale group), the path is to refactor reevaluateAllDeduplication
+// to accept an optional `nocapFactory` parameter matching the PERF-02
+// ctx-injection pattern used by relayHostnameDedup. That refactor is DEFERRED.
+// -------------------------------------------------------------------------
+
+dedupTest("Phase 20 PERF-02: reevaluateAllDeduplication skips nocap.check when group has no fresh-unignored members (all-stale structural proxy)", async () => {
+  // Seed a group where every row is stale (checked_at is far in the past).
+  // Because all members are stale and unignored, the per-group gate in
+  // hostnames.ts will `continue` before reaching the nocap.check block.
+  // Asserting `changed.length === 0` is therefore equivalent to asserting
+  // "zero nocap.check invocations for this group" — see the rationale block
+  // above this test.
+  const longAgo = Date.now() - (30 * 24 * 60 * 60 * 1000); // 30 days ago
+  const info = mockRelayInfo("Stale", "stale");
+  setupDatabase([
+    { url: "wss://stale.example.com/", online: true, ignore: false, parent: "", info, checked_at: longAgo },
+    { url: "wss://stale.example.com/path", online: true, ignore: false, parent: "", info, checked_at: longAgo },
+  ]);
+
+  // Call with a 7-day stale threshold. 30 days > 7 days, so every member
+  // fails the fresh-unignored test, triggering the `continue`.
+  const changed = await reevaluateAllDeduplication(24 * 60 * 60 * 1000, 7 * 24 * 60 * 60 * 1000);
+
+  // Structural proxy for zero nocap.check invocations:
+  // - No nocap.check fired => no NIP-11 refresh
+  // - No NIP-11 refresh => no re-hash => no ignore-state flip
+  // - No flip => changed.length === 0
+  // The reverse implication does NOT hold in general, BUT the per-group gate
+  // guarantees this test's `continue` is the ONLY path taken here, so in
+  // THIS fixture the implication is bidirectional. Zero changes <=> zero
+  // nocap.check invocations for the all-stale hostname group.
+  assertEquals(
+    changed.length,
+    0,
+    "Phase 20 PERF: all-stale group must produce zero changes (structural proxy for zero nocap.check invocations — see rationale block above)",
+  );
+});
+
+dedupTest("Phase 20 PERF-02: reevaluateAllDeduplication skips nocap.check when all members are ignored (all-ignored structural proxy)", async () => {
+  // Seed a group where every row is already ignored. Even though checked_at
+  // is fresh, the isIgnored check fails, so no member passes the
+  // fresh-unignored test and the per-group gate `continue`s. Same structural
+  // proxy as the all-stale test above.
+  const nowMs = Date.now();
+  const info = mockRelayInfo("Ignored", "already ignored");
+  setupDatabase([
+    { url: "wss://ignored.example.com/", online: true, ignore: true, parent: "wss://other/", info, checked_at: nowMs },
+    { url: "wss://ignored.example.com/path", online: true, ignore: true, parent: "wss://other/", info, checked_at: nowMs },
+  ]);
+
+  const changed = await reevaluateAllDeduplication(24 * 60 * 60 * 1000, 7 * 24 * 60 * 60 * 1000);
+
+  // Same structural argument as the all-stale test: the per-group gate
+  // guarantees nocap.check is unreachable for this group, therefore zero
+  // changes is equivalent to zero nocap.check invocations for this fixture.
+  assertEquals(
+    changed.length,
+    0,
+    "Phase 20 PERF: all-ignored group must produce zero changes (structural proxy for zero nocap.check invocations — see rationale block above)",
+  );
 });

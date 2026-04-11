@@ -174,6 +174,17 @@ export async function runDaemon(config: Config): Promise<void> {
 
     const worker = new Worker(pubkey, queueManager, config, ignoreListSync);
 
+    // Drain remediation deletion queue now that config + keys + sync
+    // + worker are all wired. Deletions are published one-at-a-time
+    // via the normal deletion.ts pipeline; successfully OK'd entries
+    // are removed from the queue, failures are retried next startup.
+    try {
+      const { drainRemediationDeletionQueue } = await import("../utils/remediation.ts");
+      await drainRemediationDeletionQueue(config);
+    } catch (e) {
+      logger.error(`drainRemediationDeletionQueue failed: ${e}`);
+    }
+
     let seeder: RelaySeeder | undefined
     
     if(config?.relaymon?.seed) {

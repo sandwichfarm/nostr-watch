@@ -12,7 +12,7 @@ let isInitialized = false;
  * @param dbPath Optional path to the SQLite database file
  * @param enableWAL Optional boolean to enable WAL mode (default: true)
  */
-export function initializeDB(dbPath?: string, enableWAL: boolean = true): void {
+export async function initializeDB(dbPath?: string, enableWAL: boolean = true): Promise<void> {
   if (isInitialized) {
     logger.warn("Database already initialized, ignoring repeated initialization");
     return;
@@ -47,6 +47,25 @@ export function initializeDB(dbPath?: string, enableWAL: boolean = true): void {
     `);
   } catch (e) {
     logger.error(`Failed to create relaymon_migrations table: ${e}`);
+  }
+
+  // Remediation deletion queue: rows written by remediation migrations
+  // that need kind:5 deletion events published once the daemon has
+  // config, keys, and a live nostr-tools SimplePool. Drained by the
+  // daemon after startup wiring — see drainRemediationDeletionQueue in
+  // remediation.ts. Rows are removed on successful OK.
+  try {
+    db.query(`
+      CREATE TABLE IF NOT EXISTS remediation_deletion_queue (
+        url TEXT PRIMARY KEY,
+        reason TEXT NOT NULL,
+        queued_at INTEGER NOT NULL,
+        attempts INTEGER NOT NULL DEFAULT 0,
+        last_error TEXT
+      )
+    `);
+  } catch (e) {
+    logger.error(`Failed to create remediation_deletion_queue table: ${e}`);
   }
 
   // Create the relay_delta_state table for tracking state changes
@@ -108,15 +127,20 @@ export function initializeDB(dbPath?: string, enableWAL: boolean = true): void {
   }
 
   // Phase 19 REMED-01/REMED-02: re-run dedup over every row in
-  // relay_status using the now-fixed relayHostnameDedup (Phase 18 Fixes
-  // 1–3). Idempotent via relaymon_migrations sentinel. MUST run AFTER
-  // rehashRelayInfoMigration so the re-dedup sees stable hashes.
-  // Fire-and-forget async — initializeDB is sync, but the migration is
-  // async because relayHostnameDedup is async. Any error is swallowed
-  // inside the migration itself (never crashes startup).
-  rerunDedupForAllRowsMigration().catch((e) => {
+  // relay_status using the now-fixed relayHostnameDedup. Idempotent via
+  // relaymon_migrations sentinel. MUST run AFTER rehashRelayInfoMigration
+  // so the re-dedup sees stable hashes, and MUST complete BEFORE the
+  // daemon constructs IgnoreListSync (which snapshots relay_status
+  // ignore=1 rows into its in-memory map). initializeDB is therefore
+  // async so main.ts can await the migration before wiring the daemon.
+  // Migration writes deletion events to remediation_deletion_queue
+  // rather than publishing directly — the daemon drains that queue
+  // after setup via drainRemediationDeletionQueue.
+  try {
+    await rerunDedupForAllRowsMigration();
+  } catch (e) {
     logger.error(`rerunDedupForAllRowsMigration threw: ${e}`);
-  });
+  }
 
   isInitialized = true;
 }

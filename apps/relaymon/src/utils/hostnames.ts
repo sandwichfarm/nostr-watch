@@ -164,13 +164,17 @@ export const relayHostnameDedup = async (result: RelayCheckResult): Promise<Rela
       canonicalMURL = mURL;
     }
 
-    // Check if this relay is in the synced ignore list from other monitors
-    if (ignoreListSyncInstance && ignoreListSyncInstance.isIgnored(mURL)) {
-      logger.warn(`${mURL} is in synced ignore list from other monitors`);
-      result.ignore = true;
-      result.parent = ""; // We don't know the parent from synced lists
-      return result;
-    }
+    // NOTE: local dedup logic is authoritative. The synced ignore list
+    // from other monitors is NOT consulted here — a previous version of
+    // this code early-returned ignore=true/parent="" whenever a URL
+    // appeared in the synced list, which (a) wiped legitimate parent
+    // pointers computed by local logic and (b) propagated poisoned
+    // decisions from other monitors (including roots wrongly flipped by
+    // pre-Phase-18 bugs) back onto the local DB. Local dedup MUST run
+    // to completion on every URL, regardless of what peers believe.
+    // The synced list is still populated via addToIgnoreList calls
+    // downstream and remains useful to higher layers as an advisory
+    // cross-monitor signal, but it is never an override.
 
     // First, check if this relay has NIP-11 info and store it if available
     const currentHasNip11Info = result?.info?.data && Object.keys(result.info.data).length > 0;

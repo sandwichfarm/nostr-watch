@@ -15,6 +15,7 @@ import {
   relayArrToHostnameProtocolKeyedMap,
   createInfoHash,
   setConfig,
+  setIgnoreListSync,
   reevaluateAllDeduplication,
 } from "../../src/utils/hostnames.ts";
 import { mockConfig } from "../helpers/fixtures.ts";
@@ -1914,14 +1915,14 @@ Deno.test("Phase 18 Fix 2: rehashRelayInfoMigration is idempotent", () => {
 // flipped unless relayHostnameDedup itself would flip it).
 //
 // IMPORTANT: initializeDB() at file load already ran the migration once on
-// an empty DB, which inserted the `rerun_dedup_all_rows_v1` sentinel. Every
+// an empty DB, which inserted the `rerun_dedup_all_rows_v2` sentinel. Every
 // test in this block MUST reset that sentinel before calling the migration
 // or it will short-circuit and be a no-op.
 // ============================================================================
 
 dedupTest("Phase 19 REMED-01: canonical mutation is flipped to ignore=1 with parent set", async () => {
   // Reset the sentinel so the migration actually runs.
-  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v1'");
+  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v2'");
 
   // Seed: legit root sibling + canonical mutation with MATCHING NIP-11.
   // The shared info object ensures createInfoHash produces the same hash
@@ -1970,7 +1971,7 @@ dedupTest("Phase 19 REMED-01: canonical mutation is flipped to ignore=1 with par
 });
 
 dedupTest("Phase 19 REMED-02: legit path-only relay WITHOUT root sibling is left untouched (narrowness invariant)", async () => {
-  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v1'");
+  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v2'");
 
   // A legit path-only relay with ZERO same-hostname siblings.
   // This is the exact shape REMED-02 protects: the migration must NEVER
@@ -1998,7 +1999,7 @@ dedupTest("Phase 19 REMED-02: legit path-only relay WITHOUT root sibling is left
 });
 
 dedupTest("Phase 19 philosophy: legit path-only relay WITH matching-NIP-11 root is correctly flipped (shortest URL wins)", async () => {
-  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v1'");
+  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v2'");
 
   // This is the subtle case the user clarified in 19-CONTEXT.md:
   // When haven.nostrfreedom.net/inbox/ has a matching-NIP-11 root sibling
@@ -2056,7 +2057,7 @@ dedupTest("Phase 19 philosophy: legit path-only relay WITH matching-NIP-11 root 
 });
 
 dedupTest("Phase 19: already-correctly-ignored row is left unchanged (no redundant UPDATE)", async () => {
-  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v1'");
+  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v2'");
 
   // Seed a row that is ALREADY ignored with a parent set. The migration
   // should call relayHostnameDedup, see the same (ignore=true, parent=X)
@@ -2095,7 +2096,7 @@ dedupTest("Phase 19: already-correctly-ignored row is left unchanged (no redunda
 });
 
 dedupTest("Phase 19: migration is idempotent — second call is a no-op (sentinel-guarded)", async () => {
-  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v1'");
+  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v2'");
 
   const sharedInfo = mockRelayInfo("Idempotent Test", "shared");
   setupDatabase([
@@ -2119,7 +2120,7 @@ dedupTest("Phase 19: migration is idempotent — second call is a no-op (sentine
   await rerunDedupForAllRowsMigration();
 
   const sentinelAfterFirst = db.query(
-    "SELECT name FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v1'",
+    "SELECT name FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v2'",
   );
   assertEquals(sentinelAfterFirst.length, 1, "sentinel must be present after first call");
 
@@ -2151,7 +2152,7 @@ dedupTest("Phase 19: migration is idempotent — second call is a no-op (sentine
 
   // And the sentinel must still be there (exactly one row).
   const sentinelAfterSecond = db.query(
-    "SELECT COUNT(*) FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v1'",
+    "SELECT COUNT(*) FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v2'",
   );
   assertEquals(sentinelAfterSecond[0][0], 1, "sentinel must still be present exactly once after the second call");
 
@@ -2164,7 +2165,7 @@ dedupTest("Phase 19: migration is idempotent — second call is a no-op (sentine
 });
 
 dedupTest("Phase 19: sentinel row is inserted exactly once after a successful run", async () => {
-  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v1'");
+  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v2'");
 
   // Zero-row DB: migration should still complete cleanly and insert the sentinel.
   setupDatabase([]);
@@ -2172,10 +2173,10 @@ dedupTest("Phase 19: sentinel row is inserted exactly once after a successful ru
   await rerunDedupForAllRowsMigration();
 
   const sentinelRows = db.query(
-    "SELECT name, applied_at FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v1'",
+    "SELECT name, applied_at FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v2'",
   );
   assertEquals(sentinelRows.length, 1, "sentinel row must exist exactly once after a successful run");
-  assertEquals(sentinelRows[0][0], "rerun_dedup_all_rows_v1", "sentinel name must match the expected constant");
+  assertEquals(sentinelRows[0][0], "rerun_dedup_all_rows_v2", "sentinel name must match the expected constant");
   assert(
     (sentinelRows[0][1] as number) > 0,
     `sentinel applied_at must be a non-zero unix timestamp, got ${sentinelRows[0][1]}`,
@@ -2183,7 +2184,7 @@ dedupTest("Phase 19: sentinel row is inserted exactly once after a successful ru
 });
 
 dedupTest("Phase 19 REMED-02: mixed DB — canonical mutation flipped AND solo path-only preserved in the same run", async () => {
-  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v1'");
+  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v2'");
 
   // A single run over a realistic mixed DB: one canonical-mutation class
   // (root + sibling with matching NIP-11) that MUST flip, and one solo

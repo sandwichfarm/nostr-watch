@@ -36,10 +36,16 @@ import { relayHostnameDedup } from "./hostnames.ts";
 import { getLogger } from "./logger.ts";
 import type { RelayCheckResult } from "../types/relay.ts";
 import type { NetworkType } from "../types/config.ts";
+import type { Config } from "../types/config.ts";
 
 const logger = getLogger("Remediation");
 
-const MIGRATION_NAME = "rerun_dedup_all_rows_v1";
+// Bumped to v2 after the synced-ignore-list override bug was fixed in
+// relayHostnameDedup. v1 ran under the broken early-return, which meant
+// every tainted-root row was short-circuited to ignore=true/parent=""
+// instead of being re-evaluated by local logic. v2 forces a fresh pass
+// so all rows see the corrected dedup path.
+const MIGRATION_NAME = "rerun_dedup_all_rows_v2";
 
 export async function rerunDedupForAllRowsMigration(): Promise<void> {
   // Top-level try: never let this migration crash startup.
@@ -144,8 +150,25 @@ export async function rerunDedupForAllRowsMigration(): Promise<void> {
             `UPDATE relay_status SET ignore = ?, parent = ? WHERE url = ?`,
             [newIgnore ? 1 : 0, newParent, url],
           );
-          if (newIgnore && !storedIgnore) newlyIgnored++;
-          else if (!newIgnore && storedIgnore) newlyUnignored++;
+          if (newIgnore && !storedIgnore) {
+            newlyIgnored++;
+            // Queue a deletion event for the newly-ignored URL. The
+            // daemon drains this queue after it has config + keys
+            // available. We can't publish directly from inside this
+            // migration because initializeDB runs before the daemon
+            // wires setConfig / SimplePool / private key.
+            const reason = newParent
+              ? `Duplicate of ${newParent} (remediation)`
+              : `Ignored by hostname dedup (remediation)`;
+            enqueueRemediationDeletion(url, reason);
+          } else if (!newIgnore && storedIgnore) {
+            newlyUnignored++;
+            // Un-ignored rows need no queue entry: kind:5 deletions are
+            // one-way on nostr. IgnoreListSync.loadLocalIgnoresFromDB
+            // will naturally exclude these rows when the daemon
+            // constructs the sync instance AFTER this migration has
+            // awaited to completion (see db.ts initializeDB order).
+          }
           logger.info(
             `Remediation: ${url} ignore=${storedIgnore}/parent="${storedParent}" → ignore=${newIgnore}/parent="${newParent}"`,
           );
@@ -187,5 +210,110 @@ export async function rerunDedupForAllRowsMigration(): Promise<void> {
   } catch (e) {
     logger.error(`Migration ${MIGRATION_NAME} failed: ${e}`);
     // Intentionally no rethrow — never crash startup.
+  }
+}
+
+/**
+ * Enqueue a URL for delayed kind:5 deletion publication. Called by the
+ * remediation migration (which cannot publish directly because daemon
+ * wiring hasn't happened yet) and available for any other code path
+ * that wants a deletion published once wiring completes. Idempotent on
+ * url via PRIMARY KEY — repeat calls just refresh the reason.
+ */
+export function enqueueRemediationDeletion(url: string, reason: string): void {
+  try {
+    db.query(
+      `INSERT INTO remediation_deletion_queue (url, reason, queued_at, attempts)
+       VALUES (?, ?, ?, 0)
+       ON CONFLICT(url) DO UPDATE SET reason = excluded.reason`,
+      [url, reason, Math.floor(Date.now() / 1000)],
+    );
+  } catch (e) {
+    logger.error(`enqueueRemediationDeletion failed for ${url}: ${e}`);
+  }
+}
+
+/**
+ * Drain the remediation_deletion_queue: publish a kind:5 deletion for
+ * each queued URL and remove the row on successful OK. Called by the
+ * daemon AFTER config / keys / SimplePool are wired up. Failures
+ * increment the attempts counter and leave the row in place for the
+ * next startup. Never throws — reports counts via a structured log
+ * line and returns.
+ */
+export async function drainRemediationDeletionQueue(config: Config): Promise<void> {
+  try {
+    const rows = db.query(
+      `SELECT url, reason, attempts FROM remediation_deletion_queue
+       ORDER BY queued_at ASC`,
+    );
+
+    if (rows.length === 0) {
+      logger.debug(`Deletion queue empty — nothing to drain`);
+      return;
+    }
+
+    logger.info(`Draining remediation deletion queue: ${rows.length} entries`);
+    const startTime = Date.now();
+    let published = 0;
+    let failed = 0;
+
+    // Lazy import so unit tests and non-daemon code paths that never
+    // drain the queue don't pay the deletion.ts import cost.
+    const { deleteRelayCheckEvent } = await import("./deletion.ts");
+
+    for (const row of rows) {
+      const [urlRaw, reasonRaw, attemptsRaw] = row;
+      const url = urlRaw as string;
+      const reason = (reasonRaw as string) || "";
+      const attempts = (attemptsRaw as number) || 0;
+
+      try {
+        const ok = await deleteRelayCheckEvent(url, reason, config);
+        if (ok) {
+          db.query(
+            `DELETE FROM remediation_deletion_queue WHERE url = ?`,
+            [url],
+          );
+          published++;
+          logger.info(`Deletion published for ${url}: queue entry removed`);
+        } else {
+          db.query(
+            `UPDATE remediation_deletion_queue
+             SET attempts = ?, last_error = ?
+             WHERE url = ?`,
+            [attempts + 1, "deleteRelayCheckEvent returned false", url],
+          );
+          failed++;
+          logger.warn(
+            `Deletion NOT ACK'd for ${url} (attempts=${attempts + 1}) — left in queue`,
+          );
+        }
+      } catch (e) {
+        const errStr = String(e);
+        db.query(
+          `UPDATE remediation_deletion_queue
+           SET attempts = ?, last_error = ?
+           WHERE url = ?`,
+          [attempts + 1, errStr.slice(0, 500), url],
+        );
+        failed++;
+        logger.error(
+          `Deletion threw for ${url} (attempts=${attempts + 1}): ${errStr}`,
+        );
+      }
+    }
+
+    const durationMs = Date.now() - startTime;
+    logger.info(
+      JSON.stringify({
+        drain: "remediation_deletion_queue",
+        published,
+        failed,
+        duration_ms: durationMs,
+      }),
+    );
+  } catch (e) {
+    logger.error(`drainRemediationDeletionQueue failed: ${e}`);
   }
 }

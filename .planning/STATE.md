@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v2.3
 milestone_name: Relay Dedup Family Scope
-status: Phase complete — ready for verification
+status: Milestone complete
 stopped_at: Completed 20-04-migration-scope-PLAN.md
-last_updated: "2026-04-11T22:43:06.018Z"
+last_updated: "2026-04-11T22:51:20.226Z"
 progress:
   total_phases: 4
   completed_phases: 1
@@ -23,8 +23,8 @@ See: .planning/PROJECT.md (updated 2026-03-19)
 
 ## Current Position
 
-Phase: 20 (Dedup Performance & Overrides) — EXECUTING
-Plan: 4 of 4
+Phase: 20
+Plan: Not started
 
 Phases 17, 18, 19 complete on disk (artifacts under `.planning/phases/`). v2.3 roadmap entry added to ROADMAP.md in this commit to catch up documentation to shipped state.
 

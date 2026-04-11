@@ -119,4 +119,4 @@ Plans:
 | 17. Diagnose Dedup Family Scope Failure | 3/3 | Complete | 2026-04-10 |
 | 18. Fix Dedup Family Scope | 3/3 | Complete | 2026-04-10 |
 | 19. Remediate Affected Rows | 2/2 | Complete | 2026-04-10 |
-| 20. Dedup Performance & Overrides | 4/4 | Complete   | 2026-04-11 |
+| 20. Dedup Performance & Overrides | 4/4 | Complete    | 2026-04-11 |

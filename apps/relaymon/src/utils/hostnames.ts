@@ -2,11 +2,12 @@
 import { getLogger, LogLevel } from "./logger.ts";
 import { normalizeURL } from "npm:nostr-tools/utils";
 import hash from "npm:object-hash";
-import { getOnlineRelays, getRelayInfo, storeRelayInfo, getRelaysWithSameInfo } from "../db/db.ts";
+import { getOnlineRelays, getRelayInfo, storeRelayInfo, getRelaysWithSameInfo, getRelaysByHostname } from "../db/db.ts";
 import { deleteRelayCheckEvent } from "./deletion.ts";
 import type { Config } from "../config/config.ts";
 import type { RelayCheckResult, RelayInfo } from "../types/relay.ts";
 import { getErrorMessage } from "../types/errors.ts";
+import { normalizeNip11 } from "./nip11.ts";
 
 // Force console output for debugging
 
@@ -109,10 +110,23 @@ export function createInfoHash(infoData: RelayInfo | Record<string, unknown> | n
   }
 
   try {
+    // Phase 18 Fix 2: strip volatile NIP-11 fields BEFORE sorting/hashing.
+    // Phase 17 Hypothesis B confirmed that volatile fields (timestamps,
+    // counters, last_*, current_*) cause the same server to produce
+    // different hashes across check cycles, defeating case1/case2/case8.
+    const stripped = normalizeNip11(infoData as Record<string, unknown>);
+
+    // After stripping, the object may be empty (e.g., if every field was
+    // volatile). In that case return "" to match the early-return contract
+    // above and avoid a universal "empty-normalized" hash collision.
+    if (Object.keys(stripped).length === 0) {
+      return "";
+    }
+
     // Sort the keys to ensure consistent hashing regardless of object property order
     const normalized: Record<string, unknown> = {};
-    Object.keys(infoData).sort().forEach(key => {
-      normalized[key] = (infoData as Record<string, unknown>)[key];
+    Object.keys(stripped).sort().forEach(key => {
+      normalized[key] = stripped[key];
     });
     return `RelayCheckInfo@${hash(normalized)}`;
   } catch (e) {
@@ -135,6 +149,19 @@ export const relayHostnameDedup = async (result: RelayCheckResult): Promise<Rela
   try {
     if (!mURL || !HOSTNAME || !PROTOCOL) {
       throw new Error(`Invalid result object: ${JSON.stringify(result)}`);
+    }
+
+    // Phase 18 Fix 3: canonicalize mURL at function entry so all
+    // downstream URL comparisons happen in canonical form. normalizeURL
+    // (from nostr-tools/utils) strips trailing slashes from path URLs,
+    // which would otherwise cause orderedFamily.indexOf(mURL) to return
+    // -1 for URLs like "wss://haven.nostrfreedom.net/inbox/" — triggering
+    // the CRITICAL ERROR branch and wrongly ignoring legit path-only relays.
+    let canonicalMURL: string;
+    try {
+      canonicalMURL = normalizeURL(mURL);
+    } catch {
+      canonicalMURL = mURL;
     }
 
     // Check if this relay is in the synced ignore list from other monitors
@@ -242,7 +269,7 @@ export const relayHostnameDedup = async (result: RelayCheckResult): Promise<Rela
     }
 
     const hostnameFamily = online.filter((r: OnlineRelay) =>
-      r.hostname === HOSTNAME && r.protocol === PROTOCOL && r.url !== mURL
+      r.hostname === HOSTNAME && r.protocol === PROTOCOL && r.url !== canonicalMURL
     );
     const hostnameRelatives = [...hostnameFamily];
 
@@ -252,7 +279,35 @@ export const relayHostnameDedup = async (result: RelayCheckResult): Promise<Rela
     });
 
     if (!hostnameRelatives?.length) {
-      logger.debug(`No relatives found for ${mURL}, returning without modification`);
+      // Phase 18 Fix 1: defensive-deny against the no-relatives race.
+      // Phase 17 Hypothesis C confirmed that when a mutation URL's dedup runs
+      // before its legit sibling's relay_status online=1 commit is visible,
+      // the family is empty and the mutation escapes. Before giving up, check
+      // for ANY sibling of the same hostname+protocol in relay_status (online
+      // or offline). If found, mark the current URL as a duplicate of the
+      // shortest known sibling.
+      const allKnownSiblings = getRelaysByHostname(HOSTNAME, PROTOCOL).filter(
+        (u) => u !== canonicalMURL
+      );
+      if (allKnownSiblings.length > 0) {
+        allKnownSiblings.sort((a, b) => {
+          if (a.length !== b.length) return a.length - b.length;
+          return a < b ? -1 : a > b ? 1 : 0;
+        });
+        const shortestSibling = allKnownSiblings[0];
+        result.ignore = true;
+        result.parent = shortestSibling;
+        const reason = `hostname has known siblings (defensive deny — Phase 18 Fix 1, parent: ${shortestSibling})`;
+        logger.warn(`${mURL} | Ignored because: ${reason}`);
+        if (ignoreListSyncInstance) {
+          ignoreListSyncInstance.addToIgnoreList(mURL, reason);
+        }
+        if (appConfig) {
+          await deleteRelayCheckEvent(mURL, reason, appConfig);
+        }
+        return result;
+      }
+      logger.debug(`No relatives or known siblings found for ${mURL}, returning without modification`);
       return result;
     }
 
@@ -304,7 +359,7 @@ export const relayHostnameDedup = async (result: RelayCheckResult): Promise<Rela
 
     // Order each relay in the hostname map by URL path depth.
     const urlSegmentOrderedMap = relayArrToHostnameProtocolKeyedMap(
-      [...hostnameRelatives.map((r) => r.url), mURL]
+      [...hostnameRelatives.map((r) => r.url), canonicalMURL]
     );
     const orderedFamily = (urlSegmentOrderedMap.get(`${PROTOCOL}//${HOSTNAME}`) || []).map((r) =>
       normalizeURL(r)
@@ -315,12 +370,12 @@ export const relayHostnameDedup = async (result: RelayCheckResult): Promise<Rela
       logger.debug(`  [${idx}] ${url}`);
     });
     
-    let orderedRelatives = orderedFamily.filter((r) => r !== mURL);
+    let orderedRelatives = orderedFamily.filter((r) => r !== canonicalMURL);
     if (!orderedRelatives || orderedRelatives.length === 0) {
       logger.error(`Ordered relatives not found for ${PROTOCOL}//${HOSTNAME}`);
       return result;
     }
-    const index = orderedFamily.indexOf(mURL);
+    const index = orderedFamily.indexOf(canonicalMURL);
     
     logger.debug(`Current URL index in ordered family: ${index}`);
     logger.debug(`Ordered relatives: ${JSON.stringify(orderedRelatives)}`);
@@ -347,9 +402,9 @@ export const relayHostnameDedup = async (result: RelayCheckResult): Promise<Rela
       
       const isSameAsOlderRelative = foundAtIndex < index;
       const isSameAsYoungerRelative = foundAtIndex > index;
-      const pathnameIsPubkey = new URL(mURL).pathname.split("/").some((p) => isPubkey(p));
-      const pathnameContainsPubkey = containsPubkey(new URL(mURL).pathname);
-      const pathnameContainsHostname = new URL(mURL).pathname.includes(HOSTNAME);
+      const pathnameIsPubkey = new URL(canonicalMURL).pathname.split("/").some((p) => isPubkey(p));
+      const pathnameContainsPubkey = containsPubkey(new URL(canonicalMURL).pathname);
+      const pathnameContainsHostname = new URL(canonicalMURL).pathname.includes(HOSTNAME);
 
       logger.debug(`Detailed condition analysis for ${mURL}:`);
       logger.debug(`  foundAtIndex: ${foundAtIndex}`);
@@ -380,7 +435,7 @@ export const relayHostnameDedup = async (result: RelayCheckResult): Promise<Rela
       
       // New condition for URLs with paths that have the same NIP-11 info as any relative
       const reason8 = "URL with path has identical NIP-11 info to another relay with same hostname";
-      const isPathUrl = (new URL(mURL).pathname !== "/" && new URL(mURL).pathname !== "");
+      const isPathUrl = (new URL(canonicalMURL).pathname !== "/" && new URL(canonicalMURL).pathname !== "");
       const case8 = isPathUrl && infoHash !== "" && isSameAsAnyRelative;
       
       logger.debug(`Case evaluations: [1:${case1}] [2:${case2}] [3:${case3}] [4:${case4}] [5:${case5}] [6:${case6}] [7:${case7}] [8:${case8}]`);

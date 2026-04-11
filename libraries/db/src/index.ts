@@ -1,5 +1,6 @@
 import { DB } from "https://deno.land/x/sqlite/mod.ts";
 import Logger from "npm:@nostrwatch/logger";
+import { normalizeURL } from "https://esm.sh/nostr-tools@2.23.3/utils";
 
 const logger = new Logger("DB");
 export let db: DB;
@@ -249,7 +250,11 @@ export function seedNewRelay(url: string, network: string): boolean {
 export function getAllRelays(): Set<string> {
   const onlineRelays: Set<string> = new Set();
   for (const [url] of db.query("SELECT url FROM relay_status")) {
-    onlineRelays.add(url as string);
+    try {
+      onlineRelays.add(normalizeURL(url as string));
+    } catch {
+      onlineRelays.add(url as string); // fall back to raw if normalizeURL throws
+    }
   }
   return onlineRelays;
 }
@@ -257,9 +262,55 @@ export function getAllRelays(): Set<string> {
 export function getOnlineRelays(): string[] {
     const onlineRelays: string[] = [];
     for (const [url] of db.query("SELECT url FROM relay_status WHERE online = 1")) {
-      onlineRelays.push(url as string);
+      try {
+        onlineRelays.push(normalizeURL(url as string));
+      } catch {
+        onlineRelays.push(url as string);
+      }
     }
     return onlineRelays;
+}
+
+/**
+ * Get all relays whose parsed URL hostname exactly matches `hostname`,
+ * regardless of online state. Optionally filter by protocol (e.g. "wss:").
+ *
+ * Used by relaymon's dedup defensive-deny branch in relayHostnameDedup to
+ * detect the no-relatives race (Phase 17 Hypothesis C): when the current
+ * online-family is empty but a known sibling exists in relay_status that
+ * just hasn't been committed to online=1 yet this cycle.
+ *
+ * SQL prefilter uses LIKE for speed; URL parsing is the correctness gate.
+ */
+export function getRelaysByHostname(hostname: string, protocol?: string): string[] {
+  if (!hostname || typeof hostname !== "string") return [];
+  const matches: string[] = [];
+  try {
+    // Parameterized LIKE prefilter: fast, avoids full table scan when
+    // relay_status has thousands of rows. The URL-parse filter below is
+    // the correctness guarantee.
+    const likePattern = `%${hostname}%`;
+    for (const [url] of db.query(
+      "SELECT url FROM relay_status WHERE url LIKE ?",
+      [likePattern],
+    )) {
+      try {
+        const parsed = new URL(url as string);
+        if (parsed.hostname !== hostname) continue;
+        if (protocol && parsed.protocol !== protocol) continue;
+        try {
+          matches.push(normalizeURL(url as string));
+        } catch {
+          matches.push(url as string);
+        }
+      } catch {
+        // skip malformed URL rows silently
+      }
+    }
+  } catch (e) {
+    logger.error(`Error in getRelaysByHostname for ${hostname}: ${e}`);
+  }
+  return matches;
 }
 
 export function saveSeederTimestamp(method: string, timestamp: number): void {

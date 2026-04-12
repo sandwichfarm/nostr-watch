@@ -220,10 +220,14 @@ dbTest("Database - getOnlineRelays returns only online relays", () => {
 
   const onlineRelays = getOnlineRelays();
 
-  assert(onlineRelays.includes(`wss://online1-${timestamp}.example.com`), "Should include online1");
-  assert(onlineRelays.includes(`wss://online2-${timestamp}.example.com`), "Should include online2");
-  assert(!onlineRelays.includes(`wss://offline1-${timestamp}.example.com`), "Should not include offline1");
-  assert(!onlineRelays.includes(`wss://offline2-${timestamp}.example.com`), "Should not include offline2");
+  // Phase 21 Plan 02: getOnlineRelays now resolves through libraries/db's
+  // canonicalized version (via the barrel re-export at db.ts:626), which
+  // normalizeURL-wraps every row. normalizeURL appends a trailing slash to
+  // bare-host URLs, so assertions use the canonical form with trailing slash.
+  assert(onlineRelays.includes(`wss://online1-${timestamp}.example.com/`), "Should include online1 (canonicalized)");
+  assert(onlineRelays.includes(`wss://online2-${timestamp}.example.com/`), "Should include online2 (canonicalized)");
+  assert(!onlineRelays.includes(`wss://offline1-${timestamp}.example.com/`), "Should not include offline1");
+  assert(!onlineRelays.includes(`wss://offline2-${timestamp}.example.com/`), "Should not include offline2");
 });
 
 dbTest("Database - isRelayIgnored returns true for ignored relay", () => {

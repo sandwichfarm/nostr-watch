@@ -174,8 +174,13 @@ export const qualifyRelayUrl = (maybeRelay: string): boolean => {
     return false;
   }
 
-  const hostname = url.hostname;  
-  const pathname = url.pathname;  
+  const hostname = url.hostname;
+  const pathname = url.pathname;
+
+  // Reject hostnames without a dot — catches mangled URLs like
+  // wss://wws//nos.lol (hostname="wws"), wss://was//x (hostname="was"),
+  // wss://(wss//relay.primal.net) (hostname="(wss")
+  if ( !hostname.includes('.') ) return false;
 
   if ( isLocalNet(maybeRelay) ) return false;
 

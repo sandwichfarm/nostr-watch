@@ -6,6 +6,7 @@ import {
   rerunDedupForAllRowsMigration,
   rerunNostringsSweepMigration,
 } from "../utils/remediation.ts";
+import { purgeNatoPhoneticSpam } from "../../../../libraries/db/src/nato-purge.ts";
 
 const logger = getLogger("DB");
 let isInitialized = false;
@@ -160,6 +161,15 @@ export async function initializeDB(dbPath?: string, enableWAL: boolean = true): 
     await rerunNostringsSweepMigration();
   } catch (e) {
     logger.error(`rerunNostringsSweepMigration threw: ${e}`);
+  }
+
+  // Phase 22: Purge NATO phonetic spam URLs from relay_status.
+  // Idempotent via relaymon_migrations sentinel. Writes deleted URLs
+  // to disk for downstream NIP-09 processing (Phase 23).
+  try {
+    await purgeNatoPhoneticSpam("nato-purged-urls.txt");
+  } catch (e) {
+    logger.error(`purgeNatoPhoneticSpam threw: ${e}`);
   }
 
   isInitialized = true;

@@ -154,6 +154,20 @@ export interface IgnoreListConfig {
 export interface DeduplicationConfig {
   reevaluation_interval: string;
   nip11_cache_ttl: string;
+  /**
+   * Phase 20 PERF: skip live NIP-11 fetches in reevaluateAllDeduplication
+   * when the relay_status row's checked_at is older than this threshold OR
+   * the row is already marked ignore=1. Default "7d" (604_800_000ms). Read
+   * once at daemon boot; changing it requires a restart. Consumed by
+   * reevaluateAllDeduplication in hostnames.ts — see Plan 20-03.
+   *
+   * Conversion to ms is performed lazily at the consumer site via
+   * parseInterval() (same pattern as nip11_cache_ttl); the type remains
+   * `string` here even though the runtime value may be a number after
+   * conversion. validateConfig applies the "7d" default when this field
+   * is absent from user config.
+   */
+  nip11_stale_skip?: string;
 }
 
 /**
@@ -385,6 +399,32 @@ export function validateConfig(config: unknown): Config {
 
   if (!c.relaymon.checks.options || typeof c.relaymon.checks.options !== "object") {
     throw new Error("Missing required field: relaymon.checks.options");
+  }
+
+  // Phase 20: validate optional deduplication.nip11_stale_skip and apply
+  // default "7d" when absent. The field is fully optional; we only fail when
+  // a user-supplied value has an unsupported type. Both `string` (timestring,
+  // pre-conversion) and `number` (ms, post-conversion at consumer site) are
+  // acceptable so this validator survives a future move of the conversion
+  // step into processConfigTimeValues without further edits.
+  if (c.relaymon.deduplication !== undefined) {
+    if (typeof c.relaymon.deduplication !== "object" || c.relaymon.deduplication === null) {
+      throw new Error("relaymon.deduplication must be an object when present");
+    }
+
+    const dedup = c.relaymon.deduplication;
+    if (dedup.nip11_stale_skip === undefined || dedup.nip11_stale_skip === null) {
+      // Default applied when missing — Plan 20-03 reads this via
+      // appConfig?.relaymon?.deduplication?.nip11_stale_skip
+      dedup.nip11_stale_skip = "7d";
+    } else if (
+      typeof dedup.nip11_stale_skip !== "string" &&
+      typeof dedup.nip11_stale_skip !== "number"
+    ) {
+      throw new Error(
+        "relaymon.deduplication.nip11_stale_skip must be a timestring like '7d' or a number of ms",
+      );
+    }
   }
 
   // Validate health configuration if present (optional)

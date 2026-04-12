@@ -2,12 +2,17 @@
 import { getLogger, LogLevel } from "./logger.ts";
 import { normalizeURL } from "npm:nostr-tools/utils";
 import hash from "npm:object-hash";
-import { getOnlineRelays, getRelayInfo, storeRelayInfo, getRelaysWithSameInfo, getRelaysByHostname } from "../db/db.ts";
+import { db, getOnlineRelays, getRelayInfo, storeRelayInfo, getRelaysWithSameInfo, getRelaysByHostname } from "../db/db.ts";
 import { deleteRelayCheckEvent } from "./deletion.ts";
 import type { Config } from "../config/config.ts";
 import type { RelayCheckResult, RelayInfo } from "../types/relay.ts";
 import { getErrorMessage } from "../types/errors.ts";
 import { normalizeNip11 } from "./nip11.ts";
+// Phase 20 OVERRIDE-01: import the override evaluator so relayHostnameDedup
+// can consult the override rules list before any case1-case8 branch. The
+// evaluator parses the URL exactly once and iterates rules[] in barrel order
+// with per-rule try/catch. See apps/relaymon/src/utils/dedup-overrides/.
+import { evaluateOverrides } from "./dedup-overrides/evaluator.ts";
 
 // Force console output for debugging
 
@@ -27,6 +32,28 @@ export function setConfig(config: Config): void {
 
 const isPubkey = (str: string): boolean => /^[0-9a-fA-F]{64}$/.test(str);
 const containsPubkey = (str: string): boolean => /[0-9a-fA-F]{64}/.test(str);
+
+/**
+ * Phase 20 PERF: local timestring → ms converter for consumer-side lazy
+ * conversion of DeduplicationConfig.nip11_stale_skip. Mirrors the shape of
+ * parseInterval() in apps/relaymon/src/core/daemon.ts (which is a private
+ * helper there). Kept local to hostnames.ts so the integration does not
+ * reach across the core/utils boundary. Returns NaN on parse failure so
+ * callers can fall through to a numeric default.
+ */
+function parseStaleSkipTimestring(interval: string): number {
+  const match = interval.match(/^(\d+)([smhd])$/);
+  if (!match) return NaN;
+  const value = parseInt(match[1], 10);
+  const unit = match[2];
+  switch (unit) {
+    case "s": return value * 1000;
+    case "m": return value * 60 * 1000;
+    case "h": return value * 60 * 60 * 1000;
+    case "d": return value * 24 * 60 * 60 * 1000;
+    default: return NaN;
+  }
+}
 
 // Define IgnoreListSync interface for type safety
 interface IgnoreListSyncInterface {
@@ -136,11 +163,41 @@ export function createInfoHash(infoData: RelayInfo | Record<string, unknown> | n
 }
 
 /**
+ * Phase 20 PERF-02: optional context passed by callers that want to
+ * pre-compute expensive dependencies (like the online-relays snapshot) once
+ * per batch and inject it into each per-row dedup call. When omitted, the
+ * function falls back to its Phase 19 behavior of computing the dependency
+ * itself per call — back-compat for existing single-URL call sites.
+ */
+export interface DedupContext {
+  /**
+   * Pre-cached list of online relay URLs (equivalent to the return value
+   * of `getOnlineRelays()`). When provided, the dedup function uses this
+   * snapshot instead of making a fresh DB query. Accepted shape is string[];
+   * pre-grouped Map is a deferred optimization per 20-CONTEXT.md.
+   */
+  onlineUrls?: string[];
+}
+
+/**
  * Performs hostname deduplication on a relay result.
  * It uses online relay data from the database (via getOnlineRelays) to determine whether the relay should be ignored
  * or marked as a child of another relay based on its NIP-11 info and URL characteristics.
+ *
+ * Phase 20 OVERRIDE-01: consults the dedup-overrides rule list BEFORE any
+ * case1-case8 branch (including the same-NIP-11 early-return). First-match
+ * wins in barrel order. An `allow` verdict short-circuits to ignore=false
+ * without publishing a deletion or syncing to the ignore list. A `deny`
+ * verdict short-circuits to ignore=true WITH deletion + ignore-list sync.
+ *
+ * Phase 20 PERF-02: `ctx.onlineUrls` lets callers inject a pre-cached online
+ * relays snapshot. Back-compat: when ctx is undefined, the internal
+ * getOnlineRelays() call path is preserved.
  */
-export const relayHostnameDedup = async (result: RelayCheckResult): Promise<RelayCheckResult> => {
+export const relayHostnameDedup = async (
+  result: RelayCheckResult,
+  ctx?: DedupContext,
+): Promise<RelayCheckResult> => {
   // Force direct console output at the start of function
 
   const { url: mURL, hostname: HOSTNAME, protocol: PROTOCOL } = result;
@@ -162,6 +219,43 @@ export const relayHostnameDedup = async (result: RelayCheckResult): Promise<Rela
       canonicalMURL = normalizeURL(mURL);
     } catch {
       canonicalMURL = mURL;
+    }
+
+    // Phase 20 OVERRIDE-01: consult override rules BEFORE any case1-case8 branch
+    // and BEFORE the same-NIP-11 early-return below. First-match-wins in barrel
+    // order. Throwing rules are treated as no-match by the evaluator's per-rule
+    // try/catch. The evaluator parses canonicalMURL once and passes the URL
+    // object to every rule. See apps/relaymon/src/utils/dedup-overrides/.
+    //
+    // allow verdict: short-circuit to ignore=false, parent="". DOES NOT publish
+    //   a kind:5 deletion (allow semantically means "publish this URL as a
+    //   first-class relay") and DOES NOT push to the ignore list.
+    // deny verdict: short-circuit to ignore=true, parent=verdict.reason. DOES
+    //   publish a kind:5 deletion and DOES push to the ignore list, same as
+    //   the existing case1-case8 ignore paths.
+    const verdict = evaluateOverrides(canonicalMURL);
+    if (verdict.matched) {
+      if (verdict.action === "allow") {
+        result.ignore = false;
+        result.parent = "";
+        logger.info(
+          `Override '${verdict.rule}' allowed ${canonicalMURL}: ${verdict.reason}`,
+        );
+        return result;
+      } else {
+        result.ignore = true;
+        result.parent = verdict.reason;
+        logger.warn(
+          `Override '${verdict.rule}' denied ${canonicalMURL}: ${verdict.reason}`,
+        );
+        if (ignoreListSyncInstance) {
+          ignoreListSyncInstance.addToIgnoreList(canonicalMURL, verdict.reason);
+        }
+        if (appConfig) {
+          await deleteRelayCheckEvent(canonicalMURL, verdict.reason, appConfig);
+        }
+        return result;
+      }
     }
 
     // NOTE: local dedup logic is authoritative. The synced ignore list
@@ -202,19 +296,26 @@ export const relayHostnameDedup = async (result: RelayCheckResult): Promise<Rela
               result.parent = rootURLs[0];
               logger.debug(`Ignoring ${mURL} - has same NIP-11 info as root URL ${rootURLs[0]}`);
 
+              // Phase 21 (item 5): use canonicalMURL (not raw mURL) in addToIgnoreList/
+              // deleteRelayCheckEvent calls — unifies with the Phase 20 override deny path
+              // which also uses canonicalMURL. Both resolve to the same DB row via
+              // normalizeURL on-read in libraries/db, but canonicalMURL is the form that
+              // participates in all downstream comparisons (orderedFamily, hostnameFamily
+              // filter). Defensive-deny branch (lines ~414, 417) remains raw mURL — that is
+              // Phase 18 Fix 1 code, out of scope for Phase 21.
               const nip11RootReason = `Relay has same NIP-11 info as root URL ${rootURLs[0]}`;
               if (ignoreListSyncInstance) {
-                ignoreListSyncInstance.addToIgnoreList(mURL, nip11RootReason);
+                ignoreListSyncInstance.addToIgnoreList(canonicalMURL, nip11RootReason);
               }
 
               // Generate deletion event for this ignored relay
               if (appConfig) {
-                await deleteRelayCheckEvent(mURL, nip11RootReason, appConfig);
+                await deleteRelayCheckEvent(canonicalMURL, nip11RootReason, appConfig);
               }
 
               return result;
             }
-            
+
             // If no root URLs, use the shortest URL
             relaysWithSameInfo.sort((a, b) => a.length - b.length);
             if (relaysWithSameInfo[0] !== mURL) {
@@ -224,12 +325,12 @@ export const relayHostnameDedup = async (result: RelayCheckResult): Promise<Rela
 
               const nip11ShorterReason = `Relay has same NIP-11 info as shorter URL ${relaysWithSameInfo[0]}`;
               if (ignoreListSyncInstance) {
-                ignoreListSyncInstance.addToIgnoreList(mURL, nip11ShorterReason);
+                ignoreListSyncInstance.addToIgnoreList(canonicalMURL, nip11ShorterReason);
               }
 
               // Generate deletion event for this ignored relay
               if (appConfig) {
-                await deleteRelayCheckEvent(mURL, nip11ShorterReason, appConfig);
+                await deleteRelayCheckEvent(canonicalMURL, nip11ShorterReason, appConfig);
               }
 
               return result;
@@ -242,8 +343,12 @@ export const relayHostnameDedup = async (result: RelayCheckResult): Promise<Rela
     // Enhanced debug logging for problematic hostnames
     logger.debug(`Processing hostname dedup for target URL: ${mURL}`);
 
-    // Retrieve online relay URLs from the SQLite DB.
-    const onlineUrls = getOnlineRelays(); // returns string[]
+    // Phase 20 PERF-02: prefer caller-supplied onlineUrls when provided.
+    // Back-compat: when ctx is undefined or ctx.onlineUrls is undefined, fall
+    // back to the per-call DB query. The downstream filter on r.url !==
+    // canonicalMURL at the hostnameFamily construction remains unchanged —
+    // pre-cached list is expected to still contain the URL under check.
+    const onlineUrls = ctx?.onlineUrls ?? getOnlineRelays(); // returns string[]
     
     const targetRelays = onlineUrls.filter(url => url.includes(HOSTNAME));
     logger.debug(`Found ${targetRelays.length} ${HOSTNAME} relays in online relays: ${JSON.stringify(targetRelays)}`);
@@ -481,13 +586,16 @@ export const relayHostnameDedup = async (result: RelayCheckResult): Promise<Rela
         }
 
         // Add to IgnoreListSync if it has a parent (i.e., is a deduplication ignore, not remote sync)
+        // Note: canonicalMURL (not raw mURL) — see the Phase 21 item 5 rationale
+        // comment at the same-NIP-11 early-return block above. Defensive-deny
+        // branch retains raw mURL (Phase 18 Fix 1, out of scope).
         if (result.parent && ignoreListSyncInstance) {
-          ignoreListSyncInstance.addToIgnoreList(mURL, reason);
+          ignoreListSyncInstance.addToIgnoreList(canonicalMURL, reason);
         }
 
         // Generate deletion event when a relay is ignored
         if (appConfig) {
-          await deleteRelayCheckEvent(mURL, reason, appConfig);
+          await deleteRelayCheckEvent(canonicalMURL, reason, appConfig);
         }
       } else {
         result.ignore = false;
@@ -510,8 +618,36 @@ export const relayHostnameDedup = async (result: RelayCheckResult): Promise<Rela
  * @param nip11CacheTtl - How long to consider NIP-11 fresh (milliseconds), default 24 hours
  * @returns Array of relays that had their ignore status changed
  */
-export const reevaluateAllDeduplication = async (nip11CacheTtl: number = 24 * 60 * 60 * 1000): Promise<any[]> => {
+export const reevaluateAllDeduplication = async (
+  nip11CacheTtl: number = 24 * 60 * 60 * 1000,
+  nip11StaleSkipMs?: number,
+): Promise<any[]> => {
   logger.info("Starting periodic deduplication re-evaluation for all relays...");
+
+  // Phase 20 PERF: resolve stale-skip threshold. Caller > appConfig > 7d default.
+  //
+  // Consumer-side lazy conversion of the timestring field
+  // appConfig.relaymon.deduplication.nip11_stale_skip (added by Plan 20-02).
+  // Plan 20-02 validateConfig guarantees this field is always present as a
+  // string after config validation (default "7d"), but we also accept a number
+  // here in case a future plan moves conversion into processConfigTimeValues.
+  // Falls through to the canonical 604_800_000 default if the field is
+  // somehow absent or unparseable.
+  let configStaleSkipMs: number | undefined;
+  const rawStaleSkip = (appConfig?.relaymon?.deduplication as unknown as {
+    nip11_stale_skip?: string | number;
+  })?.nip11_stale_skip;
+  if (typeof rawStaleSkip === "number" && Number.isFinite(rawStaleSkip)) {
+    configStaleSkipMs = rawStaleSkip;
+  } else if (typeof rawStaleSkip === "string") {
+    const parsed = parseStaleSkipTimestring(rawStaleSkip);
+    if (Number.isFinite(parsed)) configStaleSkipMs = parsed;
+  }
+  const staleSkipMs =
+    nip11StaleSkipMs
+    ?? configStaleSkipMs
+    ?? 604_800_000;
+  logger.info(`Phase 20 PERF: nip11 stale-skip threshold = ${staleSkipMs}ms`);
 
   const onlineRelays = getOnlineRelays();
   logger.info(`Re-evaluating ${onlineRelays.length} online relays`);
@@ -550,6 +686,47 @@ export const reevaluateAllDeduplication = async (nip11CacheTtl: number = 24 * 60
 
   for (const [hostnameKey, relaysInGroup] of relaysByHostname.entries()) {
     try {
+      // Phase 20 PERF: determine whether this hostname group contains at
+      // least one member that is both fresh (checked_at newer than
+      // staleSkipMs) AND unignored. If not, skip the nocap.check call
+      // entirely — the scalability win is avoiding 10s timeouts on dead
+      // hostname groups. Per-group granularity (not per-row) because the
+      // existing code already batches one nocap.check per hostname group.
+      //
+      // LOCKED INTERPRETATION (per 20-CONTEXT.md Area 4 Claude's discretion):
+      // Phase 20 Success Criterion #3 ("zero nocap.check invocations for rows
+      // matching either skip condition") is satisfied at PER-GROUP granularity:
+      // for any group where every member is stale-or-ignored, this `continue`
+      // runs BEFORE the needsNip11Refresh / nocap.check block, making the
+      // nocap.check call statically unreachable for that group. This is the
+      // structural guarantee that Task 2 of this plan relies on when it
+      // asserts `changed.length === 0` in the all-stale / all-ignored tests:
+      // no code path from this gate can reach nocap.check without the gate
+      // having concluded at least one fresh-unignored member exists. See
+      // 20-RESEARCH.md Pitfall 7 and Open Question 2 for the rationale.
+      let hasFreshUnignoredMember = false;
+      const nowMs = Date.now();
+      for (const relayUrl of relaysInGroup) {
+        const statusRow = db.query(
+          "SELECT ignore, checked_at FROM relay_status WHERE url = ?",
+          [relayUrl],
+        );
+        if (statusRow.length === 0) continue;
+        const isIgnored = (statusRow[0][0] as number) === 1;
+        const checkedAt = (statusRow[0][1] as number) || 0;
+        const ageMs = checkedAt > 0 ? nowMs - checkedAt : Infinity;
+        if (!isIgnored && ageMs <= staleSkipMs) {
+          hasFreshUnignoredMember = true;
+          break;
+        }
+      }
+      if (!hasFreshUnignoredMember) {
+        logger.debug(
+          `Phase 20 PERF: skipping nocap.check for ${hostnameKey} — no fresh-unignored members (group size=${relaysInGroup.length})`,
+        );
+        continue;
+      }
+
       // For each hostname group, only fetch NIP-11 once if any relay is stale
       let needsNip11Refresh = false;
       let nip11Data = null;
@@ -613,7 +790,12 @@ export const reevaluateAllDeduplication = async (nip11CacheTtl: number = 24 * 60
           }
 
           // Re-run deduplication
-          const updatedResult = await relayHostnameDedup(result).catch((err: unknown) => {
+          // Phase 21 (item 6): pass the onlineRelays snapshot fetched at line 642
+          // as DedupContext so per-row relayHostnameDedup calls reuse the cached
+          // list instead of re-querying `SELECT url FROM relay_status WHERE online
+          // = 1` once per row. Mirrors the Phase 20 PERF-02 tier-2 pattern now in
+          // rerunDedupForAllRowsMigration (remediation.ts:118).
+          const updatedResult = await relayHostnameDedup(result, { onlineUrls: onlineRelays }).catch((err: unknown) => {
             logger.error(`Error re-evaluating ${relayUrl}: ${getErrorMessage(err)}`);
             return { url: relayUrl, ignore: wasIgnored, parent: result.parent, hostname: result.hostname, protocol: result.protocol, checked_at: result.checked_at, online: result.online, network: result.network };
           });

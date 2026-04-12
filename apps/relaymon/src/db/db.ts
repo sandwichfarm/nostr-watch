@@ -308,20 +308,6 @@ export function getRelaysWithSameInfo(infoHash: string): string[] {
 }
 
 /**
- * Get online relays from the database
- * @returns Array of online relay URLs
- */
-export function getOnlineRelays(): string[] {
-  try {
-    const rows = db.query(`SELECT url FROM relay_status WHERE online = 1`);
-    return rows.map(row => row[0] as string);
-  } catch (e) {
-    logger.error(`Error getting online relays: ${e}`);
-    return [];
-  }
-}
-
-/**
  * Check if a relay is marked as ignored in the database
  * @param url The relay URL to check
  * @returns true if the relay is ignored, false otherwise

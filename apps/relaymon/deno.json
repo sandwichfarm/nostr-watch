@@ -22,7 +22,7 @@
       "test:deletion": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/deletion.test.ts",
       "test:delta-detector": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/delta-detector.test.ts",
       "test:error-types": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/error-types.test.ts",
-      "test:hostname-dedup": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/hostname-dedup.test.ts",
+      "test:hostname-dedup": "deno test --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/hostname-dedup.test.ts",
       "test:ignorelist-sync": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/ignorelist-sync.test.ts",
       "test:kind1066": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/kind1066.test.ts",
       "test:period-calculator": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/period-calculator.test.ts",

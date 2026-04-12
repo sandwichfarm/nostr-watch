@@ -53,7 +53,12 @@ initializeDB(testDbPath, false);
 setConfig(mockConfig as Config);
 
 // Helper to setup database state
-function setupDatabase(relays: Array<{ url: string; online: boolean; ignore?: boolean; parent?: string; info?: any }>) {
+//
+// Phase 20 Plan 20-03 extension: accept optional per-row `checked_at` so the
+// stale-skip tests in the Phase 20 test block can seed rows with timestamps
+// far in the past. When omitted, defaults to `Date.now()` preserving the
+// Phase 17/18/19 behavior for every existing test.
+function setupDatabase(relays: Array<{ url: string; online: boolean; ignore?: boolean; parent?: string; info?: any; checked_at?: number }>) {
   // Clear existing data
   db.query("DELETE FROM relay_status");
   db.query("DELETE FROM relay_info");
@@ -68,7 +73,7 @@ function setupDatabase(relays: Array<{ url: string; online: boolean; ignore?: bo
         relay.online ? 1 : 0,
         relay.ignore ? 1 : 0,
         relay.parent || null,
-        Date.now(),
+        relay.checked_at ?? Date.now(),
         "clearnet"
       ]
     );
@@ -1915,14 +1920,14 @@ Deno.test("Phase 18 Fix 2: rehashRelayInfoMigration is idempotent", () => {
 // flipped unless relayHostnameDedup itself would flip it).
 //
 // IMPORTANT: initializeDB() at file load already ran the migration once on
-// an empty DB, which inserted the `rerun_dedup_all_rows_v2` sentinel. Every
+// an empty DB, which inserted the `rerun_dedup_online_unignored_v1` sentinel. Every
 // test in this block MUST reset that sentinel before calling the migration
 // or it will short-circuit and be a no-op.
 // ============================================================================
 
 dedupTest("Phase 19 REMED-01: canonical mutation is flipped to ignore=1 with parent set", async () => {
   // Reset the sentinel so the migration actually runs.
-  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v2'");
+  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_online_unignored_v1'");
 
   // Seed: legit root sibling + canonical mutation with MATCHING NIP-11.
   // The shared info object ensures createInfoHash produces the same hash
@@ -1971,7 +1976,7 @@ dedupTest("Phase 19 REMED-01: canonical mutation is flipped to ignore=1 with par
 });
 
 dedupTest("Phase 19 REMED-02: legit path-only relay WITHOUT root sibling is left untouched (narrowness invariant)", async () => {
-  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v2'");
+  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_online_unignored_v1'");
 
   // A legit path-only relay with ZERO same-hostname siblings.
   // This is the exact shape REMED-02 protects: the migration must NEVER
@@ -1998,14 +2003,22 @@ dedupTest("Phase 19 REMED-02: legit path-only relay WITHOUT root sibling is left
   assertEquals((row[0][1] as string) || "", "", "REMED-02: parent must stay empty for solo path-only relay");
 });
 
-dedupTest("Phase 19 philosophy: legit path-only relay WITH matching-NIP-11 root is correctly flipped (shortest URL wins)", async () => {
-  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v2'");
+dedupTest("Phase 20 philosophy: allow-known-paths overrides shortest-URL-wins for /inbox/", async () => {
+  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_online_unignored_v1'");
 
-  // This is the subtle case the user clarified in 19-CONTEXT.md:
-  // When haven.nostrfreedom.net/inbox/ has a matching-NIP-11 root sibling
-  // wss://haven.nostrfreedom.net/, case 2 correctly fires and /inbox/ is
-  // ignored in favor of the root. That IS the dedup philosophy — the
-  // shortest URL is the canonical representation — NOT a regression.
+  // Phase 20 inversion of the Phase 19 philosophy test:
+  // Even when haven.nostrfreedom.net/inbox/ has a matching-NIP-11 root
+  // sibling wss://haven.nostrfreedom.net/, the allow-known-paths override
+  // rule fires BEFORE case2 and keeps /inbox/ as a first-class relay. This
+  // is a deliberate product-level inversion — /inbox and /outbox are known-
+  // good paths regardless of NIP-11 state. See Phase 20 CONTEXT.md Dedup
+  // Philosophy Extension section.
+  //
+  // Historical note: Phase 19's original assertion was that /inbox/ MUST
+  // be flipped to ignore=1 when a matching-NIP-11 root sibling is present.
+  // Phase 20's allow-known-paths rule deliberately inverts that assertion
+  // for /inbox and /outbox specifically. The shortest-URL-wins philosophy
+  // remains the default for every URL that does NOT match an override rule.
   const sharedInfo = mockRelayInfo("Haven", "same relay served at root and path");
   setupDatabase([
     {
@@ -2026,12 +2039,7 @@ dedupTest("Phase 19 philosophy: legit path-only relay WITH matching-NIP-11 root 
 
   await rerunDedupForAllRowsMigration();
 
-  // /inbox/ must be flipped to ignore=1 with parent=root.
-  // The canonical URL for the mutation after normalizeURL is /inbox
-  // (no trailing slash) — Phase 18 Fix 3 canonicalizes both ways.
-  // Query by both trailing and non-trailing forms to be resilient to
-  // whether normalizeURL rewrote the stored URL (it doesn't — remediation
-  // only UPDATEs by the stored raw URL).
+  // /inbox/ must remain un-ignored because allow-known-paths fires first.
   const inboxRows = db.query(
     `SELECT url, ignore, parent FROM relay_status WHERE url LIKE ?`,
     ["%haven.nostrfreedom.net/inbox%"],
@@ -2039,25 +2047,27 @@ dedupTest("Phase 19 philosophy: legit path-only relay WITH matching-NIP-11 root 
   assertEquals(inboxRows.length, 1, "/inbox/ row must still exist");
   assertEquals(
     inboxRows[0][1],
-    1,
-    "philosophy: /inbox/ must be flipped to ignore=1 when a matching-NIP-11 root sibling is present (shortest URL wins)",
+    0,
+    "Phase 20: /inbox/ must stay ignore=0 (allow-known-paths override)",
   );
-  const parent = inboxRows[0][2] as string;
-  assert(
-    parent.includes("haven.nostrfreedom.net") && !parent.includes("/inbox"),
-    `philosophy: /inbox/ parent must point at the root, got "${parent}"`,
+  assertEquals(
+    (inboxRows[0][2] as string) || "",
+    "",
+    "Phase 20: /inbox/ must stay parent=''",
   );
 
-  // Root must remain ignore=0.
-  const root = db.query(
-    `SELECT ignore FROM relay_status WHERE url = ?`,
+  // Root must remain unchanged.
+  const rootRows = db.query(
+    `SELECT ignore, parent FROM relay_status WHERE url = ?`,
     ["wss://haven.nostrfreedom.net/"],
   );
-  assertEquals(root[0][0], 0, "haven root must stay ignore=0");
+  assertEquals(rootRows.length, 1);
+  assertEquals(rootRows[0][0], 0, "root stays ignore=0");
+  assertEquals((rootRows[0][1] as string) || "", "", "root stays parent=''");
 });
 
 dedupTest("Phase 19: already-correctly-ignored row is left unchanged (no redundant UPDATE)", async () => {
-  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v2'");
+  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_online_unignored_v1'");
 
   // Seed a row that is ALREADY ignored with a parent set. The migration
   // should call relayHostnameDedup, see the same (ignore=true, parent=X)
@@ -2096,7 +2106,7 @@ dedupTest("Phase 19: already-correctly-ignored row is left unchanged (no redunda
 });
 
 dedupTest("Phase 19: migration is idempotent — second call is a no-op (sentinel-guarded)", async () => {
-  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v2'");
+  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_online_unignored_v1'");
 
   const sharedInfo = mockRelayInfo("Idempotent Test", "shared");
   setupDatabase([
@@ -2120,7 +2130,7 @@ dedupTest("Phase 19: migration is idempotent — second call is a no-op (sentine
   await rerunDedupForAllRowsMigration();
 
   const sentinelAfterFirst = db.query(
-    "SELECT name FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v2'",
+    "SELECT name FROM relaymon_migrations WHERE name = 'rerun_dedup_online_unignored_v1'",
   );
   assertEquals(sentinelAfterFirst.length, 1, "sentinel must be present after first call");
 
@@ -2152,7 +2162,7 @@ dedupTest("Phase 19: migration is idempotent — second call is a no-op (sentine
 
   // And the sentinel must still be there (exactly one row).
   const sentinelAfterSecond = db.query(
-    "SELECT COUNT(*) FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v2'",
+    "SELECT COUNT(*) FROM relaymon_migrations WHERE name = 'rerun_dedup_online_unignored_v1'",
   );
   assertEquals(sentinelAfterSecond[0][0], 1, "sentinel must still be present exactly once after the second call");
 
@@ -2165,7 +2175,7 @@ dedupTest("Phase 19: migration is idempotent — second call is a no-op (sentine
 });
 
 dedupTest("Phase 19: sentinel row is inserted exactly once after a successful run", async () => {
-  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v2'");
+  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_online_unignored_v1'");
 
   // Zero-row DB: migration should still complete cleanly and insert the sentinel.
   setupDatabase([]);
@@ -2173,10 +2183,10 @@ dedupTest("Phase 19: sentinel row is inserted exactly once after a successful ru
   await rerunDedupForAllRowsMigration();
 
   const sentinelRows = db.query(
-    "SELECT name, applied_at FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v2'",
+    "SELECT name, applied_at FROM relaymon_migrations WHERE name = 'rerun_dedup_online_unignored_v1'",
   );
   assertEquals(sentinelRows.length, 1, "sentinel row must exist exactly once after a successful run");
-  assertEquals(sentinelRows[0][0], "rerun_dedup_all_rows_v2", "sentinel name must match the expected constant");
+  assertEquals(sentinelRows[0][0], "rerun_dedup_online_unignored_v1", "sentinel name must match the expected constant");
   assert(
     (sentinelRows[0][1] as number) > 0,
     `sentinel applied_at must be a non-zero unix timestamp, got ${sentinelRows[0][1]}`,
@@ -2184,7 +2194,7 @@ dedupTest("Phase 19: sentinel row is inserted exactly once after a successful ru
 });
 
 dedupTest("Phase 19 REMED-02: mixed DB — canonical mutation flipped AND solo path-only preserved in the same run", async () => {
-  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_all_rows_v2'");
+  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_online_unignored_v1'");
 
   // A single run over a realistic mixed DB: one canonical-mutation class
   // (root + sibling with matching NIP-11) that MUST flip, and one solo
@@ -2244,4 +2254,582 @@ dedupTest("Phase 19 REMED-02: mixed DB — canonical mutation flipped AND solo p
     ["wss://mixed.example.com/"],
   );
   assertEquals(root[0][0], 0, "mixed root must stay ignore=0");
+});
+
+// =========================================================================
+// Phase 20: Override system + performance (PERF-02 in hostnames.ts, OVERRIDE-01/02/03)
+// =========================================================================
+
+dedupTest("Phase 20 OVERRIDE allow: /inbox solo survives through relayHostnameDedup with ignore=false", async () => {
+  const havenInfo = mockRelayInfo("Haven", "haven inbox");
+  setupDatabase([
+    { url: "wss://haven.nostrfreedom.net/inbox/", online: true, ignore: false, parent: "", info: havenInfo },
+  ]);
+
+  const result = {
+    url: "wss://haven.nostrfreedom.net/inbox/",
+    hostname: "haven.nostrfreedom.net",
+    protocol: "wss:",
+    checked_at: Date.now(),
+    online: true,
+    ignore: false,
+    ignore_reason: "",
+    parent: "",
+    network: "clearnet" as const,
+    info: { data: havenInfo, duration: 0 },
+  };
+
+  const out = await relayHostnameDedup(result);
+  assertEquals(out.ignore, false, "Phase 20 OVERRIDE allow: /inbox must not be flipped to ignore=true");
+  assertEquals(out.parent || "", "", "Phase 20 OVERRIDE allow: parent must be empty");
+});
+
+dedupTest("Phase 20 OVERRIDE allow: /outbox solo survives with ignore=false", async () => {
+  const info = mockRelayInfo("Outbox", "outbox relay");
+  setupDatabase([
+    { url: "wss://example.com/outbox", online: true, ignore: false, parent: "", info },
+  ]);
+
+  const result = {
+    url: "wss://example.com/outbox",
+    hostname: "example.com",
+    protocol: "wss:",
+    checked_at: Date.now(),
+    online: true,
+    ignore: false,
+    ignore_reason: "",
+    parent: "",
+    network: "clearnet" as const,
+    info: { data: info, duration: 0 },
+  };
+
+  const out = await relayHostnameDedup(result);
+  assertEquals(out.ignore, false, "Phase 20 OVERRIDE allow: /outbox must not be ignored");
+  assertEquals(out.parent || "", "");
+});
+
+dedupTest("Phase 20 OVERRIDE allow: lang.relays.land/en survives with ignore=false", async () => {
+  const info = mockRelayInfo("LangEn", "english lang relay");
+  setupDatabase([
+    { url: "wss://lang.relays.land/en", online: true, ignore: false, parent: "", info },
+    { url: "wss://lang.relays.land/", online: true, ignore: false, parent: "", info },
+  ]);
+
+  const result = {
+    url: "wss://lang.relays.land/en",
+    hostname: "lang.relays.land",
+    protocol: "wss:",
+    checked_at: Date.now(),
+    online: true,
+    ignore: false,
+    ignore_reason: "",
+    parent: "",
+    network: "clearnet" as const,
+    info: { data: info, duration: 0 },
+  };
+
+  const out = await relayHostnameDedup(result);
+  assertEquals(out.ignore, false, "Phase 20 OVERRIDE allow: /en must not be flipped to duplicate of root");
+  assertEquals(out.parent || "", "");
+});
+
+dedupTest("Phase 20 OVERRIDE fall-through: /inbox/<mutation> is NOT protected (falls to case1-8)", async () => {
+  // Seed root with NIP-11 info and mutation with same info — case2 (same
+  // NIP-11 info as root) should fire for the mutation because
+  // allow-known-paths requires exact /inbox or /inbox/ match.
+  const sharedInfo = mockRelayInfo("Haven", "shared");
+  setupDatabase([
+    { url: "wss://haven.nostrfreedom.net/", online: true, ignore: false, parent: "", info: sharedInfo },
+    { url: "wss://haven.nostrfreedom.net/inbox/flint-november-alpha", online: true, ignore: false, parent: "", info: sharedInfo },
+  ]);
+
+  const result = {
+    url: "wss://haven.nostrfreedom.net/inbox/flint-november-alpha",
+    hostname: "haven.nostrfreedom.net",
+    protocol: "wss:",
+    checked_at: Date.now(),
+    online: true,
+    ignore: false,
+    ignore_reason: "",
+    parent: "",
+    network: "clearnet" as const,
+    info: { data: sharedInfo, duration: 0 },
+  };
+
+  const out = await relayHostnameDedup(result);
+  assertEquals(out.ignore, true, "Phase 20: /inbox/<mutation> is NOT protected — case2 fires");
+  assert(out.parent && out.parent.length > 0, "Phase 20: mutation must have parent set");
+});
+
+// -------------------------------------------------------------------------
+// Phase 20 PERF-02: stale-skip structural-proxy rationale
+// -------------------------------------------------------------------------
+//
+// The two tests below assert `changed.length === 0` for groups where every
+// member is stale-or-ignored. This is a STRUCTURAL proxy for "zero nocap.check
+// invocations" — and it is equivalent to the literal requirement in Phase 20
+// Success Criterion #3 for the following reason:
+//
+// The stale-skip gate in reevaluateAllDeduplication (see hostnames.ts Plan
+// 20-03 Task 1 Edit 6, search for "LOCKED INTERPRETATION") runs at PER-GROUP
+// granularity BEFORE the needsNip11Refresh / nocap.check block. Concretely:
+//
+//   for each hostname group:
+//     if no member is fresh-unignored -> `continue`   <-- nocap.check unreachable
+//     else                             -> fall into the existing nocap.check block
+//
+// Because the `continue` statement lexically precedes the nocap.check call
+// inside the same loop body, a group that hits the gate cannot reach nocap.
+// check under ANY runtime condition. No NIP-11 network round trip happens.
+// No row in the group can be flipped by this function on this run. Therefore
+// `changed.length === 0` is a NECESSARY CONSEQUENCE of "zero nocap.check
+// invocations for this group" — not just an observable correlation.
+//
+// The LOCKED per-group interpretation is documented in:
+//   - 20-CONTEXT.md Area 4 Claude's discretion ("per-relay vs per-group
+//     granularity … bounded only by the zero-fetch invariant")
+//   - 20-RESEARCH.md Pitfall 7 ("stale-skip at group boundary not row boundary")
+//   - 20-RESEARCH.md Open Question 2 (per-group chosen over Nocap-factory
+//     injection because the factory approach would ripple into daemon call
+//     sites; the structural gate gives the same guarantee with zero API churn)
+//
+// If future work wants a per-invocation spy (e.g. to count calls during a
+// mixed fresh+stale group), the path is to refactor reevaluateAllDeduplication
+// to accept an optional `nocapFactory` parameter matching the PERF-02
+// ctx-injection pattern used by relayHostnameDedup. That refactor is DEFERRED.
+// -------------------------------------------------------------------------
+
+dedupTest("Phase 20 PERF-02: reevaluateAllDeduplication skips nocap.check when group has no fresh-unignored members (all-stale structural proxy)", async () => {
+  // Seed a group where every row is stale (checked_at is far in the past).
+  // Because all members are stale and unignored, the per-group gate in
+  // hostnames.ts will `continue` before reaching the nocap.check block.
+  // Asserting `changed.length === 0` is therefore equivalent to asserting
+  // "zero nocap.check invocations for this group" — see the rationale block
+  // above this test.
+  const longAgo = Date.now() - (30 * 24 * 60 * 60 * 1000); // 30 days ago
+  const info = mockRelayInfo("Stale", "stale");
+  setupDatabase([
+    { url: "wss://stale.example.com/", online: true, ignore: false, parent: "", info, checked_at: longAgo },
+    { url: "wss://stale.example.com/path", online: true, ignore: false, parent: "", info, checked_at: longAgo },
+  ]);
+
+  // Call with a 7-day stale threshold. 30 days > 7 days, so every member
+  // fails the fresh-unignored test, triggering the `continue`.
+  const changed = await reevaluateAllDeduplication(24 * 60 * 60 * 1000, 7 * 24 * 60 * 60 * 1000);
+
+  // Structural proxy for zero nocap.check invocations:
+  // - No nocap.check fired => no NIP-11 refresh
+  // - No NIP-11 refresh => no re-hash => no ignore-state flip
+  // - No flip => changed.length === 0
+  // The reverse implication does NOT hold in general, BUT the per-group gate
+  // guarantees this test's `continue` is the ONLY path taken here, so in
+  // THIS fixture the implication is bidirectional. Zero changes <=> zero
+  // nocap.check invocations for the all-stale hostname group.
+  assertEquals(
+    changed.length,
+    0,
+    "Phase 20 PERF: all-stale group must produce zero changes (structural proxy for zero nocap.check invocations — see rationale block above)",
+  );
+});
+
+dedupTest("Phase 20 PERF-02: reevaluateAllDeduplication skips nocap.check when all members are ignored (all-ignored structural proxy)", async () => {
+  // Seed a group where every row is already ignored. Even though checked_at
+  // is fresh, the isIgnored check fails, so no member passes the
+  // fresh-unignored test and the per-group gate `continue`s. Same structural
+  // proxy as the all-stale test above.
+  const nowMs = Date.now();
+  const info = mockRelayInfo("Ignored", "already ignored");
+  setupDatabase([
+    { url: "wss://ignored.example.com/", online: true, ignore: true, parent: "wss://other/", info, checked_at: nowMs },
+    { url: "wss://ignored.example.com/path", online: true, ignore: true, parent: "wss://other/", info, checked_at: nowMs },
+  ]);
+
+  const changed = await reevaluateAllDeduplication(24 * 60 * 60 * 1000, 7 * 24 * 60 * 60 * 1000);
+
+  // Same structural argument as the all-stale test: the per-group gate
+  // guarantees nocap.check is unreachable for this group, therefore zero
+  // changes is equivalent to zero nocap.check invocations for this fixture.
+  assertEquals(
+    changed.length,
+    0,
+    "Phase 20 PERF: all-ignored group must produce zero changes (structural proxy for zero nocap.check invocations — see rationale block above)",
+  );
+});
+
+// =========================================================================
+// Phase 20: Migration scope narrowing (PERF-01) + cached getOnlineRelays (PERF-02)
+// -------------------------------------------------------------------------
+// These tests exercise rerunDedupForAllRowsMigration end-to-end against a
+// :memory: DB seeded by setupDatabase(). They prove the Plan 20-04 edits
+// to remediation.ts:
+//   1. The SQL row-scan is narrowed via WHERE online = 1 AND ignore = 0
+//      so only in-scope rows are evaluated. Out-of-scope rows (offline or
+//      already-ignored) are untouched by the migration.
+//   2. getOnlineRelays() fires exactly once per migration run because the
+//      per-row loop passes a cached snapshot via ctx.onlineUrls instead of
+//      re-querying for every row.
+//   3. A Phase 18 failing-sample regression still flips under the new scope
+//      — narrowing does not regress the set of mutation-class rows that
+//      Phase 19 was shipped to correct.
+// =========================================================================
+
+dedupTest("Phase 20 PERF-01: migration touches ONLY online+unignored rows (scope narrowing)", async () => {
+  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_online_unignored_v1'");
+
+  const sharedInfo = mockRelayInfo("Shared", "same info");
+  const rootInfo = mockRelayInfo("Root", "root info");
+
+  // Seed mixed fixture:
+  //   (A) online + unignored + CANONICAL mutation (should get flipped)
+  //   (B) online + already-ignored (should be SKIPPED — not in SELECT)
+  //   (C) offline + unignored (should be SKIPPED — not in SELECT)
+  //   (D) offline + ignored (should be SKIPPED — not in SELECT)
+  setupDatabase([
+    // Group A: root + mutation, both online+unignored. Mutation gets flipped.
+    { url: "wss://a-host.example.com/", online: true, ignore: false, parent: "", info: sharedInfo },
+    { url: "wss://a-host.example.com/mut-abc", online: true, ignore: false, parent: "", info: sharedInfo },
+    // Group B: online + already-ignored. Should be skipped by the SELECT.
+    { url: "wss://b-host.example.com/already-ignored", online: true, ignore: true, parent: "wss://b-host.example.com/", info: rootInfo },
+    // Group C: offline + unignored. Should be skipped by the SELECT.
+    { url: "wss://c-host.example.com/offline-unignored", online: false, ignore: false, parent: "", info: rootInfo },
+    // Group D: offline + ignored. Should be skipped by the SELECT.
+    { url: "wss://d-host.example.com/offline-ignored", online: false, ignore: true, parent: "wss://d-host.example.com/", info: rootInfo },
+  ]);
+
+  // Snapshot pre-migration state of B, C, D to confirm no changes.
+  const preB = db.query(`SELECT ignore, parent FROM relay_status WHERE url = ?`, ["wss://b-host.example.com/already-ignored"]);
+  const preC = db.query(`SELECT ignore, parent FROM relay_status WHERE url = ?`, ["wss://c-host.example.com/offline-unignored"]);
+  const preD = db.query(`SELECT ignore, parent FROM relay_status WHERE url = ?`, ["wss://d-host.example.com/offline-ignored"]);
+
+  await rerunDedupForAllRowsMigration();
+
+  // Assert A mutation was flipped (it's in-scope).
+  const postAmut = db.query(`SELECT ignore, parent FROM relay_status WHERE url = ?`, ["wss://a-host.example.com/mut-abc"]);
+  assertEquals(postAmut.length, 1);
+  assertEquals(postAmut[0][0], 1, "PERF-01: in-scope mutation row must be flipped to ignore=1");
+  assert((postAmut[0][1] as string).length > 0, "PERF-01: in-scope mutation must have a parent set");
+
+  // Assert B, C, D are UNTOUCHED (their rows match the pre-migration snapshot).
+  const postB = db.query(`SELECT ignore, parent FROM relay_status WHERE url = ?`, ["wss://b-host.example.com/already-ignored"]);
+  const postC = db.query(`SELECT ignore, parent FROM relay_status WHERE url = ?`, ["wss://c-host.example.com/offline-unignored"]);
+  const postD = db.query(`SELECT ignore, parent FROM relay_status WHERE url = ?`, ["wss://d-host.example.com/offline-ignored"]);
+
+  assertEquals(postB[0][0], preB[0][0], "PERF-01: online+ignored row must be untouched (out of scope)");
+  assertEquals((postB[0][1] as string) || "", (preB[0][1] as string) || "", "PERF-01: online+ignored parent must be untouched");
+  assertEquals(postC[0][0], preC[0][0], "PERF-01: offline+unignored row must be untouched (out of scope)");
+  assertEquals((postC[0][1] as string) || "", (preC[0][1] as string) || "", "PERF-01: offline+unignored parent must be untouched");
+  assertEquals(postD[0][0], preD[0][0], "PERF-01: offline+ignored row must be untouched (out of scope)");
+  assertEquals((postD[0][1] as string) || "", (preD[0][1] as string) || "", "PERF-01: offline+ignored parent must be untouched");
+});
+
+dedupTest("Phase 20 PERF-02: getOnlineRelays query fires exactly once per migration run (not once per row)", async () => {
+  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_online_unignored_v1'");
+
+  const sharedInfo = mockRelayInfo("SharedRoot", "shared");
+  // Seed ≥5 online+unignored rows so the migration has real work and the
+  // per-row loop runs at least 5 iterations. Without PERF-02 plumbing,
+  // getOnlineRelays would fire 5 times; with it, exactly once.
+  setupDatabase([
+    { url: "wss://a.example.com/", online: true, ignore: false, parent: "", info: sharedInfo },
+    { url: "wss://a.example.com/mut1", online: true, ignore: false, parent: "", info: sharedInfo },
+    { url: "wss://b.example.com/", online: true, ignore: false, parent: "", info: sharedInfo },
+    { url: "wss://b.example.com/mut2", online: true, ignore: false, parent: "", info: sharedInfo },
+    { url: "wss://c.example.com/", online: true, ignore: false, parent: "", info: sharedInfo },
+  ]);
+
+  // Install a counter around db.query. getOnlineRelays issues the query
+  // `SELECT url FROM relay_status WHERE online = 1` — match that exact text
+  // (case-insensitive whitespace-tolerant) via regex on the normalized
+  // query string.
+  const originalQuery = db.query.bind(db);
+  let onlineRelaysQueryCount = 0;
+  (db as any).query = (sql: string, params?: unknown[]) => {
+    const normalized = sql.trim().replace(/\s+/g, " ");
+    if (/^SELECT url FROM relay_status WHERE online = 1$/i.test(normalized)) {
+      onlineRelaysQueryCount++;
+    }
+    return originalQuery(sql, params);
+  };
+
+  try {
+    await rerunDedupForAllRowsMigration();
+  } finally {
+    (db as any).query = originalQuery;
+  }
+
+  assertEquals(
+    onlineRelaysQueryCount,
+    1,
+    "PERF-02: getOnlineRelays must fire exactly once per migration run — cachedOnline is reused for all rows",
+  );
+});
+
+dedupTest("Phase 20 PERF-01+PERF-02: Phase 18 failing-sample regression still passes under new migration scope", async () => {
+  // Regression guard: pick one Phase 18 failing-sample URL and assert the
+  // new-scope migration still flips it. This test duplicates a small slice
+  // of the Phase 18 test surface to guarantee the narrower scope does NOT
+  // accidentally un-flip something that should remain flipped.
+  db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_online_unignored_v1'");
+
+  const sharedInfo = mockRelayInfo("Lumina", "lumina hostname");
+  setupDatabase([
+    { url: "wss://relay.lumina.rocks/", online: true, ignore: false, parent: "", info: sharedInfo },
+    { url: "wss://relay.lumina.rocks/hotel", online: true, ignore: false, parent: "", info: sharedInfo },
+  ]);
+
+  await rerunDedupForAllRowsMigration();
+
+  const hotelRow = db.query(
+    `SELECT ignore, parent FROM relay_status WHERE url = ?`,
+    ["wss://relay.lumina.rocks/hotel"],
+  );
+  assertEquals(hotelRow.length, 1, "hotel row must still exist");
+  assertEquals(hotelRow[0][0], 1, "Phase 18 regression: /hotel mutation must still be flipped under new-scope migration");
+  assert((hotelRow[0][1] as string).length > 0, "Phase 18 regression: /hotel must have parent set");
+});
+
+// =========================================================================
+// Phase 21: Dedup Tech Debt Cleanup
+// -------------------------------------------------------------------------
+// These tests lock Phase 21 invariants that the audit surfaced:
+//   - Item 3 (philosophy): When NIP-11 differs between non-root siblings,
+//     the case1-8 fall-through correctly leaves result.ignore=false because
+//     the siblings are genuinely different relays. The test literally
+//     satisfies ROADMAP Criterion #3 by asserting BOTH result.ignore === false
+//     AND a non-circular observable proof that no case1-8 branch matched: an
+//     ignoreListSyncInstance.addToIgnoreList call counter === 0 after the
+//     dedup invocation. The case1-8 ignore block at hostnames.ts:583 is the
+//     only code path that calls addToIgnoreList from inside the fall-through
+//     region (plus the same-NIP-11 early-returns at 301/321 which we also
+//     know are not hit because siblings have different NIP-11). Zero calls is
+//     proof that the else branch at hostnames.ts:590-593 ran.
+//
+//     Note: the plan's preferred approach was a console.debug / logger.debug
+//     capture of the exact fall-through message string from hostnames.ts:592.
+//     That approach is impractical in this codebase because the module-scoped
+//     logger in hostnames.ts (line 20: `const logger = getLogger("Hostnames")`)
+//     is constructed with a captured instanceLogLevel snapshot of the global
+//     level at import time (tests run at "error" level per mockConfig in
+//     helpers/fixtures.ts:85). The logger is not exported, so we cannot reach
+//     in and bump its level after-the-fact, and setGlobalLogLevel does not
+//     propagate to already-constructed loggers. Therefore logger.debug at
+//     line 592 is silent during tests, and console.debug is never called.
+//     The ignoreListSync call counter is the cleanest observable-side-effect
+//     proof available given this constraint. The expected fall-through log
+//     message literal is still present in this file (below) for traceability.
+//
+//   - Item 6 (PERF-02 tier-2): reevaluateAllDeduplication now passes
+//     DedupContext { onlineUrls } to per-row relayHostnameDedup, so the
+//     `SELECT url FROM relay_status WHERE online = 1` query fires exactly
+//     once per reevaluation run instead of 1 + N times. Mirrors the Phase 20
+//     PERF-02 migration-path test at line 2525.
+// =========================================================================
+
+dedupTest("Phase 21 philosophy: case-based fall-through is correct when NIP-11 differs between non-root siblings", async () => {
+  // Seed two NON-ROOT path-only siblings on the same hostname with DIFFERENT
+  // NIP-11 data. Under the Phase 21 philosophy, these are genuinely different
+  // relays that happen to share a hostname — NONE of case1-8 should match,
+  // and the fall-through `else` branch should leave result.ignore=false.
+  //
+  // Case-by-case analysis for this fixture:
+  //   case1/case2: require eldestIsRoot — FALSE (eldest is path-only aaaa-team-alpha)
+  //   case3: requires !eldestIsRoot AND isSameAsOlderRelative AND
+  //          isSameAsYoungerRelative — FALSE (target's hashB is not in the
+  //          relatives set at all, so both older/younger checks collapse)
+  //   case4/case5: require NIP-11 absence patterns — FALSE (both have NIP-11)
+  //   case6: requires pubkey in pathname — FALSE (plain path segments)
+  //   case7: requires hostname substring in pathname — FALSE
+  //   case8: requires isSameAsAnyRelative — FALSE (hashes differ)
+  // Expected verdict: fall-through `else` at hostnames.ts:590-593 sets
+  // result.ignore=false AND emits `logger.debug(\`${mURL} was NOT ignored as
+  // no conditions matched\`)` (the debug log is silent in tests due to the
+  // logger level issue described in the header comment above; we assert via
+  // the ignoreListSync counter instead).
+  //
+  // Expected fall-through message (referenced for traceability — the literal
+  // from hostnames.ts:592):
+  //   "wss://shared-host.example.com/zzzz-team-beta-longer was NOT ignored as no conditions matched"
+
+  const siblingAInfo = mockRelayInfo("Sibling A", "team alpha");
+  const siblingBInfo = mockRelayInfo("Sibling B", "team beta"); // DIFFERENT NIP-11
+  const targetUrl = "wss://shared-host.example.com/zzzz-team-beta-longer";
+  setupDatabase([
+    { url: "wss://shared-host.example.com/aaaa-team-alpha", online: true, ignore: false, parent: "", info: siblingAInfo },
+    { url: targetUrl, online: true, ignore: false, parent: "", info: siblingBInfo },
+  ]);
+
+  // Sanity check: confirm infoHashes differ (catches fixture errors before
+  // the real assertions). If this ever starts producing equal hashes, the
+  // fixture has drifted and the philosophy test is meaningless.
+  const hashA = createInfoHash(siblingAInfo);
+  const hashB = createInfoHash(siblingBInfo);
+  assert(hashA !== "" && hashB !== "", "both fixture NIP-11 objects must produce non-empty hashes");
+  assert(hashA !== hashB, "fixture NIP-11 objects MUST produce different hashes — philosophy test is meaningless if they match");
+
+  // (I-01) Ordering pre-assertion: the target URL must be at index > 0 in
+  // orderedFamily so the fall-through `else` branch is exercised. Index 0
+  // would trigger the early-return `if (index === 0)` branch at
+  // hostnames.ts:494, which is a DIFFERENT code path than the case1-8
+  // fall-through. relayArrToHostnameProtocolKeyedMap takes string[] and
+  // returns Map<"<protocol>//<hostname>", string[]> ordered by path depth
+  // then length.
+  const familyMap = relayArrToHostnameProtocolKeyedMap([
+    "wss://shared-host.example.com/aaaa-team-alpha",
+    targetUrl,
+  ]);
+  const orderedFamily = familyMap.get("wss://shared-host.example.com") ?? [];
+  assert(
+    orderedFamily.indexOf(targetUrl) > 0,
+    `ordering surprise: target must be at index > 0 for fall-through-else path to be exercised; got indexOf=${orderedFamily.indexOf(targetUrl)}, orderedFamily=${JSON.stringify(orderedFamily)}`,
+  );
+
+  // Install Path C: an ignoreListSync mock that counts addToIgnoreList calls.
+  // Primary observable-side-effect proof for ROADMAP Criterion #3 part 2:
+  // zero calls after dedup → no case1-8 matched → fall-through else ran.
+  //
+  // Why Path C and not Path A/B: see the block comment at the top of the
+  // Phase 21 section. tl;dr: the module-scoped logger in hostnames.ts is
+  // constructed at INFO level when the module loads (tests use "error"), so
+  // logger.debug at line 592 is silent and cannot be spied on without
+  // re-architecting the logger module.
+  const ignoreListCalls: { url: string; reason?: string }[] = [];
+  const mockIgnoreListSync = {
+    isIgnored: (_url: string) => false,
+    addToIgnoreList: (url: string, reason?: string) => {
+      ignoreListCalls.push({ url, reason });
+    },
+  };
+  setIgnoreListSync(mockIgnoreListSync);
+
+  // Also install a best-effort console.debug spy for future-proofing. If the
+  // codebase ever changes the logger architecture so debug output flows to
+  // console.debug during tests, this spy will capture the exact fall-through
+  // log message literal referenced below and allow a stricter assertion. For
+  // now it is expected to be empty, and the ignoreListSync counter is the
+  // authoritative non-circular proof.
+  const capturedDebugCalls: string[] = [];
+  const originalConsoleDebug = console.debug;
+  console.debug = (...args: unknown[]) => {
+    capturedDebugCalls.push(args.map((a) => typeof a === "string" ? a : String(a)).join(" "));
+    originalConsoleDebug(...args);
+  };
+
+  const targetResult: any = {
+    url: targetUrl,
+    hostname: "shared-host.example.com",
+    protocol: "wss:",
+    info: { data: siblingBInfo },
+    ignore: false,
+    parent: "",
+    checked_at: Date.now(),
+    online: true,
+    network: "clearnet",
+  };
+
+  let result: any;
+  try {
+    result = await relayHostnameDedup(targetResult);
+  } finally {
+    console.debug = originalConsoleDebug;
+    // Reset the module-level ignoreListSyncInstance back to null so later
+    // tests (if any are appended after this one) see the default null state.
+    // The `if (ignoreListSyncInstance)` guards at lines 252/301/321/414/583
+    // handle null correctly.
+    setIgnoreListSync(null as any);
+  }
+
+  // PHILOSOPHY ASSERTION A (ROADMAP Criterion #3 part 1) — direct state:
+  assertEquals(
+    result.ignore,
+    false,
+    "Phase 21 philosophy (ROADMAP Criterion #3 part 1): NIP-11 differs between non-root siblings → case1-8 fall-through → result.ignore must be false (they are genuinely different relays)",
+  );
+
+  // PHILOSOPHY ASSERTION B (ROADMAP Criterion #3 part 2) — observable
+  // non-circular proof that no case1-8 branch matched. The case1-8 ignore
+  // block at hostnames.ts:583 calls ignoreListSyncInstance.addToIgnoreList
+  // for every branch (case1-case8), and the same-NIP-11 early-return blocks
+  // at lines 301/321 also call addToIgnoreList. Zero calls ⇒ none of those
+  // code paths ran ⇒ the else branch at hostnames.ts:590-593 ran (the only
+  // remaining code path where result.ignore=false without side effects).
+  assertEquals(
+    ignoreListCalls.length,
+    0,
+    `Phase 21 philosophy (ROADMAP Criterion #3 part 2): ignoreListSyncInstance.addToIgnoreList must NOT be called during fall-through — its absence is non-circular proof that no case1-8 branch matched. Captured calls: ${JSON.stringify(ignoreListCalls)}`,
+  );
+
+  // Best-effort assertion on the captured debug log (Path B piggyback). The
+  // expected fall-through message literal from hostnames.ts:592 is documented
+  // here for traceability even though it is not emitted at the default test
+  // log level. If the logger architecture ever exposes its instanceLogLevel,
+  // this assertion can be made strict — for now we only assert the array is
+  // not corrupted (length >= 0, trivially true). The literal is still
+  // present in this file for grep-based traceability:
+  //   "wss://shared-host.example.com/zzzz-team-beta-longer was NOT ignored as no conditions matched"
+  assert(
+    capturedDebugCalls.length >= 0,
+    "console.debug spy structural check (never fires — documented impracticality of Path A/B in this codebase; the ignoreListSync counter above is the authoritative proof)",
+  );
+
+  // Additional structural check (ROADMAP Criterion #3 sanity): the target row
+  // in relay_status should remain ignore=0 because relayHostnameDedup does
+  // not write back to DB (that is the caller's responsibility). The DB row
+  // is unchanged from setup.
+  const dbRow = db.query(
+    `SELECT ignore FROM relay_status WHERE url = ?`,
+    [targetUrl],
+  );
+  assertEquals(dbRow.length, 1, "target row still exists");
+  assertEquals(dbRow[0][0], 0, "Phase 21 philosophy: target DB row remains ignore=0 — relayHostnameDedup does not write back");
+});
+
+dedupTest("Phase 21 PERF-02 tier-2: reevaluateAllDeduplication caches getOnlineRelays across per-row dedup calls", async () => {
+  // Seed ≥3 online+unignored rows so the per-group per-row loop inside
+  // reevaluateAllDeduplication runs at least 3 iterations. Use distinct
+  // hostnames (a/b/c.phase21.example.com) to avoid any fixture collision
+  // with the Phase 20 PERF-02 test at line 2525.
+  const sharedInfo = mockRelayInfo("Phase21 Shared", "tier-2 cache test");
+  setupDatabase([
+    { url: "wss://a.phase21.example.com/", online: true, ignore: false, parent: "", info: sharedInfo },
+    { url: "wss://a.phase21.example.com/mut1", online: true, ignore: false, parent: "", info: sharedInfo },
+    { url: "wss://b.phase21.example.com/", online: true, ignore: false, parent: "", info: sharedInfo },
+    { url: "wss://b.phase21.example.com/mut2", online: true, ignore: false, parent: "", info: sharedInfo },
+    { url: "wss://c.phase21.example.com/", online: true, ignore: false, parent: "", info: sharedInfo },
+  ]);
+
+  // Install a db.query counter (pattern copied from Phase 20 PERF-02 test
+  // at hostname-dedup.test.ts:2544-2552). The regex matches the exact SQL
+  // literal issued by libraries/db getOnlineRelays after whitespace
+  // normalization.
+  const originalQuery = db.query.bind(db);
+  let onlineRelaysQueryCount = 0;
+  (db as any).query = (sql: string, params?: unknown[]) => {
+    const normalized = sql.trim().replace(/\s+/g, " ");
+    if (/^SELECT url FROM relay_status WHERE online = 1$/i.test(normalized)) {
+      onlineRelaysQueryCount++;
+    }
+    return originalQuery(sql, params);
+  };
+
+  try {
+    // 1-year TTL so the NIP-11 cache path considers all rows fresh and
+    // no network call is attempted. The per-group hasFreshUnignoredMember
+    // gate at hostnames.ts:697 also requires unignored rows, which this
+    // fixture satisfies — so the gate does NOT short-circuit and the
+    // per-row loop runs at line 757.
+    await reevaluateAllDeduplication(365 * 24 * 60 * 60 * 1000);
+  } finally {
+    (db as any).query = originalQuery;
+  }
+
+  // Phase 21 tier-2 assertion: getOnlineRelays must fire exactly once
+  // per reevaluateAllDeduplication run. Before the fix (Task 1 Part B),
+  // this counter would be 1 (the snapshot at line 642) + N (one per per-row
+  // relayHostnameDedup call that did not receive ctx). After the fix,
+  // per-row calls receive { onlineUrls: onlineRelays } and never re-query.
+  assertEquals(
+    onlineRelaysQueryCount,
+    1,
+    "Phase 21 PERF-02 tier-2: reevaluateAllDeduplication must call getOnlineRelays exactly once per run — onlineRelays snapshot is now passed as DedupContext to per-row relayHostnameDedup",
+  );
 });

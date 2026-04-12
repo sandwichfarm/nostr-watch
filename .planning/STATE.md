@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.2
-milestone_name: Fix Monitors Page
-status: unknown
-stopped_at: Completed 16-02-PLAN.md
-last_updated: "2026-03-24T01:23:52.837Z"
+milestone: v2.3
+milestone_name: Relay Dedup Family Scope
+status: Milestone complete
+stopped_at: Completed 20-04-migration-scope-PLAN.md
+last_updated: "2026-04-11T22:51:20.226Z"
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 6
-  completed_plans: 6
+  total_phases: 4
+  completed_phases: 1
+  total_plans: 12
+  completed_plans: 8
 ---
 
 # Project State
@@ -19,12 +19,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-19)
 
 **Core value:** Anyone can run their own relay monitor — from watching a handful of personal relays to scanning the entire network — with a one-click install on self-hosted platforms.
-**Current focus:** Phase 16 — data-integrity
+**Current focus:** Phase 20 — Dedup Performance & Overrides
 
 ## Current Position
 
-Phase: 16 (data-integrity) — COMPLETE
-Plan: 3 of 3 (all plans complete)
+Phase: 20
+Plan: Not started
+
+Phases 17, 18, 19 complete on disk (artifacts under `.planning/phases/`). v2.3 roadmap entry added to ROADMAP.md in this commit to catch up documentation to shipped state.
 
 ## Performance Metrics
 
@@ -53,6 +55,10 @@ Plan: 3 of 3 (all plans complete)
 | Phase 16-data-integrity P00 | 3 | 2 tasks | 2 files |
 | Phase 16 P01 | 5 | 2 tasks | 5 files |
 | Phase 16-data-integrity P02 | ~45 | 2 tasks | 3 files |
+| Phase 20-dedup-performance-overrides P02 | 2min | 1 tasks | 1 files |
+| Phase 20-dedup-performance-overrides P01 | 4min | 2 tasks | 8 files |
+| Phase 20 P03 | 9min | 2 tasks | 2 files |
+| Phase 20-dedup-performance-overrides P04 | 5min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -73,6 +79,15 @@ Plan: 3 of 3 (all plans complete)
 - [Phase 16-data-integrity]: monitorFreshness is ephemeral — never persisted to StateManager/localStorage to avoid stale fresh-flags across sessions
 - [Phase 16-data-integrity]: monitorsLivenessLeniency added as reactive derived input to monitorRows so leniency changes instantly re-derive all rows without separate trigger
 - [Phase 16-data-integrity P02]: Freshness signal driven by liveness computation completion, not bootstrap lifecycle — avoids premature fresh state on cached-only rows
+- [Phase 20-dedup-performance-overrides]: Plan 20-02: Default applied via validateConfig mutation, not processConfigTimeValues — keeps Plan inside strict single-file constraint and matches existing lazy conversion pattern for nip11_cache_ttl
+- [Phase 20-dedup-performance-overrides]: DedupOverrideRule locked to 4 fields (name/test/action/reason); evaluator parses URL once + per-rule try/catch; static barrel + first-match-wins, no priority field
+- [Phase 20-dedup-performance-overrides]: Per-rule isolation: each override rule has its own source file AND its own test file; no cross-test imports — adding a new override = create one source + one test + add one barrel line
+- [Phase 20]: Override hook placed immediately after canonicalMURL normalization and BEFORE the same-NIP-11 early-return — covers all downstream cases with a single short-circuit, per Plan 20-03
+- [Phase 20]: Consumer-side lazy timestring conversion via local parseStaleSkipTimestring helper (not importing from core/daemon.ts) — keeps hostnames.ts self-contained, matches the deferred-conversion pattern established by Plan 20-02
+- [Phase 20]: Per-group granularity for the stale-skip gate (not per-row) with structural-proxy test assertions — avoids refactoring nocap.check injection point while still guaranteeing zero-call invariant via LOCKED INTERPRETATION comment
+- [Phase 20-dedup-performance-overrides]: Plan 20-04: Migration sentinel renamed to rerun_dedup_online_unignored_v1 (Phase 19 v2 row stays as history); SQL-layer scope narrowing via WHERE online=1 AND ignore=0; cachedOnline snapshot passed via ctx.onlineUrls on every per-row relayHostnameDedup call
+- [Phase 20-dedup-performance-overrides]: Plan 20-04: Lockstep sentinel literal rename across 12 occurrences in hostname-dedup.test.ts — including the Plan-20-03-Task-2-inserted literal at line 2007 in the Phase 20 philosophy test block which 20-03 deliberately left unchanged pending this plan
+- [Phase 20-dedup-performance-overrides]: Plan 20-04: db.query monkey-patch + exact-SQL regex as the PERF-02 query-count assertion mechanism (mutable singleton pattern); try/finally guarantees originalQuery restored before subsequent tests
 
 ### Pending Todos
 
@@ -84,6 +99,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-24T00:00:00.000Z
-Stopped at: Completed 16-02-PLAN.md
+Last session: 2026-04-11T22:43:06.015Z
+Stopped at: Completed 20-04-migration-scope-PLAN.md
 Resume file: None

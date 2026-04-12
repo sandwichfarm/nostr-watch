@@ -129,6 +129,9 @@ export async function initializeDB(dbPath?: string, enableWAL: boolean = true): 
     logger.error(`rehashRelayInfoMigration threw: ${e}`);
   }
 
+  // DISABLED Phase 22: dedup migration disabled to prevent interference
+  // with NATO phonetic spam purge. Code preserved for future re-enablement.
+  //
   // Phase 19 REMED-01/REMED-02: re-run dedup over every row in
   // relay_status using the now-fixed relayHostnameDedup. Idempotent via
   // relaymon_migrations sentinel. MUST run AFTER rehashRelayInfoMigration
@@ -139,11 +142,11 @@ export async function initializeDB(dbPath?: string, enableWAL: boolean = true): 
   // Migration writes deletion events to remediation_deletion_queue
   // rather than publishing directly — the daemon drains that queue
   // after setup via drainRemediationDeletionQueue.
-  try {
-    await rerunDedupForAllRowsMigration();
-  } catch (e) {
-    logger.error(`rerunDedupForAllRowsMigration threw: ${e}`);
-  }
+  // try {
+  //   await rerunDedupForAllRowsMigration();
+  // } catch (e) {
+  //   logger.error(`rerunDedupForAllRowsMigration threw: ${e}`);
+  // }
 
   // Nostrings sweep: re-run @nostrwatch/nostrings qualification over
   // every row in relay_status, hard-deleting unparseable garbage and

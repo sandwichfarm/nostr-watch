@@ -5,6 +5,7 @@ node_modules
 *.db
 *.db-journal
 **/*.db
+nato-purged-urls.txt
 
 logs
 blocklists/*

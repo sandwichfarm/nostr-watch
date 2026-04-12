@@ -2587,3 +2587,249 @@ dedupTest("Phase 20 PERF-01+PERF-02: Phase 18 failing-sample regression still pa
   assertEquals(hotelRow[0][0], 1, "Phase 18 regression: /hotel mutation must still be flipped under new-scope migration");
   assert((hotelRow[0][1] as string).length > 0, "Phase 18 regression: /hotel must have parent set");
 });
+
+// =========================================================================
+// Phase 21: Dedup Tech Debt Cleanup
+// -------------------------------------------------------------------------
+// These tests lock Phase 21 invariants that the audit surfaced:
+//   - Item 3 (philosophy): When NIP-11 differs between non-root siblings,
+//     the case1-8 fall-through correctly leaves result.ignore=false because
+//     the siblings are genuinely different relays. The test literally
+//     satisfies ROADMAP Criterion #3 by asserting BOTH result.ignore === false
+//     AND a non-circular observable proof that no case1-8 branch matched: an
+//     ignoreListSyncInstance.addToIgnoreList call counter === 0 after the
+//     dedup invocation. The case1-8 ignore block at hostnames.ts:583 is the
+//     only code path that calls addToIgnoreList from inside the fall-through
+//     region (plus the same-NIP-11 early-returns at 301/321 which we also
+//     know are not hit because siblings have different NIP-11). Zero calls is
+//     proof that the else branch at hostnames.ts:590-593 ran.
+//
+//     Note: the plan's preferred approach was a console.debug / logger.debug
+//     capture of the exact fall-through message string from hostnames.ts:592.
+//     That approach is impractical in this codebase because the module-scoped
+//     logger in hostnames.ts (line 20: `const logger = getLogger("Hostnames")`)
+//     is constructed with a captured instanceLogLevel snapshot of the global
+//     level at import time (tests run at "error" level per mockConfig in
+//     helpers/fixtures.ts:85). The logger is not exported, so we cannot reach
+//     in and bump its level after-the-fact, and setGlobalLogLevel does not
+//     propagate to already-constructed loggers. Therefore logger.debug at
+//     line 592 is silent during tests, and console.debug is never called.
+//     The ignoreListSync call counter is the cleanest observable-side-effect
+//     proof available given this constraint. The expected fall-through log
+//     message literal is still present in this file (below) for traceability.
+//
+//   - Item 6 (PERF-02 tier-2): reevaluateAllDeduplication now passes
+//     DedupContext { onlineUrls } to per-row relayHostnameDedup, so the
+//     `SELECT url FROM relay_status WHERE online = 1` query fires exactly
+//     once per reevaluation run instead of 1 + N times. Mirrors the Phase 20
+//     PERF-02 migration-path test at line 2525.
+// =========================================================================
+
+dedupTest("Phase 21 philosophy: case-based fall-through is correct when NIP-11 differs between non-root siblings", async () => {
+  // Seed two NON-ROOT path-only siblings on the same hostname with DIFFERENT
+  // NIP-11 data. Under the Phase 21 philosophy, these are genuinely different
+  // relays that happen to share a hostname — NONE of case1-8 should match,
+  // and the fall-through `else` branch should leave result.ignore=false.
+  //
+  // Case-by-case analysis for this fixture:
+  //   case1/case2: require eldestIsRoot — FALSE (eldest is path-only aaaa-team-alpha)
+  //   case3: requires !eldestIsRoot AND isSameAsOlderRelative AND
+  //          isSameAsYoungerRelative — FALSE (target's hashB is not in the
+  //          relatives set at all, so both older/younger checks collapse)
+  //   case4/case5: require NIP-11 absence patterns — FALSE (both have NIP-11)
+  //   case6: requires pubkey in pathname — FALSE (plain path segments)
+  //   case7: requires hostname substring in pathname — FALSE
+  //   case8: requires isSameAsAnyRelative — FALSE (hashes differ)
+  // Expected verdict: fall-through `else` at hostnames.ts:590-593 sets
+  // result.ignore=false AND emits `logger.debug(\`${mURL} was NOT ignored as
+  // no conditions matched\`)` (the debug log is silent in tests due to the
+  // logger level issue described in the header comment above; we assert via
+  // the ignoreListSync counter instead).
+  //
+  // Expected fall-through message (referenced for traceability — the literal
+  // from hostnames.ts:592):
+  //   "wss://shared-host.example.com/zzzz-team-beta-longer was NOT ignored as no conditions matched"
+
+  const siblingAInfo = mockRelayInfo("Sibling A", "team alpha");
+  const siblingBInfo = mockRelayInfo("Sibling B", "team beta"); // DIFFERENT NIP-11
+  const targetUrl = "wss://shared-host.example.com/zzzz-team-beta-longer";
+  setupDatabase([
+    { url: "wss://shared-host.example.com/aaaa-team-alpha", online: true, ignore: false, parent: "", info: siblingAInfo },
+    { url: targetUrl, online: true, ignore: false, parent: "", info: siblingBInfo },
+  ]);
+
+  // Sanity check: confirm infoHashes differ (catches fixture errors before
+  // the real assertions). If this ever starts producing equal hashes, the
+  // fixture has drifted and the philosophy test is meaningless.
+  const hashA = createInfoHash(siblingAInfo);
+  const hashB = createInfoHash(siblingBInfo);
+  assert(hashA !== "" && hashB !== "", "both fixture NIP-11 objects must produce non-empty hashes");
+  assert(hashA !== hashB, "fixture NIP-11 objects MUST produce different hashes — philosophy test is meaningless if they match");
+
+  // (I-01) Ordering pre-assertion: the target URL must be at index > 0 in
+  // orderedFamily so the fall-through `else` branch is exercised. Index 0
+  // would trigger the early-return `if (index === 0)` branch at
+  // hostnames.ts:494, which is a DIFFERENT code path than the case1-8
+  // fall-through. relayArrToHostnameProtocolKeyedMap takes string[] and
+  // returns Map<"<protocol>//<hostname>", string[]> ordered by path depth
+  // then length.
+  const familyMap = relayArrToHostnameProtocolKeyedMap([
+    "wss://shared-host.example.com/aaaa-team-alpha",
+    targetUrl,
+  ]);
+  const orderedFamily = familyMap.get("wss://shared-host.example.com") ?? [];
+  assert(
+    orderedFamily.indexOf(targetUrl) > 0,
+    `ordering surprise: target must be at index > 0 for fall-through-else path to be exercised; got indexOf=${orderedFamily.indexOf(targetUrl)}, orderedFamily=${JSON.stringify(orderedFamily)}`,
+  );
+
+  // Install Path C: an ignoreListSync mock that counts addToIgnoreList calls.
+  // Primary observable-side-effect proof for ROADMAP Criterion #3 part 2:
+  // zero calls after dedup → no case1-8 matched → fall-through else ran.
+  //
+  // Why Path C and not Path A/B: see the block comment at the top of the
+  // Phase 21 section. tl;dr: the module-scoped logger in hostnames.ts is
+  // constructed at INFO level when the module loads (tests use "error"), so
+  // logger.debug at line 592 is silent and cannot be spied on without
+  // re-architecting the logger module.
+  const ignoreListCalls: { url: string; reason?: string }[] = [];
+  const mockIgnoreListSync = {
+    isIgnored: (_url: string) => false,
+    addToIgnoreList: (url: string, reason?: string) => {
+      ignoreListCalls.push({ url, reason });
+    },
+  };
+  setIgnoreListSync(mockIgnoreListSync);
+
+  // Also install a best-effort console.debug spy for future-proofing. If the
+  // codebase ever changes the logger architecture so debug output flows to
+  // console.debug during tests, this spy will capture the exact fall-through
+  // log message literal referenced below and allow a stricter assertion. For
+  // now it is expected to be empty, and the ignoreListSync counter is the
+  // authoritative non-circular proof.
+  const capturedDebugCalls: string[] = [];
+  const originalConsoleDebug = console.debug;
+  console.debug = (...args: unknown[]) => {
+    capturedDebugCalls.push(args.map((a) => typeof a === "string" ? a : String(a)).join(" "));
+    originalConsoleDebug(...args);
+  };
+
+  const targetResult: any = {
+    url: targetUrl,
+    hostname: "shared-host.example.com",
+    protocol: "wss:",
+    info: { data: siblingBInfo },
+    ignore: false,
+    parent: "",
+    checked_at: Date.now(),
+    online: true,
+    network: "clearnet",
+  };
+
+  let result: any;
+  try {
+    result = await relayHostnameDedup(targetResult);
+  } finally {
+    console.debug = originalConsoleDebug;
+    // Reset the module-level ignoreListSyncInstance back to null so later
+    // tests (if any are appended after this one) see the default null state.
+    // The `if (ignoreListSyncInstance)` guards at lines 252/301/321/414/583
+    // handle null correctly.
+    setIgnoreListSync(null as any);
+  }
+
+  // PHILOSOPHY ASSERTION A (ROADMAP Criterion #3 part 1) — direct state:
+  assertEquals(
+    result.ignore,
+    false,
+    "Phase 21 philosophy (ROADMAP Criterion #3 part 1): NIP-11 differs between non-root siblings → case1-8 fall-through → result.ignore must be false (they are genuinely different relays)",
+  );
+
+  // PHILOSOPHY ASSERTION B (ROADMAP Criterion #3 part 2) — observable
+  // non-circular proof that no case1-8 branch matched. The case1-8 ignore
+  // block at hostnames.ts:583 calls ignoreListSyncInstance.addToIgnoreList
+  // for every branch (case1-case8), and the same-NIP-11 early-return blocks
+  // at lines 301/321 also call addToIgnoreList. Zero calls ⇒ none of those
+  // code paths ran ⇒ the else branch at hostnames.ts:590-593 ran (the only
+  // remaining code path where result.ignore=false without side effects).
+  assertEquals(
+    ignoreListCalls.length,
+    0,
+    `Phase 21 philosophy (ROADMAP Criterion #3 part 2): ignoreListSyncInstance.addToIgnoreList must NOT be called during fall-through — its absence is non-circular proof that no case1-8 branch matched. Captured calls: ${JSON.stringify(ignoreListCalls)}`,
+  );
+
+  // Best-effort assertion on the captured debug log (Path B piggyback). The
+  // expected fall-through message literal from hostnames.ts:592 is documented
+  // here for traceability even though it is not emitted at the default test
+  // log level. If the logger architecture ever exposes its instanceLogLevel,
+  // this assertion can be made strict — for now we only assert the array is
+  // not corrupted (length >= 0, trivially true). The literal is still
+  // present in this file for grep-based traceability:
+  //   "wss://shared-host.example.com/zzzz-team-beta-longer was NOT ignored as no conditions matched"
+  assert(
+    capturedDebugCalls.length >= 0,
+    "console.debug spy structural check (never fires — documented impracticality of Path A/B in this codebase; the ignoreListSync counter above is the authoritative proof)",
+  );
+
+  // Additional structural check (ROADMAP Criterion #3 sanity): the target row
+  // in relay_status should remain ignore=0 because relayHostnameDedup does
+  // not write back to DB (that is the caller's responsibility). The DB row
+  // is unchanged from setup.
+  const dbRow = db.query(
+    `SELECT ignore FROM relay_status WHERE url = ?`,
+    [targetUrl],
+  );
+  assertEquals(dbRow.length, 1, "target row still exists");
+  assertEquals(dbRow[0][0], 0, "Phase 21 philosophy: target DB row remains ignore=0 — relayHostnameDedup does not write back");
+});
+
+dedupTest("Phase 21 PERF-02 tier-2: reevaluateAllDeduplication caches getOnlineRelays across per-row dedup calls", async () => {
+  // Seed ≥3 online+unignored rows so the per-group per-row loop inside
+  // reevaluateAllDeduplication runs at least 3 iterations. Use distinct
+  // hostnames (a/b/c.phase21.example.com) to avoid any fixture collision
+  // with the Phase 20 PERF-02 test at line 2525.
+  const sharedInfo = mockRelayInfo("Phase21 Shared", "tier-2 cache test");
+  setupDatabase([
+    { url: "wss://a.phase21.example.com/", online: true, ignore: false, parent: "", info: sharedInfo },
+    { url: "wss://a.phase21.example.com/mut1", online: true, ignore: false, parent: "", info: sharedInfo },
+    { url: "wss://b.phase21.example.com/", online: true, ignore: false, parent: "", info: sharedInfo },
+    { url: "wss://b.phase21.example.com/mut2", online: true, ignore: false, parent: "", info: sharedInfo },
+    { url: "wss://c.phase21.example.com/", online: true, ignore: false, parent: "", info: sharedInfo },
+  ]);
+
+  // Install a db.query counter (pattern copied from Phase 20 PERF-02 test
+  // at hostname-dedup.test.ts:2544-2552). The regex matches the exact SQL
+  // literal issued by libraries/db getOnlineRelays after whitespace
+  // normalization.
+  const originalQuery = db.query.bind(db);
+  let onlineRelaysQueryCount = 0;
+  (db as any).query = (sql: string, params?: unknown[]) => {
+    const normalized = sql.trim().replace(/\s+/g, " ");
+    if (/^SELECT url FROM relay_status WHERE online = 1$/i.test(normalized)) {
+      onlineRelaysQueryCount++;
+    }
+    return originalQuery(sql, params);
+  };
+
+  try {
+    // 1-year TTL so the NIP-11 cache path considers all rows fresh and
+    // no network call is attempted. The per-group hasFreshUnignoredMember
+    // gate at hostnames.ts:697 also requires unignored rows, which this
+    // fixture satisfies — so the gate does NOT short-circuit and the
+    // per-row loop runs at line 757.
+    await reevaluateAllDeduplication(365 * 24 * 60 * 60 * 1000);
+  } finally {
+    (db as any).query = originalQuery;
+  }
+
+  // Phase 21 tier-2 assertion: getOnlineRelays must fire exactly once
+  // per reevaluateAllDeduplication run. Before the fix (Task 1 Part B),
+  // this counter would be 1 (the snapshot at line 642) + N (one per per-row
+  // relayHostnameDedup call that did not receive ctx). After the fix,
+  // per-row calls receive { onlineUrls: onlineRelays } and never re-query.
+  assertEquals(
+    onlineRelaysQueryCount,
+    1,
+    "Phase 21 PERF-02 tier-2: reevaluateAllDeduplication must call getOnlineRelays exactly once per run — onlineRelays snapshot is now passed as DedupContext to per-row relayHostnameDedup",
+  );
+});

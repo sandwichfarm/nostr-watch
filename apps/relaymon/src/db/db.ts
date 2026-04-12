@@ -5,7 +5,9 @@ import { createInfoHash } from "../utils/hostnames.ts";
 import {
   rerunDedupForAllRowsMigration,
   rerunNostringsSweepMigration,
+  enqueueRemediationDeletion,
 } from "../utils/remediation.ts";
+import { purgeNatoPhoneticSpam } from "../../../../libraries/db/src/nato-purge.ts";
 
 const logger = getLogger("DB");
 let isInitialized = false;
@@ -129,6 +131,9 @@ export async function initializeDB(dbPath?: string, enableWAL: boolean = true): 
     logger.error(`rehashRelayInfoMigration threw: ${e}`);
   }
 
+  // DISABLED Phase 22: dedup migration disabled to prevent interference
+  // with NATO phonetic spam purge. Code preserved for future re-enablement.
+  //
   // Phase 19 REMED-01/REMED-02: re-run dedup over every row in
   // relay_status using the now-fixed relayHostnameDedup. Idempotent via
   // relaymon_migrations sentinel. MUST run AFTER rehashRelayInfoMigration
@@ -139,11 +144,11 @@ export async function initializeDB(dbPath?: string, enableWAL: boolean = true): 
   // Migration writes deletion events to remediation_deletion_queue
   // rather than publishing directly — the daemon drains that queue
   // after setup via drainRemediationDeletionQueue.
-  try {
-    await rerunDedupForAllRowsMigration();
-  } catch (e) {
-    logger.error(`rerunDedupForAllRowsMigration threw: ${e}`);
-  }
+  // try {
+  //   await rerunDedupForAllRowsMigration();
+  // } catch (e) {
+  //   logger.error(`rerunDedupForAllRowsMigration threw: ${e}`);
+  // }
 
   // Nostrings sweep: re-run @nostrwatch/nostrings qualification over
   // every row in relay_status, hard-deleting unparseable garbage and
@@ -159,7 +164,67 @@ export async function initializeDB(dbPath?: string, enableWAL: boolean = true): 
     logger.error(`rerunNostringsSweepMigration threw: ${e}`);
   }
 
+  // Phase 22: Purge NATO phonetic spam URLs from relay_status.
+  // Idempotent via relaymon_migrations sentinel. Writes deleted URLs
+  // to disk for downstream NIP-09 processing (Phase 23).
+  try {
+    await purgeNatoPhoneticSpam("nato-purged-urls.txt");
+  } catch (e) {
+    logger.error(`purgeNatoPhoneticSpam threw: ${e}`);
+  }
+
+  // Phase 23: Enqueue NATO-purged URLs into remediation_deletion_queue
+  // so the daemon's drainRemediationDeletionQueue() publishes kind:5
+  // delete events for them during startup. Non-fatal: if the file does
+  // not exist or is empty, we log and continue.
+  try {
+    await enqueueNatoPurgedUrls("nato-purged-urls.txt");
+  } catch (e) {
+    logger.error(`enqueueNatoPurgedUrls threw: ${e}`);
+  }
+
   isInitialized = true;
+}
+
+/**
+ * Phase 23: Read NATO-purged URLs from the file written by
+ * purgeNatoPhoneticSpam and enqueue each one into the
+ * remediation_deletion_queue for NIP-09 kind:5 broadcast. The daemon's
+ * existing drainRemediationDeletionQueue() publishes them after startup
+ * wiring completes.
+ *
+ * Non-fatal: if the file does not exist or is empty, logs a debug
+ * message and returns. Idempotent: enqueueRemediationDeletion uses
+ * ON CONFLICT(url) DO UPDATE, so repeat calls just refresh the reason.
+ *
+ * @param purgedUrlsPath Path to the file containing purged URLs (one per line)
+ */
+export async function enqueueNatoPurgedUrls(purgedUrlsPath: string): Promise<void> {
+  try {
+    let fileContent: string;
+    try {
+      fileContent = await Deno.readTextFile(purgedUrlsPath);
+    } catch (e) {
+      // File does not exist — no URLs were purged (or purge hasn't run yet)
+      logger.debug(`NATO purged URLs file not found at ${purgedUrlsPath}, nothing to enqueue: ${e}`);
+      return;
+    }
+
+    const urls = fileContent.split("\n").filter((line: string) => line.trim().length > 0);
+
+    if (urls.length === 0) {
+      logger.debug("NATO purged URLs file is empty, nothing to enqueue");
+      return;
+    }
+
+    for (const url of urls) {
+      enqueueRemediationDeletion(url, "NATO phonetic spam purge (Phase 23)");
+    }
+
+    logger.info(`Enqueued ${urls.length} NATO-purged URLs for kind:5 deletion`);
+  } catch (e) {
+    logger.error(`enqueueNatoPurgedUrls failed: ${e}`);
+  }
 }
 
 /**

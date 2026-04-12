@@ -6,7 +6,8 @@ import {
   qualifyRelayUrl,
   normalizeRelayUrlAcc,
   normalizeRelayUrls,
-  normalizeRelayUrl
+  normalizeRelayUrl,
+  isNatoPhoneticSpam,
 } from './relay-urls.js';  // Adjust this import to your actual file path
 
 describe('sanitize', () => {
@@ -112,5 +113,60 @@ describe('normalizeRelayUrl', () => {
     const relay = 'invalid-url';
     const result = normalizeRelayUrl(relay);
     expect(result).toBe('');
+  });
+});
+
+describe('qualifyRelayUrl - NATO phonetic spam blocking', () => {
+  it('should reject single NATO code suffix', () => {
+    expect(qualifyRelayUrl('wss://relay.example.com/alpha')).toBe(false);
+  });
+
+  it('should reject two hyphen-separated NATO codes', () => {
+    expect(qualifyRelayUrl('wss://relay.example.com/bravo-charlie')).toBe(false);
+  });
+
+  it('should reject three hyphen-separated NATO codes', () => {
+    expect(qualifyRelayUrl('wss://relay.example.com/delta-echo-foxtrot')).toBe(false);
+  });
+
+  it('should allow four+ NATO codes (only 1-3 blocked)', () => {
+    expect(qualifyRelayUrl('wss://relay.example.com/alpha-bravo-charlie-delta')).toBe(true);
+  });
+
+  it('should allow URLs with no path', () => {
+    expect(qualifyRelayUrl('wss://relay.example.com')).toBe(true);
+  });
+
+  it('should allow non-NATO path segments', () => {
+    expect(qualifyRelayUrl('wss://relay.example.com/custom-path')).toBe(true);
+  });
+
+  it('should allow non-NATO single-word paths', () => {
+    expect(qualifyRelayUrl('wss://relay.example.com/inbox')).toBe(true);
+  });
+
+  it('should reject NATO code in last path segment with multiple segments', () => {
+    expect(qualifyRelayUrl('wss://relay.example.com/something/alpha')).toBe(false);
+  });
+
+  it('should reject all 26 NATO codes individually', () => {
+    const codes = [
+      "alpha", "bravo", "charlie", "delta", "echo", "foxtrot",
+      "golf", "hotel", "india", "juliet", "kilo", "lima",
+      "mike", "november", "oscar", "papa", "quebec", "romeo",
+      "sierra", "tango", "uniform", "victor", "whiskey", "xray",
+      "yankee", "zulu",
+    ];
+    for (const code of codes) {
+      expect(qualifyRelayUrl(`wss://relay.example.com/${code}`)).toBe(false);
+    }
+  });
+});
+
+describe('sanitize - NATO phonetic spam end-to-end', () => {
+  it('should filter out NATO spam URLs from a mixed list', () => {
+    const relays = ['wss://relay.example.com/alpha', 'wss://good.relay.com'];
+    const result = sanitize(relays);
+    expect(result).toEqual(['wss://good.relay.com/']);
   });
 });

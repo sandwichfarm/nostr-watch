@@ -4,6 +4,7 @@ import { relaysFromRelayList } from './helpers.ts';
 import { getLogger, setGlobalLogLevel, LogLevel } from './logger.ts';
 import { trawlerStats, setupStatusReporting, formatCompactStats } from './status.ts';
 import { db, getAllRelays, initDB, seedNewRelay } from '@nostrwatch/db';
+import { purgeNatoPhoneticSpam } from '@nostrwatch/db/nato-purge';
 import pQueue from 'npm:p-queue';
 import { RelaySeeder } from './seeder.ts';
 import { loadConfig } from "./config.ts";
@@ -135,7 +136,19 @@ export const trawl = async (options: TrawlOptions = {}) => {
   }
 
   allRelays = getAllRelays()
-  
+
+  // Phase 22: Purge NATO phonetic spam URLs from relay_status.
+  // Idempotent via migrations sentinel. Writes deleted URLs to disk
+  // for downstream NIP-09 processing (Phase 23).
+  try {
+    await purgeNatoPhoneticSpam("nato-purged-urls.txt");
+  } catch (e) {
+    logger.error(`purgeNatoPhoneticSpam threw: ${e}`);
+  }
+
+  // Refresh allRelays after purge in case NATO spam URLs were removed
+  allRelays = getAllRelays();
+
   dropProcessedEventsTable();
   
   trawlerStats.reset();

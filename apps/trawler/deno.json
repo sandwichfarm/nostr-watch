@@ -97,6 +97,7 @@
       "@nostrwatch/nostrings": "../../libraries/nostrings/src/index.ts",
       "@nostrwatch/seed": "../../internal/seed/src/index.ts",
       "@nostrwatch/db": "../../libraries/db/src/index.ts",
+      "@nostrwatch/db/nato-purge": "../../libraries/db/src/nato-purge.ts",
       "dotenv": "https://deno.land/x/dotenv@v3.2.2/mod.ts",
       "chalk": "https://esm.sh/chalk@latest",
       "timestring": "https://deno.land/x/timestring@v1.0.0/mod.ts"

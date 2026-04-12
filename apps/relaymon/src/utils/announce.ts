@@ -3,7 +3,6 @@ import { AnnounceMonitor } from "npm:@nostrwatch/announce";
 import { getPublicKey } from "npm:nostr-tools";
 import { hexToBytes } from "@noble/hashes/utils";
 import { type QueueManager } from "./queueManager.ts";
-import { timeString } from "../config/config.ts";
 import type { Config } from "../config/config.ts";
 import { getErrorMessage } from "../types/errors.ts";
 import { getPrivateKey } from "../core/daemon.ts";
@@ -27,7 +26,7 @@ export async function maybeAnnounce(config: Config, queueManager?: QueueManager)
   const { userMetaRelays } = config?.announce || {}
   const { relays:outboxRelays } = config?.publisher;
   const { networks } = config.relaymon || {}
-  const { timeout: timeouts } = config.relaymon?.checks?.options || {}
+  const { expires, timeout: timeouts } = config.relaymon?.checks?.options || {}
   const checks = config.relaymon?.checks?.enabled || []
 
   if(outboxRelays?.length) {
@@ -38,13 +37,10 @@ export async function maybeAnnounce(config: Config, queueManager?: QueueManager)
     userMetaRelays.forEach( (relay:string) => relaySet.add(relay) )
   }
 
-  // Use announce.frequency from config, default to 1 day
-  const DEFAULT_ANNOUNCE_FREQUENCY_MS = 86400000; // 1d
-  const announceFrequencyMs = config.announce?.frequency
-    ? (typeof config.announce.frequency === "number" ? config.announce.frequency : timeString(config.announce.frequency))
-    : DEFAULT_ANNOUNCE_FREQUENCY_MS;
+  if(!expires) throw new Error("Check frequency (relaymon.checks.options.expires) is not set")
 
-  const frequency = (Math.round(announceFrequencyMs / 1000)).toString()
+  // expires is already in ms after config processing (processConfigTimeValues)
+  const frequency = (Math.round(expires / 1000)).toString()
 
   const sk = getPrivateKey();
 

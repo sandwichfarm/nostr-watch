@@ -9,7 +9,7 @@ import relayUrls from "./relay-urls.js";
  * consumer database under the new rules. If you change sanitization
  * logic, bump package.json AND this constant in the same PR.
  */
-export const VERSION = "0.5.0";
+export const VERSION = "0.6.0";
 
 export default {
   sanitize: { relayUrls }

@@ -116,20 +116,24 @@ describe('normalizeRelayUrl', () => {
   });
 });
 
-describe('qualifyRelayUrl - NATO phonetic spam blocking', () => {
+describe('qualifyRelayUrl - spam word blocking', () => {
   it('should reject single NATO code suffix', () => {
     expect(qualifyRelayUrl('wss://relay.example.com/alpha')).toBe(false);
   });
 
-  it('should reject two hyphen-separated NATO codes', () => {
-    expect(qualifyRelayUrl('wss://relay.example.com/bravo-charlie')).toBe(false);
+  it('should reject single custom spam word suffix', () => {
+    expect(qualifyRelayUrl('wss://relay.example.com/beacon')).toBe(false);
   });
 
-  it('should reject three hyphen-separated NATO codes', () => {
-    expect(qualifyRelayUrl('wss://relay.example.com/delta-echo-foxtrot')).toBe(false);
+  it('should reject two hyphen-separated spam words', () => {
+    expect(qualifyRelayUrl('wss://relay.example.com/jade-karma')).toBe(false);
   });
 
-  it('should allow four+ NATO codes (only 1-3 blocked)', () => {
+  it('should reject three hyphen-separated mixed spam words', () => {
+    expect(qualifyRelayUrl('wss://relay.example.com/dynamo-echo-flint')).toBe(false);
+  });
+
+  it('should allow four+ spam words (only 1-3 blocked)', () => {
     expect(qualifyRelayUrl('wss://relay.example.com/alpha-bravo-charlie-delta')).toBe(true);
   });
 
@@ -137,28 +141,33 @@ describe('qualifyRelayUrl - NATO phonetic spam blocking', () => {
     expect(qualifyRelayUrl('wss://relay.example.com')).toBe(true);
   });
 
-  it('should allow non-NATO path segments', () => {
+  it('should allow non-spam path segments', () => {
     expect(qualifyRelayUrl('wss://relay.example.com/custom-path')).toBe(true);
   });
 
-  it('should allow non-NATO single-word paths', () => {
+  it('should allow non-spam single-word paths', () => {
     expect(qualifyRelayUrl('wss://relay.example.com/inbox')).toBe(true);
   });
 
-  it('should reject NATO code in last path segment with multiple segments', () => {
-    expect(qualifyRelayUrl('wss://relay.example.com/something/alpha')).toBe(false);
+  it('should reject spam word in last path segment with multiple segments', () => {
+    expect(qualifyRelayUrl('wss://relay.example.com/something/marble')).toBe(false);
   });
 
-  it('should reject all 26 NATO codes individually', () => {
-    const codes = [
+  it('should reject all 52 spam words individually', () => {
+    const words = [
       "alpha", "bravo", "charlie", "delta", "echo", "foxtrot",
       "golf", "hotel", "india", "juliet", "kilo", "lima",
       "mike", "november", "oscar", "papa", "quebec", "romeo",
       "sierra", "tango", "uniform", "victor", "whiskey", "xray",
       "yankee", "zulu",
+      "anchor", "beacon", "cipher", "dynamo", "ember", "flint",
+      "glyph", "haven", "ivory", "jade", "karma", "lantern",
+      "marble", "nexus", "onyx", "prism", "quartz", "raven",
+      "sable", "titan", "umbra", "vertex", "warden", "xenon",
+      "yonder", "zenith",
     ];
-    for (const code of codes) {
-      expect(qualifyRelayUrl(`wss://relay.example.com/${code}`)).toBe(false);
+    for (const word of words) {
+      expect(qualifyRelayUrl(`wss://relay.example.com/${word}`)).toBe(false);
     }
   });
 });

@@ -6,14 +6,23 @@ const blocklist = [
   'ws://echo.websocket.org',
 ]
 
-const NATO_CODES = [
+// Full spam word list: 26 NATO phonetic codes + 26 custom words used by the
+// same bot network. Extracted from production relay_status data.
+const SPAM_WORDS = [
+  // NATO phonetic alphabet (26)
   "alpha", "bravo", "charlie", "delta", "echo", "foxtrot",
   "golf", "hotel", "india", "juliet", "kilo", "lima",
   "mike", "november", "oscar", "papa", "quebec", "romeo",
   "sierra", "tango", "uniform", "victor", "whiskey", "xray",
   "yankee", "zulu",
+  // Custom spam words used by the same bot network (26)
+  "anchor", "beacon", "cipher", "dynamo", "ember", "flint",
+  "glyph", "haven", "ivory", "jade", "karma", "lantern",
+  "marble", "nexus", "onyx", "prism", "quartz", "raven",
+  "sable", "titan", "umbra", "vertex", "warden", "xenon",
+  "yonder", "zenith",
 ] as const;
-const NATO_SET = new Set<string>(NATO_CODES);
+const SPAM_SET = new Set<string>(SPAM_WORDS);
 
 /**
  * Check whether a relay URL ends with 1-3 hyphen-separated NATO phonetic
@@ -27,7 +36,7 @@ export const isNatoPhoneticSpam = (url: URL): boolean => {
   if (!lastSegment) return false;
   const parts = lastSegment.split("-");
   if (parts.length < 1 || parts.length > 3) return false;
-  return parts.every((part) => NATO_SET.has(part.toLowerCase()));
+  return parts.every((part) => SPAM_SET.has(part.toLowerCase()));
 };
 
 interface Discriminator {

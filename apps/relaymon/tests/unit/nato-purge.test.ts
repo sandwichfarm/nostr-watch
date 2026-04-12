@@ -35,7 +35,7 @@ function natoTest(name: string, fn: () => void | Promise<void>) {
 initializeDB(":memory:", false);
 setConfig(mockConfig as Config);
 
-const MIGRATION_NAME = "purge_nato_phonetic_spam_v1";
+const MIGRATION_NAME = "purge_nato_phonetic_spam_v2";
 
 /**
  * Reset the NATO purge sentinel and wipe relay_status so each test
@@ -315,25 +315,32 @@ natoTest("15. Idempotent: enqueuing twice does not create duplicate queue entrie
 });
 
 // ---------------------------------------------------------------------------
-// Exhaustive NATO code coverage
+// Exhaustive spam word coverage
 // ---------------------------------------------------------------------------
 
-natoTest("16. All 26 NATO codes are individually recognized by isNatoPhoneticSpam", () => {
-  const natoCodes = [
+natoTest("16. All 52 spam words are individually recognized by isNatoPhoneticSpam", () => {
+  const spamWords = [
+    // NATO phonetic alphabet (26)
     "alpha", "bravo", "charlie", "delta", "echo", "foxtrot",
     "golf", "hotel", "india", "juliet", "kilo", "lima",
     "mike", "november", "oscar", "papa", "quebec", "romeo",
     "sierra", "tango", "uniform", "victor", "whiskey", "xray",
     "yankee", "zulu",
+    // Custom spam words (26)
+    "anchor", "beacon", "cipher", "dynamo", "ember", "flint",
+    "glyph", "haven", "ivory", "jade", "karma", "lantern",
+    "marble", "nexus", "onyx", "prism", "quartz", "raven",
+    "sable", "titan", "umbra", "vertex", "warden", "xenon",
+    "yonder", "zenith",
   ];
 
-  for (const code of natoCodes) {
+  for (const word of spamWords) {
     assertEquals(
-      isNatoPhoneticSpam(`wss://relay.example.com/${code}`),
+      isNatoPhoneticSpam(`wss://relay.example.com/${word}`),
       true,
-      `NATO code "${code}" should be recognized as spam`,
+      `Spam word "${word}" should be recognized as spam`,
     );
   }
 
-  assertEquals(natoCodes.length, 26, "should test all 26 NATO codes");
+  assertEquals(spamWords.length, 52, "should test all 52 spam words");
 });

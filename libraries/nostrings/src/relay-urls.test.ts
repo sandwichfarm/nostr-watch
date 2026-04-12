@@ -172,6 +172,15 @@ describe('qualifyRelayUrl - spam word blocking', () => {
   });
 });
 
+describe('qualifyRelayUrl - mangled/double-slash URLs', () => {
+  it('should reject hostnames without a dot (mangled protocol URLs)', () => {
+    expect(qualifyRelayUrl('wss://wws//nos.lol')).toBe(false);
+    expect(qualifyRelayUrl('wss://wscp//192.168.8.23:4848')).toBe(false);
+    expect(qualifyRelayUrl('wss://was//nostr.land.cc')).toBe(false);
+    expect(qualifyRelayUrl('wss://(wss//relay.primal.net)')).toBe(false);
+  });
+});
+
 describe('sanitize - NATO phonetic spam end-to-end', () => {
   it('should filter out NATO spam URLs from a mixed list', () => {
     const relays = ['wss://relay.example.com/alpha', 'wss://good.relay.com'];

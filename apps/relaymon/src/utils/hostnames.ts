@@ -296,19 +296,26 @@ export const relayHostnameDedup = async (
               result.parent = rootURLs[0];
               logger.debug(`Ignoring ${mURL} - has same NIP-11 info as root URL ${rootURLs[0]}`);
 
+              // Phase 21 (item 5): use canonicalMURL (not raw mURL) in addToIgnoreList/
+              // deleteRelayCheckEvent calls — unifies with the Phase 20 override deny path
+              // which also uses canonicalMURL. Both resolve to the same DB row via
+              // normalizeURL on-read in libraries/db, but canonicalMURL is the form that
+              // participates in all downstream comparisons (orderedFamily, hostnameFamily
+              // filter). Defensive-deny branch (lines ~414, 417) remains raw mURL — that is
+              // Phase 18 Fix 1 code, out of scope for Phase 21.
               const nip11RootReason = `Relay has same NIP-11 info as root URL ${rootURLs[0]}`;
               if (ignoreListSyncInstance) {
-                ignoreListSyncInstance.addToIgnoreList(mURL, nip11RootReason);
+                ignoreListSyncInstance.addToIgnoreList(canonicalMURL, nip11RootReason);
               }
 
               // Generate deletion event for this ignored relay
               if (appConfig) {
-                await deleteRelayCheckEvent(mURL, nip11RootReason, appConfig);
+                await deleteRelayCheckEvent(canonicalMURL, nip11RootReason, appConfig);
               }
 
               return result;
             }
-            
+
             // If no root URLs, use the shortest URL
             relaysWithSameInfo.sort((a, b) => a.length - b.length);
             if (relaysWithSameInfo[0] !== mURL) {
@@ -318,12 +325,12 @@ export const relayHostnameDedup = async (
 
               const nip11ShorterReason = `Relay has same NIP-11 info as shorter URL ${relaysWithSameInfo[0]}`;
               if (ignoreListSyncInstance) {
-                ignoreListSyncInstance.addToIgnoreList(mURL, nip11ShorterReason);
+                ignoreListSyncInstance.addToIgnoreList(canonicalMURL, nip11ShorterReason);
               }
 
               // Generate deletion event for this ignored relay
               if (appConfig) {
-                await deleteRelayCheckEvent(mURL, nip11ShorterReason, appConfig);
+                await deleteRelayCheckEvent(canonicalMURL, nip11ShorterReason, appConfig);
               }
 
               return result;
@@ -579,13 +586,16 @@ export const relayHostnameDedup = async (
         }
 
         // Add to IgnoreListSync if it has a parent (i.e., is a deduplication ignore, not remote sync)
+        // Note: canonicalMURL (not raw mURL) — see the Phase 21 item 5 rationale
+        // comment at the same-NIP-11 early-return block above. Defensive-deny
+        // branch retains raw mURL (Phase 18 Fix 1, out of scope).
         if (result.parent && ignoreListSyncInstance) {
-          ignoreListSyncInstance.addToIgnoreList(mURL, reason);
+          ignoreListSyncInstance.addToIgnoreList(canonicalMURL, reason);
         }
 
         // Generate deletion event when a relay is ignored
         if (appConfig) {
-          await deleteRelayCheckEvent(mURL, reason, appConfig);
+          await deleteRelayCheckEvent(canonicalMURL, reason, appConfig);
         }
       } else {
         result.ignore = false;
@@ -780,7 +790,12 @@ export const reevaluateAllDeduplication = async (
           }
 
           // Re-run deduplication
-          const updatedResult = await relayHostnameDedup(result).catch((err: unknown) => {
+          // Phase 21 (item 6): pass the onlineRelays snapshot fetched at line 642
+          // as DedupContext so per-row relayHostnameDedup calls reuse the cached
+          // list instead of re-querying `SELECT url FROM relay_status WHERE online
+          // = 1` once per row. Mirrors the Phase 20 PERF-02 tier-2 pattern now in
+          // rerunDedupForAllRowsMigration (remediation.ts:118).
+          const updatedResult = await relayHostnameDedup(result, { onlineUrls: onlineRelays }).catch((err: unknown) => {
             logger.error(`Error re-evaluating ${relayUrl}: ${getErrorMessage(err)}`);
             return { url: relayUrl, ignore: wasIgnored, parent: result.parent, hostname: result.hostname, protocol: result.protocol, checked_at: result.checked_at, online: result.online, network: result.network };
           });

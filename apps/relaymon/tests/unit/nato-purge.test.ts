@@ -187,7 +187,138 @@ natoTest("11. purgeNatoPhoneticSpam: leaves non-NATO URLs untouched", async () =
 // Exhaustive NATO code coverage
 // ---------------------------------------------------------------------------
 
-natoTest("12. All 26 NATO codes are individually recognized by isNatoPhoneticSpam", () => {
+// ---------------------------------------------------------------------------
+// Phase 23: Enqueue NATO-purged URLs into remediation_deletion_queue
+// ---------------------------------------------------------------------------
+
+natoTest("12. NATO-purged URLs are automatically enqueued in remediation_deletion_queue after purge", async () => {
+  resetState();
+  // Also clear the deletion queue from prior tests
+  db.query("DELETE FROM remediation_deletion_queue");
+
+  // Seed NATO spam and legitimate URLs
+  seedNewRelay("wss://relay.example.com/alpha", "clearnet");
+  seedNewRelay("wss://relay.example.com/bravo-charlie", "clearnet");
+  seedNewRelay("wss://relay.example.com", "clearnet");
+  seedNewRelay("wss://good.relay.com", "clearnet");
+
+  const outputPath = "/tmp/test-nato-purge-12.txt";
+
+  // Run the purge -- Phase 23 wiring in db.ts reads the output file and
+  // calls enqueueRemediationDeletion for each purged URL. We import and
+  // call the same enqueueNatoPurgedUrls function that db.ts uses.
+  await purgeNatoPhoneticSpam(outputPath);
+
+  // Import the enqueue helper that db.ts calls after purge
+  const { enqueueNatoPurgedUrls } = await import("../../src/db/db.ts");
+  await enqueueNatoPurgedUrls(outputPath);
+
+  // Verify NATO spam URLs are in the remediation_deletion_queue
+  const queueRows = db.query(
+    "SELECT url, reason FROM remediation_deletion_queue WHERE reason LIKE '%NATO%' ORDER BY url",
+  );
+  assertEquals(queueRows.length, 2, "both NATO spam URLs should be enqueued");
+
+  const queueUrls = queueRows.map((r: unknown[]) => r[0] as string);
+  assert(queueUrls.includes("wss://relay.example.com/alpha"), "alpha should be in queue");
+  assert(queueUrls.includes("wss://relay.example.com/bravo-charlie"), "bravo-charlie should be in queue");
+
+  // Verify reason string
+  for (const row of queueRows) {
+    const reason = row[1] as string;
+    assert(reason.includes("NATO phonetic spam"), `reason "${reason}" should contain "NATO phonetic spam"`);
+  }
+
+  // Cleanup
+  try { await Deno.remove(outputPath); } catch { /* ignore */ }
+});
+
+natoTest("13. Non-NATO URLs are NOT enqueued in remediation_deletion_queue", async () => {
+  resetState();
+  db.query("DELETE FROM remediation_deletion_queue");
+
+  // Seed only non-NATO URLs
+  seedNewRelay("wss://relay.example.com", "clearnet");
+  seedNewRelay("wss://relay.example.com/custom-path", "clearnet");
+  seedNewRelay("wss://good.relay.com/inbox", "clearnet");
+
+  const outputPath = "/tmp/test-nato-purge-13.txt";
+
+  await purgeNatoPhoneticSpam(outputPath);
+
+  // Read the file -- should be empty (only newline)
+  const fileContent = await Deno.readTextFile(outputPath);
+  const urls = fileContent.split("\n").filter((line: string) => line.trim().length > 0);
+
+  // No URLs to enqueue
+  assertEquals(urls.length, 0, "no NATO URLs should have been purged");
+
+  // Queue should have no NATO entries
+  const queueRows = db.query(
+    "SELECT url FROM remediation_deletion_queue WHERE reason LIKE '%NATO%'",
+  );
+  assertEquals(queueRows.length, 0, "no NATO entries should be in queue");
+
+  // Cleanup
+  try { await Deno.remove(outputPath); } catch { /* ignore */ }
+});
+
+natoTest("14. Empty purged-urls file results in no new queue entries", async () => {
+  resetState();
+  db.query("DELETE FROM remediation_deletion_queue");
+
+  // No relay_status rows at all
+  const outputPath = "/tmp/test-nato-purge-14.txt";
+
+  await purgeNatoPhoneticSpam(outputPath);
+
+  // File should exist but be effectively empty (just a newline)
+  const fileContent = await Deno.readTextFile(outputPath);
+  const urls = fileContent.split("\n").filter((line: string) => line.trim().length > 0);
+  assertEquals(urls.length, 0, "no URLs should have been purged");
+
+  // Queue should have no NATO entries
+  const queueRows = db.query(
+    "SELECT url FROM remediation_deletion_queue WHERE reason LIKE '%NATO%'",
+  );
+  assertEquals(queueRows.length, 0, "no NATO entries should be in queue for empty purge");
+
+  // Cleanup
+  try { await Deno.remove(outputPath); } catch { /* ignore */ }
+});
+
+natoTest("15. Idempotent: enqueuing twice does not create duplicate queue entries", async () => {
+  resetState();
+  db.query("DELETE FROM remediation_deletion_queue");
+
+  // Seed a NATO spam URL
+  seedNewRelay("wss://relay.example.com/kilo", "clearnet");
+
+  const outputPath = "/tmp/test-nato-purge-15.txt";
+
+  await purgeNatoPhoneticSpam(outputPath);
+
+  // Manually enqueue twice to simulate double-run
+  const { enqueueRemediationDeletion } = await import("../../src/utils/remediation.ts");
+  enqueueRemediationDeletion("wss://relay.example.com/kilo", "NATO phonetic spam purge (Phase 23)");
+  enqueueRemediationDeletion("wss://relay.example.com/kilo", "NATO phonetic spam purge (Phase 23)");
+
+  // Should only have ONE entry (PRIMARY KEY on url, ON CONFLICT DO UPDATE)
+  const queueRows = db.query(
+    "SELECT url FROM remediation_deletion_queue WHERE url = ?",
+    ["wss://relay.example.com/kilo"],
+  );
+  assertEquals(queueRows.length, 1, "should have exactly one queue entry despite double enqueue");
+
+  // Cleanup
+  try { await Deno.remove(outputPath); } catch { /* ignore */ }
+});
+
+// ---------------------------------------------------------------------------
+// Exhaustive NATO code coverage
+// ---------------------------------------------------------------------------
+
+natoTest("16. All 26 NATO codes are individually recognized by isNatoPhoneticSpam", () => {
   const natoCodes = [
     "alpha", "bravo", "charlie", "delta", "echo", "foxtrot",
     "golf", "hotel", "india", "juliet", "kilo", "lima",

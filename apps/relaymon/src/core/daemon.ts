@@ -646,11 +646,14 @@ export async function runDaemon(config: Config): Promise<void> {
       );
     }
 
-    tasks.push(
-      runDedupReevaluation().catch(error => {
-        logger.error(`Dedup re-evaluation process error: ${error.message}`);
-      })
-    )
+    // DISABLED Phase 22: dedup re-evaluation loop disabled to prevent
+    // interference with NATO phonetic spam purge. Code preserved for
+    // future re-enablement.
+    // tasks.push(
+    //   runDedupReevaluation().catch(error => {
+    //     logger.error(`Dedup re-evaluation process error: ${error.message}`);
+    //   })
+    // )
 
     if (config?.relaymon?.ignorelist?.enabled) {
       tasks.push(

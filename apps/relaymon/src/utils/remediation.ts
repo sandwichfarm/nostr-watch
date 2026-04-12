@@ -311,6 +311,11 @@ export async function drainRemediationDeletionQueue(config: Config): Promise<voi
     // drain the queue don't pay the deletion.ts import cost.
     const { deleteRelayCheckEvent } = await import("./deletion.ts");
 
+    // Throttle: 200ms between publishes to avoid relay rate-limiting.
+    // At 5/sec, 20k entries drain in ~67 minutes — acceptable for a
+    // one-shot migration that runs in the background at startup.
+    const DRAIN_DELAY_MS = 200;
+
     for (const row of rows) {
       const [urlRaw, reasonRaw, attemptsRaw] = row;
       const url = urlRaw as string;
@@ -351,6 +356,9 @@ export async function drainRemediationDeletionQueue(config: Config): Promise<voi
           `Deletion threw for ${url} (attempts=${attempts + 1}): ${errStr}`,
         );
       }
+
+      // Throttle between publishes
+      await new Promise((r) => setTimeout(r, DRAIN_DELAY_MS));
     }
 
     const durationMs = Date.now() - startTime;

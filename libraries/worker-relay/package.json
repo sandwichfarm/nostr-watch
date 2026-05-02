@@ -24,7 +24,7 @@
     "@nostrwatch/utils": "workspace:^",
     "@sqlite.org/sqlite-wasm": "^3.46.1-build3",
     "eventemitter3": "^5.0.1",
-    "uuid": "^9.0.1"
+    "uuid": "^14.0.0"
   },
   "devDependencies": {
     "@types/copyfiles": "^2",

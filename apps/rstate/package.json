@@ -48,12 +48,12 @@
     "ajv": "^8.17.1",
     "applesauce-relay": "^4.0.0",
     "dotenv": "^17.2.3",
-    "fastify": "^5.7.3",
+    "fastify": "^5.8.5",
     "nostr-tools": "^2.11.0",
     "pino": "^9.5.0",
     "pino-pretty": "^13.0.0",
     "ws": "^8.18.0",
-    "yaml": "^2.4.5"
+    "yaml": "^2.8.3"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

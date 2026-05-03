@@ -44,7 +44,6 @@
         images: true,
         videos: true,
         truncate: true,
-        sanitize: false,
         replaceAmpersand: true
     }   
   

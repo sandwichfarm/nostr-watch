@@ -7,10 +7,10 @@
         amount: number,
         unit: string,
         period?: number
-    } 
+    }
 
 
-    export let key: string; 
+    export let key: string;
     export let fee: Nip11Fee;
     const className = $$props.class
 
@@ -25,6 +25,12 @@
                 : fee?.period
                     ? formatSeconds(fee?.period)
                     : undefined
+    // CountCard's value-display gate requires a defined `$value`. We pass a
+    // sentinel readable (the coerced numeric amount as a string) so the gate
+    // resolves true; the actual rendered value comes from the default slot
+    // below, where Number(amount) does the CARD-03 coercion in template
+    // text-bind context.
+    $: valueSentinel = readable(String(Number(amount)));
 </script>
 
 <!-- {key}
@@ -33,7 +39,9 @@
 
 <CountCard
     class={className}
-    value={readable(`${amount}<span class="text-sm">sats</span>`)}
+    value={valueSentinel}
     label={key}
     {bottomText}
-    />
+    >
+    <span>{Number(amount)}<span class="text-sm">sats</span></span>
+</CountCard>

@@ -19,6 +19,7 @@
     import * as Tabs from "$lib/components/ui/tabs";
 	import type { DataTableConfig } from './DataTableTypes';
 	import { darkMode, isBootstrapped } from '$lib/stores/app';
+	import { bannerStyleString } from '$utils/style-helpers';
 	import type { DataViewColumns } from '../DataTableTypes';
 	import Loading from '$lib/components/partials/Loading.svelte';
 	import RelayLivenessCounts from '$lib/components/partials/RelayLivenessCounts.svelte';
@@ -305,23 +306,13 @@
         <Table.Body>
             {#each tableInstance?.rows as row, rowIndex (`${row.id ?? ''}:${rowIndex}`)}
             <!-- {(console.log('row data', row?.active, row?.enabled, $config.tableRowStyler(row)))} -->
-                <Table.Row 
-                    class="{$config.tableRowStyler(row)} flash-record {$recordChanged.get(row.id) ? 'animate-flash' : ''}" 
-                    style="{
+                <Table.Row
+                    class="{$config.tableRowStyler(row)} flash-record {$recordChanged.get(row.id) ? 'animate-flash' : ''}"
+                    style={
                         $config.rowBannerEnabled !== false && row.banner && row.banner !== ''
-                            ? 
-                                $darkMode
-                                    ? 
-                                        `background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)),  url('${row.banner}'); 
-                                        background-repeat: no-repeat; 
-                                        background-size: cover;`
-                                    :
-                                        `background: linear-gradient(rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.8)),  url('${row.banner}'); 
-                                        background-repeat: no-repeat; 
-                                        background-size: cover;`
-                                
+                            ? bannerStyleString(row.banner, { darkMode: $darkMode, opacity: 0.8 })
                             : ''
-                    }"
+                    }
                     >
                     {#if actionsComponent}
                         <svelte:component this={actionsComponent} data={row} />

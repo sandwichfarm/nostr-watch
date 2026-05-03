@@ -107,55 +107,67 @@
             mt-1 pb-4 text-black/90 dark:text-white/90 text-xl min-h-96">
 
             {#if software}
-                <CountCard 
-                    topText="" 
+                <CountCard
+                    topText=""
                     display={$relayInsightsCardView === 'chart' ? 'donut' : 'text'}
                     donutPercent={usagePercentageSoftware}
                     donutTitle={usagePercentageSoftware == null || !readableSoftware ? undefined : `${usagePercentageSoftware}% of relays use ${readableSoftware}`}
-                    value={readable($relayInsightsCardView === 'count'? `${usageCountSoftware}`: `${usagePercentageSoftware}%`)} 
-                    bottomText={`${$relayInsightsCardView === 'count'? '': 'of '}relays use ${readableSoftware}`} 
-                    index={0} 
+                    value={readable($relayInsightsCardView === 'count'? `${usageCountSoftware}`: `${usagePercentageSoftware}%`)}
+                    index={0}
                     innerClass="gradient-purple"
-                    />
+                    >
+                    <svelte:fragment slot="bottomText">
+                        {$relayInsightsCardView === 'count' ? '' : 'of '}relays use {readableSoftware}
+                    </svelte:fragment>
+                </CountCard>
             {/if}
 
             {#if software && version}
-                <CountCard 
-                    topText="" 
+                <CountCard
+                    topText=""
                     display={$relayInsightsCardView === 'chart' ? 'donut' : 'text'}
                     donutPercent={usagePercentageVersion}
                     donutTitle={usagePercentageVersion == null || !readableSoftware || !version ? undefined : `${usagePercentageVersion}% of ${readableSoftware} relays use ${version}`}
-                    value={readable($relayInsightsCardView === 'count'? `${usageCountVersion}`: `${usagePercentageVersion}%`)} 
-                    bottomText={`${$relayInsightsCardView === 'count'? '': 'of '} <em>${readableSoftware}</em> relays use ${version}`} 
-                    index={1} 
+                    value={readable($relayInsightsCardView === 'count'? `${usageCountVersion}`: `${usagePercentageVersion}%`)}
+                    index={1}
                     innerClass="gradient-purple"
-                    />
+                    >
+                    <svelte:fragment slot="bottomText">
+                        {$relayInsightsCardView === 'count' ? '' : 'of '} <em>{readableSoftware}</em> relays use {version}
+                    </svelte:fragment>
+                </CountCard>
             {/if}
 
             {#if usagePercentageGeocode || usageCountGeocode}
-                <CountCard 
-                    topText="" 
+                <CountCard
+                    topText=""
                     display={$relayInsightsCardView === 'chart' ? 'donut' : 'text'}
                     donutPercent={usagePercentageGeocode}
                     donutTitle={usagePercentageGeocode == null || !geocode ? undefined : `${usagePercentageGeocode}% of relays are located in ${geocode}`}
-                    value={readable($relayInsightsCardView === 'count'? `${usageCountGeocode}`: `${usagePercentageGeocode}%`)} 
-                    bottomText={`of relays are located in ${geocode} ${countryCodeToFlagEmoji(geocode)}`} 
-                    index={2} 
+                    value={readable($relayInsightsCardView === 'count'? `${usageCountGeocode}`: `${usagePercentageGeocode}%`)}
+                    index={2}
                     innerClass="gradient-purple"
-                    />
+                    >
+                    <svelte:fragment slot="bottomText">
+                        of relays are located in {geocode} {countryCodeToFlagEmoji(geocode)}
+                    </svelte:fragment>
+                </CountCard>
             {/if}
 
             {#if isp}
-                <CountCard 
-                    topText="" 
+                <CountCard
+                    topText=""
                     display={$relayInsightsCardView === 'chart' ? 'donut' : 'text'}
                     donutPercent={usagePercentageIsp}
                     donutTitle={usagePercentageIsp == null || !isp ? undefined : `${usagePercentageIsp}% of relays use ${isp} as their ISP`}
-                    value={readable($relayInsightsCardView === 'count'? `${usageCountIsp}`: `${usagePercentageIsp}%`)} 
-                    bottomText={`of relays use ${isp} as their ISP`} 
-                    index={3} 
+                    value={readable($relayInsightsCardView === 'count'? `${usageCountIsp}`: `${usagePercentageIsp}%`)}
+                    index={3}
                     innerClass="gradient-purple"
-                    />
+                    >
+                    <svelte:fragment slot="bottomText">
+                        of relays use {isp} as their ISP
+                    </svelte:fragment>
+                </CountCard>
             {/if}
 
         </div>

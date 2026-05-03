@@ -1,6 +1,7 @@
 {
   "name": "@nostr-watch/rstate",
   "version": "0.1.0",
+  "private": true,
   "description": "NIP-66 relay intelligence state machine with ContextVM and REST Enpoints.",
   "type": "module",
   "main": "./dist/index.js",

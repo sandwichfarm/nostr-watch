@@ -7,6 +7,7 @@
 	import { get, readable, type Readable } from 'svelte/store';
 	import { generateRelayUrlFromPath } from '$utils/routing';
 	import RelayFeeItem from '../partials/RelayFeeItem.svelte';
+    import { safeHttpUrl } from '$utils/sanitize';
 
     type FeesObject = Record<string, FeesArray[]>
     type FeesArray = {
@@ -35,6 +36,7 @@
 
 
     $: paymentsUrl = $nip11?.paymentsUrl || undefined;
+    $: safePaymentsUrl = safeHttpUrl(paymentsUrl);
     $: type = Array.isArray(fees) ? 'array' : typeof $fees;
     $: feeKeys = type === 'object' && $fees? Object.keys($fees || {}): [];
     $: keysLength = feeKeys.length;
@@ -57,7 +59,7 @@
                 <Button 
                     size="lg"
                     class="text-lg py-1.5 font-mono inline-block gradient-orange" 
-                    href="{paymentsUrl}" 
+                    href="{safePaymentsUrl}"
                     target="_blank">
                     purchase access
                 </Button>

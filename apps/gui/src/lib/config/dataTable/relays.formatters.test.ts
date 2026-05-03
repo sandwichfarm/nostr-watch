@@ -98,3 +98,69 @@ describe('XSS regression: relay table formatters', () => {
         expect(out).not.toContain('<img');
     });
 });
+
+describe('XSS regression: additional relay formatters', () => {
+    it('software formatter escapes attacker-controlled software name', () => {
+        const out = relayFormatters.software('strfry<script>alert(1)</script>');
+        expect(out).not.toContain('<script>');
+        expect(out).toContain('&lt;script&gt;');
+    });
+
+    it('geocode formatter escapes attacker-controlled code', () => {
+        const out = relayFormatters.geocode('US"><script>alert(1)</script>');
+        expect(out).not.toContain('<script>');
+        // The injection-style closing should appear escaped
+        expect(out).toContain('&quot;&gt;&lt;script&gt;');
+    });
+
+    it('minPowDifficulty formatter escapes attacker-controlled value', () => {
+        const out = relayFormatters.minPowDifficulty('<img src=x onerror=alert(1)>');
+        expect(out).not.toContain('<img');
+        expect(out).toContain('&lt;img');
+    });
+
+    it('supportedNips formatter drops non-numeric / attacker-controlled entries', () => {
+        const out = relayFormatters.supportedNips(['<script>alert(1)</script>', 1]);
+        expect(out).not.toContain('<script>');
+    });
+
+    it('networks formatter rejects attacker-controlled slug with breakout chars', () => {
+        const out = relayFormatters.networks(['clearnet" onerror="alert(1)']);
+        expect(out).not.toContain('onerror=');
+        // The quote breakout MUST NOT survive into the style attribute
+        expect(out).not.toMatch(/style="[^"]*"[^>]*onerror/);
+    });
+
+    it('networks formatter accepts a benign slug', () => {
+        const out = relayFormatters.networks(['clearnet']);
+        expect(out).toContain('/icon/network/clearnet-dark.svg');
+    });
+
+    it('ipv4 formatter rejects attacker-controlled non-IP entries', () => {
+        const out = relayFormatters.ipv4(['" onerror="alert(1) ']);
+        expect(out).not.toContain('onerror=');
+    });
+
+    it('ipv4 formatter accepts a benign IPv4 address', () => {
+        const out = relayFormatters.ipv4(['1.2.3.4']);
+        expect(out).toContain('1.2.3.4');
+    });
+
+    it('retentionPolicy formatter does not throw on attacker-controlled rule fields and escapes the payload', () => {
+        // Pre-fix: the formatter throws on non-numeric kinds (DoS) AND interpolates
+        // count raw (XSS). Post-fix: it must neither throw nor emit the payload unescaped.
+        const call = () => relayFormatters.retentionPolicy([
+            { kinds: ['<script>alert(1)</script>'], time: 60, count: '<img src=x onerror=alert(1)>' }
+        ]);
+        expect(call).not.toThrow();
+        const out = call();
+        expect(out).not.toContain('<script>');
+        expect(out).not.toContain('<img src=x');
+    });
+
+    it('retentionPolicy formatter normal-path keeps the icon prefixes', () => {
+        const out = relayFormatters.retentionPolicy([{ kinds: [1], time: 3600, count: 100 }]);
+        expect(out).toContain('🔹');
+        expect(out).toContain('⏳');
+    });
+});

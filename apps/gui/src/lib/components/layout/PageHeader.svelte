@@ -1,6 +1,8 @@
 <script lang="ts">
 
     import { clickToCopy } from "$utils/ux";
+    import { safeImageUrl } from "$utils/sanitize";
+    import * as DOMPurify from "dompurify";
 
     export let title: string;
     export let icon: string | undefined = undefined;
@@ -11,13 +13,28 @@
 
     const noop=()=>{}
 
+    // Validate the relay-controlled banner URL before interpolating it into a
+    // CSS `url('...')` value. safeImageUrl rejects any URL containing the
+    // attribute/CSS breakout characters and entity-encodes the result.
+    $: safeBanner = safeImageUrl(banner);
+
+    // Validate the relay-controlled icon URL before binding it to <img src>.
+    $: safeIcon = safeImageUrl(icon);
+
+    // Most callers pass plain text (e.g. NIP-11 description). The
+    // /relays/software/[softwareKey] page passes pre-formatted HTML, so we
+    // sanitize via DOMPurify rather than dropping {@html} entirely. DOMPurify
+    // is already a dependency of apps/gui (used in $utils/notes.ts).
+    // sanitize() defaults strip script tags and event-handler attributes.
+    $: safeSubtitle = subtitle ? (DOMPurify as any).sanitize(subtitle) : '';
+
 </script>
 <header
   id="relay-header"
   class="relative bg-center bg-cover bg-no-repeat px-3 pb-10 gradient-purple pt-24"
-  style={banner? `background: linear-gradient(rgba(0, 0, 0, ${bgOpacity}), rgba(0, 0, 0, ${bgOpacity})),  url('${banner}');
+  style={safeBanner ? `background: linear-gradient(rgba(0, 0, 0, ${bgOpacity}), rgba(0, 0, 0, ${bgOpacity})), url('${safeBanner}');
     background-repeat: no-repeat;
-    background-size: cover;`: ''}
+    background-size: cover;` : ''}
 >
   <!-- Absolute positioned slot for overlays like maps -->
   <slot name="absolute" />
@@ -25,9 +42,9 @@
   <div class="relative z-10 flex justify-between items-start p-6 h-full">
     <div class="flex">
     <div class="flex-shrink-0 mr-2">
-        {#if icon}
+        {#if safeIcon}
             <span class="inline-block overflow-hidden rounded-full w-20 h-20">
-            <img src="{icon}" alt="relay icon" class="inline mr-2 w-full h-auto" />
+            <img src={safeIcon} alt="relay icon" class="inline mr-2 w-full h-auto" />
             </span>
         {/if}
     </div>
@@ -49,7 +66,7 @@
           {/if}
         </h1>
         {#if subtitle}
-            <span class="ml-3 text-lg block">{@html subtitle}</span>
+            <span class="ml-3 text-lg block">{@html safeSubtitle}</span>
         {/if}
         <slot />
       </div>

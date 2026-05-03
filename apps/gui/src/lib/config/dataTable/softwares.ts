@@ -1,7 +1,8 @@
 import type { DataKeys, Formatters, NameFormatter } from '$lib/components/data-view/DataTableTypes';
 import { makeSoftwareReadable } from '$lib/synonyms/software';
 
-import { pastelPairFromString } from '$utils/colors'; 
+import { pastelPairFromString } from '$utils/colors';
+import { escapeHtml, safeImageUrl } from '$utils/sanitize';
 
 export const columnsDisable: DataKeys = []
 export const filtersDisable: DataKeys = []
@@ -35,10 +36,12 @@ function truncateWithEllipsis(text: string, maxLength: number): string {
 export const tableFormatters: Formatters = {
     name: (software: string, row: any) => {
         if(typeof software !== 'string') return '-';
-        const htmlName = `<span class="my-1 text-sm font-mono" style="color:${pastelPairFromString(software)?.dark}">${truncateWithEllipsis(makeSoftwareReadable(software), 33)}</span>`;
-        const icon = row.icon? 
-            `<img src="${row.icon}" alt="${software}" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="w-6 h-6 inline-block mr-2">` 
-            :'<span class="w-6 h-6 inline-block mr-2"></span>';
+        const safeIcon = safeImageUrl(row.icon);
+        const safeSoftware = escapeHtml(software);
+        const htmlName = `<span class="my-1 text-sm font-mono" style="color:${pastelPairFromString(software)?.dark}">${escapeHtml(truncateWithEllipsis(makeSoftwareReadable(software), 33))}</span>`;
+        const icon = safeIcon
+            ? `<img src="${safeIcon}" alt="${safeSoftware}" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="w-6 h-6 inline-block mr-2">`
+            : '<span class="w-6 h-6 inline-block mr-2"></span>';
         return `${icon}<a href="/relays/software/${btoa(software)}">${htmlName}</a>`;
     },
     versionsNum: (versionsNum: number) => {

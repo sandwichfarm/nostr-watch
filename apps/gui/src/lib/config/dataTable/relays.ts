@@ -333,10 +333,11 @@ export const tableFormatters: Formatters = {
     networks: (networks: string[]) => {
         if(!networks || !networks.length) return '';
         return networks.map(network => {
-            const icon = `${network}.svg`
-            const iconDark = `${network}-dark.svg`
+            // Network slug guard — strict allowlist before interpolation into a CSS url().
+            if (typeof network !== 'string' || !/^[a-z0-9_-]+$/i.test(network)) return '';
+            const safeNetwork = escapeHtml(network);
             const iconPath = '/icon/network/'
-            const iconClass = `background-image: url('${iconPath}${iconDark}'); background-size: contain; background-position: center; background-repeat: no-repeat; width: 24px; height: 24px; display: inline-block;`
+            const iconClass = `background-image: url('${iconPath}${safeNetwork}-dark.svg'); background-size: contain; background-position: center; background-repeat: no-repeat; width: 24px; height: 24px; display: inline-block;`
             return `<span style="${iconClass}"></span>`
         }).join('');
     },
@@ -361,7 +362,12 @@ export const tableFormatters: Formatters = {
     }, 
     ipv4: (ipv4) => {
         if(!ipv4) return '';
-        return ipv4.map(ip => `<span class="p-1 mr-1 block text-xs clear-right font-mono">${ip}</span>`).join('');
+        return ipv4.map(ip => {
+            // IPv4 dotted-quad guard. Defense-in-depth: reject anything that
+            // doesn't structurally match.
+            if (typeof ip !== 'string' || !/^\d{1,3}(\.\d{1,3}){3}$/.test(ip)) return '';
+            return `<span class="p-1 mr-1 block text-xs clear-right font-mono">${escapeHtml(ip)}</span>`;
+        }).join('');
     },
     nip11ValidationErrors: (errorsCount) => {
         if(errorsCount === 0) 
@@ -410,22 +416,44 @@ export const tableFormatters: Formatters = {
     
         retentionPolicy.forEach((rule) => {
           if (typeof rule !== "object" || rule === null) return;
-    
-          const kinds = rule.kinds ? expandKinds(rule.kinds).join(", ") : "All";
+
+          // Defense-in-depth: expandKinds throws on non-numeric input — filter
+          // first so attacker-controlled kind strings don't crash the formatter.
+          let kinds: string = "All";
+          if (rule.kinds && Array.isArray(rule.kinds)) {
+            const numericKinds = rule.kinds.filter((k: unknown) =>
+              typeof k === 'number' || (Array.isArray(k) && k.length === 2 && typeof k[0] === 'number' && typeof k[1] === 'number')
+            );
+            if (numericKinds.length) {
+              try {
+                kinds = expandKinds(numericKinds).join(", ");
+              } catch {
+                kinds = "All";
+              }
+            }
+          }
           const time = rule.time === null ? "∞" : rule.time ? formatSeconds(rule.time) : "";
-          const count = rule.count ? rule.count.toLocaleString() : "";
-    
+          const count = rule.count !== undefined && rule.count !== null && typeof (rule.count as any).toLocaleString === 'function'
+            ? (rule.count as any).toLocaleString()
+            : "";
+
+          // Encode-on-output: even though the values above are now coerced
+          // from numeric inputs, escape defensively before interpolating into HTML.
+          const safeKinds = escapeHtml(String(kinds));
+          const safeTime = escapeHtml(String(time));
+          const safeCount = escapeHtml(String(count));
+
           // Special case: If it's "All" kinds & time is "∞", return only the infinity symbol
           if (kinds === "All" && time === "∞") {
             str += `<span class="text-lg font-semibold">∞</span>`;
             return;
           }
-    
+
           str += `
             <div class="flex items-center space-x-2 bg-gray-200 dark:bg-gray-800 px-2 py-1 rounded-lg shadow-sm">
-              <span class="text-gray-900 dark:text-gray-100">${kinds !== "All" ? `🔹 ${kinds}` : "All"}</span>
-              ${time ? `<span class="text-gray-600 dark:text-gray-300">⏳ ${time}</span>` : ""}
-              ${count ? `<span class="text-gray-600 dark:text-gray-300">📦 ${count}</span>` : ""}
+              <span class="text-gray-900 dark:text-gray-100">${safeKinds !== "All" ? `🔹 ${safeKinds}` : "All"}</span>
+              ${safeTime ? `<span class="text-gray-600 dark:text-gray-300">⏳ ${safeTime}</span>` : ""}
+              ${safeCount ? `<span class="text-gray-600 dark:text-gray-300">📦 ${safeCount}</span>` : ""}
             </div>
           `;
         });
@@ -438,7 +466,7 @@ export const tableFormatters: Formatters = {
     admissionFee: formatFee,
     geocode: (code) => {
         if(!code) return '🌐';
-        return `${countryCodeToFlagEmoji(code)} ${code}`;
+        return `${countryCodeToFlagEmoji(code)} ${escapeHtml(code)}`;
     },
     rttNormalized: (value) => {
         const isNumber = !isNaN(Number(value));
@@ -448,8 +476,13 @@ export const tableFormatters: Formatters = {
     },
     supportedNips: (nips) => {
         let output = '';
+        if (!Array.isArray(nips)) return output;
         for(const nip of nips) {
-            output += `<span class="p-1 mr-1 inline text-xs">${nip}</span>`;
+            // NIPs are numbers — coerce and drop non-finite (rejects strings,
+            // attacker-controlled HTML, etc.).
+            const n = Number(nip);
+            if (!Number.isFinite(n)) continue;
+            output += `<span class="p-1 mr-1 inline text-xs">${n}</span>`;
         }
         return output;
     },
@@ -475,7 +508,7 @@ export const tableFormatters: Formatters = {
     },
     minPowDifficulty: (r) => {
         if(!r) return ''
-        return `<span class="text-xs font-bold">⛏ ${r}</span>`
+        return `<span class="text-xs font-bold">⛏ ${escapeHtml(String(r))}</span>`
     },
     hasNip11: (r) => {
         if(!r) return ''
@@ -510,7 +543,7 @@ export const tableFormatters: Formatters = {
     software: (software) => {
         if(typeof software !== 'string') return '-';
         software = makeSoftwareReadable(software);
-        return truncateWithEllipsis(software, 33);
+        return escapeHtml(truncateWithEllipsis(software, 33));
     },
     name: (name, row) => {
         const { relay } = row;

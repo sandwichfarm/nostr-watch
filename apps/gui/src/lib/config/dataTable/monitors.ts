@@ -6,7 +6,8 @@ import { formatSeconds, timeAgo } from '$lib/utils/time.js';
 import { validNip05s } from '$lib/stores/nip05s.js';
 import type { DataKeys, Formatters, NameFormatter } from '$lib/components/data-view/DataTableTypes';
 
-import { pastelPairFromString } from '$utils/colors'; 
+import { pastelPairFromString } from '$utils/colors';
+import { escapeHtml, safeImageUrl } from '$utils/sanitize';
 
 export const normalizeKeys = (keys: DataKeys | string) => {
     if(typeof keys === 'string') 
@@ -113,28 +114,32 @@ export const tableFormatters: Formatters = {
         if(!nip05) return '';
         const $validNip05s = get(validNip05s)
         const entry = $validNip05s.find( e => e.pubkey = row.pubkey && e.nip05 === nip05)
-        if(!entry) return `<span class="text-red-500 text-sm'}">${nip05}</span>`
-        return `<span class="${entry.valid? 'text-green-500': 'text-red-500'} text-sm">${nip05}</span>`
+        const safe = escapeHtml(nip05);
+        if(!entry) return `<span class="text-red-500 text-sm">${safe}</span>`
+        return `<span class="${entry.valid? 'text-green-500': 'text-red-500'} text-sm">${safe}</span>`
     },
     pubkey: (pubkey) => {
+        // Hex pubkey guard at function entry — pubkey flows into href and CSS style.
+        if (typeof pubkey !== 'string' || !/^[0-9a-f]{64}$/i.test(pubkey)) return '';
         let monitor: Monitor | undefined;
         monitorsMap.subscribe((monitors) => { monitor = monitors.get(pubkey) })
         if(!monitor) return pubkey;
         let profile: string = `<a href="/monitors/${pubkey}" class="flex hover:opacity-80 transition-opacity">`;
 	        profile += '<div class="flex-shrink-0 mr-2">'
-	        if(monitor?.photo){
+	        const safePhoto = safeImageUrl(monitor?.photo);
+	        if(safePhoto){
 	            profile += `
 	                <span class="inline-block rounded-full overflow-hidden w-10 h-10">
-	                    <img src="${monitor.photo}" alt="${monitor.photo}" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="w-full h-auto" />
+	                    <img src="${safePhoto}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="w-full h-auto" />
 	                </span>
 	                `
 	        }
         profile += '</div>'
          profile += '<div class="">'
         if(monitor?.profile?.name){
-            profile += `<span class="inline-block my-1 text-sm font-mono lowercase" style="color:${pastelPairFromString(monitor.pubkey)};">${monitor.profile.name}</span>`
+            profile += `<span class="inline-block my-1 text-sm font-mono lowercase" style="color:${pastelPairFromString(monitor.pubkey)?.dark};">${escapeHtml(monitor.profile.name)}</span>`
         }
-        profile += `<div class="text-xs text-gray-500 block max-w-44 overflow-hidden overflow-ellipsis" style="color:${pastelPairFromString(monitor.pubkey)};">${monitor.pubkey}</div>`
+        profile += `<div class="text-xs text-gray-500 block max-w-44 overflow-hidden overflow-ellipsis" style="color:${pastelPairFromString(monitor.pubkey)?.dark};">${escapeHtml(monitor.pubkey)}</div>`
         profile += '</div>'
         profile += '</a>'
         return profile
@@ -143,7 +148,7 @@ export const tableFormatters: Formatters = {
         if(!checks || checks.length === 0) return '';
         let output = '';
         for(const check of checks) {
-            output += `<span class="p-1 mr-1.5 inline text-xs bg-white bg-opacity-5 font-mono">${check}</span>`;
+            output += `<span class="p-1 mr-1.5 inline text-xs bg-white bg-opacity-5 font-mono">${escapeHtml(check)}</span>`;
         }
         return output;
     },
@@ -154,30 +159,37 @@ export const tableFormatters: Formatters = {
 
 export const filterFormatters: Formatters = {
     pubkey: (pubkey) => {
-        let monitor: Monitor = {};
+        // Hex pubkey guard at function entry.
+        if (typeof pubkey !== 'string' || !/^[0-9a-f]{64}$/i.test(pubkey)) return '';
+        let monitor: Monitor = {} as Monitor;
         monitorsMap.subscribe((monitors) => { monitor = monitors.get(pubkey) })
+        if(!monitor) return '';
         let profile: string = '<div class="flex">';
         profile += '<div class="flex-grow-0 mr-2">'
-	        if(monitor?.profile?.photo){
+	        const safeMonitorPhoto = safeImageUrl(monitor?.profile?.photo);
+	        if(safeMonitorPhoto){
 	            profile += `
 	            <span class="overflow-hidden">
-	                <img src="${monitor?.profile?.photo}" alt="${monitor?.profile?.photo}" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="w-16 h-16" />
+	                <img src="${safeMonitorPhoto}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="w-16 h-16" />
 	            </span>
 	            `
 	        }
 	        else {
-	            profile += `
-	            <span class="overflow-hidden inline-block">
-	                <img src="${PFP.generate(monitor.pubkey)}" alt="${monitor.pubkey}" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="w-8 h-8" />
-	            </span>
-	            `
+	            const safePfp = safeImageUrl(PFP.generate(monitor.pubkey));
+	            if(safePfp){
+	                profile += `
+	                <span class="overflow-hidden inline-block">
+	                    <img src="${safePfp}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="w-8 h-8" />
+	                </span>
+	                `
+	            }
 	        }
         profile += '</div>'
          profile += '<div class="">'
         if(monitor?.profile?.name){
-            profile += `<div class="text-sm font-mono" style="color:${pastelPairFromString(pubkey)?.dark};">${monitor.profile.name}</div>`
+            profile += `<div class="text-sm font-mono" style="color:${pastelPairFromString(pubkey)?.dark};">${escapeHtml(monitor.profile.name)}</div>`
         }
-        profile += `<div class="text-xs block max-w-44 overflow-hidden overflow-ellipsis opacity-50"  style="color:${pastelPairFromString(pubkey)?.dark};">${monitor.pubkey}</div>`
+        profile += `<div class="text-xs block max-w-44 overflow-hidden overflow-ellipsis opacity-50"  style="color:${pastelPairFromString(pubkey)?.dark};">${escapeHtml(monitor.pubkey)}</div>`
         profile += '</div>'
         profile += '</div>'
         return profile

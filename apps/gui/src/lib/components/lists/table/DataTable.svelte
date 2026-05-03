@@ -365,7 +365,7 @@
                                                 {#if $config.tableFormatters?.[column.key]}
                                                     {@html $config.tableFormatters[column.key](row[column.key], row)}
                                                 {:else}
-                                                    {@html row[column.key]}
+                                                    {row[column.key]}
                                                 {/if}
                                             </div>
                                         </Table.Cell>

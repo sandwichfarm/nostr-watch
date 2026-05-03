@@ -3,7 +3,8 @@ import { makeSoftwareReadable } from '$lib/synonyms/software';
 import { truncatePubkey, colorFromPubkey } from '$lib/utils/pubkey-color';
 import { PFP } from '$lib/utils/pfp';
 
-import { pastelPairFromString } from '$utils/colors'; 
+import { pastelPairFromString } from '$utils/colors';
+import { escapeHtml, safeImageUrl } from '$utils/sanitize';
 
 
 export const columnsShow: DataKeys = ['name', 'about', 'reference', 'relaysCount', 'softwaresCount', 'ispsCount']
@@ -57,6 +58,9 @@ function truncateWithEllipsis(text: string, maxLength: number): string {
 export const tableFormatters: Formatters = {
     name: (name: string, row: any) => {
         const pubkey = row?.pubkey;
+        // Hex pubkey guard at function entry — pubkey flows into href and CSS
+        // style; reject any non-hex value before any interpolation.
+        if (typeof pubkey !== 'string' || !/^[0-9a-f]{64}$/i.test(pubkey)) return '';
         const hasProfile = typeof name === 'string' && name.length > 0;
 
         let displayName: string;
@@ -64,9 +68,10 @@ export const tableFormatters: Formatters = {
 
         if (hasProfile) {
             // Has kind 0 profile - use name and photo
-            displayName = truncateWithEllipsis(name, 55);
-            photo = row.photo
-                ? `<img src="${row.photo}" alt="${name}" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="w-8 h-8 inline-block mr-2 rounded-full object-cover">`
+            displayName = escapeHtml(truncateWithEllipsis(name, 55));
+            const safePhoto = safeImageUrl(row.photo);
+            photo = safePhoto
+                ? `<img src="${safePhoto}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="w-8 h-8 inline-block mr-2 rounded-full object-cover">`
                 : '<span class="w-8 h-8 inline-block mr-2"></span>';
         } else {
             // No kind 0 profile - generate PFP and use truncated pubkey with color
@@ -82,12 +87,14 @@ export const tableFormatters: Formatters = {
                 } catch {}
             }
 
-            photo = pfpSrc
-                ? `<img src="${pfpSrc}" alt="${truncated}" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="w-8 h-8 inline-block mr-2 rounded-full object-cover">`
+            const safePfp = safeImageUrl(pfpSrc);
+            photo = safePfp
+                ? `<img src="${safePfp}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="w-8 h-8 inline-block mr-2 rounded-full object-cover">`
                 : '<span class="w-8 h-8 inline-block mr-2"></span>';
 
-            // Use two spans for dark/light mode color switching
-            displayName = `<span class="font-mono text-sm"><span class="dark:hidden" style="color: ${lightColor}">${truncated}</span><span class="hidden dark:inline" style="color: ${darkColor}">${truncated}</span></span>`;
+            // Use two spans for dark/light mode color switching. truncated comes
+            // from the trusted truncatePubkey(hex) but escape defensively anyway.
+            displayName = `<span class="font-mono text-sm"><span class="dark:hidden" style="color: ${lightColor}">${escapeHtml(truncated)}</span><span class="hidden dark:inline" style="color: ${darkColor}">${escapeHtml(truncated)}</span></span>`;
         }
 
         const nameHtml = hasProfile
@@ -98,11 +105,18 @@ export const tableFormatters: Formatters = {
     },
     about: (about: string, row: any) => {
         if(typeof about !== 'string') return '-';
-        const aboutHtml = `<span class="text-sm max-w-[400px] block opacity-80" style="color:${row?.pubkey? pastelPairFromString(row?.pubkey)?.dark: "#444"};">${truncateWithEllipsis(about, 100)}</span>`;
+        // Defensive pubkey guard — about does not gate on it for the entry but
+        // the value flows into a CSS style; reject any non-hex value.
+        const safePubkey = typeof row?.pubkey === 'string' && /^[0-9a-f]{64}$/i.test(row.pubkey) ? row.pubkey : '';
+        const color = safePubkey ? pastelPairFromString(safePubkey)?.dark : '#444';
+        const aboutHtml = `<span class="text-sm max-w-[400px] block opacity-80" style="color:${color};">${escapeHtml(truncateWithEllipsis(about, 100))}</span>`;
         return aboutHtml;
     },
     reference: (reference: string) => {
         if(typeof reference !== 'string') return '-';
+        // Nostr identifier guard — must be a bech32-style nostr id before
+        // we interpolate into href. Anything else is rejected.
+        if (!/^(npub|nprofile|nevent|note|naddr)1[a-z0-9]+$/i.test(reference)) return '-';
         const referenceHtml = `<a href="https://njump.me/${reference}" target="_blank" class="text-sm underline">jump</a>`;
         return referenceHtml;
     },
@@ -126,12 +140,12 @@ export const filterFormatters: Formatters = {
     name: (software: string) => {
         if(typeof software !== 'string') return '-';
         software = makeSoftwareReadable(software);
-        return truncateWithEllipsis(software, 33);
+        return escapeHtml(truncateWithEllipsis(software, 33));
     },
     softwares: (software: string) => {
         if(typeof software !== 'string') return '-';
         software = makeSoftwareReadable(software);
-        return truncateWithEllipsis(software, 33);
+        return escapeHtml(truncateWithEllipsis(software, 33));
     },
 }
 

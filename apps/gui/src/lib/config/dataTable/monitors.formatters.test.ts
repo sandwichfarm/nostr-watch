@@ -100,7 +100,7 @@ describe('XSS regression: monitors filter formatters', () => {
         });
         const out = filterFormatters.pubkey(VALID_HEX_PUBKEY);
         expect(out).not.toContain('onerror=');
-        expect(out).not.toContain('x"');
+        expect(out).not.toContain('alert(1)');
     });
 
     it('filterFormatters.pubkey escapes attacker-controlled monitor.profile.name', () => {

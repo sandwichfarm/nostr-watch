@@ -3,7 +3,8 @@ import { makeSoftwareReadable } from '$lib/synonyms/software';
 import countryCodeToFlagEmoji from 'country-code-to-flag-emoji';
 import { getCountryName } from '$lib/stores/iso3166';
 
-import { pastelPairFromString } from '$utils/colors'; 
+import { pastelPairFromString } from '$utils/colors';
+import { escapeHtml } from '$utils/sanitize';
 
 export const columnsDisable: DataKeys = ['id']
 export const filtersDisable: DataKeys = []
@@ -30,10 +31,15 @@ export const tableFormatters: Formatters = {
             value = `<span class="my-1 text-sm font-mono" style="color:#533">unknown</span>`;
         }
         else {
-            emoji = `<span class="mr-2 text-lg">${countryCodeToFlagEmoji(geocode)}</span>`
-            value = `<span class="my-1 text-sm font-mono lowercase" style="color:${pastelPairFromString(getCountryName(geocode) as string)?.dark} !important;">${getCountryName(geocode)}</span>`;
+            // getCountryName returns a trusted hardcoded ISO entry or undefined.
+            // Escape its result defensively. countryCodeToFlagEmoji is benign
+            // (returns flag emoji codepoints), but escape its output as well.
+            const countryName = getCountryName(geocode) as string | undefined;
+            const safeCountryName = escapeHtml(countryName || '');
+            emoji = `<span class="mr-2 text-lg">${escapeHtml(countryCodeToFlagEmoji(geocode))}</span>`
+            value = `<span class="my-1 text-sm font-mono lowercase" style="color:${pastelPairFromString(countryName as string)?.dark} !important;">${safeCountryName}</span>`;
         }
-        return `<span class="block min-w-[300px]">${emoji}${value} [${geocode}]</span>`;
+        return `<span class="block min-w-[300px]">${emoji}${value} [${escapeHtml(geocode)}]</span>`;
     },
     relaysCount: (relaysCount: number) => {
         return `<span class="text-md py-4 px-2 rounded-full inline-block text-center bg-black/10 dark:bg-white/10">${relaysCount}</span>`
@@ -48,12 +54,12 @@ export const filterFormatters: Formatters = {
     name: (software: string) => {
         if(typeof software !== 'string') return '-';
         software = makeSoftwareReadable(software);
-        return truncateWithEllipsis(software, 33);
+        return escapeHtml(truncateWithEllipsis(software, 33));
     },
     softwares: (software: string) => {
         if(typeof software !== 'string') return '-';
         software = makeSoftwareReadable(software);
-        return truncateWithEllipsis(software, 33);
+        return escapeHtml(truncateWithEllipsis(software, 33));
     }
 }
 

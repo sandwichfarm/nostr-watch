@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, resolve } from 'path';
+import { readFileSync, existsSync } from 'fs';
+import { resolve } from 'path';
 
 /**
  * Structural regression: ensure no DataTable copy or filter component
@@ -12,10 +11,28 @@ import { dirname, resolve } from 'path';
  * Note: this is a regression-floor — we don't have @testing-library/svelte
  * available. The structural assertion is sufficient to prevent re-entry of
  * the vulnerability.
+ *
+ * Resolve paths by walking from process.cwd() until we find apps/gui/src,
+ * so the test works whether vitest is run from the repo root or apps/gui.
  */
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const repoRoot = resolve(__dirname, '../../../../../');
+function findGuiSrcRoot(): string {
+    const candidates = [
+        process.cwd(),
+        resolve(process.cwd(), 'apps/gui'),
+        resolve(process.cwd(), '..'),
+        resolve(process.cwd(), '../..'),
+        resolve(process.cwd(), '../../apps/gui')
+    ];
+    for (const c of candidates) {
+        if (existsSync(resolve(c, 'src/lib/components/data-view/table/DataTable.svelte'))) {
+            return c;
+        }
+    }
+    throw new Error('Could not locate apps/gui from cwd ' + process.cwd());
+}
+
+const repoRoot = findGuiSrcRoot();
 
 const COMPONENT_FILES = [
     resolve(repoRoot, 'src/lib/components/data-view/table/DataTable.svelte'),

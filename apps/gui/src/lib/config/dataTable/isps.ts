@@ -72,7 +72,7 @@ export const filterFormatters: Formatters = {
     name: (software: string) => {
         if(typeof software !== 'string') return '-';
         software = makeSoftwareReadable(software);
-        return truncateWithEllipsis(software, 33);
+        return escapeHtml(truncateWithEllipsis(software, 33));
     }
 }
 

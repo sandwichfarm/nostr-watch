@@ -171,11 +171,22 @@ describe('XSS regression: relay filter formatters', () => {
         // spaces but lets newlines through. Without escapeHtml, the
         // payload reaches {@html} in DataViewFilters.svelte and the img
         // onerror fires even when the filter pane is display:none.
+        // After the fix, the structural HTML metacharacters are entity-
+        // encoded, so no <img> element is constructed and the surrounding
+        // attribute-quote `"` is escaped to &quot; — onerror= survives as
+        // inert text inside the escaped string but cannot fire because
+        // there is no parsed element to attach it to.
         const NEWLINE_BYPASS = `<img\nsrc=x\nonerror=location.href="https://attacker.example">`;
         const out = relayFilterFormatters.software(NEWLINE_BYPASS);
+        // Structural metacharacters MUST be escaped so no DOM is built.
         expect(out).not.toContain('<img');
-        expect(out).not.toContain('onerror=');
+        expect(out).not.toContain('<');
+        expect(out).not.toContain('>');
+        expect(out).not.toContain('"');
+        // And the canonical escape markers MUST be present.
         expect(out).toContain('&lt;img');
+        expect(out).toContain('&quot;');
+        expect(out).toContain('&gt;');
     });
 
     it('software filter formatter escapes a script-tag payload', () => {

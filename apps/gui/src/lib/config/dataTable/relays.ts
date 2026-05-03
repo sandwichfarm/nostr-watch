@@ -565,7 +565,7 @@ export const filterFormatters: Formatters = {
     },
     software: (software) => {
         if(typeof software !== 'string') return '-';
-        return makeSoftwareReadable(software);
+        return escapeHtml(makeSoftwareReadable(software));
     },
     operatorPubkey: (pk: string): string => {
         if(!pk) return ' ';

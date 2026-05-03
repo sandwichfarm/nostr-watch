@@ -717,7 +717,11 @@
                                         }"
                                         disabled={$disabledFilters[filter.key]?.has(String(value).toLowerCase())}
                                     >
-                                        {@html $config.filterFormatters?.[filter.key]?.(value) || value}
+                                        {#if $config.filterFormatters?.[filter.key]}
+                                            {@html $config.filterFormatters[filter.key](value)}
+                                        {:else}
+                                            {value}
+                                        {/if}
                                     </Button>
                                 {/each}
                                 {#if filter.filteredDistinctValues.length > maxBadgeLength}

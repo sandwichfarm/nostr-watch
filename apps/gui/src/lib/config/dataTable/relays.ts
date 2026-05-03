@@ -17,7 +17,8 @@ import type { DataFormatters, DataTableConfigDependencies, NameFormatter } from 
 import { nip11 } from 'nostr-tools';
 import { nip11ValidationErrorCount } from '$stores/nip11-validations';
 
-import { pastelPairFromString } from '$utils/colors'; 
+import { pastelPairFromString } from '$utils/colors';
+import { escapeHtml, safeImageUrl } from '$utils/sanitize';
 
 import pickaxe from 'lucide-svelte/icons/pickaxe';
 
@@ -299,9 +300,13 @@ export const tableFormatters: Formatters = {
 
     relay: (relay: string, row: any) => {
         const { icon } = row;
-        const formatted = `<span style="color: ${pastelPairFromString(relay)?.dark};" class="inline-block my-1 text-sm font-mono py-1 px-2 rounded-sm">${truncateWithEllipsis(relay, 44).replace('wss://', '').replace('ws://', '')}</span>`;
-        const iconHtml = icon
-            ? `<img src="${icon}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="mr-2 h-6 w-6 rounded-full overflow-hidden inline-block" />`
+        const safeIcon = safeImageUrl(icon);
+        const visible = escapeHtml(
+            truncateWithEllipsis(relay, 44).replace('wss://', '').replace('ws://', '')
+        );
+        const formatted = `<span style="color: ${pastelPairFromString(relay)?.dark};" class="inline-block my-1 text-sm font-mono py-1 px-2 rounded-sm">${visible}</span>`;
+        const iconHtml = safeIcon
+            ? `<img src="${safeIcon}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="mr-2 h-6 w-6 rounded-full overflow-hidden inline-block" />`
             : '<span class="inline-block mr-2 h-6 w-6"></span>';
         return `<a class="text-lg" href="/relays/${generateRelayPathFromUrl(relay)}">${iconHtml}${formatted}</a>`;
     },
@@ -379,8 +384,11 @@ export const tableFormatters: Formatters = {
         displayedPubkeys.forEach((pk: string) => {
             const monitor = $monitorsMap.get(pk);
             if (!monitor) return;
-    
-            str += `<img src="${monitor.photo}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="border border-[1px] border-black w-5 h-5 relative rounded-full inline-block opacity-${100-i*20} ${i>0? '-ml-[10px]': ''}" style="z-index: ${z};" />`;
+
+            const safePhoto = safeImageUrl(monitor.photo);
+            if (!safePhoto) return;
+
+            str += `<img src="${safePhoto}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="border border-[1px] border-black w-5 h-5 relative rounded-full inline-block opacity-${100-i*20} ${i>0? '-ml-[10px]': ''}" style="z-index: ${z};" />`;
             i++;
             z--;
         });
@@ -483,11 +491,13 @@ export const tableFormatters: Formatters = {
         if(!pk || typeof pk !== 'string') return '';
         const profile: StorePubkeyProfile = pubkeyProfile(pk);
         if(!profile) return '';
+        // Defensive guard: profile.pubkey flows into an href; only allow well-formed hex.
+        if(profile?.pubkey && !/^[0-9a-f]{64}$/i.test(profile.pubkey)) return '';
         let image = ''
-        let name = ''
-        if(profile?.photo) {
+        const safePhoto = safeImageUrl(profile?.photo);
+        if(profile?.photo && safePhoto) {
             image = `<a href="/operators/${profile.pubkey}" class="inline-block rounded-full overflow-hidden w-8 h-8 mr-2">
-                <img src="${profile.photo}" alt="${profile.photo}" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="w-full h-auto" />
+                <img src="${safePhoto}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="w-full h-auto" />
             </a>`
         }
         return `<div class="flex">${image}</div>`
@@ -504,11 +514,11 @@ export const tableFormatters: Formatters = {
     },
     name: (name, row) => {
         const { relay } = row;
-        return `<span class="text-xs lowercase font-mono opacity-80" style="color: ${pastelPairFromString(relay)?.dark}">${name}</div>`
+        return `<span class="text-xs lowercase font-mono opacity-80" style="color: ${pastelPairFromString(relay)?.dark}">${escapeHtml(name)}</span>`
     },
     description: (description, row) => {
         const { relay } = row;
-        return `<span class="text-xs lowercase font-mono opacity-80" style="color: ${pastelPairFromString(relay)?.dark}">${description}</div>`
+        return `<span class="text-xs lowercase font-mono opacity-80" style="color: ${pastelPairFromString(relay)?.dark}">${escapeHtml(description)}</span>`
     }
 }
 
@@ -530,16 +540,18 @@ export const filterFormatters: Formatters = {
         const profile: PubkeyProfile = pubkeyProfile(pk);
         if(!profile) return ' ';
         if(!profile?.photo) return ' ';
+        const safePhoto = safeImageUrl(profile.photo);
+        if(!safePhoto) return ' ';
         let name = truncateWithEllipsis(pk, 33);
         if(profile?.name){
             name = truncateWithEllipsis(profile.name, 33);
         }
         let image = `<span class="inline-block rounded-full overflow-hidden w-8 h-8 mr-2">
-             <img src="${profile.photo}" alt="${profile.photo}" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="w-full h-auto" />
+             <img src="${safePhoto}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="w-full h-auto" />
             </span>`
         return `<div class="flex">
             <div>${image}</div>
-            <div>${name}</div>
+            <div>${escapeHtml(name)}</div>
             </div>`
     }
 }

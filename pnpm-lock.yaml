@@ -1138,7 +1138,7 @@ importers:
         version: 8.57.1
       tsup:
         specifier: ^8.0.2
-        version: 8.4.0(@swc/core@1.11.24(@swc/helpers@0.5.17))(jiti@1.21.7)(postcss@8.5.13)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.2)
+        version: 8.4.0(@swc/core@1.11.24(@swc/helpers@0.5.17))(jiti@1.21.7)(postcss@8.5.13)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.4)
       typescript:
         specifier: ^5.3.3
         version: 5.8.3
@@ -2183,8 +2183,8 @@ importers:
         specifier: 3.0.0
         version: 3.0.0
       yaml:
-        specifier: 2.4.5
-        version: 2.4.5
+        specifier: ^2.8.3
+        version: 2.8.4
       yaml-convert:
         specifier: 1.0.1
         version: 1.0.1
@@ -13699,8 +13699,8 @@ packages:
     engines: {node: '>= 14'}
     hasBin: true
 
-  yaml@2.8.2:
-    resolution: {integrity: sha512-mplynKqc1C2hTVYxd0PU2xQAc22TI1vShAYGksCCfxbn/dFwnHTNi1bvYsBTkhdUNtGIf5xNOg938rrSSYvS9A==}
+  yaml@2.8.4:
+    resolution: {integrity: sha512-ml/JPOj9fOQK8RNnWojA67GbZ0ApXAUlN2UQclwv2eVgTgn7O9gg9o7paZWKMp4g0H3nTLtS9LVzhkpOFIKzog==}
     engines: {node: '>= 14.6'}
     hasBin: true
 
@@ -16672,7 +16672,7 @@ snapshots:
   '@scalar/json-magic@0.8.5':
     dependencies:
       '@scalar/helpers': 0.2.1
-      yaml: 2.8.2
+      yaml: 2.8.4
 
   '@scalar/openapi-parser@0.23.6':
     dependencies:
@@ -16684,7 +16684,7 @@ snapshots:
       ajv-formats: 3.0.1(ajv@8.18.0)
       jsonpointer: 5.0.1
       leven: 4.1.0
-      yaml: 2.8.2
+      yaml: 2.8.4
 
   '@scalar/openapi-types@0.5.3':
     dependencies:
@@ -23633,7 +23633,7 @@ snapshots:
   postcss-load-config@4.0.2(postcss@8.5.13)(ts-node@10.9.2(@swc/core@1.11.24(@swc/helpers@0.5.17))(@types/node@22.15.3)(typescript@5.8.3)):
     dependencies:
       lilconfig: 3.1.3
-      yaml: 2.4.5
+      yaml: 2.8.4
     optionalDependencies:
       postcss: 8.5.13
       ts-node: 10.9.2(@swc/core@1.11.24(@swc/helpers@0.5.17))(@types/node@22.15.3)(typescript@5.8.3)
@@ -23647,14 +23647,14 @@ snapshots:
       tsx: 4.20.6
       yaml: 2.4.5
 
-  postcss-load-config@6.0.1(jiti@1.21.7)(postcss@8.5.13)(tsx@4.20.6)(yaml@2.8.2):
+  postcss-load-config@6.0.1(jiti@1.21.7)(postcss@8.5.13)(tsx@4.20.6)(yaml@2.8.4):
     dependencies:
       lilconfig: 3.1.3
     optionalDependencies:
       jiti: 1.21.7
       postcss: 8.5.13
       tsx: 4.20.6
-      yaml: 2.8.2
+      yaml: 2.8.4
 
   postcss-nested@6.2.0(postcss@8.5.13):
     dependencies:
@@ -23915,7 +23915,7 @@ snapshots:
       unicode-properties: 1.4.1
       urijs: 1.19.11
       wordwrap: 1.0.0
-      yaml: 2.4.5
+      yaml: 2.8.4
     transitivePeerDependencies:
       - encoding
 
@@ -25887,7 +25887,7 @@ snapshots:
       - tsx
       - yaml
 
-  tsup@8.4.0(@swc/core@1.11.24(@swc/helpers@0.5.17))(jiti@1.21.7)(postcss@8.5.13)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.2):
+  tsup@8.4.0(@swc/core@1.11.24(@swc/helpers@0.5.17))(jiti@1.21.7)(postcss@8.5.13)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.4):
     dependencies:
       bundle-require: 5.1.0(esbuild@0.25.12)
       cac: 6.7.14
@@ -25897,7 +25897,7 @@ snapshots:
       esbuild: 0.25.12
       joycon: 3.1.1
       picocolors: 1.1.1
-      postcss-load-config: 6.0.1(jiti@1.21.7)(postcss@8.5.13)(tsx@4.20.6)(yaml@2.8.2)
+      postcss-load-config: 6.0.1(jiti@1.21.7)(postcss@8.5.13)(tsx@4.20.6)(yaml@2.8.4)
       resolve-from: 5.0.0
       rollup: 4.59.0
       source-map: 0.8.0-beta.0
@@ -27443,13 +27443,13 @@ snapshots:
     dependencies:
       javascript-stringify: 2.1.0
       loader-utils: 2.0.4
-      yaml: 2.4.5
+      yaml: 2.8.4
 
   yaml@1.10.2: {}
 
   yaml@2.4.5: {}
 
-  yaml@2.8.2: {}
+  yaml@2.8.4: {}
 
   yargs-parser@20.2.9: {}
 

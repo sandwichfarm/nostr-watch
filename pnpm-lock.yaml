@@ -268,13 +268,13 @@ importers:
         version: 4.1.2(rollup@4.59.0)
       '@sveltejs/adapter-netlify':
         specifier: ^4.3.6
-        version: 4.4.2(@sveltejs/kit@2.53.3(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.53.5)(vite@5.4.21(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.46.0)))(svelte@5.53.5)(typescript@5.8.3)(vite@5.4.21(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.46.0)))
+        version: 4.4.2(@sveltejs/kit@2.59.0(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.53.5)(vite@5.4.21(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.46.0)))(svelte@5.53.5)(typescript@5.8.3)(vite@5.4.21(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.46.0)))
       '@sveltejs/adapter-static':
         specifier: ^3.0.6
-        version: 3.0.8(@sveltejs/kit@2.53.3(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.53.5)(vite@5.4.21(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.46.0)))(svelte@5.53.5)(typescript@5.8.3)(vite@5.4.21(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.46.0)))
+        version: 3.0.8(@sveltejs/kit@2.59.0(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.53.5)(vite@5.4.21(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.46.0)))(svelte@5.53.5)(typescript@5.8.3)(vite@5.4.21(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.46.0)))
       '@sveltejs/kit':
-        specifier: ^2.52.2
-        version: 2.53.3(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.53.5)(vite@5.4.21(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.46.0)))(svelte@5.53.5)(typescript@5.8.3)(vite@5.4.21(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.46.0))
+        specifier: ^2.57.1
+        version: 2.59.0(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.53.5)(vite@5.4.21(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.46.0)))(svelte@5.53.5)(typescript@5.8.3)(vite@5.4.21(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.46.0))
       '@sveltejs/package':
         specifier: ^2.0.0
         version: 2.3.11(svelte@5.53.5)(typescript@5.8.3)
@@ -5324,15 +5324,15 @@ packages:
     peerDependencies:
       '@sveltejs/kit': ^2.0.0
 
-  '@sveltejs/kit@2.53.3':
-    resolution: {integrity: sha512-tshOeBUid2v5LAblUpatIdFm5Cyykbw2EiKWOunAAX0A/oJaR7DOdC9wLR5Qqh9zUf3QUISA2m9A3suBdQSYQg==}
+  '@sveltejs/kit@2.59.0':
+    resolution: {integrity: sha512-WeJaGKvDf3uVQB4bnDHhM+BXCY34LC1v0HiPqnSpvNkjB54r8DAUP1rpk73s+5zprIirEKtUcVfgh6+fPODjzQ==}
     engines: {node: '>=18.13'}
     hasBin: true
     peerDependencies:
       '@opentelemetry/api': ^1.0.0
       '@sveltejs/vite-plugin-svelte': ^3.0.0 || ^4.0.0-next.1 || ^5.0.0 || ^6.0.0-next.0 || ^7.0.0
       svelte: ^4.0.0 || ^5.0.0-next.0
-      typescript: ^5.3.3
+      typescript: ^5.3.3 || ^6.0.0
       vite: ^5.0.3 || ^6.0.0 || ^7.0.0-beta.0 || ^8.0.0
     peerDependenciesMeta:
       '@opentelemetry/api':
@@ -16786,24 +16786,28 @@ snapshots:
     dependencies:
       acorn: 8.15.0
 
-  '@sveltejs/adapter-netlify@4.4.2(@sveltejs/kit@2.53.3(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.53.5)(vite@5.4.21(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.46.0)))(svelte@5.53.5)(typescript@5.8.3)(vite@5.4.21(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.46.0)))':
+  '@sveltejs/acorn-typescript@1.0.8(acorn@8.16.0)':
+    dependencies:
+      acorn: 8.16.0
+
+  '@sveltejs/adapter-netlify@4.4.2(@sveltejs/kit@2.59.0(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.53.5)(vite@5.4.21(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.46.0)))(svelte@5.53.5)(typescript@5.8.3)(vite@5.4.21(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.46.0)))':
     dependencies:
       '@iarna/toml': 2.2.5
-      '@sveltejs/kit': 2.53.3(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.53.5)(vite@5.4.21(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.46.0)))(svelte@5.53.5)(typescript@5.8.3)(vite@5.4.21(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.46.0))
+      '@sveltejs/kit': 2.59.0(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.53.5)(vite@5.4.21(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.46.0)))(svelte@5.53.5)(typescript@5.8.3)(vite@5.4.21(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.46.0))
       esbuild: 0.24.2
       set-cookie-parser: 2.7.1
 
-  '@sveltejs/adapter-static@3.0.8(@sveltejs/kit@2.53.3(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.53.5)(vite@5.4.21(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.46.0)))(svelte@5.53.5)(typescript@5.8.3)(vite@5.4.21(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.46.0)))':
+  '@sveltejs/adapter-static@3.0.8(@sveltejs/kit@2.59.0(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.53.5)(vite@5.4.21(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.46.0)))(svelte@5.53.5)(typescript@5.8.3)(vite@5.4.21(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.46.0)))':
     dependencies:
-      '@sveltejs/kit': 2.53.3(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.53.5)(vite@5.4.21(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.46.0)))(svelte@5.53.5)(typescript@5.8.3)(vite@5.4.21(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.46.0))
+      '@sveltejs/kit': 2.59.0(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.53.5)(vite@5.4.21(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.46.0)))(svelte@5.53.5)(typescript@5.8.3)(vite@5.4.21(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.46.0))
 
-  '@sveltejs/kit@2.53.3(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.53.5)(vite@5.4.21(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.46.0)))(svelte@5.53.5)(typescript@5.8.3)(vite@5.4.21(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.46.0))':
+  '@sveltejs/kit@2.59.0(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.53.5)(vite@5.4.21(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.46.0)))(svelte@5.53.5)(typescript@5.8.3)(vite@5.4.21(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.46.0))':
     dependencies:
       '@standard-schema/spec': 1.1.0
-      '@sveltejs/acorn-typescript': 1.0.8(acorn@8.15.0)
+      '@sveltejs/acorn-typescript': 1.0.8(acorn@8.16.0)
       '@sveltejs/vite-plugin-svelte': 4.0.4(svelte@5.53.5)(vite@5.4.21(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.46.0))
       '@types/cookie': 0.6.0
-      acorn: 8.15.0
+      acorn: 8.16.0
       cookie: 1.1.1
       devalue: 5.6.3
       esm-env: 1.2.2

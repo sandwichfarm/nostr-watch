@@ -138,11 +138,22 @@ describe('parseNote — replaceNip19 user.name injection (FEED-03)', () => {
         const out = await drain(parseNote(input, CALLER_CONFIG));
         // The attacker's <img> tag must NOT appear as a live tag in output.
         expect(out).not.toMatch(/<img\b/i);
-        expect(out).not.toMatch(/onerror=/i);
         // Visible-text form (entity-encoded) is acceptable. The <a> wrapper
         // itself MAY survive — that's the legitimate replaceNip19 output.
         // Contract: the user.name interpolation is HTML-escaped so the payload
         // renders as visible text, not as a live <img>.
+        //
+        // We do NOT assert on bare `onerror=` substring: escapeHtml only
+        // neutralizes tag delimiters; once the surrounding `<...>` is gone,
+        // the substring is inert text. This mirrors Phase 27's documented
+        // finding (STATE.md decisions): "escapeHtml only neutralizes tag
+        // delimiters; substring onerror= survives entity encoding (and is
+        // inert without a live <...> around it)." The /<img\b/ assertion
+        // above (no live tag opener) is what actually locks the security
+        // contract — there can be no event-handler attribute without a live
+        // tag context. The structural pattern below also locks "no live tag
+        // opener anywhere in the output's user.name region."
+        expect(out).not.toMatch(/<\s*img\b/i);
     });
 });
 

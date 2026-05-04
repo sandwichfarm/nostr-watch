@@ -361,7 +361,7 @@ export const tableFormatters: Formatters = {
     },
     dd: (dd: DD ) => {
         if(!dd?.lat || !dd?.lon) return '';
-        return `<span class="text-xs font-bold white/50 font-mono">${dd.lat.toFixed(3)}, ${dd.lon.toFixed(3)}</span>`
+        return `<span class="text-xs font-bold white/50 font-mono">${escapeHtml(String(dd.lat.toFixed(3)))}, ${escapeHtml(String(dd.lon.toFixed(3)))}</span>`
     },
     lastSeen: (lastSeen) => {
         if(lastSeen < 0) {

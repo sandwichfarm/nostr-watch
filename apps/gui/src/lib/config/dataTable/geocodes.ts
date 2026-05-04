@@ -42,10 +42,10 @@ export const tableFormatters: Formatters = {
         return `<span class="block min-w-[300px]">${emoji}${value} [${escapeHtml(geocode)}]</span>`;
     },
     relaysCount: (relaysCount: number) => {
-        return `<span class="text-md py-4 px-2 rounded-full inline-block text-center bg-black/10 dark:bg-white/10">${relaysCount}</span>`
+        return `<span class="text-md py-4 px-2 rounded-full inline-block text-center bg-black/10 dark:bg-white/10">${Number(relaysCount)}</span>`
     },
     percent: (percent: number) => {
-        return `<span class="text-md py-4 px-2 rounded-full inline-block text-center bg-black/10 dark:bg-white/10">${percent}%</span>`
+        return `<span class="text-md py-4 px-2 rounded-full inline-block text-center bg-black/10 dark:bg-white/10">${Number(percent)}%</span>`
     }
 }
 

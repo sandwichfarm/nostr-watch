@@ -542,7 +542,7 @@ export const tableFormatters: Formatters = {
     },
     software: (software) => {
         if(typeof software !== 'string') return '-';
-        software = makeSoftwareReadable(software);
+        software = escapeHtml(makeSoftwareReadable(software));
         return escapeHtml(truncateWithEllipsis(software, 33));
     },
     name: (name, row) => {

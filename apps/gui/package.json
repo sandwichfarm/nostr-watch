@@ -32,10 +32,14 @@
 		"preview": "vite preview",
 		"package": "svelte-kit sync && svelte-package && publint",
 		"prepublishOnly": "npm run package",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check": "svelte-kit sync && node ./scripts/check-svelte-baseline.mjs",
+		"check:raw": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"test": "vitest run",
-		"lint": "prettier --check .",
+		"lint": "node ./scripts/check-prettier-baseline.mjs",
+		"lint:raw": "prettier --check .",
+		"baseline:check": "svelte-kit sync && node ./scripts/check-svelte-baseline.mjs --update",
+		"baseline:lint": "node ./scripts/check-prettier-baseline.mjs --update",
 		"format": "prettier --write ."
 	},
 	"exports": {

@@ -45,11 +45,11 @@ export const tableFormatters: Formatters = {
         return `${icon}<a href="/relays/software/${btoa(software)}">${htmlName}</a>`;
     },
     versionsNum: (versionsNum: number) => {
-        return `<span class="inline-block m-auto text-sm py-2 px-3 rounded-full bg-black/10 dark:bg-white/10">${versionsNum}</span>`;
+        return `<span class="inline-block m-auto text-sm py-2 px-3 rounded-full bg-black/10 dark:bg-white/10">${Number(versionsNum)}</span>`;
     },
     marketShare: (marketShare: number) => {
-        return `<span class="text-md">${marketShare.toFixed(1)}%</span>`;
-    }   
+        return `<span class="text-md">${escapeHtml(String(marketShare.toFixed(1)))}%</span>`;
+    }
 }
 
 

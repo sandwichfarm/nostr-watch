@@ -124,7 +124,7 @@ export const tableFormatters: Formatters = {
         let monitor: Monitor | undefined;
         monitorsMap.subscribe((monitors) => { monitor = monitors.get(pubkey) })
         if(!monitor) return pubkey;
-        let profile: string = `<a href="/monitors/${pubkey}" class="flex hover:opacity-80 transition-opacity">`;
+        let profile: string = `<a href="/monitors/${escapeHtml(String(pubkey))}" class="flex hover:opacity-80 transition-opacity">`;
 	        profile += '<div class="flex-shrink-0 mr-2">'
 	        const safePhoto = safeImageUrl(monitor?.photo);
 	        if(safePhoto){

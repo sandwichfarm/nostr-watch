@@ -163,6 +163,36 @@ describe('XSS regression: additional relay formatters', () => {
         expect(out).toContain('🔹');
         expect(out).toContain('⏳');
     });
+
+    it('seenTimes formatter escapes meta-refresh payload (SINK-01)', () => {
+        const META_REFRESH = `<meta http-equiv="refresh" content="900;url=https://x">`;
+        const out = relayFormatters.seenTimes(META_REFRESH);
+        expect(out).not.toContain('<meta');
+        expect(out).toContain('&lt;meta');
+    });
+
+    it('nip11ValidationErrors formatter escapes meta-refresh payload and preserves empty-string for 0 (SINK-02)', () => {
+        const META_REFRESH = `<meta http-equiv="refresh" content="900;url=https://x">`;
+        const out = relayFormatters.nip11ValidationErrors(META_REFRESH as any);
+        expect(out).not.toContain('<meta');
+        expect(out).toContain('&lt;meta');
+        // Regression guard: the empty-string return for errorsCount === 0 must survive the patch.
+        expect(relayFormatters.nip11ValidationErrors(0)).toBe('');
+    });
+
+    it('formatFee formatter coerces fee.amount/fee.period through Number() and escapes — emits no raw HTML (SINK-03)', () => {
+        const META_REFRESH = `<meta http-equiv="refresh" content="900;url=https://x">`;
+        // fee.amount and fee.period are attacker-controlled (NIP-11). Pre-fix, the formatter
+        // interpolates `amount` and `period` raw into a template literal.
+        const out = relayFormatters.subscriptionFee([
+            { amount: META_REFRESH as any, period: META_REFRESH as any, unit: 'sats' as any }
+        ] as any);
+        expect(out).not.toContain('<meta');
+        expect(out).not.toContain('<script');
+        expect(out).not.toContain('onerror=');
+        // No unescaped tag opener — the meta-refresh payload's `<m` must not survive.
+        expect(out).not.toMatch(/<\s*\w/);
+    });
 });
 
 describe('XSS regression: relay filter formatters', () => {

@@ -12,7 +12,11 @@ export type SeedBootStateV1 = {
   error?: string;
 };
 
-const SEED_BOOT_STATE_KEY = 'boot:seed:v1';
+// SECURITY (v2.5.1): bumped from v1 to v2 to drop poisoned `aggregate:complete` and
+// `aggregate:relayNip11Validations` localStorage entries from builds before commit 9df89519.
+// Old v1 key remains untouched; new v2 key forces a re-seed on next visit which overwrites
+// the aggregate caches with sanitized values.
+const SEED_BOOT_STATE_KEY = 'boot:seed:v2';
 
 function storageKey(key: string): string {
   const prefix = (StateManager as any)?.localStorage?.prefix ?? 'state';
@@ -95,4 +99,3 @@ if (typeof window !== 'undefined') {
     seedBootState.set(readSeedBootState());
   });
 }
-

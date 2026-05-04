@@ -248,21 +248,38 @@ function deduplicateArrayOfObjects<T>(array: T[], keys: (keyof T)[]): T[] {
     });
   }
 
+const finiteNumberOrNull = (value: unknown): number | null => {
+    const numberValue = Number(value);
+    return Number.isFinite(numberValue) ? numberValue : null;
+}
+
+const normalizedFeeAmount = (fee: Partial<Nip11Fee> | null | undefined): number | null => {
+    const rawAmount = finiteNumberOrNull(fee?.amount);
+    if(rawAmount === null) return null;
+
+    const amount = fee?.unit === 'msats' ? rawAmount / 1000 : rawAmount;
+    return Number.isFinite(amount) ? amount : null;
+}
+
 const formatFee = (fees: Nip11Fee[]) => {
     if(!fees || !Array.isArray(fees)) return ''
     let str = '';
     fees = deduplicateArrayOfObjects(fees, ['amount', 'period']);
     for(const fee of fees) {
         // if(!['msat', 'sat'].some( u => u === fee.unit)) continue;
-        let amount = fee.unit === 'msats'? fee.amount/1000: fee.amount;
+        let amount = normalizedFeeAmount(fee);
+        if(amount === null) continue;
+
         if(amount > 10) {
             amount = Math.round(amount);
         }
 
         str += `<span class="block">`
-        str += `<span class="fee-amount">${amount}</span> <span class="fee-unit text-black/50 dark:text-white/50">sats</span>`
-        if(fee?.period) {
-            str += `<span class="fee-period"> <span class="text-black/50 dark:text-white/50">every</span> ${fee.period/60/60/24} days</span>`
+        str += `<span class="fee-amount">${escapeHtml(String(amount))}</span> <span class="fee-unit text-black/50 dark:text-white/50">sats</span>`
+        const period = finiteNumberOrNull(fee?.period);
+        if(period !== null && period > 0) {
+            const days = period/60/60/24;
+            str += `<span class="fee-period"> <span class="text-black/50 dark:text-white/50">every</span> ${escapeHtml(String(days))} days</span>`
         }
         str += `</span>`
     }
@@ -283,10 +300,11 @@ export const dataDependencies: DataTableConfigDependencies = {
 
 const formatFeeData = (fees: Nip11Fee[]) => {
     if(!fees || !fees?.length) return null
-    fees.sort((a, b) => a.amount - b.amount);
-    const { amount, unit } = fees[0];
-    if(unit === 'msats') return amount/1000;
-    return fees[0].amount;
+    const amounts = fees
+        .map(fee => normalizedFeeAmount(fee))
+        .filter((amount): amount is number => amount !== null)
+        .sort((a, b) => a - b);
+    return amounts[0] ?? null;
 }
 
 export const dataFormatters: DataFormatters = {
@@ -352,7 +370,7 @@ export const tableFormatters: Formatters = {
         return `<span class="text-xs font-mono">${timeAgo(lastSeen*1000)}</span>`;
     },
     seenTimes: (seenTimes) => {
-        return `<span class="rounded-full bg-white/20 dark:bg-black/20 py-1 px-2 font-bold font-mono">${seenTimes}</span>`
+        return `<span class="rounded-full bg-white/20 dark:bg-black/20 py-1 px-2 font-bold font-mono">${escapeHtml(String(seenTimes))}</span>`
     },
     rtt: (rtt) => {
         const wholeNum = Math.round(rtt)
@@ -374,7 +392,7 @@ export const tableFormatters: Formatters = {
             return ``; 
         else 
             return `<span class="font-mono text-xs font-bold bg-red-600/50 px-2 py-1 rounded-full inline-block">
-                ${errorsCount}
+                ${escapeHtml(String(errorsCount))}
                 </span>`;    
     },
     seenBy: (pubkeys: string[]): string => {
@@ -542,7 +560,7 @@ export const tableFormatters: Formatters = {
     },
     software: (software) => {
         if(typeof software !== 'string') return '-';
-        software = escapeHtml(makeSoftwareReadable(software));
+        software = makeSoftwareReadable(software);
         return escapeHtml(truncateWithEllipsis(software, 33));
     },
     name: (name, row) => {

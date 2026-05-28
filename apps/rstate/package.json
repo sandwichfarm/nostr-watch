@@ -52,7 +52,7 @@
     "nostr-tools": "^2.11.0",
     "pino": "^9.5.0",
     "pino-pretty": "^13.0.0",
-    "ws": "^8.18.0",
+    "ws": "^8.20.1",
     "yaml": "^2.8.3"
   },
   "devDependencies": {

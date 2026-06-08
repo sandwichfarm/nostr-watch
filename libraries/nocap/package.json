@@ -72,7 +72,7 @@
     "tsc-watch": "6.2.0",
     "tslib": "^2.7.0",
     "typescript": "^5.0.0",
-    "vitest": "0.34.6",
+    "vitest": "3.2.6",
     "vitest-nostr": "0.4.1",
     "vitest-websocket-mock": "0.2.2"
   }

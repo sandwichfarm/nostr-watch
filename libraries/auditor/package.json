@@ -67,7 +67,7 @@
     "espowerify": "^1.1.0",
     "tsc-alias": "^1.8.10",
     "typescript": "^5.6.3",
-    "vitest": "3.1.1"
+    "vitest": "3.2.6"
   },
   "scripts": {
     "nip01": "node --no-warnings ./example/nip01.js",

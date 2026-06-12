@@ -9,7 +9,7 @@ Deno-based relay health monitor with NIP-66 event publishing.
 
 ## Overview
 
-`@nostrwatch/relaymon` monitors Nostr relay (WebSocket server) health through automated check cycles. It runs configurable check suites — DNS, connectivity, SSL, info document retrieval, and geo-location — against a seeded relay list, then publishes results as [NIP-66](https://github.com/nostr-protocol/nips/blob/master/66.md) relay status events to the Nostr network. Relays are discovered from multiple seed sources including static configuration, API endpoints, and existing NIP-66 events. Supports clearnet, Tor (`.onion`), and I2P (`.i2p`) relay monitoring via configurable network routing.
+`@nostrwatch/relaymon` monitors Nostr relay (WebSocket server) health through automated check cycles. It runs configurable check suites — DNS, connectivity, SSL, info document retrieval, and geo-location — against a seeded relay list, then publishes results as [NIP-66](https://github.com/nostr-protocol/nips/blob/master/66.md) relay status events to the Nostr network. It can also publish opt-in Trusted Relay Assertions (kind `30385`) using the draft TRA NIP shape from [`Letdown2491/trustedrelays`](https://github.com/Letdown2491/trustedrelays). RelayMon TRA events are monitor-local assertions derived only from that monitor's own observation history and are signed by the same monitor key used for NIP-66 publishing. RelayMon does not ingest report/appeal events or manage trusted-provider declarations for this feature. Relays are discovered from multiple seed sources including static configuration, API endpoints, and existing NIP-66 events. Supports clearnet, Tor (`.onion`), and I2P (`.i2p`) relay monitoring via configurable network routing.
 
 ## Prerequisites
 
@@ -145,6 +145,19 @@ relaymon:
         read: 5000
       max: "100"
       statusInterval: 20
+  trustedRelayAssertions:
+    enabled: false
+    relays: []
+    min_observations: 10
+    material_change_threshold: 3
+    refresh_interval: "1h"
+    history_retention: "30d"
+    max_observations_per_relay: 1000
+    publish_unreachable: true
+    publish_blocked: false
+    algorithm:
+      version: relaymon-local-v2
+      url: https://github.com/Letdown2491/trustedrelays/blob/main/ALGORITHM.md
 
 queue:
   workerConcurrency: 10
@@ -160,6 +173,7 @@ queue:
 | `relaymon.retry.expiry` | Stepped retry backoff rules (max retries + delay per step) |
 | `relaymon.seed.sources` | Where to discover relays: `config`, `static`, `api`, `events`, `db` |
 | `relaymon.checks.enabled` | Which check types to run (e.g., `open`, `read`) |
+| `relaymon.trustedRelayAssertions` | Optional kind `30385` Trusted Relay Assertion publishing controls |
 | `queue.workerConcurrency` | Maximum parallel relay checks |
 
 ## Known Limitations
@@ -178,7 +192,7 @@ No agent skills defined yet for this package.
 - [`@nostrwatch/db`](../../libraries/db/README.md) — SQLite database abstraction layer
 - [`@nostrwatch/logger`](../../internal/logger/README.md) — structured logging
 - [`@nostrwatch/announce`](../../internal/announce/README.md) — monitor profile and relay list announcement
-- [`@nostrwatch/publisher`](../../internal/publisher/README.md) — NIP-66 event publishing
+- [`@nostrwatch/publisher`](../../internal/publisher/README.md) — NIP-66 and Trusted Relay Assertion event publishing
 - [`apps/docker-stacks`](../docker-stacks/README.md) — pre-configured Docker Compose stacks for relaymon
 
 ## License

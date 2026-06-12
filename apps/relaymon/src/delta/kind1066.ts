@@ -2,7 +2,7 @@ import { Event, type NostrEvent } from "npm:@nostrwatch/publisher";
 import { finalizeEvent } from "nostr-tools/pure";
 import { hexToBytes } from "@noble/hashes/utils";
 import { getLogger } from "../utils/logger.ts";
-import { deltasToTags, type Delta } from "./detector.ts";
+import { type Delta, deltasToTags } from "./detector.ts";
 
 const logger = getLogger("Kind1066");
 
@@ -12,8 +12,8 @@ export interface Kind1066EventData {
   retryCount?: number;
   rttOpen?: number;
   deltas: Delta[];
-  periods?: string[];  // Period tags (e.g., ["6h", "1d", "7d"])
-  operationalStatus?: "init" | "down" | "up";  // Liveness state transition
+  periods?: string[]; // Period tags (e.g., ["6h", "1d", "7d"])
+  operationalStatus?: "init" | "down" | "up"; // Liveness state transition
 }
 
 /**
@@ -35,42 +35,48 @@ export class Kind1066 extends Event {
     const tags: string[][] = [];
 
     // Always include the relay URL as 'r' tag (reference)
-    tags.push(['r', data.url]);
+    tags.push(["r", data.url]);
 
     // Add operational status tag if this is a state transition
     if (data.operationalStatus) {
-      tags.push(['status', data.operationalStatus]);
-      logger.debug(`Added operational status tag: status:${data.operationalStatus}`);
+      tags.push(["O", data.operationalStatus]);
+      logger.debug(`Added operational status tag: O:${data.operationalStatus}`);
     }
 
     // Add period tags (T tags) if provided - cascading from shortest to longest
     if (data.periods && data.periods.length > 0) {
       for (const period of data.periods) {
-        tags.push(['T', period]);
+        tags.push(["T", period]);
       }
-      logger.debug(`Added ${data.periods.length} period tags: ${data.periods.join(', ')}`);
+      logger.debug(
+        `Added ${data.periods.length} period tags: ${data.periods.join(", ")}`,
+      );
     }
 
     if (data.online) {
       // Online event: include rtt-open and deltas
       if (data.rttOpen !== undefined && data.rttOpen > 0) {
-        tags.push(['rtt-open', String(Math.round(data.rttOpen))]);
+        tags.push(["rtt-open", String(Math.round(data.rttOpen))]);
       }
 
       // Add delta tags (changes, additions, removals)
       const deltaTags = deltasToTags(data.deltas);
       tags.push(...deltaTags);
 
-      logger.debug(`Generated online delta event for ${data.url} with ${data.deltas.length} deltas`);
+      logger.debug(
+        `Generated online delta event for ${data.url} with ${data.deltas.length} deltas`,
+      );
     } else {
       // Offline event: only include retry count
       const retryCount = data.retryCount ?? 0;
-      tags.push(['retry', String(retryCount)]);
+      tags.push(["retry", String(retryCount)]);
 
-      logger.debug(`Generated offline delta event for ${data.url} with retry count ${retryCount}`);
+      logger.debug(
+        `Generated offline delta event for ${data.url} with retry count ${retryCount}`,
+      );
     }
 
-    tags.push(['client', '@nostrwatch/relaymon']);
+    tags.push(["client", "@nostrwatch/relaymon"]);
 
     return tags;
   }
@@ -94,7 +100,10 @@ export class Kind1066 extends Event {
   /**
    * Generate and sign a Kind 1066 event in one call
    */
-  async generateAndSignEvent(data: Kind1066EventData, privkey: string): Promise<any> {
+  async generateAndSignEvent(
+    data: Kind1066EventData,
+    privkey: string,
+  ): Promise<any> {
     const unsignedEvent = this.generateEvent(data);
     const signedEvent = finalizeEvent(unsignedEvent, hexToBytes(privkey));
     return signedEvent;
@@ -107,7 +116,7 @@ export class Kind1066 extends Event {
 export async function createKind1066Event(
   pubkey: string,
   data: Kind1066EventData,
-  privkey: string
+  privkey: string,
 ): Promise<any> {
   const builder = new Kind1066(pubkey);
   return builder.generateAndSignEvent(data, privkey);

@@ -84,6 +84,21 @@ relaymon:
         read: 5000         # Read timeout (ms)
       max: 200             # Max concurrent checks
 
+  # Optional: publish Trusted Relay Assertions (Kind 30385)
+  # trustedRelayAssertions:
+  #   enabled: false
+  #   relays: []            # Defaults to publisher.relays when empty
+  #   min_observations: 10
+  #   material_change_threshold: 3
+  #   refresh_interval: 1h
+  #   history_retention: 30d
+  #   max_observations_per_relay: 1000
+  #   publish_unreachable: true
+  #   publish_blocked: false
+  #   algorithm:
+  #     version: relaymon-local-v2
+  #     url: https://github.com/Letdown2491/trustedrelays/blob/main/ALGORITHM.md
+
 # Optional: Health monitoring
 # health:
 #   enabled: true

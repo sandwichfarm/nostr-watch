@@ -7,7 +7,7 @@ Runs both Trawler and RelayMon in clearnet mode with separate databases.
 This stack combines two services:
 
 - **Trawler** — Crawls nostr relay lists (Kind 10002 events) to discover new relay URLs and writes them to its own SQLite database (`trawler.db`)
-- **RelayMon** — Maintains its own database (`relaymon.db`) for check state, and seeds its relay list by reading from trawler's database as a read-only source
+- **RelayMon** — Maintains its own database (`relaymon.db`) for check state, seeds its relay list by reading from trawler's database as a read-only source, and can optionally publish Trusted Relay Assertions (kind `30385`)
 
 Both services mount the same `./data` volume so RelayMon can read trawler's database, but each service writes to its own database file to avoid SQLite locking conflicts. Trawler continuously discovers new relays, and RelayMon picks them up on its next seed cycle via the `db` seed source.
 
@@ -62,6 +62,7 @@ See the `.example` files for fully commented templates. Key points:
 - Trawler writes to `/opt/data/trawler.db`
 - RelayMon writes to `/opt/data/relaymon.db`
 - RelayMon's `seed.options.db.path` points to `/opt/data/trawler.db` (read-only seed source)
+- Set `relaymon.trustedRelayAssertions.enabled` to `true` to publish optional kind `30385` trust assertions
 
 ### Database Architecture
 

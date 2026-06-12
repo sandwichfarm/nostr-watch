@@ -275,13 +275,21 @@ Deno.test("Config validation - trustedRelayAssertions defaults are applied", () 
   );
   assertEquals(result.relaymon.trustedRelayAssertions?.refresh_interval, "1h");
   assertEquals(
+    result.relaymon.trustedRelayAssertions?.history_retention,
+    "30d",
+  );
+  assertEquals(
+    result.relaymon.trustedRelayAssertions?.max_observations_per_relay,
+    1000,
+  );
+  assertEquals(
     result.relaymon.trustedRelayAssertions?.publish_unreachable,
     true,
   );
   assertEquals(result.relaymon.trustedRelayAssertions?.publish_blocked, false);
   assertEquals(
     result.relaymon.trustedRelayAssertions?.algorithm?.version,
-    "relaymon-local-v1",
+    "relaymon-local-v2",
   );
 });
 

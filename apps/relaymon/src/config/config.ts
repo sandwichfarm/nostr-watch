@@ -130,6 +130,19 @@ function processConfigTimeValues(config: Config, parentPath = ""): void {
     }
   }
 
+  if (config.relaymon?.trustedRelayAssertions?.history_retention) {
+    const path =
+      `${parentPath}.relaymon.trustedRelayAssertions.history_retention`;
+    const originalValue =
+      config.relaymon.trustedRelayAssertions.history_retention;
+    config.relaymon.trustedRelayAssertions.history_retention = timeString(
+      config.relaymon.trustedRelayAssertions.history_retention,
+    );
+    if (typeof originalValue === "string") {
+      originalTimeValues.set(path, originalValue);
+    }
+  }
+
   // Process health config time values
   if (config.health?.kuma?.intervalMs) {
     const path = `${parentPath}.health.kuma.intervalMs`;

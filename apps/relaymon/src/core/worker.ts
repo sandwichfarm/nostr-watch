@@ -782,7 +782,11 @@ export class Worker {
 
     try {
       const canonicalUrl = normalizeRelayUrl(result.url);
-      const history = recordTrustedRelayObservation(canonicalUrl, result);
+      const history = recordTrustedRelayObservation(canonicalUrl, result, {
+        recordHistory: true,
+        historyRetentionMs: traConfig.history_retention,
+        maxObservationsPerRelay: traConfig.max_observations_per_relay,
+      });
       const assertion = buildTrustedRelayAssertion(result, history, traConfig);
 
       if (
@@ -818,6 +822,8 @@ export class Worker {
         backoffMs = this.publishInitialBackoffMs,
       ) => {
         try {
+          // Kind 30385 is a monitor-local assertion signed by the same
+          // RelayMon key used for this monitor's NIP-66 events.
           const event = new Kind30385(this.pubkey);
           const privkey = getPrivateKey();
           const signedEvent = await event.generateAndSignEvent(

@@ -5,6 +5,7 @@ import type { TrustedRelayAssertionsConfig } from "../types/config.ts";
 import type { GeoResult, RelayCheckResult, RelayInfo } from "../types/relay.ts";
 import type {
   PublishedTrustedRelayAssertionState,
+  TrustedRelayObservationSample,
   TrustedRelayObservationState,
 } from "../db/db.ts";
 
@@ -51,9 +52,45 @@ interface Kind30385Event {
   content: string;
 }
 
-const DEFAULT_ALGORITHM_VERSION = "relaymon-local-v1";
+const DEFAULT_ALGORITHM_VERSION = "relaymon-local-v2";
 const DEFAULT_ALGORITHM_URL =
   "https://github.com/Letdown2491/trustedrelays/blob/main/ALGORITHM.md";
+const ANONYMOUS_NETWORK_COUNTRY_CODE = "XX";
+const LOW_SURVEILLANCE_COUNTRIES = new Set([
+  "CH",
+  "DE",
+  "FI",
+  "IS",
+  "NL",
+  "NO",
+  "SE",
+]);
+const MODERATE_SURVEILLANCE_COUNTRIES = new Set([
+  "AU",
+  "CA",
+  "FR",
+  "GB",
+  "NZ",
+  "US",
+]);
+const HIGH_SURVEILLANCE_COUNTRIES = new Set([
+  "CN",
+  "IR",
+  "KP",
+  "RU",
+  "SA",
+  "TR",
+]);
+const HIGH_CENSORSHIP_COUNTRIES = new Set([
+  "CN",
+  "CU",
+  "IR",
+  "KP",
+  "RU",
+  "SA",
+  "SY",
+  "TM",
+]);
 
 export function normalizeRelayUrl(url: string): string {
   const parsed = new URL(url);
@@ -85,6 +122,160 @@ function average(total: number, samples: number): number | undefined {
   return total / samples;
 }
 
+function percentile(values: number[], percentileValue: number): number {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const index = (sorted.length - 1) * percentileValue;
+  const lower = Math.floor(index);
+  const upper = Math.ceil(index);
+  if (lower === upper) return sorted[lower];
+  const weight = index - lower;
+  return sorted[lower] * (1 - weight) + sorted[upper] * weight;
+}
+
+function sampleLatency(
+  sample: TrustedRelayObservationSample,
+): number | undefined {
+  const durations = [
+    sample.rttOpen,
+    sample.rttRead,
+    sample.rttWrite,
+  ].filter((value): value is number => {
+    return typeof value === "number" && Number.isFinite(value) && value > 0;
+  });
+  if (!durations.length) return undefined;
+  return durations.reduce((total, duration) => total + duration, 0) /
+    durations.length;
+}
+
+function resultLatency(result: RelayCheckResult): number | undefined {
+  const durations = [
+    result.open?.duration,
+    result.read?.duration,
+    result.write?.duration,
+  ].filter((value): value is number => {
+    return typeof value === "number" && Number.isFinite(value) && value > 0;
+  });
+  if (!durations.length) return undefined;
+  return durations.reduce((total, duration) => total + duration, 0) /
+    durations.length;
+}
+
+function historySamples(
+  history: TrustedRelayObservationState,
+): TrustedRelayObservationSample[] {
+  return [...(history.history ?? [])].sort((a, b) => {
+    if (a.observedAt !== b.observedAt) return a.observedAt - b.observedAt;
+    return a.url.localeCompare(b.url);
+  });
+}
+
+function computeLatencyScore(
+  result: RelayCheckResult,
+  history: TrustedRelayObservationState,
+): number {
+  const sampleLatencies = historySamples(history)
+    .map(sampleLatency)
+    .filter((value): value is number => value !== undefined);
+
+  if (sampleLatencies.length > 0) {
+    const mean = sampleLatencies.reduce((total, value) => total + value, 0) /
+      sampleLatencies.length;
+    return scoreLatency(mean);
+  }
+
+  const aggregateLatency = average(
+    history.totalRttOpen + history.totalRttRead,
+    history.rttOpenSamples + history.rttReadSamples,
+  );
+  return scoreLatency(aggregateLatency ?? resultLatency(result));
+}
+
+function computeConsistencyScore(
+  result: RelayCheckResult,
+  history: TrustedRelayObservationState,
+): number {
+  const sampleLatencies = historySamples(history)
+    .map(sampleLatency)
+    .filter((value): value is number => value !== undefined);
+  if (sampleLatencies.length < 3) {
+    return scoreLatency(resultLatency(result)) * 0.5 + 50;
+  }
+
+  const median = percentile(sampleLatencies, 0.5);
+  if (median <= 0) return 75;
+
+  const iqr = percentile(sampleLatencies, 0.75) -
+    percentile(sampleLatencies, 0.25);
+  const jitterRatio = iqr / median;
+  return clampScore(100 - (jitterRatio * 80));
+}
+
+function outageSeverityPenalty(length: number): number {
+  if (length <= 0) return 0;
+  if (length === 1) return 3;
+  if (length <= 3) return 8;
+  if (length <= 6) return 16;
+  if (length <= 12) return 28;
+  if (length <= 24) return 45;
+  return 65;
+}
+
+function computeOutageResilience(
+  result: RelayCheckResult,
+  history: TrustedRelayObservationState,
+): number {
+  const samples = historySamples(history);
+  if (samples.length === 0) {
+    const uptime = history.observations > 0
+      ? (history.reachableObservations / history.observations) * 100
+      : result.online
+      ? 100
+      : 0;
+    return clampScore(uptime - (result.online ? 0 : 20));
+  }
+
+  let outageCount = 0;
+  let currentOutageLength = 0;
+  let outageSeverity = 0;
+  let transitions = 0;
+  let previousOnline = samples[0]?.online;
+
+  for (const sample of samples) {
+    if (previousOnline !== undefined && sample.online !== previousOnline) {
+      transitions += 1;
+    }
+    previousOnline = sample.online;
+
+    if (!sample.online) {
+      currentOutageLength += 1;
+      continue;
+    }
+
+    if (currentOutageLength > 0) {
+      outageCount += 1;
+      outageSeverity += outageSeverityPenalty(currentOutageLength);
+      currentOutageLength = 0;
+    }
+  }
+
+  if (currentOutageLength > 0) {
+    outageCount += 1;
+    outageSeverity += outageSeverityPenalty(currentOutageLength);
+  }
+
+  const frequencyPenalty = Math.min(25, outageCount * 3);
+  const flappingPenalty = Math.min(20, transitions * 4);
+  const currentPenalty = result.online ? 0 : 10;
+  return clampScore(
+    100 -
+      Math.min(65, outageSeverity) -
+      frequencyPenalty -
+      flappingPenalty -
+      currentPenalty,
+  );
+}
+
 function computeReliability(
   result: RelayCheckResult,
   history: TrustedRelayObservationState,
@@ -94,12 +285,18 @@ function computeReliability(
     : result.online
     ? 100
     : 0;
-  const averageOpen = average(history.totalRttOpen, history.rttOpenSamples) ??
-    result.open?.duration;
-  const latencyScore = scoreLatency(averageOpen);
-  const offlinePenalty = result.online ? 0 : 25;
+  const latencyScore = computeLatencyScore(result, history);
+  const consistencyScore = computeConsistencyScore(result, history);
+  const outageResilience = computeOutageResilience(result, history);
+  const offlinePenalty = result.online ? 0 : 15;
 
-  return clampScore((uptime * 0.7) + (latencyScore * 0.3) - offlinePenalty);
+  return clampScore(
+    (uptime * 0.35) +
+      (outageResilience * 0.25) +
+      (consistencyScore * 0.20) +
+      (latencyScore * 0.20) -
+      offlinePenalty,
+  );
 }
 
 function scorePolicyClarity(nip11?: RelayInfo): number {
@@ -137,6 +334,22 @@ function scoreConnectionSecurity(result: RelayCheckResult): number {
   return 50;
 }
 
+function scoreDnsEvidence(result: RelayCheckResult): number {
+  if (!result.dns) return 50;
+  if (result.dns.error) return 25;
+
+  const data = result.dns.data;
+  let score = 60;
+  if (
+    typeof data.address === "string" ||
+    Array.isArray(data.addresses) && data.addresses.length > 0
+  ) {
+    score += 25;
+  }
+  if (data.as || data.asn) score += 10;
+  return clampScore(score);
+}
+
 function scoreOperatorAccountability(nip11?: RelayInfo): number {
   return isHexPubkey(nip11?.pubkey) ? 70 : 50;
 }
@@ -145,8 +358,12 @@ function computeQuality(result: RelayCheckResult): number {
   const nip11 = result.info?.data;
   const policy = scorePolicyClarity(nip11);
   const security = scoreConnectionSecurity(result);
+  const dns = scoreDnsEvidence(result);
   const operator = scoreOperatorAccountability(nip11);
-  return clampScore((policy * 0.60) + (security * 0.25) + (operator * 0.15));
+  return clampScore(
+    (policy * 0.45) + (security * 0.20) + (dns * 0.20) +
+      (operator * 0.15),
+  );
 }
 
 function scoreAccessBarriers(nip11?: RelayInfo): number {
@@ -217,11 +434,58 @@ function scoreLimitRestrictiveness(nip11?: RelayInfo): number {
   return clampScore(score);
 }
 
+function scoreJurisdiction(
+  countryCode: string | undefined,
+  network: TrustedRelayAssertion["network"],
+): number {
+  if (network === "tor" || network === "i2p") return 90;
+  if (!countryCode) return 70;
+  if (HIGH_CENSORSHIP_COUNTRIES.has(countryCode)) return 25;
+  if (LOW_SURVEILLANCE_COUNTRIES.has(countryCode)) return 90;
+  if (MODERATE_SURVEILLANCE_COUNTRIES.has(countryCode)) return 70;
+  return 75;
+}
+
+function scoreSurveillanceRisk(
+  countryCode: string | undefined,
+  network: TrustedRelayAssertion["network"],
+): number {
+  if (network === "tor" || network === "i2p") return 90;
+  if (!countryCode) return 70;
+  if (HIGH_SURVEILLANCE_COUNTRIES.has(countryCode)) return 25;
+  if (MODERATE_SURVEILLANCE_COUNTRIES.has(countryCode)) return 60;
+  if (LOW_SURVEILLANCE_COUNTRIES.has(countryCode)) return 90;
+  return 75;
+}
+
+function inferCountryCode(
+  result: RelayCheckResult,
+  network: TrustedRelayAssertion["network"],
+): string | undefined {
+  if (network === "tor" || network === "i2p") {
+    return ANONYMOUS_NETWORK_COUNTRY_CODE;
+  }
+
+  const geo = firstGeo(result.geo?.data);
+  if (typeof geo?.countryCode === "string" && geo.countryCode.length > 0) {
+    return geo.countryCode.toUpperCase();
+  }
+
+  const relayCountries = result.info?.data?.relay_countries;
+  const relayCountry = Array.isArray(relayCountries) ? relayCountries[0] : "";
+  if (typeof relayCountry === "string" && relayCountry.length > 0) {
+    return relayCountry.toUpperCase();
+  }
+
+  return undefined;
+}
+
 function computeAccessibility(result: RelayCheckResult): number {
   const nip11 = result.info?.data;
-  const geo = firstGeo(result.geo?.data);
-  const countryScore = geo?.countryCode ? 75 : 75;
-  const surveillanceScore = geo?.countryCode ? 85 : 85;
+  const network = inferNetwork(result, normalizeRelayUrl(result.url));
+  const countryCode = inferCountryCode(result, network);
+  const countryScore = scoreJurisdiction(countryCode, network);
+  const surveillanceScore = scoreSurveillanceRisk(countryCode, network);
 
   return clampScore(
     (scoreAccessBarriers(nip11) * 0.40) +
@@ -337,6 +601,7 @@ export function buildTrustedRelayAssertion(
   config: TrustedRelayAssertionsConfig,
 ): TrustedRelayAssertion {
   const relayUrl = normalizeRelayUrl(result.url);
+  const network = inferNetwork(result, relayUrl);
   const reliability = computeReliability(result, history);
   const quality = computeQuality(result);
   const accessibility = computeAccessibility(result);
@@ -375,7 +640,7 @@ export function buildTrustedRelayAssertion(
     policy: inferPolicy(result),
     policyConfidence: inferPolicyConfidence(result),
     isHosting: inferIsHosting(result),
-    network: inferNetwork(result, relayUrl),
+    network,
   };
 
   const info = result.info?.data;
@@ -385,11 +650,15 @@ export function buildTrustedRelayAssertion(
     assertion.operatorConfidence = 70;
   }
 
-  const geo = firstGeo(result.geo?.data);
-  if (typeof geo?.countryCode === "string" && geo.countryCode.length > 0) {
-    assertion.countryCode = geo.countryCode.toUpperCase();
+  const countryCode = inferCountryCode(result, network);
+  if (countryCode) {
+    assertion.countryCode = countryCode;
   }
-  if (typeof geo?.region === "string" && geo.region.length > 0) {
+  const geo = firstGeo(result.geo?.data);
+  if (
+    countryCode !== ANONYMOUS_NETWORK_COUNTRY_CODE &&
+    typeof geo?.region === "string" && geo.region.length > 0
+  ) {
     assertion.region = geo.region;
   }
 

@@ -108,6 +108,31 @@ function result(overrides: Partial<RelayCheckResult> = {}): RelayCheckResult {
   } as RelayCheckResult;
 }
 
+function sample(
+  observedAt: number,
+  online: boolean,
+  latency = 120,
+) {
+  return {
+    url: "wss://relay.example.com",
+    observedAt,
+    online,
+    rttOpen: latency,
+    rttRead: latency + 20,
+    rttWrite: latency + 40,
+    network: "clearnet",
+    nip11Present: true,
+    operatorPubkey: RELAY_PUBKEY,
+    sslValid: true,
+    dnsAddress: "203.0.113.10",
+    dnsAs: "Example Network",
+    dnsAsn: "64500",
+    countryCode: "DE",
+    region: "Bavaria",
+    isHosting: true,
+  };
+}
+
 traTest(
   "Kind30385 - normalizeRelayUrl lowercases and removes trailing slash",
   () => {
@@ -140,6 +165,22 @@ traTest(
 );
 
 traTest(
+  "Kind30385 - defaults to RelayMon-local v2 algorithm metadata",
+  () => {
+    const assertion = buildTrustedRelayAssertion(
+      result(),
+      history(),
+      {
+        ...config,
+        algorithm: undefined,
+      },
+    );
+
+    assertEquals(assertion.algorithm, "relaymon-local-v2");
+  },
+);
+
+traTest(
   "Kind30385 - insufficient observations produce insufficient_data status",
   () => {
     const assertion = buildTrustedRelayAssertion(
@@ -163,6 +204,124 @@ traTest("Kind30385 - offline relay produces unreachable status", () => {
   assertEquals(assertion.status, "unreachable");
   assertExists(assertion.score);
 });
+
+traTest(
+  "Kind30385 - local outage and flapping history lowers reliability",
+  () => {
+    const stable = buildTrustedRelayAssertion(
+      result(),
+      history({
+        observations: 6,
+        reachableObservations: 6,
+        totalRttOpen: 600,
+        rttOpenSamples: 6,
+        totalRttRead: 720,
+        rttReadSamples: 6,
+        history: [
+          sample(1_700_000_000, true, 100),
+          sample(1_700_000_060, true, 105),
+          sample(1_700_000_120, true, 95),
+          sample(1_700_000_180, true, 100),
+          sample(1_700_000_240, true, 110),
+          sample(1_700_000_300, true, 100),
+        ],
+      }),
+      config,
+    );
+    const flapping = buildTrustedRelayAssertion(
+      result({ online: false, open: { data: false, duration: 1200 } }),
+      history({
+        observations: 6,
+        reachableObservations: 3,
+        totalRttOpen: 4400,
+        rttOpenSamples: 6,
+        totalRttRead: 5000,
+        rttReadSamples: 6,
+        history: [
+          sample(1_700_000_000, true, 100),
+          sample(1_700_000_060, false, 900),
+          sample(1_700_000_120, true, 120),
+          sample(1_700_000_180, false, 1000),
+          sample(1_700_000_240, true, 130),
+          sample(1_700_000_300, false, 1200),
+        ],
+      }),
+      config,
+    );
+
+    assertExists(stable.reliability);
+    assertExists(flapping.reliability);
+    assert(
+      stable.reliability > flapping.reliability,
+      "stable local history should score above flapping outage history",
+    );
+  },
+);
+
+traTest(
+  "Kind30385 - quality uses local DNS evidence",
+  () => {
+    const goodDns = buildTrustedRelayAssertion(
+      result({
+        dns: {
+          duration: 10,
+          data: {
+            address: "203.0.113.10",
+            as: "Example Network",
+            asn: 64500,
+          },
+        },
+      }),
+      history(),
+      config,
+    );
+    const failedDns = buildTrustedRelayAssertion(
+      result({
+        dns: {
+          duration: 10,
+          data: {},
+          error: new Error("dns failed"),
+        },
+      }),
+      history(),
+      config,
+    );
+
+    assertExists(goodDns.quality);
+    assertExists(failedDns.quality);
+    assert(
+      goodDns.quality > failedDns.quality,
+      "DNS evidence should affect quality scoring",
+    );
+  },
+);
+
+traTest(
+  "Kind30385 - anonymous networks use local network knowledge for jurisdiction",
+  () => {
+    const assertion = buildTrustedRelayAssertion(
+      result({
+        url: "ws://abcdef.onion",
+        hostname: "abcdef.onion",
+        protocol: "ws:",
+        network: "tor",
+        geo: {
+          duration: 25,
+          data: {
+            countryCode: "us",
+            region: "Virginia",
+          },
+        },
+      }),
+      history(),
+      config,
+    );
+
+    assertEquals(assertion.network, "tor");
+    assertEquals(assertion.countryCode, "XX");
+    assertEquals(assertion.region, undefined);
+  },
+);
 
 traTest(
   "Kind30385 - generateEvent emits required and optional NIP tags",
@@ -216,6 +375,19 @@ traTest(
       event.tags.find((tag) => tag[0] === "client")?.[1],
       "@nostrwatch/relaymon",
     );
+  },
+);
+
+traTest(
+  "Kind30385 - 30385 event pubkey is the RelayMon monitor pubkey",
+  () => {
+    const monitorPubkey = TEST_PUBKEY;
+    const builder = new Kind30385(monitorPubkey);
+    const assertion = buildTrustedRelayAssertion(result(), history(), config);
+    const event = builder.generateEvent(assertion);
+
+    assertEquals(event.kind, 30385);
+    assertEquals(event.pubkey, monitorPubkey);
   },
 );
 

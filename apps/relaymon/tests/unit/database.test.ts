@@ -9,6 +9,7 @@ import {
   getPublishedTrustedRelayAssertion,
   getRelayInfo,
   getRelaysWithSameInfo,
+  getTrustedRelayObservationHistory,
   initializeDB,
   isRelayIgnored,
   recordTrustedRelayObservation,
@@ -468,6 +469,7 @@ dbTest(
     assertEquals(second.totalRttOpen, 920);
     assertEquals(second.rttOpenSamples, 2);
     assertExists(second.lastOnlineAt);
+    assertEquals(getTrustedRelayObservationHistory(url), []);
 
     assertEquals(getPublishedTrustedRelayAssertion(url), null);
 
@@ -490,5 +492,132 @@ dbTest(
     assertEquals(published!.confidence, "low");
     assertEquals(published!.eventId, "event-id-123");
     assertExists(published!.publishedAt);
+  },
+);
+
+dbTest(
+  "Database - trusted relay observation history is gated and retained for TRA publishing",
+  () => {
+    ensureGlobalTestDB();
+
+    const timestamp = Date.now();
+    const url = `wss://tra-history-${timestamp}.example.com`;
+    const operatorPubkey =
+      "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798";
+
+    recordTrustedRelayObservation(
+      url,
+      {
+        checked_at: 1_700_000_000,
+        online: true,
+        open: { duration: 90 },
+        read: { duration: 120 },
+        write: { duration: 150 },
+        network: "clearnet",
+        info: { data: { pubkey: operatorPubkey, name: "Example Relay" } },
+        ssl: { data: { valid: true } },
+        dns: {
+          data: {
+            address: "203.0.113.10",
+            as: "Example Network",
+            asn: 64500,
+          },
+        },
+        geo: {
+          data: {
+            countryCode: "de",
+            region: "Bavaria",
+            isp: "Hetzner Online GmbH",
+          },
+        },
+      },
+      {
+        recordHistory: true,
+        historyRetentionMs: "30d",
+        maxObservationsPerRelay: 2,
+      },
+    );
+    recordTrustedRelayObservation(
+      url,
+      {
+        checked_at: 1_700_000_060,
+        online: true,
+        open: { duration: 100 },
+        read: { duration: 130 },
+        write: { duration: 160 },
+        network: "clearnet",
+        info: { data: { pubkey: operatorPubkey, name: "Example Relay" } },
+        ssl: { data: { valid: true } },
+        dns: {
+          data: {
+            address: "203.0.113.10",
+            as: "Example Network",
+            asn: 64500,
+          },
+        },
+        geo: {
+          data: {
+            countryCode: "de",
+            region: "Bavaria",
+            isp: "Hetzner Online GmbH",
+          },
+        },
+      },
+      {
+        recordHistory: true,
+        historyRetentionMs: "30d",
+        maxObservationsPerRelay: 2,
+      },
+    );
+    const state = recordTrustedRelayObservation(
+      url,
+      {
+        checked_at: 1_700_000_120,
+        online: false,
+        open: { duration: 900 },
+        read: { duration: 1100 },
+        network: "clearnet",
+        info: { data: { pubkey: operatorPubkey, name: "Example Relay" } },
+        ssl: { data: { valid: false } },
+        dns: {
+          data: {
+            address: "203.0.113.10",
+            as: "Example Network",
+            asn: 64500,
+          },
+        },
+        geo: {
+          data: {
+            countryCode: "de",
+            region: "Bavaria",
+            isp: "Hetzner Online GmbH",
+          },
+        },
+      },
+      {
+        recordHistory: true,
+        historyRetentionMs: "30d",
+        maxObservationsPerRelay: 2,
+      },
+    );
+
+    const history = getTrustedRelayObservationHistory(url);
+    assertEquals(history.length, 2);
+    assertEquals(state.history?.length, 2);
+    assertEquals(history[0].observedAt, 1_700_000_060);
+    assertEquals(history[0].online, true);
+    assertEquals(history[0].rttWrite, 160);
+    assertEquals(history[0].network, "clearnet");
+    assertEquals(history[0].nip11Present, true);
+    assertEquals(history[0].operatorPubkey, operatorPubkey);
+    assertEquals(history[0].sslValid, true);
+    assertEquals(history[0].dnsAddress, "203.0.113.10");
+    assertEquals(history[0].dnsAs, "Example Network");
+    assertEquals(history[0].dnsAsn, "64500");
+    assertEquals(history[0].countryCode, "DE");
+    assertEquals(history[0].region, "Bavaria");
+    assertEquals(history[0].isHosting, true);
+    assertEquals(history[1].online, false);
+    assertEquals(history[1].sslValid, false);
   },
 );

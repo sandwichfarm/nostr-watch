@@ -196,6 +196,8 @@ export interface TrustedRelayAssertionsConfig {
   min_observations?: number;
   material_change_threshold?: number;
   refresh_interval?: number | string;
+  history_retention?: number | string;
+  max_observations_per_relay?: number;
   publish_unreachable?: boolean;
   publish_blocked?: boolean;
   algorithm?: {
@@ -493,6 +495,28 @@ export function validateConfig(config: unknown): Config {
       );
     }
 
+    if (tra.history_retention === undefined) {
+      tra.history_retention = "30d";
+    } else if (
+      typeof tra.history_retention !== "number" &&
+      typeof tra.history_retention !== "string"
+    ) {
+      throw new Error(
+        "relaymon.trustedRelayAssertions.history_retention must be a number or timestring",
+      );
+    }
+
+    if (tra.max_observations_per_relay === undefined) {
+      tra.max_observations_per_relay = 1000;
+    } else if (
+      typeof tra.max_observations_per_relay !== "number" ||
+      tra.max_observations_per_relay < 1
+    ) {
+      throw new Error(
+        "relaymon.trustedRelayAssertions.max_observations_per_relay must be a positive number",
+      );
+    }
+
     if (tra.publish_unreachable === undefined) {
       tra.publish_unreachable = true;
     } else if (typeof tra.publish_unreachable !== "boolean") {
@@ -521,7 +545,7 @@ export function validateConfig(config: unknown): Config {
     }
 
     if (tra.algorithm.version === undefined) {
-      tra.algorithm.version = "relaymon-local-v1";
+      tra.algorithm.version = "relaymon-local-v2";
     } else if (
       typeof tra.algorithm.version !== "string" ||
       tra.algorithm.version.length === 0

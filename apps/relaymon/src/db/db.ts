@@ -37,6 +37,38 @@ function ensureTrustedRelayAssertionTable(): void {
   `);
 }
 
+function ensureTrustedRelayObservationHistoryTable(): void {
+  db.query(`
+    CREATE TABLE IF NOT EXISTS relay_trust_observations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      url TEXT NOT NULL,
+      observed_at INTEGER NOT NULL,
+      online INTEGER NOT NULL,
+      rtt_open INTEGER,
+      rtt_read INTEGER,
+      rtt_write INTEGER,
+      network TEXT,
+      nip11_present INTEGER NOT NULL DEFAULT 0,
+      operator_pubkey TEXT,
+      ssl_valid INTEGER,
+      dns_address TEXT,
+      dns_as TEXT,
+      dns_asn TEXT,
+      country_code TEXT,
+      region TEXT,
+      is_hosting INTEGER
+    )
+  `);
+  db.query(`
+    CREATE INDEX IF NOT EXISTS relay_trust_observations_url_observed_idx
+    ON relay_trust_observations (url, observed_at)
+  `);
+  db.query(`
+    CREATE INDEX IF NOT EXISTS relay_trust_observations_observed_idx
+    ON relay_trust_observations (observed_at)
+  `);
+}
+
 /**
  * Initialize the database with a specific path
  * @param dbPath Optional path to the SQLite database file
@@ -156,8 +188,9 @@ export async function initializeDB(
     logger.error(`Failed to create relay_period_snapshots table: ${e}`);
   }
 
-  // Trusted Relay Assertions (kind 30385) need lightweight local history so
+  // Trusted Relay Assertions (kind 30385) need local publication state so
   // RelayMon can publish material changes instead of re-announcing every check.
+  // Detailed per-check TRA history is created only by opt-in TRA publishing.
   try {
     ensureTrustedRelayAssertionTable();
     logger.info("Created relay_trust_assertion_state table if it didn't exist");
@@ -735,6 +768,33 @@ export interface TrustedRelayObservationState {
   totalRttRead: number;
   rttReadSamples: number;
   lastOnlineAt?: number;
+  history?: TrustedRelayObservationSample[];
+}
+
+export interface TrustedRelayObservationSample {
+  url: string;
+  observedAt: number;
+  online: boolean;
+  rttOpen?: number;
+  rttRead?: number;
+  rttWrite?: number;
+  network?: string;
+  nip11Present: boolean;
+  operatorPubkey?: string;
+  sslValid?: boolean;
+  dnsAddress?: string;
+  dnsAs?: string;
+  dnsAsn?: string;
+  countryCode?: string;
+  region?: string;
+  isHosting?: boolean;
+}
+
+export interface TrustedRelayObservationOptions {
+  recordHistory?: boolean;
+  historyRetentionMs?: number | string;
+  maxObservationsPerRelay?: number;
+  observedAt?: number;
 }
 
 export interface PublishedTrustedRelayAssertionState {
@@ -778,23 +838,224 @@ function observationRowToState(
   };
 }
 
+function firstGeoData(result: {
+  geo?: { data?: unknown };
+}): Record<string, unknown> | undefined {
+  const geo = result.geo?.data;
+  if (Array.isArray(geo)) {
+    return geo[0] && typeof geo[0] === "object"
+      ? geo[0] as Record<string, unknown>
+      : undefined;
+  }
+  return geo && typeof geo === "object"
+    ? geo as Record<string, unknown>
+    : undefined;
+}
+
+function inferRelayHosting(result: {
+  geo?: { data?: unknown };
+}): boolean | undefined {
+  const geo = firstGeoData(result);
+  const haystack = `${geo?.isp ?? ""} ${geo?.as ?? ""}`.toLowerCase();
+  if (!haystack.trim()) return undefined;
+
+  return [
+    "hosting",
+    "cloud",
+    "datacenter",
+    "data center",
+    "hetzner",
+    "ovh",
+    "digitalocean",
+    "amazon",
+    "google",
+    "microsoft",
+    "linode",
+    "vultr",
+  ].some((needle) => haystack.includes(needle));
+}
+
+function normalizePositiveDuration(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) && value > 0
+    ? Math.round(value)
+    : null;
+}
+
+function normalizeRetentionSeconds(
+  retentionMs: number | string | undefined,
+): number | undefined {
+  if (retentionMs === undefined) return undefined;
+  let ms: number | undefined;
+  if (typeof retentionMs === "number") {
+    ms = retentionMs;
+  } else {
+    const match = retentionMs.trim().match(/^(\d+(?:\.\d+)?)(ms|s|m|h|d)$/);
+    if (match) {
+      const value = parseFloat(match[1]);
+      const unit = match[2];
+      const multipliers: Record<string, number> = {
+        ms: 1,
+        s: 1000,
+        m: 60 * 1000,
+        h: 60 * 60 * 1000,
+        d: 24 * 60 * 60 * 1000,
+      };
+      ms = value * multipliers[unit];
+    }
+  }
+  if (ms === undefined || !Number.isFinite(ms) || ms <= 0) return undefined;
+  return Math.floor(ms / 1000);
+}
+
+function observationSampleFromRow(
+  row: unknown[],
+): TrustedRelayObservationSample {
+  const [
+    url,
+    observedAt,
+    online,
+    rttOpen,
+    rttRead,
+    rttWrite,
+    network,
+    nip11Present,
+    operatorPubkey,
+    sslValid,
+    dnsAddress,
+    dnsAs,
+    dnsAsn,
+    countryCode,
+    region,
+    isHosting,
+  ] = row;
+
+  return {
+    url: url as string,
+    observedAt: observedAt as number,
+    online: (online as number) === 1,
+    rttOpen: rttOpen === null ? undefined : rttOpen as number,
+    rttRead: rttRead === null ? undefined : rttRead as number,
+    rttWrite: rttWrite === null ? undefined : rttWrite as number,
+    network: network === null ? undefined : network as string,
+    nip11Present: (nip11Present as number) === 1,
+    operatorPubkey: operatorPubkey === null
+      ? undefined
+      : operatorPubkey as string,
+    sslValid: sslValid === null ? undefined : (sslValid as number) === 1,
+    dnsAddress: dnsAddress === null ? undefined : dnsAddress as string,
+    dnsAs: dnsAs === null ? undefined : dnsAs as string,
+    dnsAsn: dnsAsn === null ? undefined : dnsAsn as string,
+    countryCode: countryCode === null ? undefined : countryCode as string,
+    region: region === null ? undefined : region as string,
+    isHosting: isHosting === null ? undefined : (isHosting as number) === 1,
+  };
+}
+
+export function getTrustedRelayObservationHistory(
+  url: string,
+): TrustedRelayObservationSample[] {
+  const table = db.query(
+    "SELECT name FROM sqlite_master WHERE type='table' AND name='relay_trust_observations'",
+  );
+  if (!table.length) {
+    return [];
+  }
+
+  const rows = db.query(
+    `
+    SELECT
+      url,
+      observed_at,
+      online,
+      rtt_open,
+      rtt_read,
+      rtt_write,
+      network,
+      nip11_present,
+      operator_pubkey,
+      ssl_valid,
+      dns_address,
+      dns_as,
+      dns_asn,
+      country_code,
+      region,
+      is_hosting
+    FROM relay_trust_observations
+    WHERE url = ?
+    ORDER BY observed_at ASC, id ASC
+  `,
+    [url],
+  );
+
+  return rows.map(observationSampleFromRow);
+}
+
+function pruneTrustedRelayObservationHistory(
+  url: string,
+  observedAt: number,
+  options: TrustedRelayObservationOptions,
+): void {
+  const retentionSeconds = normalizeRetentionSeconds(
+    options.historyRetentionMs,
+  );
+  if (retentionSeconds !== undefined) {
+    db.query(
+      `
+      DELETE FROM relay_trust_observations
+      WHERE url = ? AND observed_at < ?
+    `,
+      [url, observedAt - retentionSeconds],
+    );
+  }
+
+  const maxRows = options.maxObservationsPerRelay;
+  if (typeof maxRows === "number" && Number.isFinite(maxRows) && maxRows > 0) {
+    db.query(
+      `
+      DELETE FROM relay_trust_observations
+      WHERE url = ?
+        AND id NOT IN (
+          SELECT id FROM relay_trust_observations
+          WHERE url = ?
+          ORDER BY observed_at DESC, id DESC
+          LIMIT ?
+        )
+    `,
+      [url, url, Math.floor(maxRows)],
+    );
+  }
+}
+
 export function recordTrustedRelayObservation(url: string, result: {
   online?: boolean;
   open?: { duration?: number };
   read?: { duration?: number };
-}): TrustedRelayObservationState {
+  write?: { duration?: number };
+  checked_at?: number;
+  network?: string;
+  info?: { data?: { pubkey?: string; name?: string; software?: string } };
+  ssl?: { data?: { valid?: boolean } };
+  dns?: {
+    data?: {
+      address?: string;
+      addresses?: string[];
+      as?: string;
+      asn?: string | number;
+    };
+  };
+  geo?: { data?: unknown };
+}, options: TrustedRelayObservationOptions = {}): TrustedRelayObservationState {
   ensureTrustedRelayAssertionTable();
 
-  const now = Math.floor(Date.now() / 1000);
+  const now = typeof options.observedAt === "number"
+    ? Math.floor(options.observedAt)
+    : typeof result.checked_at === "number" && result.checked_at > 0
+    ? Math.floor(result.checked_at)
+    : Math.floor(Date.now() / 1000);
   const online = result.online === true;
-  const rttOpen =
-    typeof result.open?.duration === "number" && result.open.duration > 0
-      ? Math.round(result.open.duration)
-      : 0;
-  const rttRead =
-    typeof result.read?.duration === "number" && result.read.duration > 0
-      ? Math.round(result.read.duration)
-      : 0;
+  const rttOpen = normalizePositiveDuration(result.open?.duration);
+  const rttRead = normalizePositiveDuration(result.read?.duration);
+  const rttWrite = normalizePositiveDuration(result.write?.duration);
 
   db.query(
     `
@@ -829,13 +1090,74 @@ export function recordTrustedRelayObservation(url: string, result: {
       now,
       now,
       online ? 1 : 0,
-      rttOpen,
-      rttOpen > 0 ? 1 : 0,
-      rttRead,
-      rttRead > 0 ? 1 : 0,
+      rttOpen ?? 0,
+      rttOpen !== null ? 1 : 0,
+      rttRead ?? 0,
+      rttRead !== null ? 1 : 0,
       online ? now : null,
     ],
   );
+
+  if (options.recordHistory === true) {
+    ensureTrustedRelayObservationHistoryTable();
+    const geo = firstGeoData(result);
+    const countryCode = typeof geo?.countryCode === "string"
+      ? geo.countryCode.toUpperCase()
+      : undefined;
+    const region = typeof geo?.region === "string" ? geo.region : undefined;
+    const dnsData = result.dns?.data;
+    const dnsAddress = Array.isArray(dnsData?.addresses)
+      ? dnsData?.addresses[0]
+      : dnsData?.address;
+    const dnsAsn = dnsData?.asn === undefined ? undefined : String(dnsData.asn);
+    const isHosting = inferRelayHosting(result);
+
+    db.query(
+      `
+      INSERT INTO relay_trust_observations (
+        url,
+        observed_at,
+        online,
+        rtt_open,
+        rtt_read,
+        rtt_write,
+        network,
+        nip11_present,
+        operator_pubkey,
+        ssl_valid,
+        dns_address,
+        dns_as,
+        dns_asn,
+        country_code,
+        region,
+        is_hosting
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `,
+      [
+        url,
+        now,
+        online ? 1 : 0,
+        rttOpen,
+        rttRead,
+        rttWrite,
+        result.network ?? null,
+        result.info?.data ? 1 : 0,
+        result.info?.data?.pubkey ?? null,
+        typeof result.ssl?.data?.valid === "boolean"
+          ? result.ssl.data.valid ? 1 : 0
+          : null,
+        dnsAddress ?? null,
+        dnsData?.as ?? null,
+        dnsAsn ?? null,
+        countryCode ?? null,
+        region ?? null,
+        isHosting === undefined ? null : isHosting ? 1 : 0,
+      ],
+    );
+
+    pruneTrustedRelayObservationHistory(url, now, options);
+  }
 
   const rows = db.query(
     `
@@ -861,7 +1183,11 @@ export function recordTrustedRelayObservation(url: string, result: {
     );
   }
 
-  return observationRowToState(rows[0], url);
+  const state = observationRowToState(rows[0], url);
+  if (options.recordHistory === true) {
+    state.history = getTrustedRelayObservationHistory(url);
+  }
+  return state;
 }
 
 export function getPublishedTrustedRelayAssertion(

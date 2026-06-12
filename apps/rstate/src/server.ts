@@ -32,6 +32,8 @@ import {
   createRelaysListDetailedTool,
   createRelaysListFullTool,
   createRelaysGetStateTool,
+  createRelaysTrustTool,
+  createRelaysTrustListTool,
   createRelaysSearchTool,
   createRelaysSearchDetailedTool,
   createRelaysSearchFullTool,
@@ -109,6 +111,12 @@ export class CVMServer {
     // Initialize State Core (transport-agnostic)
     this.core = initStateCore({
       aggregation: config.aggregation,
+      trust: {
+        minObservations: config.publishing?.kind30385.minObservations ?? 3,
+        historyRetention: config.publishing?.kind30385.historyRetention ?? 24 * 3600,
+        historyEnabled: config.publishing?.kind30385.enabled ?? false,
+        publishUnreachable: config.publishing?.kind30385.publishUnreachable ?? false,
+      },
     })
 
     // Create shared services (transport-agnostic)
@@ -356,6 +364,8 @@ export class CVMServer {
     registry.registerTool(createRelaysListDetailedTool(toolsContext), getCacheConfig('relays/list/detailed'))
     registry.registerTool(createRelaysListFullTool(toolsContext), getCacheConfig('relays/list/full'))
     registry.registerTool(createRelaysGetStateTool(toolsContext), getCacheConfig('relays/state'))
+    registry.registerTool(createRelaysTrustTool(toolsContext), getCacheConfig('relays/trust'))
+    registry.registerTool(createRelaysTrustListTool(toolsContext), getCacheConfig('relays/trust/list'))
     registry.registerTool(createRelaysSearchTool(toolsContext), getCacheConfig('relays/search'))
     registry.registerTool(createRelaysSearchDetailedTool(toolsContext), getCacheConfig('relays/search/detailed'))
     registry.registerTool(createRelaysSearchFullTool(toolsContext), getCacheConfig('relays/search/full'))

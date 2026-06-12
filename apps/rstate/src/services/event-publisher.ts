@@ -7,6 +7,7 @@
 
 import type { StateCore } from '../core/api.js'
 import type { RelayState } from '../core/types/aggregation.js'
+import type { TrustedRelayAssertion } from '../core/trust/trusted-relay-assertions.js'
 import type { PublishSchedule } from '../config.js'
 import type { RelayDelta, OperationalStatus } from '../events/types.js'
 import { ResilientRelayPool } from '../resilient-relay-pool.js'
@@ -15,6 +16,7 @@ import { detectDeltas, mergeDeltas } from '../events/delta-detector.js'
 import { buildKind1066Event } from '../events/builders/kind1066.js'
 import { buildKind20066Event } from '../events/builders/kind20066.js'
 import { buildKind1166Event } from '../events/builders/kind1166.js'
+import { buildKind30385Event } from '../events/builders/kind30385.js'
 import type { Kind1166Category } from '../events/types.js'
 import { AnnounceMonitor } from '@nostrwatch/announce'
 import { getLogger } from '../utils/logger.js'
@@ -27,6 +29,14 @@ interface PublishingConfig {
   kind1066: { enabled: boolean; schedule: PublishSchedule }
   kind20066: { enabled: boolean }
   kind1166: { enabled: boolean; schedule: PublishSchedule }
+  kind30385: {
+    enabled: boolean
+    schedule: PublishSchedule
+    minObservations: number
+    materialChangeThreshold: number
+    historyRetention: number
+    publishUnreachable: boolean
+  }
   announce: {
     profile?: { name?: string; about?: string; picture?: string }
     frequency: string
@@ -47,8 +57,10 @@ export class EventPublisherService {
   private previousStates: Map<string, RelayState> = new Map()
   private operationalStatuses: Map<string, 'online' | 'offline'> = new Map()
   private accumulatedDeltas: Map<string, RelayDelta[]> = new Map()
+  private previousKind30385Assertions: Map<string, TrustedRelayAssertion> = new Map()
   private lastKind1066Publish: number = 0
   private lastKind1166Publish: number = 0
+  private lastKind30385Refresh: number = 0
 
   constructor(
     private core: StateCore,
@@ -63,6 +75,7 @@ export class EventPublisherService {
       kind1066: config.kind1066.enabled ? config.kind1066.schedule : 'disabled',
       kind20066: config.kind20066.enabled ? 'immediate' : 'disabled',
       kind1166: config.kind1166.enabled ? config.kind1166.schedule : 'disabled',
+      kind30385: config.kind30385.enabled ? config.kind30385.schedule : 'disabled',
     }, 'EventPublisherService created')
   }
 
@@ -72,6 +85,7 @@ export class EventPublisherService {
     const now = Math.floor(Date.now() / 1000)
     this.lastKind1066Publish = this.alignToSchedule(now, this.config.kind1066.schedule)
     this.lastKind1166Publish = this.alignToSchedule(now, this.config.kind1166.schedule)
+    this.lastKind30385Refresh = this.alignToSchedule(now, this.config.kind30385.schedule)
 
     // Publish announce events (Kind 0, 10002, 10166) on startup
     await this.publishAnnouncement()
@@ -88,6 +102,7 @@ export class EventPublisherService {
       if (this.config.kind1066.enabled) enabledKinds.push(1066)
       if (this.config.kind20066.enabled) enabledKinds.push(20066)
       if (this.config.kind1166.enabled) enabledKinds.push(1166)
+      if (this.config.kind30385.enabled) enabledKinds.push(30385)
 
       const announcer = new AnnounceMonitor(this.signer.pubkey, {
         kinds: enabledKinds,
@@ -187,6 +202,12 @@ export class EventPublisherService {
     if (this.config.kind1166.enabled && this.hasScheduleBoundaryCrossed(now, this.lastKind1166Publish, this.config.kind1166.schedule)) {
       await this.publishNetworkSnapshot()
       this.lastKind1166Publish = now
+    }
+
+    if (this.config.kind30385.enabled) {
+      const refreshDue = this.hasScheduleBoundaryCrossed(now, this.lastKind30385Refresh, this.config.kind30385.schedule)
+      await this.publishKind30385Assertions(refreshDue)
+      if (refreshDue) this.lastKind30385Refresh = now
     }
 
     // Update previous states for changed relays
@@ -321,6 +342,57 @@ export class EventPublisherService {
     }
   }
 
+  private async publishKind30385Assertions(forceRefresh: boolean): Promise<void> {
+    const assertions = this.core.query.trustList({
+      includeUnreachable: this.config.kind30385.publishUnreachable,
+    })
+    let published = 0
+    let skipped = 0
+    let errors = 0
+
+    for (const assertion of assertions) {
+      if (!this.shouldPublishKind30385(assertion, forceRefresh)) {
+        skipped++
+        continue
+      }
+
+      try {
+        const event = buildKind30385Event({ assertion })
+        const signed = this.signer.sign(event)
+        await this.publishPool.publish(signed)
+        this.previousKind30385Assertions.set(assertion.relayUrl, cloneAssertion(assertion))
+        published++
+      } catch (err) {
+        errors++
+        logger.error({ err, relay: assertion.relayUrl }, 'Failed to publish Kind 30385 trusted relay assertion')
+      }
+    }
+
+    if (published > 0 || errors > 0) {
+      logger.info({ published, skipped, errors, forceRefresh }, 'Kind 30385 assertion publish complete')
+    } else {
+      logger.debug({ skipped, forceRefresh }, 'Kind 30385 assertion publish suppressed unchanged assertions')
+    }
+  }
+
+  private shouldPublishKind30385(assertion: TrustedRelayAssertion, forceRefresh: boolean): boolean {
+    if (forceRefresh) return true
+    const previous = this.previousKind30385Assertions.get(assertion.relayUrl)
+    if (!previous) return true
+    if (previous.status !== assertion.status) return true
+    if (previous.confidence.level !== assertion.confidence.level) return true
+
+    const thresholdPoints = this.config.kind30385.materialChangeThreshold * 100
+    const changedScores = [
+      Math.abs((assertion.score ?? 0) - (previous.score ?? 0)),
+      Math.abs(assertion.reliability - previous.reliability),
+      Math.abs(assertion.quality - previous.quality),
+      Math.abs(assertion.accessibility - previous.accessibility),
+      Math.abs(assertion.confidence.score - previous.confidence.score),
+    ]
+    return changedScores.some((delta) => delta >= thresholdPoints)
+  }
+
   private getOperationalStatus(url: string): OperationalStatus {
     const status = this.operationalStatuses.get(url)
     if (status === undefined) return 'init'
@@ -344,4 +416,8 @@ export class EventPublisherService {
     const lastBoundary = Math.floor(lastPublishSec / interval) * interval
     return currentBoundary > lastBoundary
   }
+}
+
+function cloneAssertion(assertion: TrustedRelayAssertion): TrustedRelayAssertion {
+  return JSON.parse(JSON.stringify(assertion)) as TrustedRelayAssertion
 }

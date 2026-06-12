@@ -51,6 +51,16 @@ export const TOOL_CACHE_REGISTRY: ToolCacheEntry[] = [
     cacheKeyFn: (p) => `relays:state:${p.relayUrl}:${p.format || 'detailed'}`,
   },
   {
+    toolName: 'relays/trust',
+    cacheKeyFn: (p) => `relays:trust:${p.relayUrl}`,
+    ttlSeconds: 30,
+  },
+  {
+    toolName: 'relays/trust/list',
+    cacheKeyFn: (p) => `relays:trust:list:${p.status || 'all'}:${p.minScore ?? 'none'}:${p.minConfidence ?? 'none'}:${p.includeUnreachable ?? true}:${p.limit ?? 50}:${p.offset ?? 0}`,
+    ttlSeconds: 30,
+  },
+  {
     toolName: 'relays/search',
     cacheKeyFn: (p) => searchKey('relays:search', p),
   },

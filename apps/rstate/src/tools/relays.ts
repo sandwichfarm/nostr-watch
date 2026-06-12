@@ -10,6 +10,10 @@ import type {
   RelaysListInput,
   RelaysGetStateInput,
   RelaysGetStateOutput,
+  RelaysTrustInput,
+  RelaysTrustOutput,
+  RelaysTrustListInput,
+  RelaysTrustListOutput,
   RelaysSearchInput,
   RelaysNearbyInput,
   RelaysBboxInput,
@@ -218,6 +222,56 @@ export function createRelaysGetStateTool(ctx: RelayToolsContext): CVMTool {
       const formatted = applyShapeSingle(relay, shape)
       logger.info({ relayUrl: params.relayUrl, found: !!relay, shape }, 'Relay state requested')
       return { relay: formatted as any }
+    },
+  }
+}
+
+export function createRelaysTrustTool(ctx: RelayToolsContext): CVMTool {
+  return {
+    name: 'relays/trust',
+    description: 'Get rstate trusted relay assertion for a specific relay',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        relayUrl: { type: 'string' },
+      },
+      required: ['relayUrl'],
+    },
+    outputSchema: loadSchema('relays-trust-output.json'),
+    handler: async (params: RelaysTrustInput): Promise<RelaysTrustOutput> => {
+      return { trust: ctx.core.query.trust(params.relayUrl) }
+    },
+  }
+}
+
+export function createRelaysTrustListTool(ctx: RelayToolsContext): CVMTool {
+  return {
+    name: 'relays/trust/list',
+    description: 'List rstate trusted relay assertions',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', enum: ['evaluated', 'insufficient_data', 'unreachable', 'blocked'] },
+        minScore: { type: 'number' },
+        minConfidence: { type: 'number' },
+        includeUnreachable: { type: 'boolean', default: true },
+        limit: { type: 'number', default: 50 },
+        offset: { type: 'number', default: 0 },
+      },
+    },
+    outputSchema: loadSchema('relays-trust-list-output.json'),
+    handler: async (params: RelaysTrustListInput): Promise<RelaysTrustListOutput> => {
+      const limit = params.limit ?? 50
+      const offset = params.offset ?? 0
+      const filters = {
+        status: params.status,
+        minScore: params.minScore,
+        minConfidence: params.minConfidence,
+        includeUnreachable: params.includeUnreachable,
+      }
+      const total = ctx.core.query.trustList(filters).length
+      const assertions = ctx.core.query.trustList({ ...filters, limit, offset })
+      return { assertions, total, limit, offset }
     },
   }
 }

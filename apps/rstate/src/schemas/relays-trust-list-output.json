@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "assertions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "relayUrl": { "type": "string" },
+          "status": { "type": "string", "enum": ["evaluated", "insufficient_data", "unreachable", "blocked"] },
+          "algorithm": { "type": "string" },
+          "generatedAt": { "type": "number" },
+          "score": { "type": "number" },
+          "reliability": { "type": "number" },
+          "quality": { "type": "number" },
+          "accessibility": { "type": "number" },
+          "confidence": {
+            "type": "object",
+            "properties": {
+              "score": { "type": "number" },
+              "level": { "type": "string", "enum": ["low", "medium", "high"] }
+            },
+            "required": ["score", "level"]
+          },
+          "observations": { "type": "number" },
+          "monitorCount": { "type": "number" },
+          "observationPeriodSeconds": { "type": "number" },
+          "explanation": { "type": "object", "additionalProperties": true }
+        },
+        "required": ["relayUrl", "status", "algorithm", "generatedAt", "reliability", "quality", "accessibility", "confidence", "observations", "monitorCount", "observationPeriodSeconds", "explanation"]
+      }
+    },
+    "total": { "type": "number" },
+    "limit": { "type": "number" },
+    "offset": { "type": "number" }
+  },
+  "required": ["assertions", "total", "limit", "offset"]
+}

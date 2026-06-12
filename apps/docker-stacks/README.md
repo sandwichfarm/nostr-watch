@@ -40,6 +40,10 @@ Each stack composes these services (and optional network proxies) into a ready-t
 
 Each stack directory contains its own README with detailed setup instructions.
 
+## Installation
+
+Each stack is installed from its own directory by copying the example environment and configuration files, filling in local values, and starting Docker Compose. Use the Quick Start below for the clearnet RelayMon stack, or open the target stack README for stack-specific variables.
+
 ## Quick Start
 
 ```sh

@@ -1,10 +1,15 @@
-import { assertEquals, assertExists, assert } from "https://deno.land/std@0.218.2/assert/mod.ts";
+import {
+  assert,
+  assertEquals,
+  assertExists,
+} from "https://deno.land/std@0.218.2/assert/mod.ts";
 import { IgnoreListSync } from "../../src/utils/IgnoreListSync.ts";
 import type { Config } from "../../src/types/config.ts";
 import { mockConfig } from "../helpers/fixtures.ts";
 import { DB } from "https://deno.land/x/sqlite/mod.ts";
 import { initDB } from "../../src/db/db.ts";
 import { getPublicKey } from "npm:nostr-tools";
+import { hexToBytes } from "@noble/hashes/utils";
 
 /**
  * Test helper to disable resource/ops sanitization
@@ -14,13 +19,14 @@ function ignoreListTest(name: string, fn: () => void | Promise<void>) {
     name,
     sanitizeResources: false,
     sanitizeOps: false,
-    fn
+    fn,
   });
 }
 
 // Test constants
-const TEST_PRIVKEY = "0000000000000000000000000000000000000000000000000000000000000001";
-const TEST_PUBKEY = getPublicKey(TEST_PRIVKEY);
+const TEST_PRIVKEY =
+  "0000000000000000000000000000000000000000000000000000000000000001";
+const TEST_PUBKEY = getPublicKey(hexToBytes(TEST_PRIVKEY));
 const TEST_META_RELAYS = ["wss://meta1.example.com", "wss://meta2.example.com"];
 
 // Initialize a global test database
@@ -51,16 +57,16 @@ function createTestConfig(overrides: any = {}): Config {
         interval: "6h",
         deletion_interval: "24h",
         relays: ["wss://ignore-relay.example.com"],
-        pubkeys: [TEST_PUBKEY]
-      }
-    }
+        pubkeys: [TEST_PUBKEY],
+      },
+    },
   };
 
   // Deep merge overrides
   if (overrides.relaymon?.ignorelist) {
     baseConfig.relaymon.ignorelist = {
       ...baseConfig.relaymon.ignorelist,
-      ...overrides.relaymon.ignorelist
+      ...overrides.relaymon.ignorelist,
     };
   }
 
@@ -70,7 +76,9 @@ function createTestConfig(overrides: any = {}): Config {
 /**
  * Create a test database with relay_status table
  */
-function createTestDBWithRelays(relays: Array<{ url: string; ignore: number }>): string {
+function createTestDBWithRelays(
+  relays: Array<{ url: string; ignore: number }>,
+): string {
   const dbPath = `/tmp/test-ignorelist-db-${Date.now()}.db`;
   const db = new DB(dbPath);
 
@@ -90,7 +98,7 @@ function createTestDBWithRelays(relays: Array<{ url: string; ignore: number }>):
   for (const relay of relays) {
     db.execute(
       `INSERT INTO relay_status (url, ignore) VALUES (?, ?)`,
-      [relay.url, relay.ignore]
+      [relay.url, relay.ignore],
     );
   }
 
@@ -111,60 +119,75 @@ function cleanupTestDB(dbPath: string) {
 
 // Test suite
 
-ignoreListTest("IgnoreListSync - constructor creates instance when enabled", () => {
-  ensureTestDB();
-  const config = createTestConfig();
-  const sync = new IgnoreListSync(config, TEST_META_RELAYS);
+ignoreListTest(
+  "IgnoreListSync - constructor creates instance when enabled",
+  () => {
+    ensureTestDB();
+    const config = createTestConfig();
+    const sync = new IgnoreListSync(config, TEST_META_RELAYS);
 
-  assertExists(sync, "IgnoreListSync should be created");
-});
+    assertExists(sync, "IgnoreListSync should be created");
+  },
+);
 
-ignoreListTest("IgnoreListSync - constructor creates instance when disabled", () => {
-  ensureTestDB();
-  const config = createTestConfig({
-    relaymon: {
-      ignorelist: { enabled: false }
-    }
-  });
-  const sync = new IgnoreListSync(config, TEST_META_RELAYS);
+ignoreListTest(
+  "IgnoreListSync - constructor creates instance when disabled",
+  () => {
+    ensureTestDB();
+    const config = createTestConfig({
+      relaymon: {
+        ignorelist: { enabled: false },
+      },
+    });
+    const sync = new IgnoreListSync(config, TEST_META_RELAYS);
 
-  assertExists(sync, "IgnoreListSync should be created even when disabled");
-});
+    assertExists(sync, "IgnoreListSync should be created even when disabled");
+  },
+);
 
-ignoreListTest("IgnoreListSync - getRelaysForKind10002 returns relays when enabled", () => {
-  ensureTestDB();
-  const config = createTestConfig();
-  const sync = new IgnoreListSync(config, TEST_META_RELAYS);
+ignoreListTest(
+  "IgnoreListSync - getRelaysForKind10002 returns relays when enabled",
+  () => {
+    ensureTestDB();
+    const config = createTestConfig();
+    const sync = new IgnoreListSync(config, TEST_META_RELAYS);
 
-  const relays = sync.getRelaysForKind10002();
-  assert(Array.isArray(relays), "Should return array");
-  assert(relays.length > 0, "Should return configured relays when enabled");
-});
+    const relays = sync.getRelaysForKind10002();
+    assert(Array.isArray(relays), "Should return array");
+    assert(relays.length > 0, "Should return configured relays when enabled");
+  },
+);
 
-ignoreListTest("IgnoreListSync - getRelaysForKind10002 returns empty array when disabled", () => {
-  ensureTestDB();
-  const config = createTestConfig({
-    relaymon: {
-      ignorelist: { enabled: false }
-    }
-  });
-  const sync = new IgnoreListSync(config, TEST_META_RELAYS);
+ignoreListTest(
+  "IgnoreListSync - getRelaysForKind10002 returns empty array when disabled",
+  () => {
+    ensureTestDB();
+    const config = createTestConfig({
+      relaymon: {
+        ignorelist: { enabled: false },
+      },
+    });
+    const sync = new IgnoreListSync(config, TEST_META_RELAYS);
 
-  const relays = sync.getRelaysForKind10002();
-  assertEquals(relays, [], "Should return empty array when disabled");
-});
+    const relays = sync.getRelaysForKind10002();
+    assertEquals(relays, [], "Should return empty array when disabled");
+  },
+);
 
-ignoreListTest("IgnoreListSync - addToIgnoreList adds relay to local list", () => {
-  ensureTestDB();
-  const config = createTestConfig();
-  const sync = new IgnoreListSync(config, TEST_META_RELAYS);
+ignoreListTest(
+  "IgnoreListSync - addToIgnoreList adds relay to local list",
+  () => {
+    ensureTestDB();
+    const config = createTestConfig();
+    const sync = new IgnoreListSync(config, TEST_META_RELAYS);
 
-  const testRelay = "wss://test-relay.example.com";
-  sync.addToIgnoreList(testRelay);
+    const testRelay = "wss://test-relay.example.com";
+    sync.addToIgnoreList(testRelay);
 
-  const isIgnored = sync.isIgnored(testRelay);
-  assertEquals(isIgnored, true, "Added relay should be ignored");
-});
+    const isIgnored = sync.isIgnored(testRelay);
+    assertEquals(isIgnored, true, "Added relay should be ignored");
+  },
+);
 
 ignoreListTest("IgnoreListSync - addToIgnoreList normalizes URLs", () => {
   ensureTestDB();
@@ -179,52 +202,61 @@ ignoreListTest("IgnoreListSync - addToIgnoreList normalizes URLs", () => {
   assertEquals(isIgnored, true, "Should normalize URLs when checking");
 });
 
-ignoreListTest("IgnoreListSync - removeFromIgnoreList removes relay from local list", () => {
-  ensureTestDB();
-  const config = createTestConfig();
-  const sync = new IgnoreListSync(config, TEST_META_RELAYS);
+ignoreListTest(
+  "IgnoreListSync - removeFromIgnoreList removes relay from local list",
+  () => {
+    ensureTestDB();
+    const config = createTestConfig();
+    const sync = new IgnoreListSync(config, TEST_META_RELAYS);
 
-  const testRelay = "wss://test-relay.example.com";
-  sync.addToIgnoreList(testRelay);
+    const testRelay = "wss://test-relay.example.com";
+    sync.addToIgnoreList(testRelay);
 
-  // Note: removeFromIgnoreList only removes from localIgnoredRelays,
-  // but the relay remains in the merged ignoredRelays set until next sync
-  sync.removeFromIgnoreList(testRelay);
+    // Note: removeFromIgnoreList only removes from localIgnoredRelays,
+    // but the relay remains in the merged ignoredRelays set until next sync
+    sync.removeFromIgnoreList(testRelay);
 
-  // The relay is still in ignoredRelays (merged set), this is expected behavior
-  // The local list has been updated, but merged set persists until sync
-  assert(true, "removeFromIgnoreList should execute without error");
-});
+    // The relay is still in ignoredRelays (merged set), this is expected behavior
+    // The local list has been updated, but merged set persists until sync
+    assert(true, "removeFromIgnoreList should execute without error");
+  },
+);
 
-ignoreListTest("IgnoreListSync - isIgnored returns false for non-ignored relay", () => {
-  ensureTestDB();
-  const config = createTestConfig();
-  const sync = new IgnoreListSync(config, TEST_META_RELAYS);
+ignoreListTest(
+  "IgnoreListSync - isIgnored returns false for non-ignored relay",
+  () => {
+    ensureTestDB();
+    const config = createTestConfig();
+    const sync = new IgnoreListSync(config, TEST_META_RELAYS);
 
-  const isIgnored = sync.isIgnored("wss://never-added.example.com");
-  assertEquals(isIgnored, false, "Non-ignored relay should return false");
-});
+    const isIgnored = sync.isIgnored("wss://never-added.example.com");
+    assertEquals(isIgnored, false, "Non-ignored relay should return false");
+  },
+);
 
-ignoreListTest("IgnoreListSync - loadLocalIgnoresFromDB handles database read", async () => {
-  ensureTestDB();
+ignoreListTest(
+  "IgnoreListSync - loadLocalIgnoresFromDB handles database read",
+  async () => {
+    ensureTestDB();
 
-  const config = createTestConfig();
-  const sync = new IgnoreListSync(config, TEST_META_RELAYS);
+    const config = createTestConfig();
+    const sync = new IgnoreListSync(config, TEST_META_RELAYS);
 
-  // Note: The constructor already calls loadLocalIgnoresFromDB()
-  // We're testing that calling it again doesn't throw
-  await sync.loadLocalIgnoresFromDB();
+    // Note: The constructor already calls loadLocalIgnoresFromDB()
+    // We're testing that calling it again doesn't throw
+    await sync.loadLocalIgnoresFromDB();
 
-  // Should execute without error
-  assert(true, "loadLocalIgnoresFromDB should execute without error");
-});
+    // Should execute without error
+    assert(true, "loadLocalIgnoresFromDB should execute without error");
+  },
+);
 
 ignoreListTest("IgnoreListSync - sync does nothing when disabled", async () => {
   ensureTestDB();
   const config = createTestConfig({
     relaymon: {
-      ignorelist: { enabled: false }
-    }
+      ignorelist: { enabled: false },
+    },
   });
   const sync = new IgnoreListSync(config, TEST_META_RELAYS);
 
@@ -233,74 +265,95 @@ ignoreListTest("IgnoreListSync - sync does nothing when disabled", async () => {
   assert(true, "sync should complete without error when disabled");
 });
 
-ignoreListTest("IgnoreListSync - sync does nothing with no pubkeys configured", async () => {
-  ensureTestDB();
-  const config = createTestConfig({
-    relaymon: {
-      ignorelist: {
-        enabled: true,
-        pubkeys: []
-      }
-    }
-  });
-  const sync = new IgnoreListSync(config, TEST_META_RELAYS);
+ignoreListTest(
+  "IgnoreListSync - sync does nothing with no pubkeys configured",
+  async () => {
+    ensureTestDB();
+    const config = createTestConfig({
+      relaymon: {
+        ignorelist: {
+          enabled: true,
+          pubkeys: [],
+        },
+      },
+    });
+    const sync = new IgnoreListSync(config, TEST_META_RELAYS);
 
-  // Should not throw
-  await sync.sync();
-  assert(true, "sync should complete without error when no pubkeys configured");
-});
+    // Should not throw
+    await sync.sync();
+    assert(
+      true,
+      "sync should complete without error when no pubkeys configured",
+    );
+  },
+);
 
-ignoreListTest("IgnoreListSync - publish does nothing when disabled", async () => {
-  ensureTestDB();
-  const config = createTestConfig({
-    relaymon: {
-      ignorelist: { enabled: false }
-    }
-  });
-  const sync = new IgnoreListSync(config, TEST_META_RELAYS);
+ignoreListTest(
+  "IgnoreListSync - publish does nothing when disabled",
+  async () => {
+    ensureTestDB();
+    const config = createTestConfig({
+      relaymon: {
+        ignorelist: { enabled: false },
+      },
+    });
+    const sync = new IgnoreListSync(config, TEST_META_RELAYS);
 
-  // Should not throw
-  await sync.publish(TEST_PRIVKEY);
-  assert(true, "publish should complete without error when disabled");
-});
+    // Should not throw
+    await sync.publish(TEST_PRIVKEY);
+    assert(true, "publish should complete without error when disabled");
+  },
+);
 
-ignoreListTest("IgnoreListSync - publish skips when ignore list hasn't changed", async () => {
-  ensureTestDB();
-  const config = createTestConfig();
-  const sync = new IgnoreListSync(config, TEST_META_RELAYS);
+ignoreListTest(
+  "IgnoreListSync - publish skips when ignore list hasn't changed",
+  async () => {
+    ensureTestDB();
+    const config = createTestConfig();
+    const sync = new IgnoreListSync(config, TEST_META_RELAYS);
 
-  // Don't add any relays, so list hasn't changed
-  await sync.publish(TEST_PRIVKEY);
-  assert(true, "publish should skip when list hasn't changed");
-});
+    // Don't add any relays, so list hasn't changed
+    await sync.publish(TEST_PRIVKEY);
+    assert(true, "publish should skip when list hasn't changed");
+  },
+);
 
-ignoreListTest("IgnoreListSync - publish attempts to publish after list changes", async () => {
-  ensureTestDB();
-  const config = createTestConfig();
-  const sync = new IgnoreListSync(config, TEST_META_RELAYS);
+ignoreListTest(
+  "IgnoreListSync - publish attempts to publish after list changes",
+  async () => {
+    ensureTestDB();
+    const config = createTestConfig();
+    const sync = new IgnoreListSync(config, TEST_META_RELAYS);
 
-  // Add a relay to trigger list change
-  sync.addToIgnoreList("wss://test-relay.example.com");
+    // Add a relay to trigger list change
+    sync.addToIgnoreList("wss://test-relay.example.com");
 
-  // This will attempt to publish (will fail since we don't have real relays)
-  // But we're testing that it attempts without throwing
-  await sync.publish(TEST_PRIVKEY);
-  assert(true, "publish should attempt to publish when list has changed");
-});
+    // This will attempt to publish (will fail since we don't have real relays)
+    // But we're testing that it attempts without throwing
+    await sync.publish(TEST_PRIVKEY);
+    assert(true, "publish should attempt to publish when list has changed");
+  },
+);
 
-ignoreListTest("IgnoreListSync - publishDeletions does nothing when disabled", async () => {
-  ensureTestDB();
-  const config = createTestConfig({
-    relaymon: {
-      ignorelist: { enabled: false }
-    }
-  });
-  const sync = new IgnoreListSync(config, TEST_META_RELAYS);
+ignoreListTest(
+  "IgnoreListSync - publishDeletions does nothing when disabled",
+  async () => {
+    ensureTestDB();
+    const config = createTestConfig({
+      relaymon: {
+        ignorelist: { enabled: false },
+      },
+    });
+    const sync = new IgnoreListSync(config, TEST_META_RELAYS);
 
-  // Should not throw
-  await sync.publishDeletions(TEST_PRIVKEY);
-  assert(true, "publishDeletions should complete without error when disabled");
-});
+    // Should not throw
+    await sync.publishDeletions(TEST_PRIVKEY);
+    assert(
+      true,
+      "publishDeletions should complete without error when disabled",
+    );
+  },
+);
 
 ignoreListTest("IgnoreListSync - close closes pool connections", () => {
   ensureTestDB();
@@ -312,43 +365,49 @@ ignoreListTest("IgnoreListSync - close closes pool connections", () => {
   assert(true, "close should execute without error");
 });
 
-ignoreListTest("IgnoreListSync - handles multiple relays in ignore list", () => {
-  ensureTestDB();
-  const config = createTestConfig();
-  const sync = new IgnoreListSync(config, TEST_META_RELAYS);
+ignoreListTest(
+  "IgnoreListSync - handles multiple relays in ignore list",
+  () => {
+    ensureTestDB();
+    const config = createTestConfig();
+    const sync = new IgnoreListSync(config, TEST_META_RELAYS);
 
-  const relays = [
-    "wss://relay1.example.com",
-    "wss://relay2.example.com",
-    "wss://relay3.example.com"
-  ];
+    const relays = [
+      "wss://relay1.example.com",
+      "wss://relay2.example.com",
+      "wss://relay3.example.com",
+    ];
 
-  // Add multiple relays
-  for (const relay of relays) {
-    sync.addToIgnoreList(relay);
-  }
+    // Add multiple relays
+    for (const relay of relays) {
+      sync.addToIgnoreList(relay);
+    }
 
-  // Check all are ignored
-  for (const relay of relays) {
-    assertEquals(sync.isIgnored(relay), true, `${relay} should be ignored`);
-  }
-});
+    // Check all are ignored
+    for (const relay of relays) {
+      assertEquals(sync.isIgnored(relay), true, `${relay} should be ignored`);
+    }
+  },
+);
 
-ignoreListTest("IgnoreListSync - dedups when adding same relay multiple times", () => {
-  ensureTestDB();
-  const config = createTestConfig();
-  const sync = new IgnoreListSync(config, TEST_META_RELAYS);
+ignoreListTest(
+  "IgnoreListSync - dedups when adding same relay multiple times",
+  () => {
+    ensureTestDB();
+    const config = createTestConfig();
+    const sync = new IgnoreListSync(config, TEST_META_RELAYS);
 
-  const testRelay = "wss://test-relay.example.com";
+    const testRelay = "wss://test-relay.example.com";
 
-  // Add same relay multiple times
-  sync.addToIgnoreList(testRelay);
-  sync.addToIgnoreList(testRelay);
-  sync.addToIgnoreList(testRelay);
+    // Add same relay multiple times
+    sync.addToIgnoreList(testRelay);
+    sync.addToIgnoreList(testRelay);
+    sync.addToIgnoreList(testRelay);
 
-  // Should still be in list only once
-  assertEquals(sync.isIgnored(testRelay), true);
-});
+    // Should still be in list only once
+    assertEquals(sync.isIgnored(testRelay), true);
+  },
+);
 
 ignoreListTest("IgnoreListSync - handles invalid relay URLs gracefully", () => {
   ensureTestDB();

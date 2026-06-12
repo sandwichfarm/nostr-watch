@@ -1,4 +1,8 @@
-import { assertEquals, assertExists, assert } from "https://deno.land/std@0.218.2/assert/mod.ts";
+import {
+  assert,
+  assertEquals,
+  assertExists,
+} from "https://deno.land/std@0.218.2/assert/mod.ts";
 import { Worker } from "../../src/core/worker.ts";
 import { QueueManager } from "../../src/utils/queueManager.ts";
 import type { Config } from "../../src/types/config.ts";
@@ -6,7 +10,7 @@ import type { RelayCheckResult } from "../../src/types/relay.ts";
 import { db, initDB } from "../../src/db/db.ts";
 import { mockConfig } from "../helpers/fixtures.ts";
 import { getPublicKey, nip19 } from "npm:nostr-tools";
-import { hexToBytes } from "npm:@noble/hashes/utils";
+import { hexToBytes } from "@noble/hashes/utils";
 
 /**
  * Test helper to disable resource/ops sanitization
@@ -16,7 +20,7 @@ function retryTest(name: string, fn: () => void | Promise<void>) {
     name,
     sanitizeResources: false,
     sanitizeOps: false,
-    fn
+    fn,
   });
 }
 
@@ -25,8 +29,9 @@ const TEST_DB_PATH = `/tmp/test-worker-retry-${Date.now()}.db`;
 let dbInitialized = false;
 
 // Test constants
-const TEST_PRIVKEY = "0000000000000000000000000000000000000000000000000000000000000001";
-const TEST_PUBKEY = getPublicKey(TEST_PRIVKEY);
+const TEST_PRIVKEY =
+  "0000000000000000000000000000000000000000000000000000000000000001";
+const TEST_PUBKEY = getPublicKey(hexToBytes(TEST_PRIVKEY));
 
 function ensureTestDB() {
   if (!dbInitialized) {
@@ -57,9 +62,9 @@ function createTestConfig(overrides: any = {}): Config {
       ...mockConfig.publisher,
       retry: {
         maxRetries: 3,
-        initialBackoffMs: 1000
-      }
-    }
+        initialBackoffMs: 1000,
+      },
+    },
   };
 
   // Deep merge overrides
@@ -79,7 +84,9 @@ function createTestConfig(overrides: any = {}): Config {
 /**
  * Create a mock relay check result
  */
-function createMockResult(overrides: Partial<RelayCheckResult> = {}): RelayCheckResult {
+function createMockResult(
+  overrides: Partial<RelayCheckResult> = {},
+): RelayCheckResult {
   return {
     url: "wss://relay.example.com",
     hostname: "relay.example.com",
@@ -91,9 +98,9 @@ function createMockResult(overrides: Partial<RelayCheckResult> = {}): RelayCheck
     parent: "",
     open: {
       data: true,
-      duration: 150
+      duration: 150,
     },
-    ...overrides
+    ...overrides,
   } as RelayCheckResult;
 }
 
@@ -106,9 +113,9 @@ retryTest("Worker - constructor accepts retry configuration", () => {
       relays: ["wss://relay.example.com"],
       retry: {
         maxRetries: 5,
-        initialBackoffMs: 2000
-      }
-    }
+        initialBackoffMs: 2000,
+      },
+    },
   });
 
   const worker = createTestWorker(config);
@@ -130,39 +137,46 @@ retryTest("Worker - handleRetryForRelay increments retry count", () => {
   assert(true, "handleRetryForRelay should execute without error");
 });
 
-retryTest("Worker - handleRetryForRelay tracks multiple retries for same relay", () => {
-  ensureTestDB();
+retryTest(
+  "Worker - handleRetryForRelay tracks multiple retries for same relay",
+  () => {
+    ensureTestDB();
 
-  const config = createTestConfig();
-  const worker = createTestWorker(config);
-  const relayUrl = "wss://test-relay.example.com";
+    const config = createTestConfig();
+    const worker = createTestWorker(config);
+    const relayUrl = "wss://test-relay.example.com";
 
-  // Multiple retries
-  worker.handleRetryForRelay(relayUrl);
-  worker.handleRetryForRelay(relayUrl);
-  worker.handleRetryForRelay(relayUrl);
+    // Multiple retries
+    worker.handleRetryForRelay(relayUrl);
+    worker.handleRetryForRelay(relayUrl);
+    worker.handleRetryForRelay(relayUrl);
 
-  assert(true, "Should handle multiple retries for same relay");
-});
+    assert(true, "Should handle multiple retries for same relay");
+  },
+);
 
-retryTest("Worker - handleRetryForRelay tracks retries for different relays independently", () => {
-  ensureTestDB();
+retryTest(
+  "Worker - handleRetryForRelay tracks retries for different relays independently",
+  () => {
+    ensureTestDB();
 
-  const config = createTestConfig();
-  const worker = createTestWorker(config);
+    const config = createTestConfig();
+    const worker = createTestWorker(config);
 
-  worker.handleRetryForRelay("wss://relay1.example.com");
-  worker.handleRetryForRelay("wss://relay2.example.com");
-  worker.handleRetryForRelay("wss://relay1.example.com");
+    worker.handleRetryForRelay("wss://relay1.example.com");
+    worker.handleRetryForRelay("wss://relay2.example.com");
+    worker.handleRetryForRelay("wss://relay1.example.com");
 
-  assert(true, "Should track retries for different relays independently");
-});
+    assert(true, "Should track retries for different relays independently");
+  },
+);
 
 retryTest("Worker - publishResult with retry configuration", async () => {
   ensureTestDB();
 
   // Set up environment for signing
-  const testPrivkey = "0000000000000000000000000000000000000000000000000000000000000001";
+  const testPrivkey =
+    "0000000000000000000000000000000000000000000000000000000000000001";
   const originalEnv = Deno.env.get("RELAYMON_NSEC");
   Deno.env.set("RELAYMON_NSEC", nip19.nsecEncode(hexToBytes(testPrivkey)));
 
@@ -172,9 +186,9 @@ retryTest("Worker - publishResult with retry configuration", async () => {
         relays: ["wss://relay.example.com"],
         retry: {
           maxRetries: 3,
-          initialBackoffMs: 100 // Short backoff for testing
-        }
-      }
+          initialBackoffMs: 100, // Short backoff for testing
+        },
+      },
     });
 
     const worker = createTestWorker(config);
@@ -225,9 +239,9 @@ retryTest("Worker - retry configuration uses custom maxRetries", () => {
       relays: ["wss://relay.example.com"],
       retry: {
         maxRetries: customMaxRetries,
-        initialBackoffMs: 1000
-      }
-    }
+        initialBackoffMs: 1000,
+      },
+    },
   });
 
   const worker = createTestWorker(config);
@@ -243,9 +257,9 @@ retryTest("Worker - retry configuration uses custom initialBackoffMs", () => {
       relays: ["wss://relay.example.com"],
       retry: {
         maxRetries: 3,
-        initialBackoffMs: customBackoff
-      }
-    }
+        initialBackoffMs: customBackoff,
+      },
+    },
   });
 
   const worker = createTestWorker(config);
@@ -257,13 +271,16 @@ retryTest("Worker - default retry configuration when not specified", () => {
 
   const config = createTestConfig({
     publisher: {
-      relays: ["wss://relay.example.com"]
+      relays: ["wss://relay.example.com"],
       // No retry config - should use defaults
-    }
+    },
   });
 
   const worker = createTestWorker(config);
-  assertExists(worker, "Worker should use default retry config when not specified");
+  assertExists(
+    worker,
+    "Worker should use default retry config when not specified",
+  );
 });
 
 retryTest("Worker - formatDuration converts milliseconds correctly", () => {
@@ -308,78 +325,82 @@ retryTest("Worker - relay check retry uses RetryManager", () => {
       networks: ["clearnet"],
       seed: {
         enabled: false,
-        interval: 3600000
+        interval: 3600000,
       },
       checks: {
         enabled: true,
         options: {
           expires: 86400000,
-          interval: 3600000
-        }
+          interval: 3600000,
+        },
       },
       retry: {
         enabled: true,
         expiry: [
           { delay: 60000, retries: 3 },
           { delay: 300000, retries: 5 },
-          { delay: 900000, retries: 10 }
-        ]
+          { delay: 900000, retries: 10 },
+        ],
       },
       deduplication: {
-        enabled: false
+        enabled: false,
       },
       ignorelist: {
         enabled: false,
         interval: "6h",
         deletion_interval: "24h",
         relays: [],
-        pubkeys: []
-      }
-    }
+        pubkeys: [],
+      },
+    },
   });
 
   const worker = createTestWorker(config);
   assertExists(worker, "Worker should initialize with RetryManager config");
 });
 
-retryTest("Worker - multiple publish attempts for different relays", async () => {
-  ensureTestDB();
+retryTest(
+  "Worker - multiple publish attempts for different relays",
+  async () => {
+    ensureTestDB();
 
-  const testPrivkey = "0000000000000000000000000000000000000000000000000000000000000001";
-  const originalEnv = Deno.env.get("RELAYMON_NSEC");
-  Deno.env.set("RELAYMON_NSEC", nip19.nsecEncode(hexToBytes(testPrivkey)));
+    const testPrivkey =
+      "0000000000000000000000000000000000000000000000000000000000000001";
+    const originalEnv = Deno.env.get("RELAYMON_NSEC");
+    Deno.env.set("RELAYMON_NSEC", nip19.nsecEncode(hexToBytes(testPrivkey)));
 
-  try {
-    const config = createTestConfig({
-      publisher: {
-        relays: ["wss://relay.example.com"],
-        retry: {
-          maxRetries: 2,
-          initialBackoffMs: 50
-        }
+    try {
+      const config = createTestConfig({
+        publisher: {
+          relays: ["wss://relay.example.com"],
+          retry: {
+            maxRetries: 2,
+            initialBackoffMs: 50,
+          },
+        },
+      });
+
+      const worker = createTestWorker(config);
+
+      const result1 = createMockResult({ url: "wss://relay1.example.com" });
+      const result2 = createMockResult({ url: "wss://relay2.example.com" });
+      const result3 = createMockResult({ url: "wss://relay3.example.com" });
+
+      // Queue multiple publish jobs
+      await worker.publishResult(result1);
+      await worker.publishResult(result2);
+      await worker.publishResult(result3);
+
+      assert(true, "Should handle multiple publish attempts");
+    } finally {
+      if (originalEnv) {
+        Deno.env.set("RELAYMON_NSEC", originalEnv);
+      } else {
+        Deno.env.delete("RELAYMON_NSEC");
       }
-    });
-
-    const worker = createTestWorker(config);
-
-    const result1 = createMockResult({ url: "wss://relay1.example.com" });
-    const result2 = createMockResult({ url: "wss://relay2.example.com" });
-    const result3 = createMockResult({ url: "wss://relay3.example.com" });
-
-    // Queue multiple publish jobs
-    await worker.publishResult(result1);
-    await worker.publishResult(result2);
-    await worker.publishResult(result3);
-
-    assert(true, "Should handle multiple publish attempts");
-  } finally {
-    if (originalEnv) {
-      Deno.env.set("RELAYMON_NSEC", originalEnv);
-    } else {
-      Deno.env.delete("RELAYMON_NSEC");
     }
-  }
-});
+  },
+);
 
 retryTest("Worker - exponential backoff calculation", () => {
   ensureTestDB();
@@ -389,9 +410,9 @@ retryTest("Worker - exponential backoff calculation", () => {
       relays: ["wss://relay.example.com"],
       retry: {
         maxRetries: 5,
-        initialBackoffMs: 1000
-      }
-    }
+        initialBackoffMs: 1000,
+      },
+    },
   });
 
   const worker = createTestWorker(config);
@@ -404,7 +425,10 @@ retryTest("Worker - exponential backoff calculation", () => {
   // retry 3: 8000ms (4000 * 2)
   // etc.
 
-  assertExists(worker, "Worker should be created with exponential backoff config");
+  assertExists(
+    worker,
+    "Worker should be created with exponential backoff config",
+  );
 });
 
 retryTest("Worker - retry tracking persists across worker instance", () => {

@@ -3,28 +3,62 @@ import { getLogger } from "../utils/logger.ts";
 import type { RelayInfo } from "../types/relay.ts";
 import { createInfoHash } from "../utils/hostnames.ts";
 import {
+  enqueueRemediationDeletion,
   rerunDedupForAllRowsMigration,
   rerunNostringsSweepMigration,
-  enqueueRemediationDeletion,
 } from "../utils/remediation.ts";
 import { purgeNatoPhoneticSpam } from "../../../../libraries/db/src/nato-purge.ts";
 
 const logger = getLogger("DB");
 let isInitialized = false;
 
+function ensureTrustedRelayAssertionTable(): void {
+  db.query(`
+    CREATE TABLE IF NOT EXISTS relay_trust_assertion_state (
+      url TEXT PRIMARY KEY,
+      first_seen INTEGER NOT NULL,
+      last_observed INTEGER NOT NULL,
+      observations INTEGER NOT NULL DEFAULT 0,
+      reachable_observations INTEGER NOT NULL DEFAULT 0,
+      total_rtt_open INTEGER NOT NULL DEFAULT 0,
+      rtt_open_samples INTEGER NOT NULL DEFAULT 0,
+      total_rtt_read INTEGER NOT NULL DEFAULT 0,
+      rtt_read_samples INTEGER NOT NULL DEFAULT 0,
+      last_online_at INTEGER,
+      last_status TEXT,
+      last_score INTEGER,
+      last_reliability INTEGER,
+      last_quality INTEGER,
+      last_accessibility INTEGER,
+      last_confidence TEXT,
+      last_event_id TEXT,
+      last_published_at INTEGER
+    )
+  `);
+}
+
 /**
  * Initialize the database with a specific path
  * @param dbPath Optional path to the SQLite database file
  * @param enableWAL Optional boolean to enable WAL mode (default: true)
  */
-export async function initializeDB(dbPath?: string, enableWAL: boolean = true): Promise<void> {
+export async function initializeDB(
+  dbPath?: string,
+  enableWAL: boolean = true,
+): Promise<void> {
   if (isInitialized) {
-    logger.warn("Database already initialized, ignoring repeated initialization");
+    logger.warn(
+      "Database already initialized, ignoring repeated initialization",
+    );
     return;
   }
 
   const path = dbPath || "relaymon.db";
-  logger.info(`Initializing database with path: ${path}, WAL mode: ${enableWAL ? "enabled" : "disabled"}`);
+  logger.info(
+    `Initializing database with path: ${path}, WAL mode: ${
+      enableWAL ? "enabled" : "disabled"
+    }`,
+  );
   initDB(path, enableWAL);
 
   // Create the relay_info table if it doesn't exist
@@ -122,6 +156,15 @@ export async function initializeDB(dbPath?: string, enableWAL: boolean = true): 
     logger.error(`Failed to create relay_period_snapshots table: ${e}`);
   }
 
+  // Trusted Relay Assertions (kind 30385) need lightweight local history so
+  // RelayMon can publish material changes instead of re-announcing every check.
+  try {
+    ensureTrustedRelayAssertionTable();
+    logger.info("Created relay_trust_assertion_state table if it didn't exist");
+  } catch (e) {
+    logger.error(`Failed to create relay_trust_assertion_state table: ${e}`);
+  }
+
   // Phase 18 Fix 2: re-hash existing relay_info rows using the new
   // normalizeNip11-aware createInfoHash. Idempotent via relaymon_migrations
   // sentinel.
@@ -199,18 +242,24 @@ export async function initializeDB(dbPath?: string, enableWAL: boolean = true): 
  *
  * @param purgedUrlsPath Path to the file containing purged URLs (one per line)
  */
-export async function enqueueNatoPurgedUrls(purgedUrlsPath: string): Promise<void> {
+export async function enqueueNatoPurgedUrls(
+  purgedUrlsPath: string,
+): Promise<void> {
   try {
     let fileContent: string;
     try {
       fileContent = await Deno.readTextFile(purgedUrlsPath);
     } catch (e) {
       // File does not exist — no URLs were purged (or purge hasn't run yet)
-      logger.debug(`NATO purged URLs file not found at ${purgedUrlsPath}, nothing to enqueue: ${e}`);
+      logger.debug(
+        `NATO purged URLs file not found at ${purgedUrlsPath}, nothing to enqueue: ${e}`,
+      );
       return;
     }
 
-    const urls = fileContent.split("\n").filter((line: string) => line.trim().length > 0);
+    const urls = fileContent.split("\n").filter((line: string) =>
+      line.trim().length > 0
+    );
 
     if (urls.length === 0) {
       logger.debug("NATO purged URLs file is empty, nothing to enqueue");
@@ -233,17 +282,24 @@ export async function enqueueNatoPurgedUrls(purgedUrlsPath: string): Promise<voi
  * @param info The NIP-11 info object
  * @param infoHash Hash of the NIP-11 info for comparison
  */
-export function storeRelayInfo(url: string, info: RelayInfo, infoHash: string): void {
+export function storeRelayInfo(
+  url: string,
+  info: RelayInfo,
+  infoHash: string,
+): void {
   try {
     const infoJson = JSON.stringify(info);
     const timestamp = Math.floor(Date.now() / 1000);
-    
+
     // Use REPLACE to update or insert
-    db.query(`
+    db.query(
+      `
       REPLACE INTO relay_info (url, info_json, info_hash, last_updated)
       VALUES (?, ?, ?, ?)
-    `, [url, infoJson, infoHash, timestamp]);
-    
+    `,
+      [url, infoJson, infoHash, timestamp],
+    );
+
     logger.debug(`Stored NIP-11 info for ${url} with hash ${infoHash}`);
   } catch (e) {
     logger.error(`Failed to store relay info for ${url}: ${e}`);
@@ -316,32 +372,37 @@ export function rehashRelayInfoMigration(): void {
  * @param url The relay URL
  * @returns Object with info and infoHash, or null if not found
  */
-export function getRelayInfo(url: string): { info: RelayInfo; infoHash: string } | null {
+export function getRelayInfo(
+  url: string,
+): { info: RelayInfo; infoHash: string } | null {
   try {
-    const result = db.query(`
+    const result = db.query(
+      `
       SELECT info_json, info_hash FROM relay_info
       WHERE url = ?
-    `, [url]);
-    
+    `,
+      [url],
+    );
+
     if (!result || result.length === 0) {
       return null;
     }
-    
+
     const [infoJson, infoHash] = result[0];
-    
+
     let info = null;
     try {
-      if (infoJson && typeof infoJson === 'string') {
+      if (infoJson && typeof infoJson === "string") {
         info = JSON.parse(infoJson);
       }
     } catch (e) {
       logger.warn(`Failed to parse info JSON for relay ${url}: ${e}`);
       return null;
     }
-    
+
     return {
       info,
-      infoHash: infoHash as string
+      infoHash: infoHash as string,
     };
   } catch (e) {
     logger.error(`Error getting relay info from DB for ${url}: ${e}`);
@@ -356,16 +417,19 @@ export function getRelayInfo(url: string): { info: RelayInfo; infoHash: string }
  */
 export function getRelaysWithSameInfo(infoHash: string): string[] {
   try {
-    const results = db.query(`
+    const results = db.query(
+      `
       SELECT url FROM relay_info
       WHERE info_hash = ?
-    `, [infoHash]);
-    
+    `,
+      [infoHash],
+    );
+
     if (!results || results.length === 0) {
       return [];
     }
-    
-    return results.map(row => row[0] as string);
+
+    return results.map((row) => row[0] as string);
   } catch (e) {
     logger.error(`Error getting relays with info hash ${infoHash}: ${e}`);
     return [];
@@ -379,7 +443,9 @@ export function getRelaysWithSameInfo(infoHash: string): string[] {
  */
 export function isRelayIgnored(url: string): boolean {
   try {
-    const result = db.query(`SELECT ignore FROM relay_status WHERE url = ?`, [url]);
+    const result = db.query(`SELECT ignore FROM relay_status WHERE url = ?`, [
+      url,
+    ]);
     if (!result || result.length === 0) {
       return false; // Relay not found in database
     }
@@ -410,11 +476,14 @@ export interface DeltaState {
  */
 export function getLastDeltaState(url: string): DeltaState | null {
   try {
-    const result = db.query(`
+    const result = db.query(
+      `
       SELECT state_json, rtt_open, rtt_read, rtt_write, dns_json, geo_json
       FROM relay_delta_state
       WHERE url = ?
-    `, [url]);
+    `,
+      [url],
+    );
 
     if (!result || result.length === 0) {
       return null;
@@ -424,7 +493,7 @@ export function getLastDeltaState(url: string): DeltaState | null {
 
     let state = null;
     try {
-      if (stateJson && typeof stateJson === 'string') {
+      if (stateJson && typeof stateJson === "string") {
         state = JSON.parse(stateJson);
       }
     } catch (e) {
@@ -434,7 +503,7 @@ export function getLastDeltaState(url: string): DeltaState | null {
 
     let dns = undefined;
     try {
-      if (dnsJson && typeof dnsJson === 'string') {
+      if (dnsJson && typeof dnsJson === "string") {
         dns = JSON.parse(dnsJson);
       }
     } catch (e) {
@@ -443,7 +512,7 @@ export function getLastDeltaState(url: string): DeltaState | null {
 
     let geo = undefined;
     try {
-      if (geoJson && typeof geoJson === 'string') {
+      if (geoJson && typeof geoJson === "string") {
         geo = JSON.parse(geoJson);
       }
     } catch (e) {
@@ -452,9 +521,15 @@ export function getLastDeltaState(url: string): DeltaState | null {
 
     return {
       state,
-      rttOpen: rttOpen !== null && rttOpen !== -1 ? rttOpen as number : undefined,
-      rttRead: rttRead !== null && rttRead !== -1 ? rttRead as number : undefined,
-      rttWrite: rttWrite !== null && rttWrite !== -1 ? rttWrite as number : undefined,
+      rttOpen: rttOpen !== null && rttOpen !== -1
+        ? rttOpen as number
+        : undefined,
+      rttRead: rttRead !== null && rttRead !== -1
+        ? rttRead as number
+        : undefined,
+      rttWrite: rttWrite !== null && rttWrite !== -1
+        ? rttWrite as number
+        : undefined,
       dns,
       geo,
     };
@@ -479,10 +554,13 @@ export function storeDeltaState(url: string, deltaState: DeltaState): void {
     const dnsJson = deltaState.dns ? JSON.stringify(deltaState.dns) : null;
     const geoJson = deltaState.geo ? JSON.stringify(deltaState.geo) : null;
 
-    db.query(`
+    db.query(
+      `
       REPLACE INTO relay_delta_state (url, state_json, rtt_open, rtt_read, rtt_write, dns_json, geo_json, last_updated)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `, [url, stateJson, rttOpen, rttRead, rttWrite, dnsJson, geoJson, timestamp]);
+    `,
+      [url, stateJson, rttOpen, rttRead, rttWrite, dnsJson, geoJson, timestamp],
+    );
 
     logger.debug(`Stored delta state for ${url}`);
   } catch (e) {
@@ -518,13 +596,19 @@ export interface PeriodSnapshot {
  * @param period The period (e.g., "6h", "1d", "7d")
  * @returns The period snapshot or null if not found
  */
-export function getPeriodSnapshot(url: string, period: string): PeriodSnapshot | null {
+export function getPeriodSnapshot(
+  url: string,
+  period: string,
+): PeriodSnapshot | null {
   try {
-    const result = db.query(`
+    const result = db.query(
+      `
       SELECT state_json, snapshot_at
       FROM relay_period_snapshots
       WHERE url = ? AND period = ?
-    `, [url, period]);
+    `,
+      [url, period],
+    );
 
     if (!result || result.length === 0) {
       return null;
@@ -534,20 +618,24 @@ export function getPeriodSnapshot(url: string, period: string): PeriodSnapshot |
 
     let state = null;
     try {
-      if (stateJson && typeof stateJson === 'string') {
+      if (stateJson && typeof stateJson === "string") {
         state = JSON.parse(stateJson);
       }
     } catch (e) {
-      logger.warn(`Failed to parse period snapshot JSON for relay ${url}, period ${period}: ${e}`);
+      logger.warn(
+        `Failed to parse period snapshot JSON for relay ${url}, period ${period}: ${e}`,
+      );
       return null;
     }
 
     return {
       state,
-      snapshotAt: snapshotAt as number
+      snapshotAt: snapshotAt as number,
     };
   } catch (e) {
-    logger.error(`Error getting period snapshot for ${url}, period ${period}: ${e}`);
+    logger.error(
+      `Error getting period snapshot for ${url}, period ${period}: ${e}`,
+    );
     return null;
   }
 }
@@ -558,19 +646,28 @@ export function getPeriodSnapshot(url: string, period: string): PeriodSnapshot |
  * @param period The period (e.g., "6h", "1d", "7d")
  * @param state The relay state to snapshot
  */
-export function storePeriodSnapshot(url: string, period: string, state: RelayInfo): void {
+export function storePeriodSnapshot(
+  url: string,
+  period: string,
+  state: RelayInfo,
+): void {
   try {
     const stateJson = JSON.stringify(state);
     const timestamp = Math.floor(Date.now() / 1000);
 
-    db.query(`
+    db.query(
+      `
       REPLACE INTO relay_period_snapshots (url, period, state_json, snapshot_at)
       VALUES (?, ?, ?, ?)
-    `, [url, period, stateJson, timestamp]);
+    `,
+      [url, period, stateJson, timestamp],
+    );
 
     logger.debug(`Stored period snapshot for ${url}, period ${period}`);
   } catch (e) {
-    logger.error(`Failed to store period snapshot for ${url}, period ${period}: ${e}`);
+    logger.error(
+      `Failed to store period snapshot for ${url}, period ${period}: ${e}`,
+    );
   }
 }
 
@@ -592,25 +689,32 @@ export function clearPeriodSnapshots(url: string): void {
  * @param url The relay URL
  * @returns Map of period to snapshot
  */
-export function getAllPeriodSnapshots(url: string): Map<string, PeriodSnapshot> {
+export function getAllPeriodSnapshots(
+  url: string,
+): Map<string, PeriodSnapshot> {
   const snapshots = new Map<string, PeriodSnapshot>();
 
   try {
-    const results = db.query(`
+    const results = db.query(
+      `
       SELECT period, state_json, snapshot_at
       FROM relay_period_snapshots
       WHERE url = ?
-    `, [url]);
+    `,
+      [url],
+    );
 
     for (const [period, stateJson, snapshotAt] of results) {
       try {
         const state = JSON.parse(stateJson as string);
         snapshots.set(period as string, {
           state,
-          snapshotAt: snapshotAt as number
+          snapshotAt: snapshotAt as number,
         });
       } catch (e) {
-        logger.warn(`Failed to parse snapshot for ${url}, period ${period}: ${e}`);
+        logger.warn(
+          `Failed to parse snapshot for ${url}, period ${period}: ${e}`,
+        );
       }
     }
   } catch (e) {
@@ -620,6 +724,239 @@ export function getAllPeriodSnapshots(url: string): Map<string, PeriodSnapshot> 
   return snapshots;
 }
 
+export interface TrustedRelayObservationState {
+  url: string;
+  firstSeen: number;
+  lastObserved: number;
+  observations: number;
+  reachableObservations: number;
+  totalRttOpen: number;
+  rttOpenSamples: number;
+  totalRttRead: number;
+  rttReadSamples: number;
+  lastOnlineAt?: number;
+}
+
+export interface PublishedTrustedRelayAssertionState {
+  status?: string;
+  score?: number;
+  reliability?: number;
+  quality?: number;
+  accessibility?: number;
+  confidence?: string;
+  eventId?: string;
+  publishedAt?: number;
+}
+
+function observationRowToState(
+  row: unknown[],
+  url: string,
+): TrustedRelayObservationState {
+  const [
+    firstSeen,
+    lastObserved,
+    observations,
+    reachableObservations,
+    totalRttOpen,
+    rttOpenSamples,
+    totalRttRead,
+    rttReadSamples,
+    lastOnlineAt,
+  ] = row;
+
+  return {
+    url,
+    firstSeen: firstSeen as number,
+    lastObserved: lastObserved as number,
+    observations: observations as number,
+    reachableObservations: reachableObservations as number,
+    totalRttOpen: totalRttOpen as number,
+    rttOpenSamples: rttOpenSamples as number,
+    totalRttRead: totalRttRead as number,
+    rttReadSamples: rttReadSamples as number,
+    lastOnlineAt: lastOnlineAt === null ? undefined : lastOnlineAt as number,
+  };
+}
+
+export function recordTrustedRelayObservation(url: string, result: {
+  online?: boolean;
+  open?: { duration?: number };
+  read?: { duration?: number };
+}): TrustedRelayObservationState {
+  ensureTrustedRelayAssertionTable();
+
+  const now = Math.floor(Date.now() / 1000);
+  const online = result.online === true;
+  const rttOpen =
+    typeof result.open?.duration === "number" && result.open.duration > 0
+      ? Math.round(result.open.duration)
+      : 0;
+  const rttRead =
+    typeof result.read?.duration === "number" && result.read.duration > 0
+      ? Math.round(result.read.duration)
+      : 0;
+
+  db.query(
+    `
+    INSERT INTO relay_trust_assertion_state (
+      url,
+      first_seen,
+      last_observed,
+      observations,
+      reachable_observations,
+      total_rtt_open,
+      rtt_open_samples,
+      total_rtt_read,
+      rtt_read_samples,
+      last_online_at
+    )
+    VALUES (?, ?, ?, 1, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(url) DO UPDATE SET
+      last_observed = excluded.last_observed,
+      observations = relay_trust_assertion_state.observations + 1,
+      reachable_observations = relay_trust_assertion_state.reachable_observations + excluded.reachable_observations,
+      total_rtt_open = relay_trust_assertion_state.total_rtt_open + excluded.total_rtt_open,
+      rtt_open_samples = relay_trust_assertion_state.rtt_open_samples + excluded.rtt_open_samples,
+      total_rtt_read = relay_trust_assertion_state.total_rtt_read + excluded.total_rtt_read,
+      rtt_read_samples = relay_trust_assertion_state.rtt_read_samples + excluded.rtt_read_samples,
+      last_online_at = CASE
+        WHEN excluded.last_online_at IS NOT NULL THEN excluded.last_online_at
+        ELSE relay_trust_assertion_state.last_online_at
+      END
+  `,
+    [
+      url,
+      now,
+      now,
+      online ? 1 : 0,
+      rttOpen,
+      rttOpen > 0 ? 1 : 0,
+      rttRead,
+      rttRead > 0 ? 1 : 0,
+      online ? now : null,
+    ],
+  );
+
+  const rows = db.query(
+    `
+    SELECT
+      first_seen,
+      last_observed,
+      observations,
+      reachable_observations,
+      total_rtt_open,
+      rtt_open_samples,
+      total_rtt_read,
+      rtt_read_samples,
+      last_online_at
+    FROM relay_trust_assertion_state
+    WHERE url = ?
+  `,
+    [url],
+  );
+
+  if (!rows.length) {
+    throw new Error(
+      `Failed to read trusted relay observation state for ${url}`,
+    );
+  }
+
+  return observationRowToState(rows[0], url);
+}
+
+export function getPublishedTrustedRelayAssertion(
+  url: string,
+): PublishedTrustedRelayAssertionState | null {
+  ensureTrustedRelayAssertionTable();
+
+  const rows = db.query(
+    `
+    SELECT
+      last_status,
+      last_score,
+      last_reliability,
+      last_quality,
+      last_accessibility,
+      last_confidence,
+      last_event_id,
+      last_published_at
+    FROM relay_trust_assertion_state
+    WHERE url = ?
+  `,
+    [url],
+  );
+
+  if (!rows.length) {
+    return null;
+  }
+
+  const [
+    status,
+    score,
+    reliability,
+    quality,
+    accessibility,
+    confidence,
+    eventId,
+    publishedAt,
+  ] = rows[0];
+
+  if (publishedAt === null || publishedAt === undefined) {
+    return null;
+  }
+
+  return {
+    status: status as string | undefined,
+    score: score === null ? undefined : score as number,
+    reliability: reliability === null ? undefined : reliability as number,
+    quality: quality === null ? undefined : quality as number,
+    accessibility: accessibility === null ? undefined : accessibility as number,
+    confidence: confidence as string | undefined,
+    eventId: eventId as string | undefined,
+    publishedAt: publishedAt as number,
+  };
+}
+
+export function storePublishedTrustedRelayAssertion(url: string, assertion: {
+  status: string;
+  score?: number;
+  reliability?: number;
+  quality?: number;
+  accessibility?: number;
+  confidence: string;
+}, eventId: string): void {
+  ensureTrustedRelayAssertionTable();
+
+  const now = Math.floor(Date.now() / 1000);
+
+  db.query(
+    `
+    UPDATE relay_trust_assertion_state
+    SET
+      last_status = ?,
+      last_score = ?,
+      last_reliability = ?,
+      last_quality = ?,
+      last_accessibility = ?,
+      last_confidence = ?,
+      last_event_id = ?,
+      last_published_at = ?
+    WHERE url = ?
+  `,
+    [
+      assertion.status,
+      assertion.score ?? null,
+      assertion.reliability ?? null,
+      assertion.quality ?? null,
+      assertion.accessibility ?? null,
+      assertion.confidence,
+      eventId,
+      now,
+      url,
+    ],
+  );
+}
+
 /**
  * Mark a relay as ignored in the database
  * @param url The relay URL to mark as ignored
@@ -627,7 +964,10 @@ export function getAllPeriodSnapshots(url: string): Map<string, PeriodSnapshot> 
  */
 export function markRelayIgnored(url: string, reason?: string): void {
   try {
-    db.query(`UPDATE relay_status SET ignore = 1, ignore_reason = ? WHERE url = ?`, [reason || "", url]);
+    db.query(
+      `UPDATE relay_status SET ignore = 1, ignore_reason = ? WHERE url = ?`,
+      [reason || "", url],
+    );
     if (reason) {
       logger.info(`Marked relay ${url} as ignored: ${reason}`);
     } else {
@@ -644,7 +984,10 @@ export function markRelayIgnored(url: string, reason?: string): void {
  */
 export function markRelayUnignored(url: string): void {
   try {
-    db.query(`UPDATE relay_status SET ignore = 0, ignore_reason = '' WHERE url = ?`, [url]);
+    db.query(
+      `UPDATE relay_status SET ignore = 0, ignore_reason = '' WHERE url = ?`,
+      [url],
+    );
     logger.info(`Unmarked relay ${url} as ignored`);
   } catch (e) {
     logger.error(`Failed to unignore relay ${url}: ${e}`);
@@ -656,15 +999,22 @@ export function markRelayUnignored(url: string): void {
  * @param reasonPattern Substring to match against ignore_reason
  * @returns Array of {url, reason} objects
  */
-export function getIgnoredRelaysByReason(reasonPattern: string): Array<{url: string, reason: string}> {
+export function getIgnoredRelaysByReason(
+  reasonPattern: string,
+): Array<{ url: string; reason: string }> {
   try {
     const results = db.query(
       `SELECT url, ignore_reason FROM relay_status WHERE ignore = 1 AND ignore_reason LIKE ?`,
-      [`%${reasonPattern}%`]
+      [`%${reasonPattern}%`],
     );
-    return results.map(([url, reason]) => ({ url: url as string, reason: reason as string }));
+    return results.map(([url, reason]) => ({
+      url: url as string,
+      reason: reason as string,
+    }));
   } catch (e) {
-    logger.error(`Error getting ignored relays by reason pattern "${reasonPattern}": ${e}`);
+    logger.error(
+      `Error getting ignored relays by reason pattern "${reasonPattern}": ${e}`,
+    );
     return [];
   }
 }
@@ -676,7 +1026,10 @@ export function getIgnoredRelaysByReason(reasonPattern: string): Array<{url: str
  */
 export function getIgnoreReason(url: string): string {
   try {
-    const result = db.query(`SELECT ignore_reason FROM relay_status WHERE url = ?`, [url]);
+    const result = db.query(
+      `SELECT ignore_reason FROM relay_status WHERE url = ?`,
+      [url],
+    );
     if (!result || result.length === 0) {
       return "";
     }

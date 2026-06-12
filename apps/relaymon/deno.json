@@ -1,124 +1,124 @@
 {
-    "compilerOptions": {
-      "lib": ["deno.ns", "deno.window", "esnext"],
-      "strict": true
-    },
-    "nodeModulesDir": "auto",
-    "tasks": {
-      "interactive": "deno run --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run interactive.ts",
-      "compile": "mkdir -p dist && deno compile --no-check --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run --output dist/relaymon index.ts",
-      "start": "deno run --env-file=.env --allow-all --unstable-sloppy-imports index.ts",
-      "test": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run",
+  "compilerOptions": {
+    "lib": ["deno.ns", "deno.window", "esnext"],
+    "strict": true
+  },
+  "nodeModulesDir": "auto",
+  "tasks": {
+    "interactive": "deno run --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run interactive.ts",
+    "compile": "mkdir -p dist && deno compile --no-check --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run --output dist/relaymon index.ts",
+    "start": "deno run --env-file=.env --allow-all --unstable-sloppy-imports index.ts",
+    "test": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run",
 
-      "test:basic": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/basic.test.ts",
-      "test:dbcheck": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/dbcheck.test.ts",
-      "test:docker-proxy-chain": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/docker-proxy-chain.test.ts",
-      "test:proxy-connectivity": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/proxy-connectivity.test.ts",
-      "test:publish-retry": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/publish-retry.test.ts",
-      "test:simple-retry": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/simple-retry.test.ts",
+    "test:basic": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/basic.test.ts",
+    "test:dbcheck": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/dbcheck.test.ts",
+    "test:docker-proxy-chain": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/docker-proxy-chain.test.ts",
+    "test:proxy-connectivity": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/proxy-connectivity.test.ts",
+    "test:publish-retry": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/publish-retry.test.ts",
+    "test:simple-retry": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/simple-retry.test.ts",
 
-      "test:config-types": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/config-types.test.ts",
-      "test:database": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/database.test.ts",
-      "test:deletion": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/deletion.test.ts",
-      "test:delta-detector": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/delta-detector.test.ts",
-      "test:error-types": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/error-types.test.ts",
-      "test:hostname-dedup": "deno test --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/hostname-dedup.test.ts",
-      "test:ignorelist-sync": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/ignorelist-sync.test.ts",
-      "test:kind1066": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/kind1066.test.ts",
-      "test:period-calculator": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/period-calculator.test.ts",
-      "test:relay-types": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/relay-types.test.ts",
-      "test:seeder": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/seeder.test.ts",
-      "test:worker-publishing": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/worker-publishing.test.ts",
-      "test:worker-retry": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/worker-retry.test.ts",
+    "test:config-types": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/config-types.test.ts",
+    "test:database": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/database.test.ts",
+    "test:deletion": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/deletion.test.ts",
+    "test:delta-detector": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/delta-detector.test.ts",
+    "test:error-types": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/error-types.test.ts",
+    "test:hostname-dedup": "deno test --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/hostname-dedup.test.ts",
+    "test:ignorelist-sync": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/ignorelist-sync.test.ts",
+    "test:kind1066": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/kind1066.test.ts",
+    "test:kind30385": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/kind30385.test.ts",
+    "test:period-calculator": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/period-calculator.test.ts",
+    "test:relay-types": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/relay-types.test.ts",
+    "test:seeder": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/seeder.test.ts",
+    "test:worker-publishing": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/worker-publishing.test.ts",
+    "test:worker-retry": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/worker-retry.test.ts",
 
-      "test:baseline": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/integration/baseline.test.ts",
-      "test:delta-integration": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/integration/delta-events.test.ts",
-      "test:worker-integration": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/integration/worker.test.ts",
+    "test:baseline": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/integration/baseline.test.ts",
+    "test:delta-integration": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/integration/delta-events.test.ts",
+    "test:worker-integration": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/integration/worker.test.ts",
 
-      "test:unit": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/",
-      "test:integration": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/integration/",
-      "test:delta": "deno task test:delta-detector && deno task test:kind1066 && deno task test:period-calculator && deno task test:delta-integration",
+    "test:unit": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/unit/",
+    "test:integration": "deno test --no-lock --no-check --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run tests/integration/",
+    "test:delta": "deno task test:delta-detector && deno task test:kind1066 && deno task test:period-calculator && deno task test:delta-integration",
 
-      "link:nocap": "bash -c 'if ! [ -L ./node_modules/@nostrwatch/nocap ]; then ln -sfn /Users/sandwich/Develop/nostr-watch/libraries/nocap ./node_modules/@nostrwatch/nocap; fi'",
-      "status": "deno run --allow-net --allow-env --allow-read --allow-write --allow-run src/core/status.ts",
-      "dbcheck": "deno run --unstable-sloppy-imports --allow-all src/db/dbcheck.ts",
-      "compile:dbcheck": "mkdir -p dist && deno compile --no-check --allow-net --allow-env --allow-read --allow-write --allow-run --output dist/relaymon-dbcheck src/db/dbcheck.ts",
-      "compile:macos-x64": "mkdir -p dist && deno compile --no-check --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run --target x86_64-apple-darwin --output dist/relaymon-macos-x64 index.ts",
-      "compile:macos-arm64": "mkdir -p dist && deno compile --no-check --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run --target aarch64-apple-darwin --output dist/relaymon-macos-arm64 index.ts",
-      "compile:linux-x64": "mkdir -p dist && deno compile --no-check --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run --target x86_64-unknown-linux-gnu --output dist/relaymon-linux-x64 index.ts",
-      "compile:linux-arm64": "mkdir -p dist && deno compile --no-check --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run --target aarch64-unknown-linux-gnu --output dist/relaymon-linux-arm64 index.ts",
-      "compile:windows-x64": "mkdir -p dist && deno compile --no-check --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run --target x86_64-pc-windows-msvc --output dist/relaymon-windows-x64.exe index.ts",
-      "compile:all": "deno task compile:macos-x64 && deno task compile:macos-arm64 && deno task compile:linux-x64 && deno task compile:linux-arm64 && deno task compile:windows-x64 && deno task compile:windows-arm64"
-    },
-    "fmt": {
-      "files": {
-        "include": ["**/*.ts", "**/*.js", "**/*.json", "**/*.yaml", "**/*.yml"]
-      }
-    },
-    "lint": {
-      "files": {
-        "include": ["**/*.ts", "**/*.js"]
-      }
-    },
-    "version": "0.2.0",
-    "imports": {
-      "nostr-geotags": "https://esm.sh/nostr-geotags@latest",
-
-      "npm:nostr-fetch": "npm:nostr-fetch@0.17.0",
-      "npm:nostr-tools": "https://esm.sh/nostr-tools@2.23.3",
-      "nostr-tools": "https://esm.sh/nostr-tools@2.23.3",
-      "nostr-tools/pure": "https://esm.sh/nostr-tools@2.23.3/pure",
-      "nostr-tools/nip19": "https://esm.sh/nostr-tools@2.23.3/nip19",
-    
-      "npm:murmurhash": "npm:murmurhash@2.0.1",
-      "npm:p-queue": "https://esm.sh/p-queue@latest",
-      "npm:chalk": "https://esm.sh/chalk@latest",
-      "npm:cross-fetch": "https://esm.sh/cross-fetch@latest",
-      
-      "@noble/hashes/utils": "https://esm.sh/@noble/hashes@1.3.2/utils",
-      
-      "ws": "https://esm.sh/ws@latest",
-      "murmurhash": "npm:murmurhash@2.0.1",
-      "promise-deferred": "https://esm.sh/promise-deferred@latest",
-      "npm:promise-deferred": "https://esm.sh/promise-deferred@latest",
-
-      "cross-fetch": "https://esm.sh/cross-fetch@latest",
-      "buffer": "node:buffer",
-      "socks-proxy-agent": "https://esm.sh/socks-proxy-agent@latest",
-      
-      "sqlite": "https://esm.sh/sqlite@latest",
-      "npm:sqlite": "https://esm.sh/sqlite@latest",
-      "winston": "https://esm.sh/winston@latest",
-      "debug": "https://esm.sh/debug@latest",
-      "js-yaml": "https://esm.sh/js-yaml@latest",
-      "std/flags": "https://deno.land/std@0.218.2/flags/mod.ts",
-      "std/fs": "https://deno.land/std@0.218.2/fs/mod.ts",
-      "chalk": "https://esm.sh/chalk@latest",
-
-      "npm:@nostrwatch/utils": "../../internal/utils/src/index.ts",
-      "npm:@nostrwatch/nocap": "../../libraries/nocap/src/index.ts",
-      "npm:@nostrwatch/nocap-every-adapter-default": "../../libraries/nocap/adapters/default/ZEveryAdapterDefault/src/index.ts",
-      "npm:@nostrwatch/publisher": "../../internal/publisher/src/index.ts",
-      "npm:@nostrwatch/websocket": "../../libraries/websocket/src/index.ts",
-      "npm:@nostrwatch/logger": "../../internal/logger/src/index.ts",
-      "npm:@nostrwatch/publisher-nostrtools": "../../internal/publisher/adapters/NostrTools/src/index.ts",
-      "npm:@nostrwatch/db": "../../libraries/db/src/index.ts",
-      "npm:@nostrwatch/announce": "../../internal/announce/src/index.ts",
-
-      "@nostrwatch/nostrings": "../../libraries/nostrings/src/index.ts",
-      "@nostrwatch/websocket": "../../libraries/websocket/src/index.ts",
-      "@nostrwatch/utils": "../../internal/utils/src/index.ts",
-      "@nostrwatch/nocap": "../../libraries/nocap/src/index.ts",
-      "@nostrwatch/nocap-every-adapter-default": "../../libraries/nocap/adapters/default/ZEveryAdapterDefault/src/index.ts",
-      "@nostrwatch/publisher": "../../internal/publisher/src/index.ts",
-      "@nostrwatch/logger": "../../internal/logger/src/index.ts",
-      "@nostrwatch/nocap-info-adapter-default": "../../libraries/nocap/adapters/default/InfoAdapterDefault/src/index.ts",
-      "@nostrwatch/nocap-ssl-adapter-default": "../../libraries/nocap/adapters/default/SslAdapterDefault/src/index.ts",
-      "@nostrwatch/nocap-dns-adapter-default": "../../libraries/nocap/adapters/default/DnsAdapterDefault/src/index.ts",
-      "@nostrwatch/nocap-geo-adapter-default": "../../libraries/nocap/adapters/default/GeoAdapterDefault/src/index.ts",
-      "@nostrwatch/nocap-websocket-adapter-default": "../../libraries/nocap/adapters/default/WebsocketAdapterDefault/src/index.ts",
-      "@nostrwatch/publisher-nostrtools": "../../internal/publisher/adapters/NostrTools/src/index.ts",
-      "@nostrwatch/announce": "../../internal/announce/src/index.ts"
+    "link:nocap": "bash -c 'if ! [ -L ./node_modules/@nostrwatch/nocap ]; then ln -sfn /Users/sandwich/Develop/nostr-watch/libraries/nocap ./node_modules/@nostrwatch/nocap; fi'",
+    "status": "deno run --allow-net --allow-env --allow-read --allow-write --allow-run src/core/status.ts",
+    "dbcheck": "deno run --unstable-sloppy-imports --allow-all src/db/dbcheck.ts",
+    "compile:dbcheck": "mkdir -p dist && deno compile --no-check --allow-net --allow-env --allow-read --allow-write --allow-run --output dist/relaymon-dbcheck src/db/dbcheck.ts",
+    "compile:macos-x64": "mkdir -p dist && deno compile --no-check --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run --target x86_64-apple-darwin --output dist/relaymon-macos-x64 index.ts",
+    "compile:macos-arm64": "mkdir -p dist && deno compile --no-check --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run --target aarch64-apple-darwin --output dist/relaymon-macos-arm64 index.ts",
+    "compile:linux-x64": "mkdir -p dist && deno compile --no-check --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run --target x86_64-unknown-linux-gnu --output dist/relaymon-linux-x64 index.ts",
+    "compile:linux-arm64": "mkdir -p dist && deno compile --no-check --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run --target aarch64-unknown-linux-gnu --output dist/relaymon-linux-arm64 index.ts",
+    "compile:windows-x64": "mkdir -p dist && deno compile --no-check --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run --target x86_64-pc-windows-msvc --output dist/relaymon-windows-x64.exe index.ts",
+    "compile:all": "deno task compile:macos-x64 && deno task compile:macos-arm64 && deno task compile:linux-x64 && deno task compile:linux-arm64 && deno task compile:windows-x64 && deno task compile:windows-arm64"
+  },
+  "fmt": {
+    "files": {
+      "include": ["**/*.ts", "**/*.js", "**/*.json", "**/*.yaml", "**/*.yml"]
     }
+  },
+  "lint": {
+    "files": {
+      "include": ["**/*.ts", "**/*.js"]
+    }
+  },
+  "version": "0.2.0",
+  "imports": {
+    "nostr-geotags": "https://esm.sh/nostr-geotags@latest",
+
+    "npm:nostr-fetch": "npm:nostr-fetch@0.17.0",
+    "npm:nostr-tools": "https://esm.sh/nostr-tools@2.23.3",
+    "nostr-tools": "https://esm.sh/nostr-tools@2.23.3",
+    "nostr-tools/pure": "https://esm.sh/nostr-tools@2.23.3/pure",
+    "nostr-tools/nip19": "https://esm.sh/nostr-tools@2.23.3/nip19",
+
+    "npm:murmurhash": "npm:murmurhash@2.0.1",
+    "npm:p-queue": "https://esm.sh/p-queue@latest",
+    "npm:chalk": "https://esm.sh/chalk@latest",
+    "npm:cross-fetch": "https://esm.sh/cross-fetch@latest",
+
+    "@noble/hashes/utils": "https://esm.sh/@noble/hashes@1.3.2/utils",
+
+    "ws": "https://esm.sh/ws@latest",
+    "murmurhash": "npm:murmurhash@2.0.1",
+    "promise-deferred": "https://esm.sh/promise-deferred@latest",
+    "npm:promise-deferred": "https://esm.sh/promise-deferred@latest",
+
+    "cross-fetch": "https://esm.sh/cross-fetch@latest",
+    "buffer": "node:buffer",
+    "socks-proxy-agent": "https://esm.sh/socks-proxy-agent@latest",
+
+    "sqlite": "https://esm.sh/sqlite@latest",
+    "npm:sqlite": "https://esm.sh/sqlite@latest",
+    "winston": "https://esm.sh/winston@latest",
+    "debug": "https://esm.sh/debug@latest",
+    "js-yaml": "https://esm.sh/js-yaml@latest",
+    "std/flags": "https://deno.land/std@0.218.2/flags/mod.ts",
+    "std/fs": "https://deno.land/std@0.218.2/fs/mod.ts",
+    "chalk": "https://esm.sh/chalk@latest",
+
+    "npm:@nostrwatch/utils": "../../internal/utils/src/index.ts",
+    "npm:@nostrwatch/nocap": "../../libraries/nocap/src/index.ts",
+    "npm:@nostrwatch/nocap-every-adapter-default": "../../libraries/nocap/adapters/default/ZEveryAdapterDefault/src/index.ts",
+    "npm:@nostrwatch/publisher": "../../internal/publisher/src/index.ts",
+    "npm:@nostrwatch/websocket": "../../libraries/websocket/src/index.ts",
+    "npm:@nostrwatch/logger": "../../internal/logger/src/index.ts",
+    "npm:@nostrwatch/publisher-nostrtools": "../../internal/publisher/adapters/NostrTools/src/index.ts",
+    "npm:@nostrwatch/db": "../../libraries/db/src/index.ts",
+    "npm:@nostrwatch/announce": "../../internal/announce/src/index.ts",
+
+    "@nostrwatch/nostrings": "../../libraries/nostrings/src/index.ts",
+    "@nostrwatch/websocket": "../../libraries/websocket/src/index.ts",
+    "@nostrwatch/utils": "../../internal/utils/src/index.ts",
+    "@nostrwatch/nocap": "../../libraries/nocap/src/index.ts",
+    "@nostrwatch/nocap-every-adapter-default": "../../libraries/nocap/adapters/default/ZEveryAdapterDefault/src/index.ts",
+    "@nostrwatch/publisher": "../../internal/publisher/src/index.ts",
+    "@nostrwatch/logger": "../../internal/logger/src/index.ts",
+    "@nostrwatch/nocap-info-adapter-default": "../../libraries/nocap/adapters/default/InfoAdapterDefault/src/index.ts",
+    "@nostrwatch/nocap-ssl-adapter-default": "../../libraries/nocap/adapters/default/SslAdapterDefault/src/index.ts",
+    "@nostrwatch/nocap-dns-adapter-default": "../../libraries/nocap/adapters/default/DnsAdapterDefault/src/index.ts",
+    "@nostrwatch/nocap-geo-adapter-default": "../../libraries/nocap/adapters/default/GeoAdapterDefault/src/index.ts",
+    "@nostrwatch/nocap-websocket-adapter-default": "../../libraries/nocap/adapters/default/WebsocketAdapterDefault/src/index.ts",
+    "@nostrwatch/publisher-nostrtools": "../../internal/publisher/adapters/NostrTools/src/index.ts",
+    "@nostrwatch/announce": "../../internal/announce/src/index.ts"
+  }
 }
-  

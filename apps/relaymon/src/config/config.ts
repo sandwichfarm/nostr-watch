@@ -10,11 +10,11 @@ const originalTimeValues = new Map<string, string>();
 
 export function timeString(input: number | string): number {
   if (typeof input === "number") return input;
-  
+
   // Store the original string for later reference
   const pathKey = String(Math.random()); // Simple way to get a unique key
   originalTimeValues.set(pathKey, input);
-  
+
   const trimmed = input.trim();
   const regex = /^(\d+(?:\.\d+)?)(ms|s|m|h|d)$/;
   const match = trimmed.match(regex);
@@ -60,7 +60,7 @@ function processConfigTimeValues(config: Config, parentPath = ""): void {
       originalTimeValues.set(path, originalValue);
     }
   }
-  
+
   if (config.relaymon?.checks?.options) {
     if (config.relaymon.checks.options.expires) {
       const path = `${parentPath}.relaymon.checks.options.expires`;
@@ -72,7 +72,7 @@ function processConfigTimeValues(config: Config, parentPath = ""): void {
         originalTimeValues.set(path, originalValue);
       }
     }
-    
+
     if (config.relaymon.checks.options.interval) {
       const path = `${parentPath}.relaymon.checks.options.interval`;
       const originalValue = config.relaymon.checks.options.interval;
@@ -84,7 +84,7 @@ function processConfigTimeValues(config: Config, parentPath = ""): void {
       }
     }
   }
-  
+
   if (Array.isArray(config.relaymon?.retry?.expiry)) {
     config.relaymon.retry.expiry = config.relaymon.retry.expiry.map(
       (entry: { delay: string | number; retries: number }, index: number) => {
@@ -93,10 +93,9 @@ function processConfigTimeValues(config: Config, parentPath = ""): void {
 
         const result = {
           ...entry,
-          delay:
-            typeof entry.delay === "string"
-              ? timeString(entry.delay)
-              : entry.delay,
+          delay: typeof entry.delay === "string"
+            ? timeString(entry.delay)
+            : entry.delay,
         };
 
         if (typeof originalDelay === "string") {
@@ -118,6 +117,19 @@ function processConfigTimeValues(config: Config, parentPath = ""): void {
     }
   }
 
+  if (config.relaymon?.trustedRelayAssertions?.refresh_interval) {
+    const path =
+      `${parentPath}.relaymon.trustedRelayAssertions.refresh_interval`;
+    const originalValue =
+      config.relaymon.trustedRelayAssertions.refresh_interval;
+    config.relaymon.trustedRelayAssertions.refresh_interval = timeString(
+      config.relaymon.trustedRelayAssertions.refresh_interval,
+    );
+    if (typeof originalValue === "string") {
+      originalTimeValues.set(path, originalValue);
+    }
+  }
+
   // Process health config time values
   if (config.health?.kuma?.intervalMs) {
     const path = `${parentPath}.health.kuma.intervalMs`;
@@ -131,7 +143,9 @@ function processConfigTimeValues(config: Config, parentPath = ""): void {
   if (config.health?.kuma?.startupGraceMs) {
     const path = `${parentPath}.health.kuma.startupGraceMs`;
     const originalValue = config.health.kuma.startupGraceMs;
-    config.health.kuma.startupGraceMs = timeString(config.health.kuma.startupGraceMs);
+    config.health.kuma.startupGraceMs = timeString(
+      config.health.kuma.startupGraceMs,
+    );
     if (typeof originalValue === "string") {
       originalTimeValues.set(path, originalValue);
     }
@@ -140,7 +154,9 @@ function processConfigTimeValues(config: Config, parentPath = ""): void {
   if (config.health?.thresholds?.checkIdleMs) {
     const path = `${parentPath}.health.thresholds.checkIdleMs`;
     const originalValue = config.health.thresholds.checkIdleMs;
-    config.health.thresholds.checkIdleMs = timeString(config.health.thresholds.checkIdleMs);
+    config.health.thresholds.checkIdleMs = timeString(
+      config.health.thresholds.checkIdleMs,
+    );
     if (typeof originalValue === "string") {
       originalTimeValues.set(path, originalValue);
     }
@@ -149,7 +165,9 @@ function processConfigTimeValues(config: Config, parentPath = ""): void {
   if (config.health?.thresholds?.startupGraceMs) {
     const path = `${parentPath}.health.thresholds.startupGraceMs`;
     const originalValue = config.health.thresholds.startupGraceMs;
-    config.health.thresholds.startupGraceMs = timeString(config.health.thresholds.startupGraceMs);
+    config.health.thresholds.startupGraceMs = timeString(
+      config.health.thresholds.startupGraceMs,
+    );
     if (typeof originalValue === "string") {
       originalTimeValues.set(path, originalValue);
     }
@@ -172,36 +190,36 @@ export function msToTimeString(ms: number): string {
   // First check if we have the original string value
   const original = getOriginalTimeString(ms);
   if (original) return original;
-  
+
   // Otherwise generate a new one
   if (ms < 1000) return `${ms}ms`;
   if (ms % 1000 === 0) {
     const seconds = ms / 1000;
-    
+
     if (seconds % 60 === 0) {
       const minutes = seconds / 60;
-      
+
       if (minutes % 60 === 0) {
         const hours = minutes / 60;
-        
+
         if (hours % 24 === 0) {
           const days = hours / 24;
           return `${days}d`;
         }
-        
+
         return `${hours}h`;
       }
-      
+
       return `${minutes}m`;
     }
-    
+
     return `${seconds}s`;
   }
-  
+
   // Fallback for irregular values
-  if (ms >= 86400000) return `${Math.floor(ms/86400000)}d`;
-  if (ms >= 3600000) return `${Math.floor(ms/3600000)}h`;
-  if (ms >= 60000) return `${Math.floor(ms/60000)}m`;
-  if (ms >= 1000) return `${Math.floor(ms/1000)}s`;
+  if (ms >= 86400000) return `${Math.floor(ms / 86400000)}d`;
+  if (ms >= 3600000) return `${Math.floor(ms / 3600000)}h`;
+  if (ms >= 60000) return `${Math.floor(ms / 60000)}m`;
+  if (ms >= 1000) return `${Math.floor(ms / 1000)}s`;
   return `${ms}ms`;
 }

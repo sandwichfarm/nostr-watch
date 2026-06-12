@@ -6,7 +6,7 @@ Runs RelayMon in multinet mode with Tor and I2P proxy support via [hedproxy](htt
 
 This stack runs three containers:
 
-- **relaymon** — The relay monitor, running in `multinet` mode. hedproxy runs inside this container and automatically routes connections based on the relay URL scheme:
+- **relaymon** — The relay monitor, running in `multinet` mode. It publishes NIP-66 results and can optionally publish Trusted Relay Assertions (kind `30385`). hedproxy runs inside this container and automatically routes connections based on the relay URL scheme:
   - `wss://` / `ws://` — direct clearnet connection
   - `.onion` URLs — routed through the Tor SOCKS5 proxy
   - `.i2p` URLs — routed through the I2P HTTP proxy
@@ -69,6 +69,8 @@ relaymon:
     - tor
     - i2pd
 ```
+
+Set `relaymon.trustedRelayAssertions.enabled` to `true` to publish optional kind `30385` trust assertions.
 
 ### Proxy Configuration (`config/`)
 

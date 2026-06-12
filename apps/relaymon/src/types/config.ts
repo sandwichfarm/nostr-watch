@@ -34,8 +34,8 @@ export interface MonitorInfoConfig {
   name?: string;
   about?: string;
   nip05?: string;
-  lud16?: string; 
-  picture?: string; 
+  lud16?: string;
+  picture?: string;
   banner?: string;
 }
 
@@ -92,7 +92,7 @@ export interface SeedOptions {
     path?: string;
   };
   config?: string[];
-  [key: string]: any;  // Allow other seed-specific options
+  [key: string]: any; // Allow other seed-specific options
 }
 
 /**
@@ -175,7 +175,7 @@ export interface DeduplicationConfig {
  */
 export interface PeriodConfig {
   enabled: boolean;
-  definitions: string[];  // e.g., ["6h", "1d", "7d", "30d"]
+  definitions: string[]; // e.g., ["6h", "1d", "7d", "30d"]
 }
 
 /**
@@ -183,8 +183,25 @@ export interface PeriodConfig {
  */
 export interface DeltaConfig {
   enabled: boolean;
-  max_retries?: number;  // Stop publishing delta events after N offline retries
-  periods?: PeriodConfig;  // Period aggregate configuration
+  max_retries?: number; // Stop publishing delta events after N offline retries
+  periods?: PeriodConfig; // Period aggregate configuration
+}
+
+/**
+ * Trusted Relay Assertion publishing configuration (Kind 30385)
+ */
+export interface TrustedRelayAssertionsConfig {
+  enabled: boolean;
+  relays?: string[];
+  min_observations?: number;
+  material_change_threshold?: number;
+  refresh_interval?: number | string;
+  publish_unreachable?: boolean;
+  publish_blocked?: boolean;
+  algorithm?: {
+    version?: string;
+    url?: string;
+  };
 }
 
 /**
@@ -198,6 +215,7 @@ export interface RelaymonConfig {
   ignorelist?: IgnoreListConfig;
   deduplication?: DeduplicationConfig;
   delta?: DeltaConfig;
+  trustedRelayAssertions?: TrustedRelayAssertionsConfig;
 }
 
 /**
@@ -346,7 +364,9 @@ export function validateConfig(config: unknown): Config {
   }
 
   if (!Array.isArray(c.relaymon.networks)) {
-    throw new Error("Missing required field: relaymon.networks (must be array)");
+    throw new Error(
+      "Missing required field: relaymon.networks (must be array)",
+    );
   }
 
   if (c.relaymon.networks.length === 0) {
@@ -357,7 +377,9 @@ export function validateConfig(config: unknown): Config {
   for (const network of c.relaymon.networks) {
     if (!isValidNetwork(network)) {
       throw new Error(
-        `Invalid network type: "${network}". Must be one of: ${VALID_NETWORKS.join(", ")}`
+        `Invalid network type: "${network}". Must be one of: ${
+          VALID_NETWORKS.join(", ")
+        }`,
       );
     }
   }
@@ -368,7 +390,9 @@ export function validateConfig(config: unknown): Config {
   }
 
   if (!Array.isArray(c.relaymon.retry.expiry)) {
-    throw new Error("Missing required field: relaymon.retry.expiry (must be array)");
+    throw new Error(
+      "Missing required field: relaymon.retry.expiry (must be array)",
+    );
   }
 
   // Validate seed configuration exists
@@ -377,11 +401,15 @@ export function validateConfig(config: unknown): Config {
   }
 
   if (typeof c.relaymon.seed.interval !== "number") {
-    throw new Error("Missing required field: relaymon.seed.interval (must be number)");
+    throw new Error(
+      "Missing required field: relaymon.seed.interval (must be number)",
+    );
   }
 
   if (!Array.isArray(c.relaymon.seed.sources)) {
-    throw new Error("Missing required field: relaymon.seed.sources (must be array)");
+    throw new Error(
+      "Missing required field: relaymon.seed.sources (must be array)",
+    );
   }
 
   if (!c.relaymon.seed.options || typeof c.relaymon.seed.options !== "object") {
@@ -394,11 +422,125 @@ export function validateConfig(config: unknown): Config {
   }
 
   if (!Array.isArray(c.relaymon.checks.enabled)) {
-    throw new Error("Missing required field: relaymon.checks.enabled (must be array)");
+    throw new Error(
+      "Missing required field: relaymon.checks.enabled (must be array)",
+    );
   }
 
-  if (!c.relaymon.checks.options || typeof c.relaymon.checks.options !== "object") {
+  if (
+    !c.relaymon.checks.options || typeof c.relaymon.checks.options !== "object"
+  ) {
     throw new Error("Missing required field: relaymon.checks.options");
+  }
+
+  // Validate Trusted Relay Assertions (Kind 30385) configuration if present.
+  // Defaults mirror the reference implementation's material-change behavior
+  // while keeping the feature opt-in for existing RelayMon deployments.
+  if (c.relaymon.trustedRelayAssertions !== undefined) {
+    const tra = c.relaymon.trustedRelayAssertions;
+    if (typeof tra !== "object" || tra === null || Array.isArray(tra)) {
+      throw new Error(
+        "relaymon.trustedRelayAssertions must be an object when present",
+      );
+    }
+
+    if (typeof tra.enabled !== "boolean") {
+      throw new Error(
+        "relaymon.trustedRelayAssertions.enabled must be boolean",
+      );
+    }
+
+    if (tra.relays === undefined) {
+      tra.relays = [];
+    } else if (
+      !Array.isArray(tra.relays) ||
+      !tra.relays.every((relay: unknown) => typeof relay === "string")
+    ) {
+      throw new Error(
+        "relaymon.trustedRelayAssertions.relays must be an array of strings",
+      );
+    }
+
+    if (tra.min_observations === undefined) {
+      tra.min_observations = 10;
+    } else if (
+      typeof tra.min_observations !== "number" || tra.min_observations < 1
+    ) {
+      throw new Error(
+        "relaymon.trustedRelayAssertions.min_observations must be a positive number",
+      );
+    }
+
+    if (tra.material_change_threshold === undefined) {
+      tra.material_change_threshold = 3;
+    } else if (
+      typeof tra.material_change_threshold !== "number" ||
+      tra.material_change_threshold < 0
+    ) {
+      throw new Error(
+        "relaymon.trustedRelayAssertions.material_change_threshold must be a non-negative number",
+      );
+    }
+
+    if (tra.refresh_interval === undefined) {
+      tra.refresh_interval = "1h";
+    } else if (
+      typeof tra.refresh_interval !== "number" &&
+      typeof tra.refresh_interval !== "string"
+    ) {
+      throw new Error(
+        "relaymon.trustedRelayAssertions.refresh_interval must be a number or timestring",
+      );
+    }
+
+    if (tra.publish_unreachable === undefined) {
+      tra.publish_unreachable = true;
+    } else if (typeof tra.publish_unreachable !== "boolean") {
+      throw new Error(
+        "relaymon.trustedRelayAssertions.publish_unreachable must be boolean",
+      );
+    }
+
+    if (tra.publish_blocked === undefined) {
+      tra.publish_blocked = false;
+    } else if (typeof tra.publish_blocked !== "boolean") {
+      throw new Error(
+        "relaymon.trustedRelayAssertions.publish_blocked must be boolean",
+      );
+    }
+
+    if (tra.algorithm === undefined) {
+      tra.algorithm = {};
+    } else if (
+      typeof tra.algorithm !== "object" || tra.algorithm === null ||
+      Array.isArray(tra.algorithm)
+    ) {
+      throw new Error(
+        "relaymon.trustedRelayAssertions.algorithm must be an object",
+      );
+    }
+
+    if (tra.algorithm.version === undefined) {
+      tra.algorithm.version = "relaymon-local-v1";
+    } else if (
+      typeof tra.algorithm.version !== "string" ||
+      tra.algorithm.version.length === 0
+    ) {
+      throw new Error(
+        "relaymon.trustedRelayAssertions.algorithm.version must be a non-empty string",
+      );
+    }
+
+    if (tra.algorithm.url === undefined) {
+      tra.algorithm.url =
+        "https://github.com/Letdown2491/trustedrelays/blob/main/ALGORITHM.md";
+    } else if (
+      typeof tra.algorithm.url !== "string" || tra.algorithm.url.length === 0
+    ) {
+      throw new Error(
+        "relaymon.trustedRelayAssertions.algorithm.url must be a non-empty string",
+      );
+    }
   }
 
   // Phase 20: validate optional deduplication.nip11_stale_skip and apply
@@ -408,12 +550,17 @@ export function validateConfig(config: unknown): Config {
   // acceptable so this validator survives a future move of the conversion
   // step into processConfigTimeValues without further edits.
   if (c.relaymon.deduplication !== undefined) {
-    if (typeof c.relaymon.deduplication !== "object" || c.relaymon.deduplication === null) {
+    if (
+      typeof c.relaymon.deduplication !== "object" ||
+      c.relaymon.deduplication === null
+    ) {
       throw new Error("relaymon.deduplication must be an object when present");
     }
 
     const dedup = c.relaymon.deduplication;
-    if (dedup.nip11_stale_skip === undefined || dedup.nip11_stale_skip === null) {
+    if (
+      dedup.nip11_stale_skip === undefined || dedup.nip11_stale_skip === null
+    ) {
       // Default applied when missing — Plan 20-03 reads this via
       // appConfig?.relaymon?.deduplication?.nip11_stale_skip
       dedup.nip11_stale_skip = "7d";
@@ -434,7 +581,9 @@ export function validateConfig(config: unknown): Config {
     }
 
     if (typeof c.health.enabled !== "boolean") {
-      throw new Error("Missing required field: health.enabled (must be boolean)");
+      throw new Error(
+        "Missing required field: health.enabled (must be boolean)",
+      );
     }
 
     if (c.health.enabled) {
@@ -444,19 +593,27 @@ export function validateConfig(config: unknown): Config {
       }
 
       if (typeof c.health.server.enabled !== "boolean") {
-        throw new Error("Missing required field: health.server.enabled (must be boolean)");
+        throw new Error(
+          "Missing required field: health.server.enabled (must be boolean)",
+        );
       }
 
       if (typeof c.health.server.host !== "string") {
-        throw new Error("Missing required field: health.server.host (must be string)");
+        throw new Error(
+          "Missing required field: health.server.host (must be string)",
+        );
       }
 
       if (typeof c.health.server.port !== "number") {
-        throw new Error("Missing required field: health.server.port (must be number)");
+        throw new Error(
+          "Missing required field: health.server.port (must be number)",
+        );
       }
 
       if (typeof c.health.server.authEnabled !== "boolean") {
-        throw new Error("Missing required field: health.server.authEnabled (must be boolean)");
+        throw new Error(
+          "Missing required field: health.server.authEnabled (must be boolean)",
+        );
       }
 
       // Validate kuma config
@@ -465,23 +622,39 @@ export function validateConfig(config: unknown): Config {
       }
 
       if (typeof c.health.kuma.enabled !== "boolean") {
-        throw new Error("Missing required field: health.kuma.enabled (must be boolean)");
+        throw new Error(
+          "Missing required field: health.kuma.enabled (must be boolean)",
+        );
       }
 
-      if (typeof c.health.kuma.intervalMs !== "number" && typeof c.health.kuma.intervalMs !== "string") {
-        throw new Error("Missing required field: health.kuma.intervalMs (must be number or timestring)");
+      if (
+        typeof c.health.kuma.intervalMs !== "number" &&
+        typeof c.health.kuma.intervalMs !== "string"
+      ) {
+        throw new Error(
+          "Missing required field: health.kuma.intervalMs (must be number or timestring)",
+        );
       }
 
       if (typeof c.health.kuma.degradedAsUp !== "boolean") {
-        throw new Error("Missing required field: health.kuma.degradedAsUp (must be boolean)");
+        throw new Error(
+          "Missing required field: health.kuma.degradedAsUp (must be boolean)",
+        );
       }
 
-      if (typeof c.health.kuma.startupGraceMs !== "number" && typeof c.health.kuma.startupGraceMs !== "string") {
-        throw new Error("Missing required field: health.kuma.startupGraceMs (must be number or timestring)");
+      if (
+        typeof c.health.kuma.startupGraceMs !== "number" &&
+        typeof c.health.kuma.startupGraceMs !== "string"
+      ) {
+        throw new Error(
+          "Missing required field: health.kuma.startupGraceMs (must be number or timestring)",
+        );
       }
 
       if (!["summary", "detailed"].includes(c.health.kuma.msgVerbosity)) {
-        throw new Error("health.kuma.msgVerbosity must be 'summary' or 'detailed'");
+        throw new Error(
+          "health.kuma.msgVerbosity must be 'summary' or 'detailed'",
+        );
       }
 
       // Validate thresholds config
@@ -489,20 +662,34 @@ export function validateConfig(config: unknown): Config {
         throw new Error("Missing required field: health.thresholds");
       }
 
-      if (typeof c.health.thresholds.checkIdleMs !== "number" && typeof c.health.thresholds.checkIdleMs !== "string") {
-        throw new Error("Missing required field: health.thresholds.checkIdleMs (must be number or timestring)");
+      if (
+        typeof c.health.thresholds.checkIdleMs !== "number" &&
+        typeof c.health.thresholds.checkIdleMs !== "string"
+      ) {
+        throw new Error(
+          "Missing required field: health.thresholds.checkIdleMs (must be number or timestring)",
+        );
       }
 
       if (typeof c.health.thresholds.publishBacklogMax !== "number") {
-        throw new Error("Missing required field: health.thresholds.publishBacklogMax (must be number)");
+        throw new Error(
+          "Missing required field: health.thresholds.publishBacklogMax (must be number)",
+        );
       }
 
       if (typeof c.health.thresholds.errorRatePerMin !== "number") {
-        throw new Error("Missing required field: health.thresholds.errorRatePerMin (must be number)");
+        throw new Error(
+          "Missing required field: health.thresholds.errorRatePerMin (must be number)",
+        );
       }
 
-      if (typeof c.health.thresholds.startupGraceMs !== "number" && typeof c.health.thresholds.startupGraceMs !== "string") {
-        throw new Error("Missing required field: health.thresholds.startupGraceMs (must be number or timestring)");
+      if (
+        typeof c.health.thresholds.startupGraceMs !== "number" &&
+        typeof c.health.thresholds.startupGraceMs !== "string"
+      ) {
+        throw new Error(
+          "Missing required field: health.thresholds.startupGraceMs (must be number or timestring)",
+        );
       }
     }
   }

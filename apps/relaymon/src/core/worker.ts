@@ -1,12 +1,34 @@
 import { Nocap } from "npm:@nostrwatch/nocap";
 import EveryAdapterDefault from "npm:@nostrwatch/nocap-every-adapter-default";
-import { Publisher, Kind30166 } from "npm:@nostrwatch/publisher";
+import { Kind30166, Publisher } from "npm:@nostrwatch/publisher";
 import { relayHostnameDedup, setConfig } from "../utils/hostnames.ts";
-import { persistResult, incrementRetryCount, getRetryCount, db, storeRelayInfo, isRelayIgnored, getLastDeltaState, storeDeltaState, getPeriodSnapshot, storePeriodSnapshot, markRelayIgnored, markRelayUnignored } from "../db/db.ts";
+import {
+  db,
+  getLastDeltaState,
+  getPeriodSnapshot,
+  getPublishedTrustedRelayAssertion,
+  getRetryCount,
+  incrementRetryCount,
+  isRelayIgnored,
+  markRelayIgnored,
+  markRelayUnignored,
+  persistResult,
+  recordTrustedRelayObservation,
+  storeDeltaState,
+  storePeriodSnapshot,
+  storePublishedTrustedRelayAssertion,
+  storeRelayInfo,
+} from "../db/db.ts";
 import { delay } from "npm:@nostrwatch/utils";
 import { getLogger, LogLevel } from "../utils/logger.ts";
 import { RetryManager } from "../utils/retryManager.ts";
-import { statuses, updateSessionStats, incrementChecksCounter, incrementRelaysRecovered, incrementNewRelaysFound } from "./status.ts";
+import {
+  incrementChecksCounter,
+  incrementNewRelaysFound,
+  incrementRelaysRecovered,
+  statuses,
+  updateSessionStats,
+} from "./status.ts";
 import chalk from "npm:chalk";
 import { QueueManager } from "../utils/queueManager.ts";
 import { getExpiredRelays } from "../db/db.ts";
@@ -24,6 +46,12 @@ import { Kind1066 } from "../delta/kind1066.ts";
 import { Kind20166 } from "../delta/kind20166.ts";
 import { getPeriodsToEmit, validatePeriods } from "../delta/periods.ts";
 import { getPrivateKey } from "./daemon.ts";
+import {
+  buildTrustedRelayAssertion,
+  hasTrustedRelayMaterialChange,
+  Kind30385,
+  normalizeRelayUrl,
+} from "../tra/kind30385.ts";
 
 chalk.level = 1;
 
@@ -32,11 +60,12 @@ export class Worker {
   private logger = getLogger("Worker");
   private config: Config;
   private publisher: Publisher;
+  private trustedRelayPublisher: Publisher | null = null;
   private retryManager: RetryManager;
   private statusIntval: ReturnType<typeof setInterval>;
   private knownRelayStatus: Map<string, boolean> = new Map();
   private publishMaxRetries: number = 5;
-  private publishInitialBackoffMs: number = 1000*60;
+  private publishInitialBackoffMs: number = 1000 * 60;
   private warmupMode: boolean = false;
   private ignoreListSync: IgnoreListSync | null = null;
 
@@ -44,15 +73,24 @@ export class Worker {
     private pubkey: string,
     private queueManager: QueueManager,
     config: Config,
-    ignoreListSync?: IgnoreListSync
+    ignoreListSync?: IgnoreListSync,
   ) {
     this.config = config;
     this.ignoreListSync = ignoreListSync || null;
     this.publisher = new Publisher(this.pubkey, config.publisher.relays);
+    if (config.relaymon.trustedRelayAssertions?.relays?.length) {
+      this.trustedRelayPublisher = new Publisher(
+        this.pubkey,
+        config.relaymon.trustedRelayAssertions.relays,
+      );
+    }
 
     this.retryManager = new RetryManager(config.relaymon.retry.expiry);
-    this.statusIntval = statuses(this.queueManager, config.relaymon.checks.options.statusInterval);
-    
+    this.statusIntval = statuses(
+      this.queueManager,
+      config.relaymon.checks.options.statusInterval,
+    );
+
     if (config.logLevel) {
       this.logger.setLevel(config.logLevel);
     }
@@ -76,9 +114,9 @@ export class Worker {
 
       if (warnings.length > 0) {
         this.logger.warn("Period configuration warnings:");
-        warnings.forEach(w => this.logger.warn(`  - ${w}`));
+        warnings.forEach((w) => this.logger.warn(`  - ${w}`));
       } else {
-        this.logger.info(`Period aggregates enabled: ${periods.join(', ')}`);
+        this.logger.info(`Period aggregates enabled: ${periods.join(", ")}`);
       }
     }
   }
@@ -87,25 +125,29 @@ export class Worker {
   // and first-checks bypass DB ignore gating to ensure all relays are checked at least once.
   public setWarmupMode(enabled: boolean): void {
     this.warmupMode = enabled;
-    this.logger.info(`Warmup mode ${enabled ? 'enabled' : 'disabled'}`);
+    this.logger.info(`Warmup mode ${enabled ? "enabled" : "disabled"}`);
   }
 
   private initializeRelayStatusFromDB(): void {
     try {
       const results = db.query(`SELECT url, online, retries FROM relay_status`);
-      
+
       for (const [url, online, retries] of results) {
         this.knownRelayStatus.set(url as string, (online as number) === 1);
-        
+
         if ((retries as number) > 0) {
           this.relayRetries.set(url as string, retries as number);
           this.logger.debug(`Loaded retry count for ${url}: ${retries}`);
         }
       }
-      
-      this.logger.info(`Initialized status for ${this.knownRelayStatus.size} relays from database`);
+
+      this.logger.info(
+        `Initialized status for ${this.knownRelayStatus.size} relays from database`,
+      );
     } catch (error) {
-      this.logger.error(`Failed to initialize relay status from database: ${error.message}`);
+      this.logger.error(
+        `Failed to initialize relay status from database: ${error.message}`,
+      );
     }
   }
 
@@ -117,41 +159,66 @@ export class Worker {
     let isFirstCheck = false;
 
     if (isHostnameBlocked(relayUrl)) {
-      this.logger.debug(`Skipping check for relay ${relayUrl} - hostname is in blocklist`);
-      await deleteRelayCheckEvent(relayUrl, "hostname is in blocklist", this.config, this.queueManager);
-      db.query("DELETE FROM relay_status WHERE url = ?", [relayUrl]); 
+      this.logger.debug(
+        `Skipping check for relay ${relayUrl} - hostname is in blocklist`,
+      );
+      await deleteRelayCheckEvent(
+        relayUrl,
+        "hostname is in blocklist",
+        this.config,
+        this.queueManager,
+      );
+      db.query("DELETE FROM relay_status WHERE url = ?", [relayUrl]);
       return;
     }
 
     // Determine if this is the first-ever check for this relay
     try {
-      const checkedAt = db.query("SELECT checked_at FROM relay_status WHERE url = ?", [relayUrl]);
+      const checkedAt = db.query(
+        "SELECT checked_at FROM relay_status WHERE url = ?",
+        [relayUrl],
+      );
       if (checkedAt.length > 0 && (checkedAt[0][0] === -1)) {
         isFirstCheck = true;
         this.logger.debug(`This is the first check for relay: ${relayUrl}`);
       }
     } catch (error) {
-      this.logger.error(`Error checking if first check for ${relayUrl}: ${error}`);
+      this.logger.error(
+        `Error checking if first check for ${relayUrl}: ${error}`,
+      );
     }
 
     if (isRelayIgnored(relayUrl)) {
-      this.logger.debug(`Skipping check for relay ${relayUrl} - already marked as ignored in database`);
+      this.logger.debug(
+        `Skipping check for relay ${relayUrl} - already marked as ignored in database`,
+      );
       // During warmup, if this is the first check, bypass the ignore and continue
       if (this.warmupMode && isFirstCheck) {
-        this.logger.debug(`Warmup: bypassing DB ignore for first check of ${relayUrl}`);
+        this.logger.debug(
+          `Warmup: bypassing DB ignore for first check of ${relayUrl}`,
+        );
       } else {
         try {
-          await deleteRelayCheckEvent(relayUrl, "Relay was previously marked as ignored", this.config, this.queueManager);
-          this.logger.debug(`Published deletion event for previously ignored relay ${relayUrl}`);
+          await deleteRelayCheckEvent(
+            relayUrl,
+            "Relay was previously marked as ignored",
+            this.config,
+            this.queueManager,
+          );
+          this.logger.debug(
+            `Published deletion event for previously ignored relay ${relayUrl}`,
+          );
         } catch (error) {
-          this.logger.error(`Error publishing deletion event for ${relayUrl}: ${error}`);
+          this.logger.error(
+            `Error publishing deletion event for ${relayUrl}: ${error}`,
+          );
         }
         return;
       }
     }
 
     this.logger.debug(`Starting check for relay: ${relayUrl}`);
-    
+
     try {
       const nocap = new Nocap(relayUrl, {
         timeouts: this.config.relaymon.checks.options.timeout,
@@ -159,7 +226,7 @@ export class Worker {
       });
       await nocap.useAdapters(Object.values(EveryAdapterDefault));
       const result = await nocap.check(
-        this.config.relaymon.checks.enabled || ["open", "read"]
+        this.config.relaymon.checks.enabled || ["open", "read"],
       );
 
       if (result.info?.data && Object.keys(result.info.data).length > 0) {
@@ -167,28 +234,36 @@ export class Worker {
           const infoHash = createInfoHash(result.info.data);
           if (infoHash) {
             storeRelayInfo(relayUrl, result.info.data, infoHash);
-            this.logger.debug(`Stored NIP-11 info for ${relayUrl} with hash ${infoHash}`);
+            this.logger.debug(
+              `Stored NIP-11 info for ${relayUrl} with hash ${infoHash}`,
+            );
           }
         } catch (infoError) {
-          this.logger.error(`Error storing NIP-11 info for ${relayUrl}: ${infoError}`);
+          this.logger.error(
+            `Error storing NIP-11 info for ${relayUrl}: ${infoError}`,
+          );
         }
       }
 
       const dedupedResult = await relayHostnameDedup(result);
-      
+
       wasOnline = result.open?.data === true;
 
       // Fake relay detection: connects but doesn't speak nostr protocol
-      const checksEnabled = this.config.relaymon.checks.enabled || ["open", "read"];
+      const checksEnabled = this.config.relaymon.checks.enabled ||
+        ["open", "read"];
       const readCheckEnabled = checksEnabled.includes("read");
-      const readFailedProtocol = result.read?.data !== true
-        && typeof result.read?.message === 'string'
-        && result.read.message.includes('NIP-01 compatible');
+      const readFailedProtocol = result.read?.data !== true &&
+        typeof result.read?.message === "string" &&
+        result.read.message.includes("NIP-01 compatible");
       const isFakeRelay = wasOnline && readCheckEnabled && readFailedProtocol;
 
       if (isFakeRelay) {
-        const fakeRelayReason = "Not a relay: WebSocket connects but does not speak nostr protocol";
-        this.logger.warn(`Fake relay detected: ${relayUrl} (open=true, read=false)`);
+        const fakeRelayReason =
+          "Not a relay: WebSocket connects but does not speak nostr protocol";
+        this.logger.warn(
+          `Fake relay detected: ${relayUrl} (open=true, read=false)`,
+        );
         wasOnline = false;
         dedupedResult.ignore = true;
         dedupedResult.ignore_reason = fakeRelayReason;
@@ -204,29 +279,35 @@ export class Worker {
           relayUrl,
           "Fake relay: WebSocket connects but does not speak nostr protocol",
           this.config,
-          this.queueManager
+          this.queueManager,
         );
       }
 
       if (isFirstCheck && wasOnline) {
         incrementNewRelaysFound(1, true);
-        this.logger.debug(`New relay ${relayUrl} is online - incrementing new relays found counter`);
+        this.logger.debug(
+          `New relay ${relayUrl} is online - incrementing new relays found counter`,
+        );
       }
-      
+
       const previouslyOnline = this.knownRelayStatus.get(relayUrl);
       if (previouslyOnline === true && !wasOnline) {
         wentOffline = true;
-        this.logger.debug(`Relay ${relayUrl} went offline (was previously online)`);
+        this.logger.debug(
+          `Relay ${relayUrl} went offline (was previously online)`,
+        );
       }
-      
+
       const previousStatus = this.knownRelayStatus.get(relayUrl);
       const previouslyOffline = previousStatus === false;
       if (previouslyOffline && wasOnline) {
         recovered = true;
-        this.logger.debug(`Relay ${relayUrl} recovered (was previously offline)`);
+        this.logger.debug(
+          `Relay ${relayUrl} recovered (was previously offline)`,
+        );
         incrementRelaysRecovered();
       }
-      
+
       const isRetry = previouslyOffline && !wasOnline;
 
       // Determine operational status transition for delta events
@@ -247,40 +328,58 @@ export class Worker {
       }
 
       // Publish delta event (Kind 1066) if enabled
-      this.publishDeltaEvent(relayUrl, dedupedResult, operationalStatus, wasOnline);
+      this.publishDeltaEvent(
+        relayUrl,
+        dedupedResult,
+        operationalStatus,
+        wasOnline,
+      );
 
-      this.logger.debug(`Persisting result for relay: ${relayUrl}, online: ${wasOnline}`);
+      this.logger.debug(
+        `Persisting result for relay: ${relayUrl}, online: ${wasOnline}`,
+      );
       persistResult(dedupedResult);
-      
+
+      this.publishTrustedRelayAssertion(dedupedResult);
+
       if (wentOffline || isRetry) {
-        this.logger.debug(`Incrementing retry count for ${relayUrl} as it ${wentOffline ? 'went offline' : 'is still offline'}`);
+        this.logger.debug(
+          `Incrementing retry count for ${relayUrl} as it ${
+            wentOffline ? "went offline" : "is still offline"
+          }`,
+        );
         this.handleRetryForRelay(relayUrl);
       }
-      
+
       try {
         this.progressMessage(relayUrl, result, recovered, false);
       } catch (displayError) {
         console.error("Error displaying progress:", displayError);
       }
-      
+
       if (wasOnline) {
         this.relayRetries.set(relayUrl, 0);
       }
       this.logger.debug(`Successfully completed check for relay: ${relayUrl}`);
-
     } catch (error: unknown) {
       wasSuccessful = false;
-      this.logger.error(`Error processing relay ${relayUrl}: ${getErrorMessage(error)}`);
-      
+      this.logger.error(
+        `Error processing relay ${relayUrl}: ${getErrorMessage(error)}`,
+      );
+
       const currentRetryCount = this.relayRetries.get(relayUrl) || 0;
       if (currentRetryCount > 0) {
-        this.logger.debug(`Incrementing retry count for ${relayUrl} after repeated error (current: ${currentRetryCount})`);
+        this.logger.debug(
+          `Incrementing retry count for ${relayUrl} after repeated error (current: ${currentRetryCount})`,
+        );
         this.handleRetryForRelay(relayUrl);
       } else {
-        this.logger.debug(`First error for ${relayUrl}, not incrementing retry count yet`);
+        this.logger.debug(
+          `First error for ${relayUrl}, not incrementing retry count yet`,
+        );
         this.relayRetries.set(relayUrl, 0);
       }
-      
+
       try {
         this.progressMessage(relayUrl, {}, false, true);
       } catch (displayError) {
@@ -319,17 +418,21 @@ export class Worker {
       }
 
       // Check if the read failure is still a protocol incompatibility
-      const readFailedProtocol = result.read?.data !== true
-        && typeof result.read?.message === 'string'
-        && result.read.message.includes('NIP-01 compatible');
+      const readFailedProtocol = result.read?.data !== true &&
+        typeof result.read?.message === "string" &&
+        result.read.message.includes("NIP-01 compatible");
 
       if (readFailedProtocol) {
-        this.logger.debug(`Re-check: ${relayUrl} still fails protocol check, keeping ignored`);
+        this.logger.debug(
+          `Re-check: ${relayUrl} still fails protocol check, keeping ignored`,
+        );
         return false;
       }
 
       // Relay is online and either read passed or failed for non-protocol reasons → unignore
-      this.logger.info(`Re-check: ${relayUrl} is no longer a fake relay, unignoring`);
+      this.logger.info(
+        `Re-check: ${relayUrl} is no longer a fake relay, unignoring`,
+      );
 
       markRelayUnignored(relayUrl);
 
@@ -344,7 +447,11 @@ export class Worker {
 
       return true;
     } catch (error: unknown) {
-      this.logger.error(`Error re-checking ignored relay ${relayUrl}: ${getErrorMessage(error)}`);
+      this.logger.error(
+        `Error re-checking ignored relay ${relayUrl}: ${
+          getErrorMessage(error)
+        }`,
+      );
       return false;
     }
   }
@@ -352,35 +459,51 @@ export class Worker {
   async publishResult(result: RelayCheckResult): Promise<void> {
     try {
       if (this.warmupMode) {
-        this.logger.debug(`Warmup mode active; suppressing check event publish for ${result.url}`);
+        this.logger.debug(
+          `Warmup mode active; suppressing check event publish for ${result.url}`,
+        );
         return;
       }
-      const publishJob = async (retryCount = 0, maxRetries = this.publishMaxRetries, backoffMs = this.publishInitialBackoffMs) => {
+      const publishJob = async (
+        retryCount = 0,
+        maxRetries = this.publishMaxRetries,
+        backoffMs = this.publishInitialBackoffMs,
+      ) => {
         try {
           const event = new Kind30166(this.pubkey);
           const privkey = getPrivateKey();
           const generated = event.generateEvent(result);
-          generated.tags.push(['client', '@nostrwatch/relaymon']);
+          generated.tags.push(["client", "@nostrwatch/relaymon"]);
           const signedEvent = await event.signEvent(privkey);
           await this.publisher.publishEvent(signedEvent);
           this.logger.debug(`Published event for relay ${result.url}`);
         } catch (error: unknown) {
           const errorMsg = getErrorMessage(error);
-          this.logger.error(`Publish failed for ${result.url} (attempt ${retryCount + 1}/${maxRetries + 1}): ${errorMsg}`);
+          this.logger.error(
+            `Publish failed for ${result.url} (attempt ${retryCount + 1}/${
+              maxRetries + 1
+            }): ${errorMsg}`,
+          );
 
           if (retryCount < maxRetries) {
             const nextRetryCount = retryCount + 1;
             const nextBackoffMs = backoffMs * 2;
-            this.logger.info(`Scheduling retry ${nextRetryCount}/${maxRetries} for ${result.url} in ${(nextBackoffMs / 1000).toFixed(1)}s`);
+            this.logger.info(
+              `Scheduling retry ${nextRetryCount}/${maxRetries} for ${result.url} in ${
+                (nextBackoffMs / 1000).toFixed(1)
+              }s`,
+            );
 
             setTimeout(() => {
               this.queueManager.addPublishJob(
                 () => publishJob(nextRetryCount, maxRetries, nextBackoffMs),
-                { isRetry: true, category: 'delta' }
+                { isRetry: true, category: "delta" },
               );
             }, nextBackoffMs);
           } else {
-            this.logger.error(`Exceeded maximum retries (${maxRetries}) for publishing ${result.url}`);
+            this.logger.error(
+              `Exceeded maximum retries (${maxRetries}) for publishing ${result.url}`,
+            );
           }
 
           // Always throw to properly count failures in queue metrics
@@ -388,9 +511,16 @@ export class Worker {
         }
       };
 
-      this.queueManager.addPublishJob(() => publishJob(), { isRetry: false, category: 'check' });
+      this.queueManager.addPublishJob(() => publishJob(), {
+        isRetry: false,
+        category: "check",
+      });
     } catch (error: unknown) {
-      this.logger.error(`Failed to add publish job for ${result.url}: ${getErrorMessage(error)}`);
+      this.logger.error(
+        `Failed to add publish job for ${result.url}: ${
+          getErrorMessage(error)
+        }`,
+      );
     }
   }
 
@@ -398,7 +528,7 @@ export class Worker {
     relayUrl: string,
     result: RelayCheckResult,
     operationalStatus?: "init" | "down" | "up",
-    isOnline?: boolean
+    isOnline?: boolean,
   ): Promise<void> {
     // Check if delta events are enabled
     if (!this.config.relaymon.delta?.enabled) {
@@ -417,7 +547,9 @@ export class Worker {
       // Check if we should stop publishing delta events (exceeded max retries for offline relay)
       const maxRetries = this.config.relaymon.delta.max_retries ?? 10;
       if (!wasOnline && retryCount > maxRetries) {
-        this.logger.debug(`Skipping delta event for ${relayUrl} - exceeded max_retries (${maxRetries})`);
+        this.logger.debug(
+          `Skipping delta event for ${relayUrl} - exceeded max_retries (${maxRetries})`,
+        );
         return;
       }
 
@@ -432,24 +564,34 @@ export class Worker {
       const currentGeo = result.geo?.data;
 
       // Create composite state objects for delta detection
-      const lastCompositeState = lastState ? {
-        ...lastState.state,
-        ...(lastState.dns ? Object.fromEntries(
-          Object.entries(lastState.dns).map(([k, v]) => [`dns.${k}`, v])
-        ) : {}),
-        ...(lastState.geo ? Object.fromEntries(
-          Object.entries(lastState.geo).map(([k, v]) => [`geo.${k}`, v])
-        ) : {}),
-      } : null;
+      const lastCompositeState = lastState
+        ? {
+          ...lastState.state,
+          ...(lastState.dns
+            ? Object.fromEntries(
+              Object.entries(lastState.dns).map(([k, v]) => [`dns.${k}`, v]),
+            )
+            : {}),
+          ...(lastState.geo
+            ? Object.fromEntries(
+              Object.entries(lastState.geo).map(([k, v]) => [`geo.${k}`, v]),
+            )
+            : {}),
+        }
+        : null;
 
       const currentCompositeState = {
         ...currentInfo,
-        ...(currentDns ? Object.fromEntries(
-          Object.entries(currentDns).map(([k, v]) => [`dns.${k}`, v])
-        ) : {}),
-        ...(currentGeo ? Object.fromEntries(
-          Object.entries(currentGeo).map(([k, v]) => [`geo.${k}`, v])
-        ) : {}),
+        ...(currentDns
+          ? Object.fromEntries(
+            Object.entries(currentDns).map(([k, v]) => [`dns.${k}`, v]),
+          )
+          : {}),
+        ...(currentGeo
+          ? Object.fromEntries(
+            Object.entries(currentGeo).map(([k, v]) => [`geo.${k}`, v]),
+          )
+          : {}),
       };
 
       // Detect deltas from last check
@@ -473,7 +615,8 @@ export class Worker {
 
       if (periodsEnabled && this.config.relaymon.delta.periods) {
         const checkIntervalMs = this.config.relaymon.checks.options.interval;
-        const configuredPeriods = this.config.relaymon.delta.periods.definitions;
+        const configuredPeriods =
+          this.config.relaymon.delta.periods.definitions;
         const nowTs = Math.floor(Date.now() / 1000);
 
         // Get period snapshots for this relay
@@ -492,12 +635,16 @@ export class Worker {
           configuredPeriods,
           checkIntervalMs,
           periodSnapshotTimes,
-          nowTs
+          nowTs,
         );
 
         // Store snapshots for all periods that are being emitted
         if (periodsToEmit.length > 0) {
-          this.logger.debug(`Emitting period aggregates for ${relayUrl}: ${periodsToEmit.join(', ')}`);
+          this.logger.debug(
+            `Emitting period aggregates for ${relayUrl}: ${
+              periodsToEmit.join(", ")
+            }`,
+          );
           for (const period of periodsToEmit) {
             storePeriodSnapshot(relayUrl, period, currentInfo);
           }
@@ -505,7 +652,11 @@ export class Worker {
       }
 
       // Generate and publish delta event
-      const publishJob = async (retryCount = 0, maxRetries = this.publishMaxRetries, backoffMs = this.publishInitialBackoffMs) => {
+      const publishJob = async (
+        retryCount = 0,
+        maxRetries = this.publishMaxRetries,
+        backoffMs = this.publishInitialBackoffMs,
+      ) => {
         try {
           const event = new Kind1066(this.pubkey);
           const privkey = getPrivateKey();
@@ -521,45 +672,68 @@ export class Worker {
           }, privkey);
 
           await this.publisher.publishEvent(signedEvent);
-          this.logger.debug(`Published delta event (Kind 1066) for relay ${relayUrl}` +
-            (periodsToEmit.length > 0 ? ` with periods: ${periodsToEmit.join(', ')}` : ''));
+          this.logger.debug(
+            `Published delta event (Kind 1066) for relay ${relayUrl}` +
+              (periodsToEmit.length > 0
+                ? ` with periods: ${periodsToEmit.join(", ")}`
+                : ""),
+          );
 
           // Publish ephemeral state change event (Kind 20166) if status changed
           if (operationalStatus) {
             try {
               const ephemeralEvent = new Kind20166(this.pubkey);
-              const ephemeralSigned = await ephemeralEvent.generateAndSignEvent({
-                url: relayUrl,
-                operationalStatus,
-                online: wasOnline,
-                rttOpen: result.open?.duration,
-                retryCount: wasOnline ? undefined : retryCount,
-              }, privkey);
+              const ephemeralSigned = await ephemeralEvent.generateAndSignEvent(
+                {
+                  url: relayUrl,
+                  operationalStatus,
+                  online: wasOnline,
+                  rttOpen: result.open?.duration,
+                  retryCount: wasOnline ? undefined : retryCount,
+                },
+                privkey,
+              );
 
               await this.publisher.publishEvent(ephemeralSigned);
-              this.logger.debug(`Published ephemeral state change event (Kind 20166) for relay ${relayUrl}: ${operationalStatus}`);
+              this.logger.debug(
+                `Published ephemeral state change event (Kind 20166) for relay ${relayUrl}: ${operationalStatus}`,
+              );
             } catch (ephemeralError: unknown) {
               // Don't fail the whole job if ephemeral publish fails
-              this.logger.warn(`Failed to publish ephemeral event for ${relayUrl}: ${getErrorMessage(ephemeralError)}`);
+              this.logger.warn(
+                `Failed to publish ephemeral event for ${relayUrl}: ${
+                  getErrorMessage(ephemeralError)
+                }`,
+              );
             }
           }
         } catch (error: unknown) {
           const errorMsg = getErrorMessage(error);
-          this.logger.error(`Delta event publish failed for ${relayUrl} (attempt ${retryCount + 1}/${maxRetries + 1}): ${errorMsg}`);
+          this.logger.error(
+            `Delta event publish failed for ${relayUrl} (attempt ${
+              retryCount + 1
+            }/${maxRetries + 1}): ${errorMsg}`,
+          );
 
           if (retryCount < maxRetries) {
             const nextRetryCount = retryCount + 1;
             const nextBackoffMs = backoffMs * 2;
-            this.logger.info(`Scheduling delta event retry ${nextRetryCount}/${maxRetries} for ${relayUrl} in ${(nextBackoffMs / 1000).toFixed(1)}s`);
+            this.logger.info(
+              `Scheduling delta event retry ${nextRetryCount}/${maxRetries} for ${relayUrl} in ${
+                (nextBackoffMs / 1000).toFixed(1)
+              }s`,
+            );
 
             setTimeout(() => {
               this.queueManager.addPublishJob(
                 () => publishJob(nextRetryCount, maxRetries, nextBackoffMs),
-                { isRetry: true, category: 'check' }
+                { isRetry: true, category: "check" },
               );
             }, nextBackoffMs);
           } else {
-            this.logger.error(`Exceeded maximum retries (${maxRetries}) for publishing delta event for ${relayUrl}`);
+            this.logger.error(
+              `Exceeded maximum retries (${maxRetries}) for publishing delta event for ${relayUrl}`,
+            );
           }
 
           // Always throw to properly count failures in queue metrics
@@ -568,12 +742,143 @@ export class Worker {
       };
 
       if (this.warmupMode) {
-        this.logger.debug(`Warmup mode active; suppressing delta event publish for ${relayUrl}`);
+        this.logger.debug(
+          `Warmup mode active; suppressing delta event publish for ${relayUrl}`,
+        );
         return;
       }
-      this.queueManager.addPublishJob(() => publishJob(), { isRetry: false, category: 'delta' });
+      this.queueManager.addPublishJob(() => publishJob(), {
+        isRetry: false,
+        category: "delta",
+      });
     } catch (error: unknown) {
-      this.logger.error(`Failed to publish delta event for ${relayUrl}: ${getErrorMessage(error)}`);
+      this.logger.error(
+        `Failed to publish delta event for ${relayUrl}: ${
+          getErrorMessage(error)
+        }`,
+      );
+    }
+  }
+
+  async publishTrustedRelayAssertion(result: RelayCheckResult): Promise<void> {
+    const traConfig = this.config.relaymon.trustedRelayAssertions;
+    if (!traConfig?.enabled) {
+      return;
+    }
+
+    if (this.warmupMode) {
+      this.logger.debug(
+        `Warmup mode active; suppressing trusted relay assertion for ${result.url}`,
+      );
+      return;
+    }
+
+    if (result.ignore && !traConfig.publish_blocked) {
+      this.logger.debug(
+        `Skipping trusted relay assertion for ignored relay ${result.url}`,
+      );
+      return;
+    }
+
+    try {
+      const canonicalUrl = normalizeRelayUrl(result.url);
+      const history = recordTrustedRelayObservation(canonicalUrl, result);
+      const assertion = buildTrustedRelayAssertion(result, history, traConfig);
+
+      if (
+        assertion.status === "unreachable" &&
+        traConfig.publish_unreachable === false
+      ) {
+        this.logger.debug(
+          `Skipping trusted relay assertion for unreachable relay ${assertion.relayUrl}`,
+        );
+        return;
+      }
+
+      const previous = getPublishedTrustedRelayAssertion(assertion.relayUrl);
+      const change = hasTrustedRelayMaterialChange(
+        assertion,
+        previous,
+        traConfig.material_change_threshold ?? 3,
+        typeof traConfig.refresh_interval === "number"
+          ? traConfig.refresh_interval
+          : 60 * 60 * 1000,
+      );
+
+      if (!change.changed) {
+        this.logger.debug(
+          `Skipping trusted relay assertion for ${assertion.relayUrl} - no material change`,
+        );
+        return;
+      }
+
+      const publishJob = async (
+        retryCount = 0,
+        maxRetries = this.publishMaxRetries,
+        backoffMs = this.publishInitialBackoffMs,
+      ) => {
+        try {
+          const event = new Kind30385(this.pubkey);
+          const privkey = getPrivateKey();
+          const signedEvent = await event.generateAndSignEvent(
+            assertion,
+            privkey,
+          );
+          const publisher = this.trustedRelayPublisher ?? this.publisher;
+
+          await publisher.publishEvent(signedEvent);
+          storePublishedTrustedRelayAssertion(
+            assertion.relayUrl,
+            assertion,
+            signedEvent.id,
+          );
+          this.logger.debug(
+            `Published trusted relay assertion (Kind 30385) for ${assertion.relayUrl}` +
+              (change.reason ? ` (${change.reason})` : ""),
+          );
+        } catch (error: unknown) {
+          const errorMsg = getErrorMessage(error);
+          this.logger.error(
+            `Trusted relay assertion publish failed for ${result.url} (attempt ${
+              retryCount + 1
+            }/${maxRetries + 1}): ${errorMsg}`,
+          );
+
+          if (retryCount < maxRetries) {
+            const nextRetryCount = retryCount + 1;
+            const nextBackoffMs = backoffMs * 2;
+            this.logger.info(
+              `Scheduling trusted relay assertion retry ${nextRetryCount}/${maxRetries} for ${result.url} in ${
+                (nextBackoffMs / 1000).toFixed(1)
+              }s`,
+            );
+
+            setTimeout(() => {
+              this.queueManager.addPublishJob(
+                () => publishJob(nextRetryCount, maxRetries, nextBackoffMs),
+                { isRetry: true, category: "other" },
+              );
+            }, nextBackoffMs);
+          } else {
+            this.logger.error(
+              `Exceeded maximum retries (${maxRetries}) for trusted relay assertion ${result.url}`,
+            );
+          }
+
+          throw error;
+        }
+      };
+
+      this.queueManager.addPublishJob(() => publishJob(), {
+        isRetry: false,
+        category: "other",
+      });
+    } catch (error: unknown) {
+      this.logger.error(
+        `Failed to publish trusted relay assertion for ${result.url}: ${
+          getErrorMessage(error)
+        }`,
+      );
     }
   }
 
@@ -581,12 +886,14 @@ export class Worker {
     let currentRetries = this.relayRetries.get(relayUrl) || 0;
     currentRetries++;
     this.relayRetries.set(relayUrl, currentRetries);
-    
+
     incrementRetryCount(relayUrl);
-    
+
     const delayMs = this.retryManager.getDelay(currentRetries);
     this.logger.debug(
-      `Relay ${relayUrl} failed check, incremented retry count to ${currentRetries} (next check after ~${delayMs/1000}s based on backoff)`
+      `Relay ${relayUrl} failed check, incremented retry count to ${currentRetries} (next check after ~${
+        delayMs / 1000
+      }s based on backoff)`,
     );
   }
 
@@ -595,7 +902,7 @@ export class Worker {
    */
   formatDuration(ms: number): string {
     const seconds = Math.floor(ms / 1000);
-    
+
     if (seconds < 60) {
       return `${seconds}s`;
     } else if (seconds < 3600) {
@@ -611,7 +918,7 @@ export class Worker {
     url: string,
     result: NocapCheckResult | Record<string, never> = {},
     recovered: boolean = false,
-    error: boolean = false
+    error: boolean = false,
   ): void {
     const maxRelayWidth = 50;
     const failure = chalk.red;
@@ -626,30 +933,36 @@ export class Worker {
 
     let formattedUrl = url;
     if (url.length > maxRelayWidth) {
-      formattedUrl = url.substring(0, maxRelayWidth - 3) + '...';
+      formattedUrl = url.substring(0, maxRelayWidth - 3) + "...";
     } else {
-      formattedUrl = url.padEnd(maxRelayWidth, ' ');
+      formattedUrl = url.padEnd(maxRelayWidth, " ");
     }
 
     let progress = "";
-    progress += chalk.hex('#9F2B68').bold(`${formattedUrl}: `);
+    progress += chalk.hex("#9F2B68").bold(`${formattedUrl}: `);
 
     const checks: string[] = this.config.relaymon.checks.enabled || [];
     if (checks.includes("open")) {
       progress += `${
-        result?.open?.data === true ? success("online   ") : failure("offline  ")
+        result?.open?.data === true
+          ? success("online   ")
+          : failure("offline  ")
       } `;
       incD(result?.open?.duration || 0);
     }
     if (checks.includes("read")) {
       progress += `${
-        result?.read?.data === true ? success("readable   ") : failure("unreadable ")
+        result?.read?.data === true
+          ? success("readable   ")
+          : failure("unreadable ")
       } `;
       incD(result?.read?.duration || 0);
     }
     if (checks.includes("write")) {
       progress += `${
-        result?.write?.data === true ? success("writable   ") : failure("unwritable ")
+        result?.write?.data === true
+          ? success("writable   ")
+          : failure("unwritable ")
       } `;
       incD(result?.write?.duration || 0);
     }
@@ -691,26 +1004,30 @@ export class Worker {
 
     if (error) {
       progress += `${chalk.gray.italic("error")} `;
-      
+
       if (retries > 0) {
         const nextRetryDelay = this.retryManager.getDelay(retries);
         const formattedDelay = this.formatDuration(nextRetryDelay);
-        progress += chalk.yellow(`[retries: ${retries}, next: ${formattedDelay}]`);
+        progress += chalk.yellow(
+          `[retries: ${retries}, next: ${formattedDelay}]`,
+        );
       }
     } else if (!isOnline) {
       if (retries > 0) {
         const nextRetryDelay = this.retryManager.getDelay(retries);
         const formattedDelay = this.formatDuration(nextRetryDelay);
-        progress += chalk.yellow(`[retries: ${retries}, next: ${formattedDelay}]`);
+        progress += chalk.yellow(
+          `[retries: ${retries}, next: ${formattedDelay}]`,
+        );
       }
     } else {
       progress += chalk.gray.italic(`${(duration / 1000).toFixed(2)} seconds `);
-      
+
       if (recovered) {
         progress += recoverHighlight(`[RECOVERED]`);
       }
     }
-    
+
     console.log(progress);
   }
 }

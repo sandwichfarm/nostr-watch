@@ -13,9 +13,9 @@ A collection of Docker Compose configurations for deploying nostr-watch services
 
 ### How It Works
 
-nostr-watch monitors nostr relays and publishes the results as nostr events ([NIP-66](https://github.com/nostr-protocol/nips/blob/master/66.md)). There are two core services:
+nostr-watch monitors nostr relays and publishes the results as nostr events ([NIP-66](https://github.com/nostr-protocol/nips/blob/master/66.md)). RelayMon can also publish opt-in Trusted Relay Assertions (kind `30385`) using the draft TRA NIP shape from [`Letdown2491/trustedrelays`](https://github.com/Letdown2491/trustedrelays). There are two core services:
 
-- **RelayMon** — Continuously checks relays for connectivity (WebSocket open, read, NIP-11 info, DNS) and publishes the results. Supports clearnet, Tor, and I2P networks.
+- **RelayMon** — Continuously checks relays for connectivity (WebSocket open, read, NIP-11 info, DNS), publishes the results, and can optionally publish Trusted Relay Assertions. Supports clearnet, Tor, and I2P networks.
 - **Trawler** — Crawls nostr relay lists to discover new relays and writes them to a SQLite database. When paired with RelayMon, trawler feeds discovered relays into the monitor automatically.
 
 Each stack composes these services (and optional network proxies) into a ready-to-run deployment. You configure two things per service:
@@ -100,11 +100,12 @@ Controls application behavior — monitor identity, seed sources, check types, a
 Key sections:
 
 - **`monitor`** — Your monitor's identity: slug, name, owner pubkey, and announcement relays
-- **`publisher`** — Which relays receive check result events (Kind 1066, Kind 20166)
+- **`publisher`** — Which relays receive check result events (Kind 1066, Kind 20166) and default TRA events
 - **`relaymon.networks`** — Which networks to monitor (`clearnet`, `tor`, `i2pd`)
 - **`relaymon.seed`** — How the relay list is populated (`events`, `config`, `db`)
 - **`relaymon.checks`** — Which checks to run (`open`, `read`, `info`, `dns`) and their intervals/timeouts
 - **`relaymon.retry`** — Backoff strategy for failed relay connections
+- **`relaymon.trustedRelayAssertions`** — Optional kind `30385` Trusted Relay Assertion publishing controls
 
 ### Docker Compose Environment (set in `docker-compose.yaml`)
 

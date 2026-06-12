@@ -1,12 +1,19 @@
-import { assertEquals, assertExists, assert } from "https://deno.land/std@0.218.2/assert/mod.ts";
 import {
-  initializeDB,
-  storeRelayInfo,
+  assert,
+  assertEquals,
+  assertExists,
+} from "https://deno.land/std@0.218.2/assert/mod.ts";
+import {
+  db,
+  getOnlineRelays,
+  getPublishedTrustedRelayAssertion,
   getRelayInfo,
   getRelaysWithSameInfo,
-  getOnlineRelays,
+  initializeDB,
   isRelayIgnored,
-  db
+  recordTrustedRelayObservation,
+  storePublishedTrustedRelayAssertion,
+  storeRelayInfo,
 } from "../../src/db/db.ts";
 import type { RelayInfo } from "../../src/types/relay.ts";
 
@@ -18,7 +25,7 @@ function dbTest(name: string, fn: () => void | Promise<void>) {
     name,
     sanitizeResources: false,
     sanitizeOps: false,
-    fn
+    fn,
   });
 }
 
@@ -45,7 +52,7 @@ function createMockRelayInfo(overrides: Partial<RelayInfo> = {}): RelayInfo {
     supported_nips: [1, 2, 11],
     software: "test-software",
     version: "1.0.0",
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -62,15 +69,32 @@ dbTest("Database - initializeDB creates database file", () => {
 dbTest("Database - initializeDB creates relay_info table", () => {
   ensureGlobalTestDB();
 
-  const result = db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='relay_info'");
+  const result = db.query(
+    "SELECT name FROM sqlite_master WHERE type='table' AND name='relay_info'",
+  );
   assertEquals(result.length, 1, "relay_info table should exist");
 });
 
 dbTest("Database - relay_status table exists from @nostrwatch/db", () => {
   ensureGlobalTestDB();
 
-  const result = db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='relay_status'");
+  const result = db.query(
+    "SELECT name FROM sqlite_master WHERE type='table' AND name='relay_status'",
+  );
   assertEquals(result.length, 1, "relay_status table should exist");
+});
+
+dbTest("Database - relay_trust_assertion_state table exists", () => {
+  ensureGlobalTestDB();
+
+  const result = db.query(
+    "SELECT name FROM sqlite_master WHERE type='table' AND name='relay_trust_assertion_state'",
+  );
+  assertEquals(
+    result.length,
+    1,
+    "relay_trust_assertion_state table should exist",
+  );
 });
 
 dbTest("Database - storeRelayInfo inserts new relay info", () => {
@@ -82,7 +106,10 @@ dbTest("Database - storeRelayInfo inserts new relay info", () => {
 
   storeRelayInfo(url, info, infoHash);
 
-  const result = db.query("SELECT url, info_hash FROM relay_info WHERE url = ?", [url]);
+  const result = db.query(
+    "SELECT url, info_hash FROM relay_info WHERE url = ?",
+    [url],
+  );
 
   assertEquals(result.length, 1, "Should have one row");
   assertEquals(result[0][0], url, "URL should match");
@@ -103,7 +130,9 @@ dbTest("Database - storeRelayInfo updates existing relay info", () => {
   storeRelayInfo(url, info2, "hash2");
 
   // Verify only one row exists with updated data
-  const result = db.query("SELECT info_hash FROM relay_info WHERE url = ?", [url]);
+  const result = db.query("SELECT info_hash FROM relay_info WHERE url = ?", [
+    url,
+  ]);
 
   assertEquals(result.length, 1, "Should have exactly one row");
   assertEquals(result[0][0], "hash2", "Info hash should be updated");
@@ -115,19 +144,29 @@ dbTest("Database - storeRelayInfo stores valid JSON", () => {
   const url = `wss://test-json-${Date.now()}.example.com`;
   const info = createMockRelayInfo({
     supported_nips: [1, 2, 11, 50],
-    name: "Test Relay with Special Chars: ñ, é, 中文"
+    name: "Test Relay with Special Chars: ñ, é, 中文",
   });
 
   storeRelayInfo(url, info, "hash123");
 
   // Verify JSON can be parsed back
-  const result = db.query("SELECT info_json FROM relay_info WHERE url = ?", [url]);
+  const result = db.query("SELECT info_json FROM relay_info WHERE url = ?", [
+    url,
+  ]);
 
   const storedJson = result[0][0] as string;
   const parsed = JSON.parse(storedJson);
 
-  assertEquals(parsed.name, info.name, "Name should match including special chars");
-  assertEquals(parsed.supported_nips, info.supported_nips, "NIPs array should match");
+  assertEquals(
+    parsed.name,
+    info.name,
+    "Name should match including special chars",
+  );
+  assertEquals(
+    parsed.supported_nips,
+    info.supported_nips,
+    "NIPs array should match",
+  );
 });
 
 dbTest("Database - getRelayInfo returns stored info", () => {
@@ -144,7 +183,11 @@ dbTest("Database - getRelayInfo returns stored info", () => {
   assertExists(retrieved, "Should return relay info");
   assertEquals(retrieved!.infoHash, infoHash, "Hash should match");
   assertEquals(retrieved!.info.name, info.name, "Name should match");
-  assertEquals(retrieved!.info.software, info.software, "Software should match");
+  assertEquals(
+    retrieved!.info.software,
+    info.software,
+    "Software should match",
+  );
 });
 
 dbTest("Database - getRelayInfo returns null for non-existent relay", () => {
@@ -163,7 +206,7 @@ dbTest("Database - getRelayInfo handles malformed JSON gracefully", () => {
   // Manually insert malformed JSON
   db.query(
     "INSERT INTO relay_info (url, info_json, info_hash, last_updated) VALUES (?, ?, ?, ?)",
-    [url, "{invalid json", "hash123", Math.floor(Date.now() / 1000)]
+    [url, "{invalid json", "hash123", Math.floor(Date.now() / 1000)],
   );
 
   const retrieved = getRelayInfo(url);
@@ -184,24 +227,45 @@ dbTest("Database - getRelaysWithSameInfo returns matching relays", () => {
   storeRelayInfo(`wss://relay3-${timestamp}.example.com`, info, sharedHash);
 
   // Store one with different hash
-  storeRelayInfo(`wss://different-${timestamp}.example.com`, info, `different-hash-${timestamp}`);
+  storeRelayInfo(
+    `wss://different-${timestamp}.example.com`,
+    info,
+    `different-hash-${timestamp}`,
+  );
 
   const relays = getRelaysWithSameInfo(sharedHash);
 
   assertEquals(relays.length, 3, "Should return 3 relays with same hash");
-  assert(relays.includes(`wss://relay1-${timestamp}.example.com`), "Should include relay1");
-  assert(relays.includes(`wss://relay2-${timestamp}.example.com`), "Should include relay2");
-  assert(relays.includes(`wss://relay3-${timestamp}.example.com`), "Should include relay3");
-  assert(!relays.includes(`wss://different-${timestamp}.example.com`), "Should not include different relay");
+  assert(
+    relays.includes(`wss://relay1-${timestamp}.example.com`),
+    "Should include relay1",
+  );
+  assert(
+    relays.includes(`wss://relay2-${timestamp}.example.com`),
+    "Should include relay2",
+  );
+  assert(
+    relays.includes(`wss://relay3-${timestamp}.example.com`),
+    "Should include relay3",
+  );
+  assert(
+    !relays.includes(`wss://different-${timestamp}.example.com`),
+    "Should not include different relay",
+  );
 });
 
-dbTest("Database - getRelaysWithSameInfo returns empty array for non-existent hash", () => {
-  ensureGlobalTestDB();
+dbTest(
+  "Database - getRelaysWithSameInfo returns empty array for non-existent hash",
+  () => {
+    ensureGlobalTestDB();
 
-  const relays = getRelaysWithSameInfo("totally-nonexistent-hash-unique-12345");
+    const relays = getRelaysWithSameInfo(
+      "totally-nonexistent-hash-unique-12345",
+    );
 
-  assertEquals(relays, [], "Should return empty array");
-});
+    assertEquals(relays, [], "Should return empty array");
+  },
+);
 
 dbTest("Database - getOnlineRelays returns only online relays", () => {
   ensureGlobalTestDB();
@@ -209,14 +273,22 @@ dbTest("Database - getOnlineRelays returns only online relays", () => {
   const timestamp = Date.now();
 
   // Insert test relays
-  db.query("INSERT OR REPLACE INTO relay_status (url, network, online) VALUES (?, ?, ?)",
-    [`wss://online1-${timestamp}.example.com`, "clearnet", 1]);
-  db.query("INSERT OR REPLACE INTO relay_status (url, network, online) VALUES (?, ?, ?)",
-    [`wss://online2-${timestamp}.example.com`, "clearnet", 1]);
-  db.query("INSERT OR REPLACE INTO relay_status (url, network, online) VALUES (?, ?, ?)",
-    [`wss://offline1-${timestamp}.example.com`, "clearnet", 0]);
-  db.query("INSERT OR REPLACE INTO relay_status (url, network, online) VALUES (?, ?, ?)",
-    [`wss://offline2-${timestamp}.example.com`, "clearnet", -1]);
+  db.query(
+    "INSERT OR REPLACE INTO relay_status (url, network, online) VALUES (?, ?, ?)",
+    [`wss://online1-${timestamp}.example.com`, "clearnet", 1],
+  );
+  db.query(
+    "INSERT OR REPLACE INTO relay_status (url, network, online) VALUES (?, ?, ?)",
+    [`wss://online2-${timestamp}.example.com`, "clearnet", 1],
+  );
+  db.query(
+    "INSERT OR REPLACE INTO relay_status (url, network, online) VALUES (?, ?, ?)",
+    [`wss://offline1-${timestamp}.example.com`, "clearnet", 0],
+  );
+  db.query(
+    "INSERT OR REPLACE INTO relay_status (url, network, online) VALUES (?, ?, ?)",
+    [`wss://offline2-${timestamp}.example.com`, "clearnet", -1],
+  );
 
   const onlineRelays = getOnlineRelays();
 
@@ -224,10 +296,22 @@ dbTest("Database - getOnlineRelays returns only online relays", () => {
   // canonicalized version (via the barrel re-export at db.ts:626), which
   // normalizeURL-wraps every row. normalizeURL appends a trailing slash to
   // bare-host URLs, so assertions use the canonical form with trailing slash.
-  assert(onlineRelays.includes(`wss://online1-${timestamp}.example.com/`), "Should include online1 (canonicalized)");
-  assert(onlineRelays.includes(`wss://online2-${timestamp}.example.com/`), "Should include online2 (canonicalized)");
-  assert(!onlineRelays.includes(`wss://offline1-${timestamp}.example.com/`), "Should not include offline1");
-  assert(!onlineRelays.includes(`wss://offline2-${timestamp}.example.com/`), "Should not include offline2");
+  assert(
+    onlineRelays.includes(`wss://online1-${timestamp}.example.com/`),
+    "Should include online1 (canonicalized)",
+  );
+  assert(
+    onlineRelays.includes(`wss://online2-${timestamp}.example.com/`),
+    "Should include online2 (canonicalized)",
+  );
+  assert(
+    !onlineRelays.includes(`wss://offline1-${timestamp}.example.com/`),
+    "Should not include offline1",
+  );
+  assert(
+    !onlineRelays.includes(`wss://offline2-${timestamp}.example.com/`),
+    "Should not include offline2",
+  );
 });
 
 dbTest("Database - isRelayIgnored returns true for ignored relay", () => {
@@ -236,7 +320,10 @@ dbTest("Database - isRelayIgnored returns true for ignored relay", () => {
   const timestamp = Date.now();
   const url = `wss://ignored-${timestamp}.example.com`;
 
-  db.query("INSERT OR REPLACE INTO relay_status (url, network, ignore) VALUES (?, ?, ?)", [url, "clearnet", 1]);
+  db.query(
+    "INSERT OR REPLACE INTO relay_status (url, network, ignore) VALUES (?, ?, ?)",
+    [url, "clearnet", 1],
+  );
 
   const ignored = isRelayIgnored(url);
 
@@ -249,7 +336,10 @@ dbTest("Database - isRelayIgnored returns false for non-ignored relay", () => {
   const timestamp = Date.now();
   const url = `wss://not-ignored-${timestamp}.example.com`;
 
-  db.query("INSERT OR REPLACE INTO relay_status (url, network, ignore) VALUES (?, ?, ?)", [url, "clearnet", 0]);
+  db.query(
+    "INSERT OR REPLACE INTO relay_status (url, network, ignore) VALUES (?, ?, ?)",
+    [url, "clearnet", 0],
+  );
 
   const ignored = isRelayIgnored(url);
 
@@ -259,7 +349,9 @@ dbTest("Database - isRelayIgnored returns false for non-ignored relay", () => {
 dbTest("Database - isRelayIgnored returns false for non-existent relay", () => {
   ensureGlobalTestDB();
 
-  const ignored = isRelayIgnored("wss://totally-nonexistent-fake-relay-12345.example.com");
+  const ignored = isRelayIgnored(
+    "wss://totally-nonexistent-fake-relay-12345.example.com",
+  );
 
   assertEquals(ignored, false, "Should return false for non-existent relay");
 });
@@ -273,16 +365,22 @@ dbTest("Database - relay_info timestamp is updated on store", async () => {
   storeRelayInfo(url, info, "hash1");
 
   // Get first timestamp
-  const result1 = db.query("SELECT last_updated FROM relay_info WHERE url = ?", [url]);
+  const result1 = db.query(
+    "SELECT last_updated FROM relay_info WHERE url = ?",
+    [url],
+  );
   const timestamp1 = result1[0][0] as number;
 
   // Wait a bit to ensure different timestamp
-  await new Promise(resolve => setTimeout(resolve, 100));
+  await new Promise((resolve) => setTimeout(resolve, 100));
 
   // Update
   storeRelayInfo(url, info, "hash2");
 
-  const result2 = db.query("SELECT last_updated FROM relay_info WHERE url = ?", [url]);
+  const result2 = db.query(
+    "SELECT last_updated FROM relay_info WHERE url = ?",
+    [url],
+  );
   const timestamp2 = result2[0][0] as number;
 
   assert(timestamp2 >= timestamp1, "Timestamp should be updated or same");
@@ -314,25 +412,83 @@ dbTest("Database - relay_status supports network types", () => {
 
   const timestamp = Date.now();
 
-  db.query("INSERT OR REPLACE INTO relay_status (url, network) VALUES (?, ?)",
-    [`wss://clearnet-${timestamp}.example.com`, "clearnet"]);
-  db.query("INSERT OR REPLACE INTO relay_status (url, network) VALUES (?, ?)",
-    [`ws://onion-${timestamp}.onion`, "tor"]);
-  db.query("INSERT OR REPLACE INTO relay_status (url, network) VALUES (?, ?)",
-    [`ws://i2p-${timestamp}.i2p`, "i2p"]);
+  db.query("INSERT OR REPLACE INTO relay_status (url, network) VALUES (?, ?)", [
+    `wss://clearnet-${timestamp}.example.com`,
+    "clearnet",
+  ]);
+  db.query("INSERT OR REPLACE INTO relay_status (url, network) VALUES (?, ?)", [
+    `ws://onion-${timestamp}.onion`,
+    "tor",
+  ]);
+  db.query("INSERT OR REPLACE INTO relay_status (url, network) VALUES (?, ?)", [
+    `ws://i2p-${timestamp}.i2p`,
+    "i2p",
+  ]);
 
-  const result = db.query(`
+  const result = db.query(
+    `
     SELECT url, network FROM relay_status
     WHERE url IN (?, ?, ?)
     ORDER BY network
-  `, [
-    `wss://clearnet-${timestamp}.example.com`,
-    `ws://i2p-${timestamp}.i2p`,
-    `ws://onion-${timestamp}.onion`
-  ]);
+  `,
+    [
+      `wss://clearnet-${timestamp}.example.com`,
+      `ws://i2p-${timestamp}.i2p`,
+      `ws://onion-${timestamp}.onion`,
+    ],
+  );
 
   assertEquals(result.length, 3, "Should have 3 relays");
   assertEquals(result[0][1], "clearnet", "First should be clearnet");
   assertEquals(result[1][1], "i2p", "Second should be i2p");
   assertEquals(result[2][1], "tor", "Third should be tor");
 });
+
+dbTest(
+  "Database - trusted relay assertion state accumulates observations and stores published state",
+  () => {
+    ensureGlobalTestDB();
+
+    const timestamp = Date.now();
+    const url = `wss://tra-${timestamp}.example.com`;
+
+    const first = recordTrustedRelayObservation(url, {
+      online: true,
+      open: { duration: 120 },
+      read: { duration: 180 },
+    });
+    const second = recordTrustedRelayObservation(url, {
+      online: false,
+      open: { duration: 800 },
+    });
+
+    assertEquals(first.observations, 1);
+    assertEquals(second.observations, 2);
+    assertEquals(second.reachableObservations, 1);
+    assertEquals(second.totalRttOpen, 920);
+    assertEquals(second.rttOpenSamples, 2);
+    assertExists(second.lastOnlineAt);
+
+    assertEquals(getPublishedTrustedRelayAssertion(url), null);
+
+    storePublishedTrustedRelayAssertion(url, {
+      status: "evaluated",
+      score: 82,
+      reliability: 90,
+      quality: 80,
+      accessibility: 70,
+      confidence: "low",
+    }, "event-id-123");
+
+    const published = getPublishedTrustedRelayAssertion(url);
+    assertExists(published);
+    assertEquals(published!.status, "evaluated");
+    assertEquals(published!.score, 82);
+    assertEquals(published!.reliability, 90);
+    assertEquals(published!.quality, 80);
+    assertEquals(published!.accessibility, 70);
+    assertEquals(published!.confidence, "low");
+    assertEquals(published!.eventId, "event-id-123");
+    assertExists(published!.publishedAt);
+  },
+);

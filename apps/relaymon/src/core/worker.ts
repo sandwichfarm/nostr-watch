@@ -766,13 +766,6 @@ export class Worker {
       return;
     }
 
-    if (this.warmupMode) {
-      this.logger.debug(
-        `Warmup mode active; suppressing trusted relay assertion for ${result.url}`,
-      );
-      return;
-    }
-
     if (result.ignore && !traConfig.publish_blocked) {
       this.logger.debug(
         `Skipping trusted relay assertion for ignored relay ${result.url}`,

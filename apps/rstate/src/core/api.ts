@@ -6,7 +6,7 @@
  */
 
 import type { CoreConfig } from './config.js'
-import type { RelayObservation, MonitorAnnouncement } from './types/events.js'
+import type { RelayObservation, MonitorAnnouncement, TrustedRelayAssertion } from './types/events.js'
 import type { RelayState, AggregationPolicy } from './types/aggregation.js'
 import { ObservationStore } from './store/observation-store.js'
 import { LabelIndexService } from './index/label-index.js'
@@ -178,6 +178,25 @@ export interface IngestionInterface {
    * Ingest relay observations (batch)
    */
   observations(observations: RelayObservation[]): void
+
+  /**
+   * Ingest trusted relay assertions (batch)
+   */
+  trustedRelayAssertions(assertions: TrustedRelayAssertion[]): void
+}
+
+export interface StateSnapshot {
+  schemaVersion: 2
+  createdAt?: string
+  updatedAt: string
+  monitors: MonitorAnnouncement[]
+  observations: RelayObservation[]
+  trustedRelayAssertions: TrustedRelayAssertion[]
+}
+
+export interface SnapshotInterface {
+  export(): StateSnapshot
+  import(snapshot: StateSnapshot): void
 }
 
 /**
@@ -193,6 +212,10 @@ export interface StatsInterface {
       total: number
     }
     observations: {
+      count: number
+      seenEvents: number
+    }
+    trustedRelayAssertions: {
       count: number
       seenEvents: number
     }
@@ -235,6 +258,11 @@ export interface StateCore {
    * Statistics
    */
   stats: StatsInterface
+
+  /**
+   * State snapshot import/export for persistence and migration.
+   */
+  snapshot: SnapshotInterface
 
   /**
    * Evict old observations outside the lookback window
@@ -288,6 +316,12 @@ export function initStateCore(config: CoreConfig): StateCore {
     observations(observations: RelayObservation[]): void {
       for (const obs of observations) {
         observationStore.addObservation(obs)
+      }
+    },
+
+    trustedRelayAssertions(assertions: TrustedRelayAssertion[]): void {
+      for (const assertion of assertions) {
+        observationStore.addTrustedRelayAssertion(assertion)
       }
     },
   }
@@ -498,6 +532,10 @@ export function initStateCore(config: CoreConfig): StateCore {
           count: storeStats.observationCount,
           seenEvents: storeStats.seenEventCount,
         },
+        trustedRelayAssertions: {
+          count: storeStats.trustedRelayAssertionCount,
+          seenEvents: storeStats.trustedRelayAssertionSeenEventCount,
+        },
         monitors: {
           count: storeStats.monitorCount,
         },
@@ -526,6 +564,29 @@ export function initStateCore(config: CoreConfig): StateCore {
     },
 
     stats,
+
+    snapshot: {
+      export(): StateSnapshot {
+        const snapshot = observationStore.exportSnapshot()
+        return {
+          schemaVersion: 2,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          monitors: snapshot.monitors,
+          observations: snapshot.observations,
+          trustedRelayAssertions: snapshot.trustedRelayAssertions,
+        }
+      },
+
+      import(snapshot: StateSnapshot): void {
+        observationStore.importSnapshot({
+          monitors: snapshot.monitors ?? [],
+          observations: snapshot.observations ?? [],
+          trustedRelayAssertions: snapshot.trustedRelayAssertions ?? [],
+        })
+        stateManager.invalidateCache()
+      },
+    },
 
     getChangedRelays(): string[] {
       return stateManager.getLastChangedRelays()

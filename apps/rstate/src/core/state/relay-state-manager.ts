@@ -4,9 +4,10 @@
  * Coordinates observation storage, aggregation, label indexing, and geo processing
  */
 
-import type { AggregationPolicy, RelayState } from '../types/aggregation.js'
+import type { AggregatedValue, AggregationPolicy, RelayState, TrustedRelayAggregate } from '../types/aggregation.js'
+import type { TrustedRelayAssertion } from '../types/events.js'
 import { ObservationStore } from '../store/observation-store.js'
-import { computeRelayState } from '../agg/aggregation.js'
+import { aggregateBoolean, aggregateEnum, aggregateNumeric, computeRelayState } from '../agg/aggregation.js'
 import { LabelIndexService } from '../index/label-index.js'
 import { GeoService } from '../geo/geo.js'
 import type { QueryCache } from '../cache/cache.js'
@@ -70,6 +71,10 @@ export class RelayStateManager {
 
       // Add labels to state
       state.labels = this.labelIndex.getLabelsForRelay(relayUrl)
+
+      state.trustedRelay = this.aggregateTrustedRelayAssertions(
+        this.observationStore.getTrustedRelayAssertions(relayUrl)
+      )
 
       // Extract country from observation labels, normalize to Alpha-2, majority-wins vote
       const countryVotes: Array<{ code: string; author: string; timestamp: number }> = []
@@ -184,10 +189,127 @@ export class RelayStateManager {
       oldState.software?.family?.value !== newState.software?.family?.value ||
       JSON.stringify(oldState.nips?.list) !== JSON.stringify(newState.nips?.list) ||
       JSON.stringify(oldState.labels) !== JSON.stringify(newState.labels) ||
+      JSON.stringify(oldState.trustedRelay) !== JSON.stringify(newState.trustedRelay) ||
       Math.abs((oldState.rtt?.open?.value || 0) - (newState.rtt?.open?.value || 0)) > 50 || // 50ms RTT change threshold
       oldState.lastSeenAt !== newState.lastSeenAt ||
       oldState.lastOpenAt !== newState.lastOpenAt
     )
+  }
+
+  private aggregateTrustedRelayAssertions(assertions: TrustedRelayAssertion[]): TrustedRelayAggregate {
+    if (assertions.length === 0) {
+      return {
+        status: null,
+        score: null,
+        reliability: null,
+        quality: null,
+        accessibility: null,
+        assertionCount: 0,
+        publisherCount: 0,
+        contributingAuthors: [],
+        note: 'no_trusted_relay_assertions',
+      }
+    }
+
+    const contributingAuthors = Array.from(new Set(assertions.map((a) => a.author)))
+    const aggregate: TrustedRelayAggregate = {
+      status: this.aggregateTrustedString(assertions, 'status'),
+      score: this.aggregateTrustedNumber(assertions, 'score'),
+      reliability: this.aggregateTrustedNumber(assertions, 'reliability'),
+      quality: this.aggregateTrustedNumber(assertions, 'quality'),
+      accessibility: this.aggregateTrustedNumber(assertions, 'accessibility'),
+      assertionCount: assertions.length,
+      publisherCount: contributingAuthors.length,
+      contributingAuthors,
+      lastUpdated: Math.max(...assertions.map((a) => a.created_at)),
+    }
+
+    aggregate.confidence = this.aggregateTrustedString(assertions, 'confidence') ?? undefined
+    aggregate.observations = this.aggregateTrustedNumber(assertions, 'observations') ?? undefined
+    aggregate.policy = this.aggregateTrustedString(assertions, 'policy') ?? undefined
+    aggregate.countryCode = this.aggregateTrustedString(assertions, 'countryCode') ?? undefined
+    aggregate.network = this.aggregateTrustedString(assertions, 'network') ?? undefined
+    aggregate.isHosting = this.aggregateTrustedBoolean(assertions, 'isHosting') ?? undefined
+    aggregate.operatorTrust = this.aggregateTrustedNumber(assertions, 'operatorTrust') ?? undefined
+    aggregate.operatorConfidence = this.aggregateTrustedNumber(assertions, 'operatorConfidence') ?? undefined
+
+    return aggregate
+  }
+
+  private aggregateTrustedString(
+    assertions: TrustedRelayAssertion[],
+    key: keyof TrustedRelayAssertion
+  ): AggregatedValue<string> | null {
+    const values = assertions
+      .filter((assertion) => typeof assertion[key] === 'string' && assertion[key] !== '')
+      .map((assertion) => ({
+        value: String(assertion[key]),
+        author: assertion.author,
+        timestamp: assertion.created_at,
+      }))
+
+    if (values.length === 0) return null
+
+    const enumAgg = aggregateEnum(values)
+    return {
+      value: enumAgg.value,
+      support: enumAgg.support,
+      sampleSize: enumAgg.sampleSize,
+      contributingAuthors: enumAgg.authors,
+      lastUpdated: Date.now(),
+      conflicts: enumAgg.conflicts?.map((conflict) => ({
+        value: conflict.value,
+        support: conflict.count / enumAgg.sampleSize,
+        authors: conflict.authors,
+      })),
+    }
+  }
+
+  private aggregateTrustedNumber(
+    assertions: TrustedRelayAssertion[],
+    key: keyof TrustedRelayAssertion
+  ): (AggregatedValue<number> & { mad?: number }) | null {
+    const values = assertions
+      .filter((assertion) => typeof assertion[key] === 'number')
+      .map((assertion) => ({
+        value: Number(assertion[key]),
+        author: assertion.author,
+      }))
+
+    if (values.length === 0) return null
+
+    const numericAgg = aggregateNumeric(values, this.policy)
+    return {
+      value: numericAgg.median,
+      mad: numericAgg.mad,
+      support: numericAgg.sampleSize / values.length,
+      sampleSize: numericAgg.sampleSize,
+      contributingAuthors: numericAgg.authors,
+      lastUpdated: Date.now(),
+    }
+  }
+
+  private aggregateTrustedBoolean(
+    assertions: TrustedRelayAssertion[],
+    key: keyof TrustedRelayAssertion
+  ): AggregatedValue<boolean> | null {
+    const values = assertions
+      .filter((assertion) => typeof assertion[key] === 'boolean')
+      .map((assertion) => ({
+        value: Boolean(assertion[key]),
+        author: assertion.author,
+      }))
+
+    if (values.length === 0) return null
+
+    const boolAgg = aggregateBoolean(values, this.policy)
+    return {
+      value: boolAgg.value,
+      support: boolAgg.value ? boolAgg.support : 1 - boolAgg.support,
+      sampleSize: boolAgg.sampleSize,
+      contributingAuthors: boolAgg.authors,
+      lastUpdated: Date.now(),
+    }
   }
 
   /**

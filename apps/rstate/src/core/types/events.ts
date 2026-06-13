@@ -3,6 +3,7 @@
  *
  * kind 10166: Monitor announcement
  * kind 30166: Relay observation (replaceable by relay URL)
+ * kind 30385: Trusted Relay Assertion (replaceable by relay URL)
  */
 
 export interface NostrEvent {
@@ -94,6 +95,47 @@ export interface RelayObservation {
   nip11?: Record<string, any>
 
   // Raw event for reference
+  raw?: NostrEvent
+}
+
+/**
+ * Trusted Relay Assertion (kind 30385)
+ * Provider assertion about a relay, derived downstream of NIP-66 observations.
+ */
+export interface TrustedRelayAssertion {
+  id: string
+  created_at: number
+  author: string
+  relayUrl: string
+
+  status?: string
+  score?: number
+  reliability?: number
+  quality?: number
+  accessibility?: number
+  confidence?: 'low' | 'medium' | 'high' | string
+
+  observations?: number
+  observationPeriod?: string
+  firstSeen?: number
+
+  algorithm?: string
+  algorithmUrl?: string
+
+  operator?: string
+  operatorVerified?: string
+  operatorConfidence?: number
+  operatorTrust?: number
+
+  policy?: string
+  policyConfidence?: number
+
+  countryCode?: string
+  region?: string
+  isHosting?: boolean
+  network?: 'clearnet' | 'tor' | 'i2p' | string
+
+  labels?: Label[]
   raw?: NostrEvent
 }
 

@@ -29,6 +29,27 @@ import { generateETag, etagMatches } from './etag.js'
 
 const logger = getLogger().child({ module: 'rest-server' })
 
+const DEFAULT_OPENAPI_PAID_ENTRIES: PricingEntry[] = [
+  {
+    name: 'relays/compare',
+    amount: 15,
+    currencyUnit: 'sats',
+    description: 'Compare multiple relays side-by-side',
+  },
+  {
+    name: 'relays/search/detailed',
+    amount: 5,
+    currencyUnit: 'sats',
+    description: 'Search relays with detailed state output',
+  },
+  {
+    name: 'monitors/analytics',
+    amount: 1,
+    currencyUnit: 'sats',
+    description: 'Get detailed analytics for all monitors',
+  },
+]
+
 /**
  * REST server configuration
  */
@@ -157,15 +178,18 @@ export class RestServer {
       try {
         const entries = loadPricing(basePath, process.env.REST_PRICING_YAML)
         paidEntries = entries.filter(e => e.amount > 0)
-        for (const e of paidEntries) {
-          const route = NAME_TO_ROUTE[e.name] ?? `/${e.name}`
-          routePriceMap.set(route, e)
-          this.paidRoutePaths.add(route)
-        }
         logger.info({ paidRoutes: paidEntries.length }, 'Loaded pricing for OpenAPI documentation')
       } catch (err) {
         logger.warn({ err }, 'Failed to load pricing for OpenAPI documentation, skipping 402 schemas')
       }
+    } else {
+      paidEntries = DEFAULT_OPENAPI_PAID_ENTRIES
+    }
+
+    for (const e of paidEntries) {
+      const route = NAME_TO_ROUTE[e.name] ?? `/${e.name}`
+      routePriceMap.set(route, e)
+      this.paidRoutePaths.add(route)
     }
 
     const swaggerOpts: any = {

@@ -33,7 +33,9 @@ COPY --from=builder /app/dist ./dist
 
 # Create non-root user
 RUN addgroup -g 1001 -S cvm && \
-    adduser -S cvm -u 1001
+    adduser -S cvm -u 1001 && \
+    mkdir -p /data /backups && \
+    chown -R cvm:cvm /data /backups
 
 # Switch to non-root user
 USER cvm

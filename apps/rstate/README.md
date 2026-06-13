@@ -9,7 +9,7 @@ ContextVM relay state machine with REST API for aggregated relay intelligence.
 
 ## Overview
 
-Relay state aggregation engine for the nostr-watch system. Ingests [NIP-66](https://github.com/nostr-protocol/nips/blob/master/66.md) relay check events (relay monitoring events published to Nostr relays), computes aggregated scores and state across multiple independent monitors, and serves the results as a REST API. Built on the ContextVM SDK for decentralized computation with MCP-over-Nostr integration — allowing AI agents to query relay intelligence via 21 MCP tools. OpenAPI documentation is available at `/docs` when the REST API is enabled.
+Relay state aggregation engine for the nostr-watch system. Ingests [NIP-66](https://github.com/nostr-protocol/nips/blob/master/66.md) relay check events (relay monitoring events published to Nostr relays) plus Trusted Relay Assertion events (kind `30385`), computes aggregated scores and state across multiple independent publishers, and serves the results as a REST API. Built on the ContextVM SDK for decentralized computation with MCP-over-Nostr integration — allowing AI agents to query relay intelligence via 21 MCP tools. OpenAPI documentation is available at `/docs` when the REST API is enabled.
 
 ## Prerequisites
 
@@ -22,6 +22,12 @@ Relay state aggregation engine for the nostr-watch system. Ingests [NIP-66](http
 |----------|----------|-------------|---------|
 | `CVM_RELAYS` | Yes (if CVM enabled) | Comma-separated relay URLs for ContextVM transport | `wss://relay.damus.io` |
 | `INGEST_RELAYS` | Yes | Comma-separated relay URLs for NIP-66 ingestion | `wss://history.nostr.watch` |
+| `TRA_ENABLED` | No | Enable Trusted Relay Assertion ingestion | `true` |
+| `TRA_RELAYS` | No | Comma-separated relay URLs for kind `30385` ingestion. Defaults to `INGEST_RELAYS` when omitted. | `wss://nos.lol,wss://relay.damus.io` |
+| `TRA_PUBKEYS` | No | Comma-separated assertion publisher pubkeys. Empty accepts any publisher. | `ad3cdbe9...` |
+| `STATE_DB_PATH` | No | Persistent state snapshot path | `/data/rstate-state.json` |
+| `STATE_BACKUP_DIR` | No | Backup directory for automatic pre-migration and pre-restore backups | `/backups` |
+| `STATE_BACKUP_RETENTION` | No | Maximum retained backups | `10` |
 | `CVM_SERVER_NSEC` | Yes (if CVM enabled) | Server private key for signing | `nsec1...` |
 | `REST_ENABLED` | No | Enable REST API | `true` |
 | `REST_PORT` | No | REST API port | `3000` |
@@ -75,6 +81,8 @@ When `REST_ENABLED=true`, the server exposes the following endpoint groups:
 
 Full endpoint reference is available in the OpenAPI documentation at `/docs`.
 
+Trusted Relay Assertion data is exposed through the existing relay state objects as `trustedRelay`; no dedicated TRA endpoints are added. Full relay responses include assertion publisher attribution in `trustedRelay.contributingAuthors`. Detailed/compact relay responses retain the aggregate values but omit publisher attribution. When a relay has no assertions, `trustedRelay` contains null aggregate fields and `note: "no_trusted_relay_assertions"`.
+
 ## Configuration
 
 Configuration uses YAML as the primary format with environment variable overrides. Set the config file path via `CONFIG_FILE` env var or `--config` CLI flag (defaults to `config.yaml`).
@@ -82,32 +90,64 @@ Configuration uses YAML as the primary format with environment variable override
 Key configuration sections:
 
 ```yaml
-server:
+cvm:
+  enabled: true
+  relays:
+    - wss://relay.damus.io
+  serverKey: 'nsec1...'
+
+rest:
+  enabled: true
   host: 127.0.0.1
   port: 3000
 
-cvm:
-  relays:
-    - wss://relay.damus.io
-  nsec: 'nsec1...'
+ingestRelays:
+  - wss://history.nostr.watch
 
-ingest:
+trustedRelayAssertions:
+  enabled: true
   relays:
-    - wss://history.nostr.watch
+    - wss://nos.lol
+    - wss://relay.damus.io
+    - wss://relay.primal.net
+  pubkeys:
+    - ad3cdbe9fb09b8edf7b3e0e5286d66e58b58eaa64d061bbcf3a935edf8abf421
+
+stateDatabase:
+  enabled: true
+  path: /data/rstate-state.json
+  backupDir: /backups
+  backupRetention: 10
 
 cache:
   maxSize: 10000
   ttlSeconds: 60
 
 aggregation:
-  lookbackSeconds: 21600  # 6 hours
   quorum: 0.5
+  labelQuorum: 0.3
+  madScale: 3.0
 
-logging:
+log:
+  enabled: true
   level: info
+  destination: stdout
 ```
 
 See `config.sample.yaml` for a complete example with all available options.
+
+## State Database and Backups
+
+rstate persists the current monitor, observation, and Trusted Relay Assertion inputs in a versioned JSON state database. On startup, schema migrations automatically create a backup in `STATE_BACKUP_DIR` before rewriting the state file. Backups are rotated to `STATE_BACKUP_RETENTION` files to avoid unbounded disk growth.
+
+Docker Compose mounts `/data` and `/backups` as named volumes, so the state database and backups survive container replacement:
+
+```sh
+docker compose exec cvm relayvm state:backups
+docker compose exec cvm relayvm state:restore /backups/<backup-file>.json
+```
+
+`state:restore` creates a pre-restore backup of the current database before replacing it with the selected backup.
 
 ## Known Limitations
 

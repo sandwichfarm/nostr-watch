@@ -16,6 +16,19 @@ export type LogDestination = 'stdout' | 'stderr' | 'file'
 
 export type PublishSchedule = 'hourly' | 'every30m' | 'every15m' | 'every5m'
 
+export interface TrustedRelayAssertionsConfig {
+  enabled: boolean
+  relays: string[]
+  pubkeys: string[]
+}
+
+export interface StateDatabaseConfig {
+  enabled: boolean
+  path: string
+  backupDir: string
+  backupRetention: number
+}
+
 export interface Config {
   // CVM Server (Optional - only required if CVM transport is enabled)
   cvm?: {
@@ -69,6 +82,12 @@ export interface Config {
 
   // Ingestion
   ingestRelays: string[]
+
+  // Trusted Relay Assertions (kind 30385)
+  trustedRelayAssertions: TrustedRelayAssertionsConfig
+
+  // Persistent state database and migration backups
+  stateDatabase: StateDatabaseConfig
 
   // Logging
   log: {
@@ -142,6 +161,16 @@ function validateRelayUrls(urls: string[]): void {
       throw new Error(`Invalid relay URL: ${url} - ${err}`)
     }
   }
+}
+
+function validatePubkeys(pubkeys: string[], env: string): string[] {
+  return pubkeys.map((pubkey) => {
+    const normalized = pubkey.trim().toLowerCase()
+    if (!/^[0-9a-f]{64}$/.test(normalized)) {
+      throw new Error(`${env} contains invalid pubkey: ${pubkey}`)
+    }
+    return normalized
+  })
 }
 
 /**
@@ -328,6 +357,17 @@ function buildEnvOverrides(): Record<string, unknown> {
   // Ingestion
   if (env.INGEST_RELAYS !== undefined) o.ingestRelays = parseList(env.INGEST_RELAYS)
 
+  // Trusted Relay Assertions
+  if (env.TRA_ENABLED !== undefined) o.traEnabled = env.TRA_ENABLED.toLowerCase() !== 'false'
+  if (env.TRA_RELAYS !== undefined) o.traRelays = parseList(env.TRA_RELAYS)
+  if (env.TRA_PUBKEYS !== undefined) o.traPubkeys = parseList(env.TRA_PUBKEYS)
+
+  // Persistent state database
+  if (env.STATE_DB_ENABLED !== undefined) o.stateDbEnabled = env.STATE_DB_ENABLED.toLowerCase() !== 'false'
+  if (env.STATE_DB_PATH !== undefined) o.stateDbPath = env.STATE_DB_PATH
+  if (env.STATE_BACKUP_DIR !== undefined) o.stateBackupDir = env.STATE_BACKUP_DIR
+  if (env.STATE_BACKUP_RETENTION !== undefined) o.stateBackupRetention = parseNumber(env.STATE_BACKUP_RETENTION, 10)
+
   // Log
   if (env.LOG_ENABLED !== undefined) o.logEnabled = env.LOG_ENABLED !== 'false'
   if (env.LOG_LEVEL !== undefined) o.logLevel = env.LOG_LEVEL
@@ -452,6 +492,42 @@ function buildConfigFromYaml(yaml: Record<string, unknown>, env: Record<string, 
     throw new Error('ingestRelays is required (array of wss:// URLs)')
   }
   validateRelayUrls(ingestRelays)
+
+  // --- Trusted Relay Assertions ---
+  const traYaml = ((yaml.trustedRelayAssertions ?? yaml.tra) ?? {}) as Record<string, unknown>
+  const traEnabled = env.traEnabled !== undefined
+    ? env.traEnabled as boolean
+    : toBool(traYaml.enabled, true)
+  const traRelays = (env.traRelays as string[] | undefined)
+    ?? toStringArray(traYaml.relays)
+    ?? ingestRelays
+  const traPubkeys = validatePubkeys(
+    (env.traPubkeys as string[] | undefined)
+      ?? toStringArray(traYaml.pubkeys)
+      ?? [],
+    'trustedRelayAssertions.pubkeys'
+  )
+  if (traEnabled) {
+    validateRelayUrls(traRelays)
+  }
+
+  // --- Persistent State Database ---
+  const stateDbYaml = ((yaml.stateDatabase ?? yaml.stateDb) ?? {}) as Record<string, unknown>
+  const stateDbEnabled = env.stateDbEnabled !== undefined
+    ? env.stateDbEnabled as boolean
+    : toBool(stateDbYaml.enabled, true)
+  const stateDbPath = (env.stateDbPath as string | undefined)
+    ?? (stateDbYaml.path as string | undefined)
+    ?? './data/rstate-state.json'
+  const stateBackupDir = (env.stateBackupDir as string | undefined)
+    ?? (stateDbYaml.backupDir as string | undefined)
+    ?? './data/backups'
+  const stateBackupRetention = env.stateBackupRetention !== undefined
+    ? env.stateBackupRetention as number
+    : toNumber(stateDbYaml.backupRetention, 10)
+  if (stateBackupRetention < 1) {
+    throw new Error('stateDatabase.backupRetention must be at least 1')
+  }
 
   // --- Logging ---
   const logYaml = (yaml.log ?? {}) as Record<string, unknown>
@@ -629,6 +705,17 @@ function buildConfigFromYaml(yaml: Record<string, unknown>, env: Record<string, 
       },
     },
     ingestRelays,
+    trustedRelayAssertions: {
+      enabled: traEnabled,
+      relays: traRelays,
+      pubkeys: traPubkeys,
+    },
+    stateDatabase: {
+      enabled: stateDbEnabled,
+      path: stateDbPath,
+      backupDir: stateBackupDir,
+      backupRetention: stateBackupRetention,
+    },
     log: {
       enabled: logEnabled,
       level: logLevel,
@@ -697,6 +784,23 @@ function buildConfigFromEnv(): Config {
     throw new Error('INGEST_RELAYS is required (comma-separated wss:// URLs)')
   }
   validateRelayUrls(ingestRelays)
+
+  // Trusted Relay Assertions
+  const traEnabled = (process.env.TRA_ENABLED ?? 'true').toLowerCase() !== 'false'
+  const traRelays = parseList(process.env.TRA_RELAYS, ingestRelays)
+  const traPubkeys = validatePubkeys(parseList(process.env.TRA_PUBKEYS), 'TRA_PUBKEYS')
+  if (traEnabled) {
+    validateRelayUrls(traRelays)
+  }
+
+  // Persistent state database
+  const stateDbEnabled = (process.env.STATE_DB_ENABLED ?? 'true').toLowerCase() !== 'false'
+  const stateDbPath = process.env.STATE_DB_PATH || './data/rstate-state.json'
+  const stateBackupDir = process.env.STATE_BACKUP_DIR || './data/backups'
+  const stateBackupRetention = parseNumber(process.env.STATE_BACKUP_RETENTION, 10)
+  if (stateBackupRetention < 1) {
+    throw new Error('STATE_BACKUP_RETENTION must be at least 1')
+  }
 
   // Logging
   const logEnabled = process.env.LOG_ENABLED !== 'false'
@@ -807,6 +911,17 @@ function buildConfigFromEnv(): Config {
       },
     },
     ingestRelays,
+    trustedRelayAssertions: {
+      enabled: traEnabled,
+      relays: traRelays,
+      pubkeys: traPubkeys,
+    },
+    stateDatabase: {
+      enabled: stateDbEnabled,
+      path: stateDbPath,
+      backupDir: stateBackupDir,
+      backupRetention: stateBackupRetention,
+    },
     log: {
       enabled: logEnabled,
       level: logLevel,

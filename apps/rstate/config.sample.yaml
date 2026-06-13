@@ -21,6 +21,21 @@ cvm:
 ingestRelays:
   - 'wss://history.nostr.watch'
 
+trustedRelayAssertions:
+  enabled: true
+  relays:
+    - 'wss://nos.lol'
+    - 'wss://relay.damus.io'
+    - 'wss://relay.primal.net'
+  pubkeys:
+    - 'ad3cdbe9fb09b8edf7b3e0e5286d66e58b58eaa64d061bbcf3a935edf8abf421'
+
+stateDatabase:
+  enabled: true
+  path: './data/rstate-state.json'
+  backupDir: './data/backups'
+  backupRetention: 10
+
 rest:
   enabled: false
   host: 127.0.0.1

@@ -22,6 +22,15 @@ services:
       # Relay configuration
       CVM_RELAYS: ${CVM_RELAYS}
       INGEST_RELAYS: ${INGEST_RELAYS}
+      TRA_ENABLED: ${TRA_ENABLED:-true}
+      TRA_RELAYS: ${TRA_RELAYS:-}
+      TRA_PUBKEYS: ${TRA_PUBKEYS:-}
+
+      # Persistent state database and automatic migration backups
+      STATE_DB_ENABLED: ${STATE_DB_ENABLED:-true}
+      STATE_DB_PATH: ${STATE_DB_PATH:-/data/rstate-state.json}
+      STATE_BACKUP_DIR: ${STATE_BACKUP_DIR:-/backups}
+      STATE_BACKUP_RETENTION: ${STATE_BACKUP_RETENTION:-10}
 
       # Aggregation policy
       AGG_LOOKBACK_SECONDS: ${AGG_LOOKBACK_SECONDS:-21600}
@@ -89,9 +98,16 @@ services:
     cap_drop:
       - ALL
     read_only: true
+    volumes:
+      - rstate-data:/data
+      - rstate-backups:/backups
     tmpfs:
       - /tmp
 
 networks:
   default:
     name: nostr-watch
+
+volumes:
+  rstate-data:
+  rstate-backups:

@@ -6,7 +6,7 @@
  * Detailed format includes full attribution data.
  */
 
-import type { RelayState, AggregatedValue } from './aggregation.js'
+import type { RelayState, AggregatedValue, TrustedRelayAggregate } from './aggregation.js'
 
 /**
  * Response shape level (three-level system)
@@ -20,6 +20,38 @@ export type ResponseShape = 'full' | 'detailed' | 'simple'
  * Compact aggregated value (no contributor attribution)
  */
 export type CompactAggregatedValue<T> = Omit<AggregatedValue<T>, 'contributingAuthors'>
+
+export type CompactTrustedRelayAggregate = Omit<
+  TrustedRelayAggregate,
+  | 'contributingAuthors'
+  | 'status'
+  | 'score'
+  | 'reliability'
+  | 'quality'
+  | 'accessibility'
+  | 'confidence'
+  | 'observations'
+  | 'policy'
+  | 'countryCode'
+  | 'network'
+  | 'isHosting'
+  | 'operatorTrust'
+  | 'operatorConfidence'
+> & {
+  status: CompactAggregatedValue<string> | null
+  score: (CompactAggregatedValue<number> & { mad?: number }) | null
+  reliability: (CompactAggregatedValue<number> & { mad?: number }) | null
+  quality: (CompactAggregatedValue<number> & { mad?: number }) | null
+  accessibility: (CompactAggregatedValue<number> & { mad?: number }) | null
+  confidence?: CompactAggregatedValue<string>
+  observations?: CompactAggregatedValue<number> & { mad?: number }
+  policy?: CompactAggregatedValue<string>
+  countryCode?: CompactAggregatedValue<string>
+  network?: CompactAggregatedValue<string>
+  isHosting?: CompactAggregatedValue<boolean>
+  operatorTrust?: CompactAggregatedValue<number> & { mad?: number }
+  operatorConfidence?: CompactAggregatedValue<number> & { mad?: number }
+}
 
 /**
  * Compact relay state (default response format)
@@ -59,6 +91,7 @@ export interface CompactRelayState {
   ipAddrs?: string[]
   country?: CompactAggregatedValue<string>
   nip11?: Record<string, any>
+  trustedRelay?: CompactTrustedRelayAggregate
 }
 
 /**
@@ -185,6 +218,10 @@ export function toCompact(state: RelayState): CompactRelayState {
     compact.nip11 = state.nip11
   }
 
+  if (state.trustedRelay) {
+    compact.trustedRelay = toCompactTrustedRelayAggregate(state.trustedRelay)
+  }
+
   // Country (remove contributingAuthors)
   if (state.country) {
     compact.country = {
@@ -199,6 +236,52 @@ export function toCompact(state: RelayState): CompactRelayState {
   }
 
   return compact as CompactRelayState
+}
+
+function compactAggregate<T>(value: AggregatedValue<T> | null | undefined): CompactAggregatedValue<T> | null | undefined {
+  if (value === null) return null
+  if (!value) return undefined
+  const compact: any = {
+    value: value.value,
+    support: value.support,
+    sampleSize: value.sampleSize,
+    lastUpdated: value.lastUpdated,
+  }
+  if (value.conflicts) compact.conflicts = value.conflicts
+  if ('mad' in value && typeof (value as any).mad === 'number') compact.mad = (value as any).mad
+  return compact
+}
+
+function toCompactTrustedRelayAggregate(aggregate: TrustedRelayAggregate): CompactTrustedRelayAggregate {
+  const compact: any = {
+    status: compactAggregate(aggregate.status),
+    score: compactAggregate(aggregate.score),
+    reliability: compactAggregate(aggregate.reliability),
+    quality: compactAggregate(aggregate.quality),
+    accessibility: compactAggregate(aggregate.accessibility),
+    assertionCount: aggregate.assertionCount,
+    publisherCount: aggregate.publisherCount,
+    lastUpdated: aggregate.lastUpdated,
+    note: aggregate.note,
+  }
+
+  for (const key of [
+    'confidence',
+    'observations',
+    'policy',
+    'countryCode',
+    'network',
+    'isHosting',
+    'operatorTrust',
+    'operatorConfidence',
+  ] as const) {
+    const value = compactAggregate(aggregate[key] as any)
+    if (value !== undefined) {
+      compact[key] = value
+    }
+  }
+
+  return compact as CompactTrustedRelayAggregate
 }
 
 /**

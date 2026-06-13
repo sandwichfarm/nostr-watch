@@ -46,7 +46,6 @@ export class ResilientRelayPool implements RelayPool {
   private relays: Relay[]
   private group: RelayGroup
   private subscriptions = new Map<string, TrackedSubscription>()
-  private isConnected = false
   private resubscribeDelayMs: number
   private reconnectDelayMs: number
 
@@ -73,13 +72,10 @@ export class ResilientRelayPool implements RelayPool {
   }
 
   async connect(): Promise<void> {
-    this.isConnected = true
     logger.info('ResilientRelayPool connected')
   }
 
   async disconnect(): Promise<void> {
-    this.isConnected = false
-
     // Tear down all tracked subscriptions
     for (const [_id, tracked] of this.subscriptions) {
       try {

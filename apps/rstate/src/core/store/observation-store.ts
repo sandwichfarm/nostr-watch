@@ -5,16 +5,24 @@
  * with de-duplication and window-based eviction
  */
 
-import type { RelayObservation, MonitorAnnouncement } from '../types/events.js'
+import type { RelayObservation, MonitorAnnouncement, TrustedRelayAssertion } from '../types/events.js'
 import type { AggregationPolicy } from '../types/aggregation.js'
 import { getLogger } from '../../utils/logger.js'
 
 const logger = getLogger().child({ module: 'observation-store' })
 
+export interface ObservationStoreSnapshot {
+  monitors: MonitorAnnouncement[]
+  observations: RelayObservation[]
+  trustedRelayAssertions: TrustedRelayAssertion[]
+}
 
 export class ObservationStore {
   // Observations: Map<relayUrl, Map<author, Observation[]>>
   private observations: Map<string, Map<string, RelayObservation[]>> = new Map()
+
+  // Trusted Relay Assertions: Map<relayUrl, Map<author, Assertion>>
+  private trustedRelayAssertions: Map<string, Map<string, TrustedRelayAssertion>> = new Map()
 
   // Monitors: Map<pubkey, MonitorAnnouncement>
   private monitors: Map<string, MonitorAnnouncement> = new Map()
@@ -23,11 +31,16 @@ export class ObservationStore {
   // Map<author, Map<relayUrl, eventId>>
   private replaceableTracking: Map<string, Map<string, string>> = new Map()
 
-  // Event ID set for de-duplication
-  private seenEventIds: Set<string> = new Set()
+  // Replaceable event tracking for 30385
+  // Map<author, Map<relayUrl, eventId>>
+  private trustedAssertionTracking: Map<string, Map<string, string>> = new Map()
+
+  // Event ID sets for de-duplication
+  private seenObservationEventIds: Set<string> = new Set()
+  private seenTrustedRelayAssertionEventIds: Set<string> = new Set()
 
   constructor(private policy: AggregationPolicy) {
-    logger.info('Observation store initialized')
+    logger.info({ windowStrategy: this.policy.windowStrategy }, 'Observation store initialized')
   }
 
   /**
@@ -43,7 +56,7 @@ export class ObservationStore {
    */
   addObservation(obs: RelayObservation): boolean {
     // Check if already seen
-    if (this.seenEventIds.has(obs.id)) {
+    if (this.seenObservationEventIds.has(obs.id)) {
       logger.debug({ eventId: obs.id }, 'Duplicate observation ignored')
       return false
     }
@@ -75,7 +88,7 @@ export class ObservationStore {
     }
 
     authorObs.push(obs)
-    this.seenEventIds.add(obs.id)
+    this.seenObservationEventIds.add(obs.id)
 
     logger.debug({
       relayUrl: obs.relayUrl,
@@ -99,7 +112,7 @@ export class ObservationStore {
     const index = authorObs.findIndex((obs) => obs.id === eventId)
     if (index >= 0) {
       authorObs.splice(index, 1)
-      this.seenEventIds.delete(eventId)
+      this.seenObservationEventIds.delete(eventId)
       logger.debug({ relayUrl, author: author.slice(0, 8), eventId }, 'Observation replaced')
     }
 
@@ -128,6 +141,60 @@ export class ObservationStore {
   }
 
   /**
+   * Add a trusted relay assertion
+   */
+  addTrustedRelayAssertion(assertion: TrustedRelayAssertion): boolean {
+    if (this.seenTrustedRelayAssertionEventIds.has(assertion.id)) {
+      logger.debug({ eventId: assertion.id }, 'Duplicate trusted relay assertion ignored')
+      return false
+    }
+
+    const authorTracking = this.trustedAssertionTracking.get(assertion.author) || new Map()
+    const existingEventId = authorTracking.get(assertion.relayUrl)
+
+    if (existingEventId) {
+      this.removeTrustedRelayAssertion(assertion.relayUrl, assertion.author, existingEventId)
+    }
+
+    authorTracking.set(assertion.relayUrl, assertion.id)
+    this.trustedAssertionTracking.set(assertion.author, authorTracking)
+
+    let relayMap = this.trustedRelayAssertions.get(assertion.relayUrl)
+    if (!relayMap) {
+      relayMap = new Map()
+      this.trustedRelayAssertions.set(assertion.relayUrl, relayMap)
+    }
+
+    relayMap.set(assertion.author, assertion)
+    this.seenTrustedRelayAssertionEventIds.add(assertion.id)
+
+    logger.debug({
+      relayUrl: assertion.relayUrl,
+      author: assertion.author.slice(0, 8),
+      eventId: assertion.id,
+    }, 'Trusted relay assertion added')
+
+    return true
+  }
+
+  private removeTrustedRelayAssertion(relayUrl: string, author: string, eventId: string): void {
+    const relayMap = this.trustedRelayAssertions.get(relayUrl)
+    if (!relayMap) return
+
+    const existing = relayMap.get(author)
+    if (existing?.id !== eventId) return
+
+    relayMap.delete(author)
+    this.seenTrustedRelayAssertionEventIds.delete(eventId)
+
+    if (relayMap.size === 0) {
+      this.trustedRelayAssertions.delete(relayUrl)
+    }
+
+    logger.debug({ relayUrl, author: author.slice(0, 8), eventId }, 'Trusted relay assertion replaced')
+  }
+
+  /**
    * Get all observations for a relay (returns all retained observations)
    */
   getObservations(relayUrl: string): RelayObservation[] {
@@ -148,7 +215,7 @@ export class ObservationStore {
   /**
    * Get observations for a relay from a specific author
    */
-  getObservationsByAuthor(relayUrl: string, author: string): RelayObservation[] {
+  getObservationsByAuthor(relayUrl: string, author: string, _now?: number): RelayObservation[] {
     const relayMap = this.observations.get(relayUrl)
     if (!relayMap) return []
 
@@ -163,6 +230,15 @@ export class ObservationStore {
    */
   getAllRelayUrls(): string[] {
     return Array.from(this.observations.keys())
+  }
+
+  /**
+   * Get trusted relay assertions for a relay
+   */
+  getTrustedRelayAssertions(relayUrl: string): TrustedRelayAssertion[] {
+    const relayMap = this.trustedRelayAssertions.get(relayUrl)
+    if (!relayMap) return []
+    return Array.from(relayMap.values())
   }
 
   /**
@@ -193,6 +269,71 @@ export class ObservationStore {
   }
 
   /**
+   * Get total trusted relay assertion count
+   */
+  getTrustedRelayAssertionCount(): number {
+    let count = 0
+    for (const relayMap of this.trustedRelayAssertions.values()) {
+      count += relayMap.size
+    }
+    return count
+  }
+
+  /**
+   * Export current retained store state for persistence.
+   */
+  exportSnapshot(): ObservationStoreSnapshot {
+    const observations: RelayObservation[] = []
+    for (const relayMap of this.observations.values()) {
+      for (const authorObs of relayMap.values()) {
+        observations.push(...authorObs)
+      }
+    }
+
+    const trustedRelayAssertions: TrustedRelayAssertion[] = []
+    for (const relayMap of this.trustedRelayAssertions.values()) {
+      trustedRelayAssertions.push(...relayMap.values())
+    }
+
+    return {
+      monitors: this.getAllMonitors(),
+      observations,
+      trustedRelayAssertions,
+    }
+  }
+
+  /**
+   * Replace store state from a persisted snapshot.
+   */
+  importSnapshot(snapshot: ObservationStoreSnapshot): void {
+    this.observations.clear()
+    this.trustedRelayAssertions.clear()
+    this.monitors.clear()
+    this.replaceableTracking.clear()
+    this.trustedAssertionTracking.clear()
+    this.seenObservationEventIds.clear()
+    this.seenTrustedRelayAssertionEventIds.clear()
+
+    for (const monitor of snapshot.monitors) {
+      this.addMonitor(monitor)
+    }
+
+    for (const observation of snapshot.observations) {
+      this.addObservation(observation)
+    }
+
+    for (const assertion of snapshot.trustedRelayAssertions) {
+      this.addTrustedRelayAssertion(assertion)
+    }
+
+    logger.info({
+      monitors: snapshot.monitors.length,
+      observations: snapshot.observations.length,
+      trustedRelayAssertions: snapshot.trustedRelayAssertions.length,
+    }, 'Observation store snapshot imported')
+  }
+
+  /**
    * Get dynamic retention seconds based on monitor frequencies.
    * Uses 3x the slowest monitor's frequency (floor 1h, fallback 24h when no monitors).
    */
@@ -217,7 +358,7 @@ export class ObservationStore {
         // Filter out old observations
         const filtered = authorObs.filter((obs) => {
           if (obs.created_at < cutoff) {
-            this.seenEventIds.delete(obs.id)
+            this.seenObservationEventIds.delete(obs.id)
             return false
           }
           return true
@@ -252,12 +393,16 @@ export class ObservationStore {
     monitorCount: number
     observationCount: number
     seenEventCount: number
+    trustedRelayAssertionCount: number
+    trustedRelayAssertionSeenEventCount: number
   } {
     return {
       relayCount: this.observations.size,
       monitorCount: this.monitors.size,
       observationCount: this.getObservationCount(),
-      seenEventCount: this.seenEventIds.size,
+      seenEventCount: this.seenObservationEventIds.size,
+      trustedRelayAssertionCount: this.getTrustedRelayAssertionCount(),
+      trustedRelayAssertionSeenEventCount: this.seenTrustedRelayAssertionEventIds.size,
     }
   }
 }

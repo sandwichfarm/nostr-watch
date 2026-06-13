@@ -10,7 +10,7 @@ import { loadPricedCapabilities } from './payments/cvm-pricing.js'
 import { ResilientRelayPool } from './resilient-relay-pool.js'
 import type { Config } from './config.js'
 import { getLogger } from './utils/logger.js'
-import { ToolRegistry, registerToolset, type TransportContext } from './mcp/tool-adapter.js'
+import { ToolRegistry, registerToolset } from './mcp/tool-adapter.js'
 import { createHealthTool } from './tools/health.js'
 import { initStateCore, type StateCore } from './core/index.js'
 import { IngestionService } from './services/ingestion.js'
@@ -24,6 +24,7 @@ import { SecurityService } from './services/security.js'
 import { MetricsService } from './services/metrics.js'
 import { QueryCache } from './services/cache.js'
 import { EventPublisherService } from './services/event-publisher.js'
+import { StateDatabaseService } from './services/state-database.js'
 import { DEFAULT_QUERY_SHAPE } from './utils/validation.js'
 import { verifyCriticalSchemas } from './utils/startup-checks.js'
 import {
@@ -71,12 +72,12 @@ export class CVMServer {
   private transportPool?: ResilientRelayPool
   private signer?: PrivateKeySigner
   private toolRegistry?: ToolRegistry
-  private _transportContext?: TransportContext
   // DISABLED: Subscription system
   // private notificationDelivery?: NotificationDeliveryService
 
   // Core components (always required)
   private ingestionPool: ResilientRelayPool
+  private trustedRelayPool?: ResilientRelayPool
   private startTime: number = Date.now()
 
   // Core services
@@ -94,6 +95,9 @@ export class CVMServer {
   // Event Publishing
   private eventPublisher?: EventPublisherService
 
+  // Persistent state
+  private stateDatabase?: StateDatabaseService
+
   // REST API
   private restServer?: RestServer
 
@@ -105,6 +109,13 @@ export class CVMServer {
 
     // Initialize ingestion pool (always required)
     this.ingestionPool = new ResilientRelayPool(config.ingestRelays)
+    if (
+      config.trustedRelayAssertions.enabled &&
+      config.trustedRelayAssertions.relays.length > 0 &&
+      JSON.stringify(config.trustedRelayAssertions.relays) !== JSON.stringify(config.ingestRelays)
+    ) {
+      this.trustedRelayPool = new ResilientRelayPool(config.trustedRelayAssertions.relays)
+    }
 
     // Initialize State Core (transport-agnostic)
     this.core = initStateCore({
@@ -126,7 +137,9 @@ export class CVMServer {
       this.ingestionPool,
       this.core,
       24 * 3600,  // 24 hour historical window
-      this.metrics  // Pass metrics for event recording
+      this.metrics,  // Pass metrics for event recording
+      config.trustedRelayAssertions,
+      this.trustedRelayPool
     )
     // DISABLED: Subscription system
     // this.subscriptionManager = new SubscriptionManager()
@@ -146,11 +159,18 @@ export class CVMServer {
       this.eventPublisher = new EventPublisherService(this.core, config.publishing)
     }
 
+    if (config.stateDatabase.enabled) {
+      this.stateDatabase = new StateDatabaseService(config.stateDatabase)
+    }
+
     logger.info({
       cvmEnabled: !!config.cvm?.enabled,
       restEnabled: config.rest.enabled,
       publishingEnabled: !!config.publishing?.enabled,
       ingestionRelays: config.ingestRelays.length,
+      trustedRelayAssertionsEnabled: config.trustedRelayAssertions.enabled,
+      trustedRelayAssertionRelays: config.trustedRelayAssertions.relays.length,
+      stateDatabaseEnabled: config.stateDatabase.enabled,
     }, 'RelayVM server initialized')
   }
 
@@ -176,11 +196,6 @@ export class CVMServer {
         getClientPubkey: () => this.toolRegistry!.getCurrentClientPubkey(),
       },
     })
-
-    // Store transport context reference for subscription tools
-    this._transportContext = {
-      getClientPubkey: () => this.toolRegistry!.getCurrentClientPubkey(),
-    }
 
     // Create MCP Server instance
     this.mcpServer = new Server(
@@ -534,6 +549,10 @@ export class CVMServer {
     logger.info('Starting RelayVM server')
 
     try {
+      if (this.stateDatabase) {
+        await this.stateDatabase.initialize(this.core)
+      }
+
       // Start CVM transport if enabled
       if (this.transport && this.mcpServer && this.signer) {
         const pubkey = await this.signer.getPublicKey()
@@ -639,8 +658,13 @@ export class CVMServer {
         logger.info('CVM transport closed')
       }
 
+      await this.persistState('shutdown')
+
       // Disconnect relay pools
       await this.ingestionPool.disconnect()
+      if (this.trustedRelayPool) {
+        await this.trustedRelayPool.disconnect()
+      }
       if (this.transportPool) {
         await this.transportPool.disconnect()
       }
@@ -662,6 +686,7 @@ export class CVMServer {
     const startTime = Date.now()
     this.core.computeAll()
     this.metrics.recordAggregation(Date.now() - startTime)
+    void this.persistState('initial-aggregation')
     this.ready = true
 
     // Set up periodic recomputation
@@ -688,6 +713,8 @@ export class CVMServer {
             logger.error({ err }, 'Error publishing events')
           )
         }
+
+        void this.persistState('periodic-aggregation')
 
         // DISABLED: Subscription system
         // const allStates = this.core.query.relays.getAll()
@@ -737,6 +764,16 @@ export class CVMServer {
 
   /** Get server readiness (first compute complete) */
   private getReady(): boolean { return this.ready }
+
+  private async persistState(reason: string): Promise<void> {
+    if (!this.stateDatabase) return
+    try {
+      await this.stateDatabase.save(this.core)
+      logger.debug({ reason }, 'State database saved')
+    } catch (err) {
+      logger.error({ err, reason }, 'Failed to save state database')
+    }
+  }
 
   // Readiness flag (true after first computeAll completes)
   private ready: boolean = false

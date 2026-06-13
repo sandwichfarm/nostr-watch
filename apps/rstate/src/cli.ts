@@ -35,6 +35,8 @@ Commands:
   config:show           Show current configuration (sanitized) [--config <path>]
   health                Check server health
   cache:stats           Show cache statistics
+  state:backups         List state database backups [--config <path>]
+  state:restore <path>  Restore state database from backup [--config <path>]
   relay:test <url>      Test relay connectivity
   key:generate          Generate a new nsec key pair
   version               Show version information
@@ -45,6 +47,8 @@ Examples:
   relayvm config:show
   relayvm health
   relayvm cache:stats
+  relayvm state:backups
+  relayvm state:restore /backups/rstate-state.json.pre-migration-v1-to-v2.2026-06-12T10-00-00-000Z.json
   relayvm relay:test wss://relay.damus.io
   relayvm key:generate
   relayvm version
@@ -94,6 +98,29 @@ async function validateConfig() {
           errors.push(`INGEST_RELAYS[${i}]: Invalid WebSocket URL: ${relay}`)
         }
       })
+    }
+
+    if (config.trustedRelayAssertions.enabled) {
+      if (!config.trustedRelayAssertions.relays || config.trustedRelayAssertions.relays.length === 0) {
+        errors.push('TRA_RELAYS must contain at least one relay when TRA_ENABLED=true')
+      }
+      config.trustedRelayAssertions.relays.forEach((relay, i) => {
+        if (!relay.startsWith('wss://') && !relay.startsWith('ws://')) {
+          errors.push(`TRA_RELAYS[${i}]: Invalid WebSocket URL: ${relay}`)
+        }
+      })
+    }
+
+    if (config.stateDatabase.enabled) {
+      if (!config.stateDatabase.path) {
+        errors.push('STATE_DB_PATH is required when STATE_DB_ENABLED=true')
+      }
+      if (!config.stateDatabase.backupDir) {
+        errors.push('STATE_BACKUP_DIR is required when STATE_DB_ENABLED=true')
+      }
+      if (config.stateDatabase.backupRetention < 1) {
+        errors.push(`STATE_BACKUP_RETENTION must be at least 1, got: ${config.stateDatabase.backupRetention}`)
+      }
     }
 
     // Check numeric ranges
@@ -146,6 +173,8 @@ async function validateConfig() {
         console.log(`  REST API: disabled`)
       }
       console.log(`  Ingestion relays: ${config.ingestRelays.length}`)
+      console.log(`  Trusted Relay Assertions: ${config.trustedRelayAssertions.enabled ? 'enabled' : 'disabled'} (${config.trustedRelayAssertions.pubkeys.length} pubkeys)`)
+      console.log(`  State database: ${config.stateDatabase.enabled ? config.stateDatabase.path : 'disabled'}`)
       console.log(`  Cache: ${config.cache.maxSize} entries, ${config.cache.ttlSeconds}s TTL`)
       return 0
     }
@@ -201,6 +230,19 @@ async function showConfig() {
     console.log('\nIngestion:')
     console.log(`  Relays (${config.ingestRelays.length}):`)
     config.ingestRelays.forEach(relay => console.log(`    - ${relay}`))
+
+    console.log('\nTrusted Relay Assertions:')
+    console.log(`  Enabled: ${config.trustedRelayAssertions.enabled}`)
+    console.log(`  Relays (${config.trustedRelayAssertions.relays.length}):`)
+    config.trustedRelayAssertions.relays.forEach(relay => console.log(`    - ${relay}`))
+    console.log(`  Provider Pubkeys (${config.trustedRelayAssertions.pubkeys.length}):`)
+    config.trustedRelayAssertions.pubkeys.forEach(pubkey => console.log(`    - ${pubkey}`))
+
+    console.log('\nState Database:')
+    console.log(`  Enabled: ${config.stateDatabase.enabled}`)
+    console.log(`  Path: ${config.stateDatabase.path}`)
+    console.log(`  Backup Dir: ${config.stateDatabase.backupDir}`)
+    console.log(`  Backup Retention: ${config.stateDatabase.backupRetention}`)
 
     console.log('\nAggregation Policy:')
     console.log(`  Quorum: ${config.aggregation.quorum}`)
@@ -306,6 +348,62 @@ async function showCacheStats() {
   } catch (err: unknown) {
     const error = err as Error
     console.log(`✗ Failed to connect: ${error.message}`)
+    return 1
+  }
+}
+
+async function listStateBackups() {
+  try {
+    const { getConfig } = await import('./config.js')
+    const { StateDatabaseService } = await import('./services/state-database.js')
+    const config = getConfig(parseConfigFlag())
+
+    if (!config.stateDatabase.enabled) {
+      console.log('State database is disabled.')
+      return 1
+    }
+
+    const database = new StateDatabaseService(config.stateDatabase)
+    const backups = await database.listBackups()
+
+    if (backups.length === 0) {
+      console.log(`No backups found in ${config.stateDatabase.backupDir}`)
+      return 0
+    }
+
+    console.log(`State database backups (${backups.length}):\n`)
+    backups.forEach((backup) => {
+      console.log(`${backup.createdAt}  ${backup.sizeBytes} bytes  ${backup.path}`)
+    })
+    return 0
+  } catch (err: unknown) {
+    const error = err as Error
+    console.log(`✗ Failed to list backups: ${error.message}`)
+    return 1
+  }
+}
+
+async function restoreStateBackup(backupPath: string) {
+  try {
+    const { getConfig } = await import('./config.js')
+    const { StateDatabaseService } = await import('./services/state-database.js')
+    const config = getConfig(parseConfigFlag())
+
+    if (!config.stateDatabase.enabled) {
+      console.log('State database is disabled.')
+      return 1
+    }
+
+    const database = new StateDatabaseService(config.stateDatabase)
+    const snapshot = await database.restoreFromBackup(backupPath)
+    console.log(`✓ Restored state database from ${backupPath}`)
+    console.log(`  Monitors: ${snapshot.monitors.length}`)
+    console.log(`  Observations: ${snapshot.observations.length}`)
+    console.log(`  Trusted Relay Assertions: ${snapshot.trustedRelayAssertions.length}`)
+    return 0
+  } catch (err: unknown) {
+    const error = err as Error
+    console.log(`✗ Failed to restore backup: ${error.message}`)
     return 1
   }
 }
@@ -549,6 +647,16 @@ async function main() {
 
       case 'cache:stats':
         return await showCacheStats()
+
+      case 'state:backups':
+        return await listStateBackups()
+
+      case 'state:restore':
+        if (args.length < 2) {
+          console.log('Usage: relayvm state:restore <backup-path> [--config <path>]')
+          return 1
+        }
+        return await restoreStateBackup(args[1])
 
       case 'relay:test':
         if (args.length < 2) {

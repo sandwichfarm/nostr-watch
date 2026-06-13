@@ -4,10 +4,16 @@
  * Subscribes to NIP-66 events and feeds them into the observation store
  */
 
-import type { NostrEvent } from '../types/events.js'
+import type { NostrEvent } from '../core/types/events.js'
 import type { RelayPool } from '../sdk-stubs.js'
 import type { StateCore } from '../core/index.js'
-import { parseMonitorAnnouncement, parseRelayObservation } from './normalization.js'
+import type { TrustedRelayAssertionsConfig } from '../config.js'
+import {
+  parseMonitorAnnouncement,
+  parseRelayObservation,
+  parseTrustedRelayAssertion,
+  TRUSTED_RELAY_ASSERTION_KIND,
+} from '../core/events/normalization.js'
 import { getLogger } from '../utils/logger.js'
 
 const logger = getLogger().child({ module: 'ingestion' })
@@ -23,9 +29,20 @@ export class IngestionService {
     private relayPool: RelayPool,
     private core: StateCore,
     private historicalWindowSeconds: number = 24 * 3600,  // 24 hours default
-    private metrics?: { recordEvent: (kind: number) => void }
+    private metrics?: { recordEvent: (kind: number) => void },
+    private trustedRelayAssertions: TrustedRelayAssertionsConfig = {
+      enabled: false,
+      relays: [],
+      pubkeys: [],
+    },
+    private trustedRelayPool?: RelayPool
   ) {
-    logger.info({ historicalWindowSeconds }, 'Ingestion service initialized')
+    logger.info({
+      historicalWindowSeconds,
+      trustedRelayAssertionsEnabled: trustedRelayAssertions.enabled,
+      trustedRelayAssertionPubkeys: trustedRelayAssertions.pubkeys.length,
+      trustedRelayAssertionRelays: trustedRelayAssertions.relays.length,
+    }, 'Ingestion service initialized')
   }
 
   /**
@@ -59,6 +76,17 @@ export class IngestionService {
       )
       this.subscriptions.push(observationSub)
       logger.info('Subscribed to kind 30166 (relay observations)')
+
+      if (this.trustedRelayAssertions.enabled) {
+        const assertionSub = this.getTrustedRelayPool().subscribe(
+          [this.trustedRelayAssertionFilter(1000)],
+          (event) => this.handleTrustedRelayAssertion(event)
+        )
+        this.subscriptions.push(assertionSub)
+        logger.info({
+          pubkeyFilterCount: this.trustedRelayAssertions.pubkeys.length,
+        }, 'Subscribed to kind 30385 (trusted relay assertions)')
+      }
 
       // Set up periodic eviction of old observations
       this.startEvictionTimer()
@@ -95,8 +123,22 @@ export class IngestionService {
         (event) => this.handleRelayObservation(event))
       totalFetched += observationCount
 
+      let trustedRelayAssertionCount = 0
+      if (this.trustedRelayAssertions.enabled) {
+        trustedRelayAssertionCount = await this.paginatedFetch(
+          TRUSTED_RELAY_ASSERTION_KIND,
+          since,
+          now,
+          pageSize,
+          (event) => this.handleTrustedRelayAssertion(event),
+          this.getTrustedRelayPool(),
+          this.trustedRelayAssertions.pubkeys
+        )
+        totalFetched += trustedRelayAssertionCount
+      }
+
       this.historicalCatchupComplete = true
-      logger.info({ totalFetched, monitorCount, observationCount }, 'Historical catchup complete')
+      logger.info({ totalFetched, monitorCount, observationCount, trustedRelayAssertionCount }, 'Historical catchup complete')
     } catch (err) {
       logger.error({ err }, 'Historical catchup failed')
       // Continue anyway - will get recent events from live subscription
@@ -111,7 +153,9 @@ export class IngestionService {
     since: number,
     until: number,
     pageSize: number,
-    handler: (event: NostrEvent) => void
+    handler: (event: NostrEvent) => void,
+    relayPool: RelayPool = this.relayPool,
+    authors?: string[]
   ): Promise<number> {
     let currentUntil = until
     let totalFetched = 0
@@ -137,13 +181,18 @@ export class IngestionService {
 
         try {
           // Subscribe and collect until EOSE
-          sub = this.relayPool.subscribe(
-            [{
+          const filter: Record<string, unknown> = {
               kinds: [kind],
               since,
               until: currentUntil,
               limit: pageSize,
-            }],
+            }
+          if (authors && authors.length > 0) {
+            filter.authors = authors
+          }
+
+          sub = relayPool.subscribe(
+            [filter],
             (event) => {
               events.push(event)
             },
@@ -250,6 +299,55 @@ export class IngestionService {
     } catch (err) {
       logger.error({ err, eventId: event.id }, 'Error processing relay observation')
     }
+  }
+
+  /**
+   * Handle trusted relay assertion event
+   */
+  private handleTrustedRelayAssertion(event: NostrEvent): void {
+    try {
+      this.metrics?.recordEvent(TRUSTED_RELAY_ASSERTION_KIND)
+
+      if (!this.isTrustedRelayAssertionAuthorAllowed(event.pubkey)) {
+        logger.debug({ author: event.pubkey.slice(0, 8) }, 'Trusted relay assertion ignored by pubkey allowlist')
+        return
+      }
+
+      const assertion = parseTrustedRelayAssertion(event)
+      if (assertion) {
+        this.core.ingest.trustedRelayAssertions([assertion])
+        this.eventCount++
+        this.lastEventTime = Date.now()
+        logger.debug({
+          relayUrl: assertion.relayUrl,
+          author: assertion.author.slice(0, 8),
+          status: assertion.status,
+          score: assertion.score,
+        }, 'Trusted relay assertion processed')
+      }
+    } catch (err) {
+      logger.error({ err, eventId: event.id }, 'Error processing trusted relay assertion')
+    }
+  }
+
+  private trustedRelayAssertionFilter(limit: number): Record<string, unknown> {
+    const filter: Record<string, unknown> = {
+      kinds: [TRUSTED_RELAY_ASSERTION_KIND],
+      limit,
+    }
+    if (this.trustedRelayAssertions.pubkeys.length > 0) {
+      filter.authors = this.trustedRelayAssertions.pubkeys
+    }
+    return filter
+  }
+
+  private isTrustedRelayAssertionAuthorAllowed(pubkey: string): boolean {
+    if (this.trustedRelayAssertions.pubkeys.length === 0) return true
+    return this.trustedRelayAssertions.pubkeys.includes(pubkey.toLowerCase())
+  }
+
+  private getTrustedRelayPool(): RelayPool {
+    return this.trustedRelayPool ?? this.relayPool
   }
 
   /**

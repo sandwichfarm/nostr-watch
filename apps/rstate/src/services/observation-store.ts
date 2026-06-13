@@ -27,7 +27,7 @@ export class ObservationStore {
   private seenEventIds: Set<string> = new Set()
 
   constructor(private policy: AggregationPolicy) {
-    logger.info('Observation store initialized')
+    logger.info({ windowStrategy: this.policy.windowStrategy }, 'Observation store initialized')
   }
 
   /**
@@ -140,7 +140,7 @@ export class ObservationStore {
   /**
    * Get observations for a relay from a specific author
    */
-  getObservationsByAuthor(relayUrl: string, author: string): RelayObservation[] {
+  getObservationsByAuthor(relayUrl: string, author: string, _now?: number): RelayObservation[] {
     const relayMap = this.observations.get(relayUrl)
     if (!relayMap) return []
 

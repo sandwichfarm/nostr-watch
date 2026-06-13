@@ -70,6 +70,27 @@ export interface ConflictInfo {
   authors: string[]
 }
 
+export interface TrustedRelayAggregate {
+  status: AggregatedValue<string> | null
+  score: (AggregatedValue<number> & { mad?: number }) | null
+  reliability: (AggregatedValue<number> & { mad?: number }) | null
+  quality: (AggregatedValue<number> & { mad?: number }) | null
+  accessibility: (AggregatedValue<number> & { mad?: number }) | null
+  confidence?: AggregatedValue<string>
+  observations?: AggregatedValue<number> & { mad?: number }
+  policy?: AggregatedValue<string>
+  countryCode?: AggregatedValue<string>
+  network?: AggregatedValue<string>
+  isHosting?: AggregatedValue<boolean>
+  operatorTrust?: AggregatedValue<number> & { mad?: number }
+  operatorConfidence?: AggregatedValue<number> & { mad?: number }
+  assertionCount: number
+  publisherCount: number
+  contributingAuthors: string[]
+  lastUpdated?: number
+  note?: string
+}
+
 /**
  * Aggregated relay state
  */
@@ -123,6 +144,9 @@ export interface RelayState {
 
   // NIP-11 info document (most-recent-wins from observations)
   nip11?: Record<string, any>
+
+  // Trusted Relay Assertions (kind 30385)
+  trustedRelay?: TrustedRelayAggregate
 
   // Meta
   updated_at: number

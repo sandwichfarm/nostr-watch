@@ -174,17 +174,6 @@ export async function runDaemon(config: Config): Promise<void> {
 
     const worker = new Worker(pubkey, queueManager, config, ignoreListSync);
 
-    // Drain remediation deletion queue now that config + keys + sync
-    // + worker are all wired. Deletions are published one-at-a-time
-    // via the normal deletion.ts pipeline; successfully OK'd entries
-    // are removed from the queue, failures are retried next startup.
-    try {
-      const { drainRemediationDeletionQueue } = await import("../utils/remediation.ts");
-      await drainRemediationDeletionQueue(config);
-    } catch (e) {
-      logger.error(`drainRemediationDeletionQueue failed: ${e}`);
-    }
-
     let seeder: RelaySeeder | undefined
     
     if(config?.relaymon?.seed) {
@@ -418,6 +407,16 @@ export async function runDaemon(config: Config): Promise<void> {
 
     // Run warmup before starting normal loops
     await runWarmup();
+
+    // Drain remediation deletion queue after warmup re-enables deletion
+    // publishing. Draining earlier makes deletion.ts return false before
+    // sending any kind:5 event, which leaves valid removals in the queue.
+    try {
+      const { drainRemediationDeletionQueue } = await import("../utils/remediation.ts");
+      await drainRemediationDeletionQueue(config);
+    } catch (e) {
+      logger.error(`drainRemediationDeletionQueue failed: ${e}`);
+    }
 
     // Auto-recover from retry poisoning (e.g. after prolonged proxy outage)
     // Only checks relays whose last known state was online=1 — dead relays

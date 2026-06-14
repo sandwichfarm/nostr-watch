@@ -200,6 +200,10 @@ export interface TrustedRelayAssertionsConfig {
   max_observations_per_relay?: number;
   publish_unreachable?: boolean;
   publish_blocked?: boolean;
+  // Minimum delay (ms) the background TRA processor yields the event loop
+  // between relays. TRA does synchronous SQLite work per relay; this keeps it
+  // off the check hot path so it cannot starve in-flight WebSocket checks.
+  processing_throttle_ms?: number;
   algorithm?: {
     version?: string;
     url?: string;
@@ -530,6 +534,17 @@ export function validateConfig(config: unknown): Config {
     } else if (typeof tra.publish_blocked !== "boolean") {
       throw new Error(
         "relaymon.trustedRelayAssertions.publish_blocked must be boolean",
+      );
+    }
+
+    if (tra.processing_throttle_ms === undefined) {
+      tra.processing_throttle_ms = 25;
+    } else if (
+      typeof tra.processing_throttle_ms !== "number" ||
+      tra.processing_throttle_ms < 0
+    ) {
+      throw new Error(
+        "relaymon.trustedRelayAssertions.processing_throttle_ms must be a non-negative number",
       );
     }
 

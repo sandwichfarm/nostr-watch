@@ -69,6 +69,19 @@ export class Worker {
   private warmupMode: boolean = false;
   private ignoreListSync: IgnoreListSync | null = null;
 
+  // Trusted Relay Assertion (kind 30385) work is deferred off the check hot
+  // path. recordTrustedRelayObservation + buildTrustedRelayAssertion do
+  // synchronous SQLite work (including a read-back of up to
+  // max_observations_per_relay history rows); running it inline on every check
+  // stalls Deno's single-threaded event loop and starves in-flight WebSocket
+  // checks. Instead, checks cheaply enqueue here and a throttled background
+  // processor drains the queue, yielding the loop between relays.
+  private traQueue: RelayCheckResult[] = [];
+  private traProcessorActive: boolean = false;
+  private traProcessorRunning: boolean = false;
+  private traQueueMax: number = 5000;
+  private traQueueDropped: number = 0;
+
   constructor(
     private pubkey: string,
     private queueManager: QueueManager,
@@ -340,7 +353,8 @@ export class Worker {
       );
       persistResult(dedupedResult);
 
-      this.publishTrustedRelayAssertion(dedupedResult);
+      // Defer TRA off the check hot path (see traQueue docs above).
+      this.enqueueTrustedRelayObservation(dedupedResult);
 
       if (wentOffline || isRetry) {
         this.logger.debug(
@@ -757,6 +771,109 @@ export class Worker {
           getErrorMessage(error)
         }`,
       );
+    }
+  }
+
+  /**
+   * Cheaply enqueue a check result for trusted relay assertion processing.
+   * Runs on the check hot path, so it must do NO blocking work — just a guard,
+   * a push, and (lazily) starting the background processor.
+   */
+  enqueueTrustedRelayObservation(result: RelayCheckResult): void {
+    const traConfig = this.config.relaymon.trustedRelayAssertions;
+    if (!traConfig?.enabled) {
+      return;
+    }
+
+    // Mirror publishTrustedRelayAssertion's gate so we don't queue work that
+    // would be skipped anyway.
+    if (result.ignore && !traConfig.publish_blocked) {
+      return;
+    }
+
+    if (this.traQueue.length >= this.traQueueMax) {
+      // Drop the oldest observation rather than grow unbounded. Losing a stale
+      // observation is preferable to memory pressure; warn periodically.
+      this.traQueue.shift();
+      this.traQueueDropped++;
+      if (this.traQueueDropped === 1 || this.traQueueDropped % 100 === 0) {
+        this.logger.warn(
+          `Trusted relay assertion queue full (${this.traQueueMax}); dropped ${this.traQueueDropped} oldest observation(s)`,
+        );
+      }
+    }
+
+    this.traQueue.push(result);
+    this.ensureTrustedRelayProcessor();
+  }
+
+  /** Lazily start the background TRA processor (idempotent). */
+  private ensureTrustedRelayProcessor(): void {
+    if (this.traProcessorActive) {
+      return;
+    }
+    this.traProcessorActive = true;
+    this.traProcessorRunning = true;
+    // Defer the loop to a macrotask so the first item's synchronous DB work
+    // never runs inside enqueue's (check hot path) call stack.
+    setTimeout(() => {
+      void this.runTrustedRelayProcessor();
+    }, 0);
+  }
+
+  /** Stop the background TRA processor (for shutdown / tests). */
+  stopTrustedRelayProcessor(): void {
+    this.traProcessorRunning = false;
+  }
+
+  private trustedRelayThrottleMs(): number {
+    const configured = this.config.relaymon.trustedRelayAssertions
+      ?.processing_throttle_ms;
+    return typeof configured === "number" && configured >= 0 ? configured : 25;
+  }
+
+  /**
+   * Background loop that drains the TRA queue one relay at a time, yielding the
+   * event loop after each so the synchronous per-relay DB work never sustains a
+   * block long enough to starve in-flight WebSocket checks.
+   */
+  private async runTrustedRelayProcessor(): Promise<void> {
+    const throttleMs = this.trustedRelayThrottleMs();
+    const idleMs = Math.max(throttleMs, 250);
+    while (this.traProcessorRunning) {
+      const processed = await this.processTrustedRelayQueueOnce();
+      await delay(processed ? throttleMs : idleMs);
+    }
+    this.traProcessorActive = false;
+  }
+
+  /**
+   * Process at most one queued observation. Returns true if an item was
+   * processed, false if the queue was empty. Exposed for deterministic testing.
+   */
+  async processTrustedRelayQueueOnce(): Promise<boolean> {
+    const result = this.traQueue.shift();
+    if (!result) {
+      return false;
+    }
+    try {
+      await this.publishTrustedRelayAssertion(result);
+    } catch (error: unknown) {
+      this.logger.error(
+        `Failed to process trusted relay assertion for ${result.url}: ${
+          getErrorMessage(error)
+        }`,
+      );
+    }
+    return true;
+  }
+
+  /** Drain the entire TRA queue (throttled). Useful for graceful shutdown. */
+  async flushTrustedRelayQueue(): Promise<void> {
+    const throttleMs = this.trustedRelayThrottleMs();
+    while (this.traQueue.length > 0) {
+      await this.processTrustedRelayQueueOnce();
+      if (throttleMs > 0) await delay(throttleMs);
     }
   }
 

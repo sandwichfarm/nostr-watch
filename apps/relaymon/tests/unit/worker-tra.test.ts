@@ -101,6 +101,119 @@ function createResult(
 }
 
 traWorkerTest(
+  "enqueueTrustedRelayObservation defers work off the check hot path",
+  async () => {
+    await ensureTestDB();
+
+    const originalNsec = Deno.env.get("RELAYMON_NSEC");
+    Deno.env.set("RELAYMON_NSEC", TEST_PRIVKEY);
+
+    try {
+      const config = createTestConfig();
+      const queueManager = new QueueManager(
+        config.queue?.workerConcurrency || 1,
+      );
+      const worker = new Worker(TEST_PUBKEY, queueManager, config);
+      const published: Array<{ kind: number; tags: string[][] }> = [];
+
+      (worker as unknown as {
+        trustedRelayPublisher: {
+          publishEvent: (
+            event: { kind: number; tags: string[][] },
+          ) => Promise<void>;
+        };
+      }).trustedRelayPublisher = {
+        publishEvent: async (event) => {
+          published.push(event);
+        },
+      };
+
+      const result = createResult({ url: "wss://relay.deferred.example" });
+      worker.enqueueTrustedRelayObservation(result);
+      // Prevent the lazily-started background loop from racing this test.
+      worker.stopTrustedRelayProcessor();
+
+      // Hot path must not publish synchronously: the work is queued, not run.
+      assertEquals(published.length, 0);
+      assertEquals(
+        (worker as unknown as { traQueue: unknown[] }).traQueue.length,
+        1,
+      );
+
+      // Draining the queue performs exactly the same publish as before.
+      const processed = await worker.processTrustedRelayQueueOnce();
+      assertEquals(processed, true);
+      await queueManager.waitEmpty([queueManager.publishQueue]);
+
+      assertEquals(published.length, 1);
+      assertEquals(published[0].kind, 30385);
+      assertEquals(
+        (worker as unknown as { traQueue: unknown[] }).traQueue.length,
+        0,
+      );
+    } finally {
+      if (originalNsec) {
+        Deno.env.set("RELAYMON_NSEC", originalNsec);
+      } else {
+        Deno.env.delete("RELAYMON_NSEC");
+      }
+    }
+  },
+);
+
+traWorkerTest(
+  "enqueueTrustedRelayObservation is a no-op when TRA is disabled",
+  async () => {
+    await ensureTestDB();
+
+    const config = createTestConfig();
+    config.relaymon.trustedRelayAssertions!.enabled = false;
+    const queueManager = new QueueManager(config.queue?.workerConcurrency || 1);
+    const worker = new Worker(TEST_PUBKEY, queueManager, config);
+
+    worker.enqueueTrustedRelayObservation(createResult());
+    worker.stopTrustedRelayProcessor();
+
+    assertEquals(
+      (worker as unknown as { traQueue: unknown[] }).traQueue.length,
+      0,
+    );
+  },
+);
+
+traWorkerTest(
+  "TRA queue caps memory by dropping oldest observations",
+  async () => {
+    await ensureTestDB();
+
+    const config = createTestConfig();
+    const queueManager = new QueueManager(config.queue?.workerConcurrency || 1);
+    const worker = new Worker(TEST_PUBKEY, queueManager, config);
+    // Keep the background loop from draining while we fill the queue.
+    worker.stopTrustedRelayProcessor();
+    (worker as unknown as { traProcessorActive: boolean }).traProcessorActive =
+      true;
+
+    const internals = worker as unknown as {
+      traQueue: RelayCheckResult[];
+      traQueueMax: number;
+    };
+    internals.traQueueMax = 5;
+
+    for (let i = 0; i < 12; i++) {
+      worker.enqueueTrustedRelayObservation(
+        createResult({ url: `wss://relay-${i}.example` }),
+      );
+    }
+
+    assertEquals(internals.traQueue.length, 5);
+    // Oldest dropped: the queue should hold the most recent 5 urls.
+    assertEquals(internals.traQueue[0].url, "wss://relay-7.example");
+    assertEquals(internals.traQueue[4].url, "wss://relay-11.example");
+  },
+);
+
+traWorkerTest(
   "Worker TRA publishing is not suppressed during warmup",
   async () => {
     await ensureTestDB();

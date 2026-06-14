@@ -8,18 +8,18 @@ import { getLogger } from "../utils/logger.ts";
 import { getExpiredRelays } from "npm:@nostrwatch/db";
 import { RetryManager } from "../utils/retryManager.ts";
 import {
-  checkDatabase,
-  checkSigning,
-  checkCheckQueue,
-  checkPublishQueue,
   checkCheckLoop,
+  checkCheckQueue,
+  checkDatabase,
+  checkPublishQueue,
+  checkSigning,
 } from "./checks.ts";
 import type {
+  ErrorEntry,
   HealthSnapshot,
   HealthState,
   HealthThresholds,
   HeartbeatTracker,
-  ErrorEntry,
 } from "./types.ts";
 import type { QueueManager } from "../utils/queueManager.ts";
 
@@ -104,7 +104,8 @@ export async function buildHealthSnapshot(options: {
       const networks = Array.isArray(cfg?.relaymon?.networks)
         ? cfg.relaymon.networks
         : ["clearnet"];
-      const retryCfg = Array.isArray(cfg?.relaymon?.retry?.expiry) && cfg.relaymon.retry.expiry.length > 0
+      const retryCfg = Array.isArray(cfg?.relaymon?.retry?.expiry) &&
+          cfg.relaymon.retry.expiry.length > 0
         ? cfg.relaymon.retry.expiry
         : [{ max: 999, delay: 60000 }];
       const retryMgr = new RetryManager(retryCfg);
@@ -112,18 +113,34 @@ export async function buildHealthSnapshot(options: {
       expiredWaiting = expired.length;
     }
   } catch (e) {
-    logger.debug(`Failed to compute expired relays count: ${e instanceof Error ? e.message : String(e)}`);
+    logger.debug(
+      `Failed to compute expired relays count: ${
+        e instanceof Error ? e.message : String(e)
+      }`,
+    );
   }
 
+  // Warmup is healthy activity: the monitor is intentionally saturating the
+  // check queue and working through the full backlog. Surface it so the checks
+  // don't report the live, actively-working monitor as DOWN/degraded.
+  const warmupActive = queueManager.warmupActive === true;
+
   // Run all checks in parallel
-  const [dbCheck, signingCheck, checkQueueCheck, publishQueueCheck, checkLoopCheck] =
-    await Promise.all([
-      checkDatabase(),
-      checkSigning(privkey),
-      Promise.resolve(checkCheckQueue(queueManager, thresholds)),
-      Promise.resolve(checkPublishQueue(queueManager, thresholds)),
-      Promise.resolve(checkCheckLoop(heartbeat, thresholds, expiredWaiting)),
-    ]);
+  const [
+    dbCheck,
+    signingCheck,
+    checkQueueCheck,
+    publishQueueCheck,
+    checkLoopCheck,
+  ] = await Promise.all([
+    checkDatabase(),
+    checkSigning(privkey),
+    Promise.resolve(checkCheckQueue(queueManager, thresholds)),
+    Promise.resolve(checkPublishQueue(queueManager, thresholds)),
+    Promise.resolve(
+      checkCheckLoop(heartbeat, thresholds, expiredWaiting, warmupActive),
+    ),
+  ]);
 
   // Get error counts
   const errorsLastMinute = errorTracker.getCount(60 * 1000);
@@ -185,27 +202,39 @@ export async function buildHealthSnapshot(options: {
 
   // Degraded conditions (if not already down)
   if (state !== "down") {
-    if (publishQueueCheck.status === "warn") {
-      state = "degraded";
-      reasons.push(`Publish queue: ${publishQueueCheck.message}`);
-    }
+    if (warmupActive) {
+      // While warming up, a saturated check queue, publish backlog and elevated
+      // error rate are all expected and must not drag the monitor to
+      // degraded/DOWN. Only a genuinely stalled check loop (warn) degrades.
+      if (checkLoopCheck.status === "warn") {
+        state = "degraded";
+        reasons.push(`Check loop: ${checkLoopCheck.message}`);
+      } else {
+        reasons.push("Warmup in progress");
+      }
+    } else {
+      if (publishQueueCheck.status === "warn") {
+        state = "degraded";
+        reasons.push(`Publish queue: ${publishQueueCheck.message}`);
+      }
 
-    if (checkLoopCheck.status === "warn") {
-      state = "degraded";
-      reasons.push(`Check loop: ${checkLoopCheck.message}`);
-    }
+      if (checkLoopCheck.status === "warn") {
+        state = "degraded";
+        reasons.push(`Check loop: ${checkLoopCheck.message}`);
+      }
 
-    if (checkQueueCheck.status === "warn") {
-      state = "degraded";
-      reasons.push(`Check queue: ${checkQueueCheck.message}`);
-    }
+      if (checkQueueCheck.status === "warn") {
+        state = "degraded";
+        reasons.push(`Check queue: ${checkQueueCheck.message}`);
+      }
 
-    // High error rate
-    if (errorsLastMinute > thresholds.errorRatePerMin) {
-      state = "degraded";
-      reasons.push(
-        `High error rate: ${errorsLastMinute} errors in last minute (threshold: ${thresholds.errorRatePerMin})`,
-      );
+      // High error rate
+      if (errorsLastMinute > thresholds.errorRatePerMin) {
+        state = "degraded";
+        reasons.push(
+          `High error rate: ${errorsLastMinute} errors in last minute (threshold: ${thresholds.errorRatePerMin})`,
+        );
+      }
     }
   }
 
@@ -231,7 +260,9 @@ export async function buildHealthSnapshot(options: {
     reasons,
   };
 
-  logger.debug(`Health snapshot: state=${state}, reasons=${reasons.join("; ")}`);
+  logger.debug(
+    `Health snapshot: state=${state}, reasons=${reasons.join("; ")}`,
+  );
 
   return snapshot;
 }

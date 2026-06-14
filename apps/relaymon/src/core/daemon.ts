@@ -11,12 +11,22 @@ import { hexToBytes } from "@noble/hashes/utils";
 import { tryNsecToHex } from "npm:@nostrwatch/utils";
 import { RetryManager } from "../utils/retryManager.ts";
 import { formatCompactStats, showStatus } from "./status.ts";
-import { deleteRelayCheckEvent, setDeletionPublishSuppressed } from "../utils/deletion.ts";
+import {
+  deleteRelayCheckEvent,
+  setDeletionPublishSuppressed,
+} from "../utils/deletion.ts";
 import { IgnoreListSync } from "../utils/IgnoreListSync.ts";
-import { setIgnoreListSync, reevaluateAllDeduplication } from "../utils/hostnames.ts";
+import {
+  reevaluateAllDeduplication,
+  setIgnoreListSync,
+} from "../utils/hostnames.ts";
 import { checkSigning } from "../health/index.ts";
 import { ErrorTracker } from "../health/index.ts";
-import { loadHealthAuthToken, loadKumaPushUrl, redactUrl } from "../health/index.ts";
+import {
+  loadHealthAuthToken,
+  loadKumaPushUrl,
+  redactUrl,
+} from "../health/index.ts";
 import { startHealthServer } from "../health/server.ts";
 import { startKumaPusher } from "../health/kuma.ts";
 import type { Config } from "../config/config.ts";
@@ -46,11 +56,16 @@ function parseInterval(interval: string): number {
   const unit = match[2];
 
   switch (unit) {
-    case 's': return value * 1000;
-    case 'm': return value * 60 * 1000;
-    case 'h': return value * 60 * 60 * 1000;
-    case 'd': return value * 24 * 60 * 60 * 1000;
-    default: throw new Error(`Unknown time unit: ${unit}`);
+    case "s":
+      return value * 1000;
+    case "m":
+      return value * 60 * 1000;
+    case "h":
+      return value * 60 * 60 * 1000;
+    case "d":
+      return value * 24 * 60 * 60 * 1000;
+    default:
+      throw new Error(`Unknown time unit: ${unit}`);
   }
 }
 
@@ -67,7 +82,7 @@ export async function runDaemon(config: Config): Promise<void> {
   if (config.logLevel) {
     setGlobalLogLevel(config.logLevel);
   }
-  
+
   const logger = getLogger("Daemon");
 
   // Set up global error handlers
@@ -95,12 +110,15 @@ export async function runDaemon(config: Config): Promise<void> {
   try {
     // Set concurrency based on CPU cores if not defined in config
     let concurrency = config?.queue?.workerConcurrency;
-    if (!concurrency || concurrency === 'auto') {
-      if(!concurrency){
-        logger.info(`Concurrency not specified in config: Using CPU cores-2: ${concurrency} threads`);
-      }
-      else {
-        logger.info(`Concurrency set to "auto": Using CPU cores-2: ${concurrency} threads`);
+    if (!concurrency || concurrency === "auto") {
+      if (!concurrency) {
+        logger.info(
+          `Concurrency not specified in config: Using CPU cores-2: ${concurrency} threads`,
+        );
+      } else {
+        logger.info(
+          `Concurrency set to "auto": Using CPU cores-2: ${concurrency} threads`,
+        );
       }
       // Get CPU cores and use cores-2 (min 1)
       const availableCores = navigator.hardwareConcurrency || 4; // Default to 4 if not available
@@ -110,7 +128,7 @@ export async function runDaemon(config: Config): Promise<void> {
     const queueManager = new QueueManager(
       concurrency,
       1,
-      config
+      config,
     );
 
     // Initialize ignore list sync
@@ -118,7 +136,7 @@ export async function runDaemon(config: Config): Promise<void> {
       ...(config?.publisher?.relays || []),
       "wss://purplepag.es",
       "wss://user.kindpag.es",
-      "wss://profiles.nostr1.com"
+      "wss://profiles.nostr1.com",
     ];
     const ignoreListSync = new IgnoreListSync(config, staticMetaRelays);
 
@@ -130,10 +148,14 @@ export async function runDaemon(config: Config): Promise<void> {
 
     if (ignoreListSync && config?.relaymon?.ignorelist?.enabled) {
       logger.info("Performing initial ignore list sync...");
-      await ignoreListSync.sync().catch((err) => logger.error(`Initial sync error: ${err.message}`));
+      await ignoreListSync.sync().catch((err) =>
+        logger.error(`Initial sync error: ${err.message}`)
+      );
       // Publish initial deletions on startup
       logger.info("Publishing initial NIP-09 deletions...");
-      await ignoreListSync.publishDeletions(getPrivateKey()).catch((err) => logger.error(`Initial deletions error: ${err.message}`));
+      await ignoreListSync.publishDeletions(getPrivateKey()).catch((err) =>
+        logger.error(`Initial deletions error: ${err.message}`)
+      );
     }
 
     // Move maybeAnnounce call after creating queueManager so we can pass it
@@ -156,93 +178,138 @@ export async function runDaemon(config: Config): Promise<void> {
             logger.error(`Signing self-test failed: ${signingCheck.message}`);
             logger.error(`Error: ${signingCheck.error}`);
             logger.error("Daemon will start but publish jobs will fail");
-            errorTracker.track(`Signing self-test failed: ${signingCheck.message}`, "daemon");
+            errorTracker.track(
+              `Signing self-test failed: ${signingCheck.message}`,
+              "daemon",
+            );
           } else {
             logger.info("Signing self-test passed");
           }
         }
       } catch (error) {
-        logger.warn(`Invalid RELAYMON_NSEC, cannot derive public key: ${error.message}`);
-        logger.warn("Daemon will start but publish jobs will fail and be counted as failures");
+        logger.warn(
+          `Invalid RELAYMON_NSEC, cannot derive public key: ${error.message}`,
+        );
+        logger.warn(
+          "Daemon will start but publish jobs will fail and be counted as failures",
+        );
         errorTracker.track(`Invalid RELAYMON_NSEC: ${error.message}`, "daemon");
       }
     } else {
       logger.warn("Missing or invalid RELAYMON_NSEC environment variable");
-      logger.warn("Daemon will start but publish jobs will fail and be counted as failures");
+      logger.warn(
+        "Daemon will start but publish jobs will fail and be counted as failures",
+      );
       errorTracker.track("Missing or invalid RELAYMON_NSEC", "daemon");
     }
 
     const worker = new Worker(pubkey, queueManager, config, ignoreListSync);
 
-    let seeder: RelaySeeder | undefined
-    
-    if(config?.relaymon?.seed) {
+    let seeder: RelaySeeder | undefined;
+
+    if (config?.relaymon?.seed) {
       seeder = new RelaySeeder({
         interval: config.relaymon.seed.interval,
         sources: config.relaymon.seed.sources,
         options: {
           ...config.relaymon.seed.options,
           allowedNetworks: config.relaymon.networks,
-          db: config.relaymon.seed.options.db || undefined
+          db: config.relaymon.seed.options.db || undefined,
         },
       });
     }
-    
+
     async function checkExpiredRelays() {
       // No longer need the local Set - we'll use QueueManager's tracking
       // const recentlyEnqueued = new Set<string>();
-      
+
       // Create a RetryManager instance with the same config as the worker
       const retryManager = new RetryManager(config.relaymon.retry.expiry);
-      
+
       while (true) {
         try {
-          logger.debug(`Checking for expired relays with expiry time: ${config.relaymon.checks.options.expires}`);
-          logger.debug(`Using networks: ${JSON.stringify(config.relaymon.networks)}`);
-          
+          logger.debug(
+            `Checking for expired relays with expiry time: ${config.relaymon.checks.options.expires}`,
+          );
+          logger.debug(
+            `Using networks: ${JSON.stringify(config.relaymon.networks)}`,
+          );
+
           // Pass the RetryManager to getExpiredRelays
           const expiredRelays = getExpiredRelays(
-            Math.round(config.relaymon.checks.options.expires/1000),
+            Math.round(config.relaymon.checks.options.expires / 1000),
             config.relaymon.networks,
-            retryManager
+            retryManager,
           );
-          logger.debug(`Found ${expiredRelays.length} expired relays in the DB (including retry backoff).`);
-          
+          logger.debug(
+            `Found ${expiredRelays.length} expired relays in the DB (including retry backoff).`,
+          );
+
           if (expiredRelays.length === 0) {
-            logger.debug(`No expired relays found. Waiting for ${config.relaymon.checks.options.interval} before checking again.`);
+            logger.debug(
+              `No expired relays found. Waiting for ${config.relaymon.checks.options.interval} before checking again.`,
+            );
             await delay(config.relaymon.checks.options.interval);
             continue;
           }
-          
+
           // Filter out relays that are already in the queue
-          const notAlreadyEnqueued = expiredRelays.filter(relay => !queueManager.isRelayEnqueued(relay));
-          logger.debug(`Filtered out ${expiredRelays.length - notAlreadyEnqueued.length} already enqueued relays.`);
-          
+          const notAlreadyEnqueued = expiredRelays.filter((relay) =>
+            !queueManager.isRelayEnqueued(relay)
+          );
+          logger.debug(
+            `Filtered out ${
+              expiredRelays.length - notAlreadyEnqueued.length
+            } already enqueued relays.`,
+          );
+
           let toEnqueue: string[] = [];
           const rawMax = config.relaymon.checks.options.max;
           // Coerce string numbers to actual numbers (e.g. YAML '50' vs 50)
-          const maxValue = typeof rawMax === "string" && /^\d+$/.test(rawMax.trim())
-            ? parseInt(rawMax.trim(), 10)
-            : rawMax;
+          const maxValue =
+            typeof rawMax === "string" && /^\d+$/.test(rawMax.trim())
+              ? parseInt(rawMax.trim(), 10)
+              : rawMax;
           if (typeof maxValue === "number") {
             toEnqueue = notAlreadyEnqueued.slice(0, maxValue);
-            logger.info(`Enqueuing ${toEnqueue.length} relays (numeric max: ${maxValue}) - ${formatCompactStats(queueManager)}`);
-          } else if (typeof maxValue === "string" && maxValue.trim().endsWith("%")) {
+            logger.info(
+              `Enqueuing ${toEnqueue.length} relays (numeric max: ${maxValue}) - ${
+                formatCompactStats(queueManager)
+              }`,
+            );
+          } else if (
+            typeof maxValue === "string" && maxValue.trim().endsWith("%")
+          ) {
             const percentage = parseFloat(maxValue) / 100;
             const count = Math.ceil(notAlreadyEnqueued.length * percentage);
             toEnqueue = notAlreadyEnqueued.slice(0, count);
-            logger.info(`Enqueuing ${toEnqueue.length} relays (percentage: ${maxValue}, count: ${count}) - ${formatCompactStats(queueManager)}`);
+            logger.info(
+              `Enqueuing ${toEnqueue.length} relays (percentage: ${maxValue}, count: ${count}) - ${
+                formatCompactStats(queueManager)
+              }`,
+            );
           } else {
             toEnqueue = notAlreadyEnqueued;
-            logger.info(`Enqueuing ${toEnqueue.length} expired relays - ${formatCompactStats(queueManager)}`);
+            logger.info(
+              `Enqueuing ${toEnqueue.length} expired relays - ${
+                formatCompactStats(queueManager)
+              }`,
+            );
           }
 
           // Add relays to queue
           for (const relay of toEnqueue) {
             //hotfixes
-            if(relay.includes("|")) {
-              logger.warn(`DEBUG: Skipping/Deleting relay ${relay} because it includes |`);
-              await deleteRelayCheckEvent(relay, "Skipping/Deleting relay because it includes |", config, queueManager);
+            if (relay.includes("|")) {
+              logger.warn(
+                `DEBUG: Skipping/Deleting relay ${relay} because it includes |`,
+              );
+              await deleteRelayCheckEvent(
+                relay,
+                "Skipping/Deleting relay because it includes |",
+                config,
+                queueManager,
+              );
               db.query("DELETE FROM relay_status WHERE url = ?", [relay]);
               continue;
             }
@@ -252,8 +319,13 @@ export async function runDaemon(config: Config): Promise<void> {
                 // Process the relay
                 await worker.processRelay(relay);
               } catch (error) {
-                logger.error(`Error processing relay ${relay}: ${error.message}`);
-                errorTracker.track(`Error processing relay ${relay}: ${error.message}`, "worker");
+                logger.error(
+                  `Error processing relay ${relay}: ${error.message}`,
+                );
+                errorTracker.track(
+                  `Error processing relay ${relay}: ${error.message}`,
+                  "worker",
+                );
               }
             }, relay); // Pass the relay URL to QueueManager
           }
@@ -261,12 +333,17 @@ export async function runDaemon(config: Config): Promise<void> {
           // Update heartbeat after enqueuing work
           heartbeatTracker.checkLoop = Date.now();
 
-          logger.info(`Waiting for ${config.relaymon.checks.options.interval} before checking for more expired relays`);
+          logger.info(
+            `Waiting for ${config.relaymon.checks.options.interval} before checking for more expired relays`,
+          );
           await delay(config.relaymon.checks.options.interval);
         } catch (error) {
           logger.error(`Error in checkExpiredRelays: ${error.message}`);
           logger.error(error.stack || "No stack trace available");
-          errorTracker.track(`Error in checkExpiredRelays: ${error.message}`, "daemon");
+          errorTracker.track(
+            `Error in checkExpiredRelays: ${error.message}`,
+            "daemon",
+          );
           // If there was an error, wait a bit before retrying
           await delay(30000); // Wait 30 seconds before retrying after an error
         }
@@ -276,7 +353,7 @@ export async function runDaemon(config: Config): Promise<void> {
     // Enable deletion publish suppression immediately to prevent any deletions during warmup
     setDeletionPublishSuppressed(true);
 
-    if(seeder) {
+    if (seeder) {
       // First run the seeder to populate the database
       logger.info("Starting seeder to populate database...");
       try {
@@ -287,8 +364,7 @@ export async function runDaemon(config: Config): Promise<void> {
         logger.error(seedError.stack || "No stack trace available");
         // Continue anyway- we might have partial results
       }
-    }
-    else {
+    } else {
       logger.info("No seeder found, skipping initial seeding.");
     }
 
@@ -304,7 +380,9 @@ export async function runDaemon(config: Config): Promise<void> {
         if (config.health.server.authEnabled) {
           authToken = await loadHealthAuthToken();
           if (!authToken) {
-            logger.warn("Health server auth enabled but no token configured (RELAYMON_HEALTH_AUTH_TOKEN)");
+            logger.warn(
+              "Health server auth enabled but no token configured (RELAYMON_HEALTH_AUTH_TOKEN)",
+            );
           }
         }
 
@@ -321,7 +399,10 @@ export async function runDaemon(config: Config): Promise<void> {
         );
       } catch (error) {
         logger.error(`Failed to start health server: ${error.message}`);
-        errorTracker.track(`Failed to start health server: ${error.message}`, "daemon");
+        errorTracker.track(
+          `Failed to start health server: ${error.message}`,
+          "daemon",
+        );
       }
     }
 
@@ -334,7 +415,9 @@ export async function runDaemon(config: Config): Promise<void> {
         const kumaPushUrl = await loadKumaPushUrl();
         if (!kumaPushUrl) {
           logger.error("Kuma pusher enabled but no push URL configured");
-          logger.error("Set RELAYMON_KUMA_PUSH_URL or RELAYMON_KUMA_BASE_URL + RELAYMON_KUMA_TOKEN");
+          logger.error(
+            "Set RELAYMON_KUMA_PUSH_URL or RELAYMON_KUMA_BASE_URL + RELAYMON_KUMA_TOKEN",
+          );
         } else {
           logger.info(`Kuma push URL configured: ${redactUrl(kumaPushUrl)}`);
 
@@ -352,7 +435,10 @@ export async function runDaemon(config: Config): Promise<void> {
         }
       } catch (error) {
         logger.error(`Failed to start Kuma pusher: ${error.message}`);
-        errorTracker.track(`Failed to start Kuma pusher: ${error.message}`, "daemon");
+        errorTracker.track(
+          `Failed to start Kuma pusher: ${error.message}`,
+          "daemon",
+        );
       }
     }
 
@@ -365,9 +451,12 @@ export async function runDaemon(config: Config): Promise<void> {
         heartbeatTracker.checkLoop = Date.now();
         while (true) {
           // Build network filter from config
-          const networks: string[] = Array.isArray(config.relaymon.networks) ? config.relaymon.networks : ["clearnet"];
-          const placeholders = networks.map(() => '?').join(',');
-          const query = `SELECT url FROM relay_status WHERE checked_at = -1 AND network IN (${placeholders})`;
+          const networks: string[] = Array.isArray(config.relaymon.networks)
+            ? config.relaymon.networks
+            : ["clearnet"];
+          const placeholders = networks.map(() => "?").join(",");
+          const query =
+            `SELECT url FROM relay_status WHERE checked_at = -1 AND network IN (${placeholders})`;
           const rows = db.query(query, networks);
           const urls: string[] = rows.map(([url]) => url as string);
 
@@ -381,12 +470,20 @@ export async function runDaemon(config: Config): Promise<void> {
           // Enqueue all unchecked relays
           for (const url of urls) {
             // Skip any malformed items defensively
-            if (typeof url !== 'string' || url.includes('|')) continue;
+            if (typeof url !== "string" || url.includes("|")) continue;
             queueManager.addCheckJob(async () => {
               try {
                 await worker.processRelay(url);
               } catch (error) {
-                logger.error(`Warmup error processing ${url}: ${error?.message || error}`);
+                logger.error(
+                  `Warmup error processing ${url}: ${error?.message || error}`,
+                );
+              } finally {
+                // Keep the check-loop heartbeat fresh as warmup makes progress.
+                // The batch drain can run far longer than checkIdleMs, so without
+                // a per-check bump the heartbeat goes stale and health reports
+                // the live monitor as DOWN.
+                heartbeatTracker.checkLoop = Date.now();
               }
             }, url);
           }
@@ -412,7 +509,9 @@ export async function runDaemon(config: Config): Promise<void> {
     // publishing. Draining earlier makes deletion.ts return false before
     // sending any kind:5 event, which leaves valid removals in the queue.
     try {
-      const { drainRemediationDeletionQueue } = await import("../utils/remediation.ts");
+      const { drainRemediationDeletionQueue } = await import(
+        "../utils/remediation.ts"
+      );
       await drainRemediationDeletionQueue(config);
     } catch (e) {
       logger.error(`drainRemediationDeletionQueue failed: ${e}`);
@@ -422,19 +521,25 @@ export async function runDaemon(config: Config): Promise<void> {
     // Only checks relays whose last known state was online=1 — dead relays
     // naturally accumulate high retries and should not trigger recovery.
     {
-      const networks: string[] = Array.isArray(config.relaymon.networks) ? config.relaymon.networks : ["clearnet"];
-      const placeholders = networks.map(() => '?').join(',');
+      const networks: string[] = Array.isArray(config.relaymon.networks)
+        ? config.relaymon.networks
+        : ["clearnet"];
+      const placeholders = networks.map(() => "?").join(",");
       const onlineResult = db.query(
-        `SELECT COUNT(*) FROM relay_status WHERE ignore = 0 AND online = 1 AND network IN (${placeholders})`, networks
+        `SELECT COUNT(*) FROM relay_status WHERE ignore = 0 AND online = 1 AND network IN (${placeholders})`,
+        networks,
       );
       const poisonedResult = db.query(
-        `SELECT COUNT(*) FROM relay_status WHERE ignore = 0 AND online = 1 AND retries > 7 AND network IN (${placeholders})`, networks
+        `SELECT COUNT(*) FROM relay_status WHERE ignore = 0 AND online = 1 AND retries > 7 AND network IN (${placeholders})`,
+        networks,
       );
       const onlineTotal = (onlineResult[0]?.[0] as number) || 0;
       const poisoned = (poisonedResult[0]?.[0] as number) || 0;
 
       if (onlineTotal > 0 && (poisoned / onlineTotal) > 0.5) {
-        logger.warn(`Retry poisoning detected: ${poisoned}/${onlineTotal} previously-online relays have retries > 7. Resetting all retries.`);
+        logger.warn(
+          `Retry poisoning detected: ${poisoned}/${onlineTotal} previously-online relays have retries > 7. Resetting all retries.`,
+        );
         db.query("UPDATE relay_status SET retries = 0");
       }
     }
@@ -442,11 +547,16 @@ export async function runDaemon(config: Config): Promise<void> {
     // Kickstart publishing immediately after warmup so we don't wait for expiry
     async function kickstartPublishing(): Promise<void> {
       try {
-        const networks: string[] = Array.isArray(config.relaymon.networks) ? config.relaymon.networks : ["clearnet"];
-        const placeholders = networks.map(() => '?').join(',');
-        const query = `SELECT url FROM relay_status WHERE network IN (${placeholders})`;
+        const networks: string[] = Array.isArray(config.relaymon.networks)
+          ? config.relaymon.networks
+          : ["clearnet"];
+        const placeholders = networks.map(() => "?").join(",");
+        const query =
+          `SELECT url FROM relay_status WHERE network IN (${placeholders})`;
         const rows = db.query(query, networks);
-        const allUrls: string[] = rows.map(([url]) => url as string).filter(u => typeof u === 'string' && !u.includes('|'));
+        const allUrls: string[] = rows.map(([url]) => url as string).filter(
+          (u) => typeof u === "string" && !u.includes("|"),
+        );
 
         if (allUrls.length === 0) {
           logger.info("Kickoff: no relays found to enqueue after warmup");
@@ -456,20 +566,29 @@ export async function runDaemon(config: Config): Promise<void> {
         let toEnqueue: string[] = [];
         const rawMax = config.relaymon.checks.options.max;
         // Coerce string numbers to actual numbers (e.g. YAML '50' vs 50)
-        const maxValue = typeof rawMax === "string" && /^\d+$/.test(rawMax.trim())
-          ? parseInt(rawMax.trim(), 10)
-          : rawMax;
+        const maxValue =
+          typeof rawMax === "string" && /^\d+$/.test(rawMax.trim())
+            ? parseInt(rawMax.trim(), 10)
+            : rawMax;
         if (typeof maxValue === "number") {
           toEnqueue = allUrls.slice(0, maxValue);
-          logger.info(`Kickoff: enqueuing ${toEnqueue.length} relays (numeric max: ${maxValue}) for immediate publishing`);
-        } else if (typeof maxValue === "string" && maxValue.trim().endsWith("%")) {
+          logger.info(
+            `Kickoff: enqueuing ${toEnqueue.length} relays (numeric max: ${maxValue}) for immediate publishing`,
+          );
+        } else if (
+          typeof maxValue === "string" && maxValue.trim().endsWith("%")
+        ) {
           const percentage = parseFloat(maxValue) / 100;
           const count = Math.ceil(allUrls.length * percentage);
           toEnqueue = allUrls.slice(0, count);
-          logger.info(`Kickoff: enqueuing ${toEnqueue.length} relays (percentage: ${maxValue}, count: ${count}) for immediate publishing`);
+          logger.info(
+            `Kickoff: enqueuing ${toEnqueue.length} relays (percentage: ${maxValue}, count: ${count}) for immediate publishing`,
+          );
         } else {
           toEnqueue = allUrls;
-          logger.info(`Kickoff: enqueuing ${toEnqueue.length} relays for immediate publishing`);
+          logger.info(
+            `Kickoff: enqueuing ${toEnqueue.length} relays for immediate publishing`,
+          );
         }
 
         for (const url of toEnqueue) {
@@ -477,7 +596,9 @@ export async function runDaemon(config: Config): Promise<void> {
             try {
               await worker.processRelay(url);
             } catch (error) {
-              logger.error(`Kickoff error processing ${url}: ${error?.message || error}`);
+              logger.error(
+                `Kickoff error processing ${url}: ${error?.message || error}`,
+              );
             }
           }, url);
         }
@@ -503,8 +624,12 @@ export async function runDaemon(config: Config): Promise<void> {
         try {
           await delay(intervalMs);
           logger.info("Running scheduled ignore list sync and publish...");
-          await ignoreListSync.sync().catch((err) => logger.error(`Sync error: ${err.message}`));
-          await ignoreListSync.publish(getPrivateKey()).catch((err) => logger.error(`Publish error: ${err.message}`));
+          await ignoreListSync.sync().catch((err) =>
+            logger.error(`Sync error: ${err.message}`)
+          );
+          await ignoreListSync.publish(getPrivateKey()).catch((err) =>
+            logger.error(`Publish error: ${err.message}`)
+          );
         } catch (error) {
           logger.error(`Error in runIgnoreListSync: ${error.message}`);
           await delay(60000); // Wait 1 minute before retrying
@@ -527,7 +652,9 @@ export async function runDaemon(config: Config): Promise<void> {
         try {
           await delay(intervalMs);
           logger.info("Running scheduled ignore list deletion publish...");
-          await ignoreListSync.publishDeletions(getPrivateKey()).catch((err) => logger.error(`Deletions error: ${err.message}`));
+          await ignoreListSync.publishDeletions(getPrivateKey()).catch((err) =>
+            logger.error(`Deletions error: ${err.message}`)
+          );
         } catch (error) {
           logger.error(`Error in runIgnoreListDeletions: ${error.message}`);
           await delay(60000); // Wait 1 minute before retrying
@@ -537,8 +664,10 @@ export async function runDaemon(config: Config): Promise<void> {
 
     // Schedule deduplication re-evaluation
     async function runDedupReevaluation() {
-      const interval = config?.relaymon?.deduplication?.reevaluation_interval || "24h";
-      const nip11CacheTtl = config?.relaymon?.deduplication?.nip11_cache_ttl || "24h";
+      const interval = config?.relaymon?.deduplication?.reevaluation_interval ||
+        "24h";
+      const nip11CacheTtl = config?.relaymon?.deduplication?.nip11_cache_ttl ||
+        "24h";
       const intervalMs = parseInterval(interval);
       const ttlMs = parseInterval(nip11CacheTtl);
       logger.info(`Scheduling deduplication re-evaluation every ${interval}`);
@@ -548,15 +677,23 @@ export async function runDaemon(config: Config): Promise<void> {
         try {
           await delay(intervalMs);
           logger.info("Running scheduled deduplication re-evaluation...");
-          const changedRelays = await reevaluateAllDeduplication(ttlMs).catch((err) => {
-            logger.error(`Re-evaluation error: ${err.message}`);
-            return [];
-          });
+          const changedRelays = await reevaluateAllDeduplication(ttlMs).catch(
+            (err) => {
+              logger.error(`Re-evaluation error: ${err.message}`);
+              return [];
+            },
+          );
           if (changedRelays && changedRelays.length > 0) {
-            logger.info(`Re-evaluation changed ${changedRelays.length} relay(s) ignore status`);
+            logger.info(
+              `Re-evaluation changed ${changedRelays.length} relay(s) ignore status`,
+            );
             // Publish deletions for newly ignored relays
             if (ignoreListSync) {
-              await ignoreListSync.publishDeletions(getPrivateKey()).catch((err) => logger.error(`Deletions after re-eval error: ${err.message}`));
+              await ignoreListSync.publishDeletions(getPrivateKey()).catch((
+                err,
+              ) =>
+                logger.error(`Deletions after re-eval error: ${err.message}`)
+              );
             }
           }
         } catch (error) {
@@ -569,11 +706,14 @@ export async function runDaemon(config: Config): Promise<void> {
     // Schedule re-evaluation of fake-relay ignored relays
     async function runIgnoredRelayReevaluation() {
       if (!config?.relaymon?.ignorelist?.enabled) {
-        logger.debug("IgnoreListSync is disabled, skipping ignored relay re-evaluation");
+        logger.debug(
+          "IgnoreListSync is disabled, skipping ignored relay re-evaluation",
+        );
         return;
       }
 
-      const interval = config.relaymon.ignorelist.reevaluation_interval || "24h";
+      const interval = config.relaymon.ignorelist.reevaluation_interval ||
+        "24h";
       const intervalMs = parseInterval(interval);
       logger.info(`Scheduling ignored relay re-evaluation every ${interval}`);
 
@@ -582,13 +722,17 @@ export async function runDaemon(config: Config): Promise<void> {
           await delay(intervalMs);
           logger.info("Running scheduled ignored relay re-evaluation...");
 
-          const fakeRelays = getIgnoredRelaysByReason("does not speak nostr protocol");
+          const fakeRelays = getIgnoredRelaysByReason(
+            "does not speak nostr protocol",
+          );
           if (fakeRelays.length === 0) {
             logger.info("No fake-relay-ignored relays to re-evaluate");
             continue;
           }
 
-          logger.info(`Re-evaluating ${fakeRelays.length} fake-relay-ignored relays`);
+          logger.info(
+            `Re-evaluating ${fakeRelays.length} fake-relay-ignored relays`,
+          );
           let unignoredCount = 0;
 
           for (const { url } of fakeRelays) {
@@ -599,51 +743,57 @@ export async function runDaemon(config: Config): Promise<void> {
           }
 
           if (unignoredCount > 0) {
-            logger.info(`Unignored ${unignoredCount} relay(s) that are no longer fake — republishing block list`);
+            logger.info(
+              `Unignored ${unignoredCount} relay(s) that are no longer fake — republishing block list`,
+            );
             await ignoreListSync.publish(getPrivateKey()).catch((err) =>
               logger.error(`Publish after re-evaluation error: ${err.message}`)
             );
           } else {
-            logger.info("All fake-relay-ignored relays still fail protocol check");
+            logger.info(
+              "All fake-relay-ignored relays still fail protocol check",
+            );
           }
         } catch (error) {
-          logger.error(`Error in runIgnoredRelayReevaluation: ${error.message}`);
+          logger.error(
+            `Error in runIgnoredRelayReevaluation: ${error.message}`,
+          );
           await delay(60000);
         }
       }
     }
 
-    const tasks: Promise<void>[] = []
+    const tasks: Promise<void>[] = [];
 
-    if(seeder) {
+    if (seeder) {
       tasks.push(
-        seeder.start().catch(error => {
+        seeder.start().catch((error) => {
           logger.error(`Seeder process error: ${error.message}`);
           logger.error(error.stack || "No stack trace available");
           // Keep running - we'll just have a failed seeder
-        })
-      )
+        }),
+      );
     }
 
     tasks.push(
-      checkExpiredRelays().catch(error => {
+      checkExpiredRelays().catch((error) => {
         logger.error(`Check process error: ${error.message}`);
         logger.error(error.stack || "No stack trace available");
         // This shouldn't happen due to the try/catch inside checkExpiredRelays
-      })
-    )
+      }),
+    );
 
     // Add scheduled tasks
     if (config?.relaymon?.ignorelist?.enabled) {
       tasks.push(
-        runIgnoreListSync().catch(error => {
+        runIgnoreListSync().catch((error) => {
           logger.error(`Ignore list sync process error: ${error.message}`);
-        })
+        }),
       );
       tasks.push(
-        runIgnoreListDeletions().catch(error => {
+        runIgnoreListDeletions().catch((error) => {
           logger.error(`Ignore list deletions process error: ${error.message}`);
-        })
+        }),
       );
     }
 
@@ -658,14 +808,16 @@ export async function runDaemon(config: Config): Promise<void> {
 
     if (config?.relaymon?.ignorelist?.enabled) {
       tasks.push(
-        runIgnoredRelayReevaluation().catch(error => {
-          logger.error(`Ignored relay re-evaluation process error: ${error.message}`);
-        })
+        runIgnoredRelayReevaluation().catch((error) => {
+          logger.error(
+            `Ignored relay re-evaluation process error: ${error.message}`,
+          );
+        }),
       );
     }
 
     showStatus(queueManager);
-    
+
     // Then start both processes in parallel, with individual error handling
     await Promise.all(tasks);
   } catch (error) {

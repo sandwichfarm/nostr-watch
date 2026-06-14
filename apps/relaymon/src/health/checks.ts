@@ -10,9 +10,13 @@
 
 import { getLogger } from "../utils/logger.ts";
 import { db } from "npm:@nostrwatch/db";
-import { getPublicKey, finalizeEvent } from "npm:nostr-tools";
+import { finalizeEvent, getPublicKey } from "npm:nostr-tools";
 import { hexToBytes } from "@noble/hashes/utils";
-import type { HealthCheck, HealthThresholds, HeartbeatTracker } from "./types.ts";
+import type {
+  HealthCheck,
+  HealthThresholds,
+  HeartbeatTracker,
+} from "./types.ts";
 import type { QueueManager } from "../utils/queueManager.ts";
 
 const logger = getLogger("HealthChecks");
@@ -76,7 +80,9 @@ export async function checkDatabase(): Promise<HealthCheck> {
  * @param privkey - Private key (hex format)
  * @returns Health check result
  */
-export async function checkSigning(privkey: string | undefined): Promise<HealthCheck> {
+export async function checkSigning(
+  privkey: string | undefined,
+): Promise<HealthCheck> {
   if (!privkey || privkey.trim() === "") {
     return {
       name: "signing",
@@ -228,7 +234,8 @@ export function checkPublishQueue(
       return {
         name: "publishQueue",
         status: "warn",
-        message: `Publish backlog high (${pending} > ${thresholds.publishBacklogMax})`,
+        message:
+          `Publish backlog high (${pending} > ${thresholds.publishBacklogMax})`,
         data: {
           pending,
           published: stats.published,
@@ -245,7 +252,9 @@ export function checkPublishQueue(
       return {
         name: "publishQueue",
         status: "warn",
-        message: `Low publish success rate (${(stats.successRate * 100).toFixed(1)}%)`,
+        message: `Low publish success rate (${
+          (stats.successRate * 100).toFixed(1)
+        }%)`,
         data: {
           pending,
           published: stats.published,
@@ -295,6 +304,7 @@ export function checkCheckLoop(
   heartbeat: HeartbeatTracker,
   thresholds: HealthThresholds,
   expiredRelaysCount?: number,
+  warmupActive?: boolean,
 ): HealthCheck {
   const now = Date.now();
 
@@ -313,6 +323,47 @@ export function checkCheckLoop(
     };
   }
 
+  // During warmup the monitor intentionally works through the entire
+  // unchecked/expired backlog, so "expired relays waiting" is expected and must
+  // NOT be read as a stalled loop (which would report the live, actively-working
+  // monitor as DOWN to Kuma). Treat warmup as healthy while the loop shows
+  // progress (a heartbeat within the idle threshold). Only a genuinely hung
+  // warmup (no heartbeat past the threshold) degrades to "warn" — never a hard
+  // "fail"/DOWN.
+  if (warmupActive) {
+    const sinceHeartbeat = heartbeat.checkLoop
+      ? now - heartbeat.checkLoop
+      : undefined;
+    if (
+      sinceHeartbeat === undefined || sinceHeartbeat <= thresholds.checkIdleMs
+    ) {
+      return {
+        name: "checkLoop",
+        status: "pass",
+        message: "Warmup in progress",
+        data: {
+          warmup: true,
+          timeSinceHeartbeatMs: sinceHeartbeat,
+          expiredRelaysWaiting: expiredRelaysCount || 0,
+        },
+        timestamp: new Date().toISOString(),
+      };
+    }
+    return {
+      name: "checkLoop",
+      status: "warn",
+      message: `Warmup heartbeat stale for ${
+        (sinceHeartbeat / 1000).toFixed(0)
+      }s`,
+      data: {
+        warmup: true,
+        timeSinceHeartbeatMs: sinceHeartbeat,
+        thresholdMs: thresholds.checkIdleMs,
+      },
+      timestamp: new Date().toISOString(),
+    };
+  }
+
   // If we've never seen a heartbeat after grace period
   if (!heartbeat.checkLoop) {
     // Only fail if there is work waiting; otherwise it's fine to be idle
@@ -320,7 +371,8 @@ export function checkCheckLoop(
       return {
         name: "checkLoop",
         status: "fail",
-        message: `Check loop never started with ${expiredRelaysCount} expired relays waiting`,
+        message:
+          `Check loop never started with ${expiredRelaysCount} expired relays waiting`,
         data: {
           uptimeMs: uptime,
           expiredRelaysWaiting: expiredRelaysCount,
@@ -350,7 +402,8 @@ export function checkCheckLoop(
       return {
         name: "checkLoop",
         status: "fail",
-        message: `Check loop stalled with ${expiredRelaysCount} expired relays waiting`,
+        message:
+          `Check loop stalled with ${expiredRelaysCount} expired relays waiting`,
         data: {
           timeSinceHeartbeatMs: timeSinceHeartbeat,
           thresholdMs: thresholds.checkIdleMs,

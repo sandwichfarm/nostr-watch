@@ -121,12 +121,9 @@ export interface KumaConfig {
   /** Message verbosity: "summary" or "detailed" */
   msgVerbosity: "summary" | "detailed";
   /**
-   * Maximum exponential-backoff multiplier applied to `intervalMs` between
-   * push attempts after consecutive failures. A heartbeat must keep firing
-   * near its interval so a transient connectivity blip cannot keep the monitor
-   * reported DOWN long after recovery. Optional; defaults to a small value
-   * (see DEFAULT_MAX_BACKOFF_MULTIPLIER in kuma.ts). Set to 1 to disable
-   * backoff entirely (always push at ~intervalMs).
+   * Max backoff multiplier on `intervalMs` between push attempts after
+   * failures (default DEFAULT_MAX_BACKOFF_MULTIPLIER in kuma.ts; 1 disables
+   * backoff). Keeps the heartbeat firing near its interval.
    */
   maxBackoffMultiplier?: number;
 }

@@ -1,18 +1,8 @@
 /**
- * M2 — Self-healing offline dedup remediation.
- *
- * The Phase 20 remediation migration is scoped `WHERE online = 1 AND ignore =
- * 0`, so the offline path-spam backlog (root + dozens of NATO-word paths, all
- * offline, all ignore=0 — the production failure) is never cleared in bulk; it
- * only converges at per-relay retry-backoff speed. This migration re-runs the
- * dynamic dedup over ALL unignored rows (online AND offline), using only stored
- * NIP-11 (no network), so the backlog clears at boot.
- *
- * Contract (mirrors the dynamic dedup):
- *   - offline spam path with no NIP-11 + a root sibling => ignored (parent=root)
- *   - offline path with DISTINCT cached NIP-11 from root => kept
- *   - root => never ignored
- *   - idempotent (sentinel-guarded)
+ * Offline-inclusive dedup remediation: re-dedups all unignored rows (online +
+ * offline) from stored NIP-11 so the offline backlog clears at boot.
+ * No-NIP-11 spam path with a root sibling => ignored onto root; distinct-NIP-11
+ * path => kept; root => never ignored; sentinel-guarded idempotent.
  */
 
 import { assert, assertEquals } from "https://deno.land/std@0.218.2/assert/mod.ts";

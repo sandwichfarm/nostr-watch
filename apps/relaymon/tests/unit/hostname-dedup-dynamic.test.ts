@@ -1,26 +1,8 @@
 /**
- * Dynamic hostname deduplication tests (M1)
- *
- * Encodes the intended, PURELY DYNAMIC dedup contract (no static allow/deny
- * override lists):
- *
- *   - The canonical relay for a hostname is its root ("/"), weighted to win.
- *     When no root is known, the shortest sibling is the canonical.
- *   - A path-bearing relay survives as DISTINCT iff its NIP-11 proves different
- *     functionality from the canonical (different normalized NIP-11 hash).
- *   - A path relay that cannot prove different functionality — no NIP-11, or
- *     NIP-11 identical to the canonical — loses to the canonical and is ignored
- *     (parent = canonical). This is the spam case (NATO-word path segments on a
- *     real hostname that the relay does not actually serve distinctly).
- *   - The family is derived from ALL known siblings in relay_status
- *     (online AND offline) — NOT online-only — so an offline/unseeded root still
- *     wins. This is the production failure: relay.29t.com root + dozens of
- *     /<nato-word> paths were all offline and none were ever deduped.
- *   - Dedup is O(family): it must not read NIP-11 for every online relay in the
- *     DB (the O(N) per-check event-loop staller).
- *
- * These tests are written RED-first against the legacy online-only +
- * shortest-wins-without-NIP-11 + static-override implementation.
+ * Dynamic hostname deduplication contract (no static allow/deny lists):
+ * canonical = root else shortest; family = all siblings (online + offline) so
+ * an offline root still wins; a path is kept only if its NIP-11 proves distinct
+ * functionality, else ignored onto the canonical; NIP-11 reads are O(family).
  */
 
 import { assert, assertEquals } from "https://deno.land/std@0.218.2/assert/mod.ts";
@@ -93,13 +75,8 @@ function dynTest(name: string, fn: () => void | Promise<void>) {
   Deno.test({ name, sanitizeResources: false, sanitizeOps: false, fn });
 }
 
-// ---------------------------------------------------------------------------
-// T1 — CORE BUG: a path relay with DISTINCT NIP-11 must be KEPT even when its
-// root sibling is offline and there are no online siblings. Legacy code hits
-// the online-empty "defensive-deny" branch and ignores it purely because the
-// root is a shorter sibling — without comparing NIP-11. That is the
-// "root-always-wins shortcut" the redesign must remove.
-// ---------------------------------------------------------------------------
+// A distinct-NIP-11 path must survive even when its only sibling (the root) is
+// offline — the case the old online-only/shortest-wins logic got wrong.
 dynTest("dynamic: distinct-NIP-11 path is KEPT when root is offline (no static override)", async () => {
   seed([
     { url: "wss://multi.example.com/", online: false, info: infoFor("root-relay") },
@@ -113,9 +90,6 @@ dynTest("dynamic: distinct-NIP-11 path is KEPT when root is offline (no static o
   assertEquals(out.ignore, false, "distinct-functionality path must survive");
 });
 
-// ---------------------------------------------------------------------------
-// T2 — spam path with NO NIP-11 loses to an OFFLINE root (production case).
-// ---------------------------------------------------------------------------
 dynTest("dynamic: offline no-NIP-11 spam path is IGNORED in favor of offline root", async () => {
   seed([
     { url: "wss://relay.29t.com/", online: false, info: null },
@@ -127,9 +101,6 @@ dynTest("dynamic: offline no-NIP-11 spam path is IGNORED in favor of offline roo
   assertEquals(out.parent, "wss://relay.29t.com/", "parent should be the canonical root");
 });
 
-// ---------------------------------------------------------------------------
-// T3 — path whose NIP-11 is IDENTICAL to the root loses to the root.
-// ---------------------------------------------------------------------------
 dynTest("dynamic: path with same NIP-11 as root is IGNORED", async () => {
   seed([
     { url: "wss://mirror.example.com/", online: false, info: infoFor("same") },
@@ -144,9 +115,6 @@ dynTest("dynamic: path with same NIP-11 as root is IGNORED", async () => {
   assertEquals(out.parent, "wss://mirror.example.com/");
 });
 
-// ---------------------------------------------------------------------------
-// T4 — the root itself is NEVER ignored by hostname dedup.
-// ---------------------------------------------------------------------------
 dynTest("dynamic: root URL is never ignored even amid many spam paths", async () => {
   seed([
     { url: "wss://relay.29t.com/", online: true, info: infoFor("root") },
@@ -158,10 +126,6 @@ dynTest("dynamic: root URL is never ignored even amid many spam paths", async ()
   assertEquals(out.ignore, false, "root is the canonical and must never be ignored");
 });
 
-// ---------------------------------------------------------------------------
-// T5 — many offline spam paths on one offline hostname ALL get ignored,
-// converging onto the single root canonical.
-// ---------------------------------------------------------------------------
 dynTest("dynamic: all offline spam paths converge onto the offline root", async () => {
   const paths = [
     "wss://qubestr.zenon.red/victor",
@@ -180,12 +144,8 @@ dynTest("dynamic: all offline spam paths converge onto the offline root", async 
   }
 });
 
-// ---------------------------------------------------------------------------
-// T6 — O(family): dedup must not read NIP-11 for every online relay in the DB.
-// Seed many unrelated online relays + a tiny target family and assert the
-// number of relay_info reads stays bounded by the family size, not the whole
-// online set. Legacy `online.map(getRelayInfo)` reads N => fails here.
-// ---------------------------------------------------------------------------
+// Many unrelated online relays + a tiny target family: relay_info reads must
+// stay bounded by family size, not the whole online set.
 dynTest("dynamic: dedup reads NIP-11 O(family), not O(all online relays)", async () => {
   const unrelated: SeedRow[] = [];
   for (let i = 0; i < 60; i++) {

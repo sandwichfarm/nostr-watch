@@ -155,46 +155,27 @@ export function createInfoHash(infoData: RelayInfo | Record<string, unknown> | n
   }
 }
 
-/**
- * Phase 20 PERF-02: optional context passed by callers that want to
- * pre-compute expensive dependencies (like the online-relays snapshot) once
- * per batch and inject it into each per-row dedup call. When omitted, the
- * function falls back to its Phase 19 behavior of computing the dependency
- * itself per call — back-compat for existing single-URL call sites.
- */
+/** Accepted for caller back-compat; unused by the current dynamic dedup. */
 export interface DedupContext {
-  /**
-   * Pre-cached list of online relay URLs (equivalent to the return value
-   * of `getOnlineRelays()`). When provided, the dedup function uses this
-   * snapshot instead of making a fresh DB query. Accepted shape is string[];
-   * pre-grouped Map is a deferred optimization per 20-CONTEXT.md.
-   */
   onlineUrls?: string[];
 }
 
 /**
- * Performs PURELY DYNAMIC hostname deduplication on a relay result.
+ * Dynamic hostname deduplication for a relay check result. No hardcoded
+ * host/path lists.
  *
- * Contract (no static allow/deny lists):
- *   1. Cross-hostname identical-NIP-11 collapse runs first (relays on different
- *      hostnames serving the exact same NIP-11 fingerprint dedupe to the
- *      shortest/root form).
- *   2. Within a hostname, the canonical relay is the root ("/"), weighted to
- *      win; if no root is known, the shortest sibling is the canonical. The
- *      family is built from ALL known siblings in relay_status (online AND
- *      offline) so an offline or never-seeded root still wins.
- *   3. A path-bearing relay survives as DISTINCT iff its NIP-11 proves
- *      different functionality from the canonical. A path that cannot prove
- *      itself — no NIP-11, or NIP-11 identical to the canonical — loses to the
- *      canonical and is ignored (parent = canonical). This is what neutralizes
- *      path-segment spam (NATO-word paths a relay does not serve distinctly)
- *      while preserving genuinely-distinct path relays (e.g. lang.relays.land/en)
- *      WITHOUT any hardcoded host/path list.
+ * 1. Relays on different hostnames serving identical NIP-11 collapse to the
+ *    shortest/root form.
+ * 2. Within a hostname the canonical is the root ("/"), else the shortest
+ *    sibling. The family is drawn from ALL known siblings (online and offline)
+ *    so an offline or unseeded root still wins.
+ * 3. A path is kept only when its NIP-11 proves different functionality from
+ *    the canonical; with no NIP-11, or NIP-11 equal to the canonical, it is
+ *    ignored with parent = canonical. This drops path spam while preserving
+ *    genuinely distinct path relays (e.g. lang.relays.land/en).
  *
- * Performance: NIP-11 is read only for the chosen canonical (and the URL under
- * check) — O(family), never the O(N) sweep over every online relay that
- * previously stalled Deno's event loop. `ctx` is accepted for call-site
- * back-compat but is no longer needed by the within-hostname path.
+ * NIP-11 is read only for the canonical (and the URL under check): O(family),
+ * not O(online).
  */
 export const relayHostnameDedup = async (
   result: RelayCheckResult,
@@ -305,24 +286,8 @@ export const relayHostnameDedup = async (
       }
     }
 
-    // ── Dynamic within-hostname deduplication ──────────────────────────────
-    //
-    // The canonical relay for a hostname is its root ("/"), weighted to win.
-    // When no root is known, the shortest sibling is the canonical. A
-    // path-bearing relay survives as DISTINCT only if its NIP-11 proves
-    // different functionality from the canonical (different normalized hash).
-    // A path that cannot prove different functionality — no NIP-11, or NIP-11
-    // identical to the canonical — loses to the canonical and is ignored.
-    //
-    // The family is derived from ALL known siblings in relay_status (online
-    // AND offline) so an offline/never-seeded root still wins. NIP-11 is read
-    // only for the chosen canonical (and, when absent on the fresh result, for
-    // the URL under check) — O(family), never the O(N) sweep over every online
-    // relay that previously stalled Deno's event loop.
-    logger.debug(`Processing dynamic hostname dedup for: ${mURL}`);
-
-    // The root is the canonical for its hostname and is never ignored by
-    // hostname dedup. (Cross-hostname same-NIP-11 handling already ran above.)
+    // Within-hostname dedup (see function doc). The root is the canonical and
+    // is never ignored here.
     if (isRootUrl(canonicalMURL)) {
       result.ignore = false;
       result.parent = "";
@@ -347,9 +312,8 @@ export const relayHostnameDedup = async (
       return result;
     }
 
-    // Canonical = a root sibling if one exists, else the shortest URL
-    // (deterministic lexical tiebreak). Self is included in the ranking so a
-    // shorter self is never ignored in favour of a longer sibling.
+    // Root sibling wins, else shortest. Self is included so a shorter self is
+    // never ignored in favour of a longer sibling.
     const ranked = [...family, canonicalMURL].sort((a, b) => {
       if (a.length !== b.length) return a.length - b.length;
       return a < b ? -1 : a > b ? 1 : 0;
@@ -364,9 +328,8 @@ export const relayHostnameDedup = async (
       return result;
     }
 
-    // Functionality fingerprints. Self prefers the fresh result's NIP-11, then
-    // falls back to stored relay_info; canonical reads from stored relay_info
-    // so an offline canonical still contributes its last-known fingerprint.
+    // Canonical reads NIP-11 from stored relay_info so an offline canonical
+    // still contributes its last-known fingerprint.
     const selfInfo =
       (result?.info?.data && Object.keys(result.info.data).length > 0)
         ? result.info.data
@@ -374,12 +337,10 @@ export const relayHostnameDedup = async (
     const selfHash = createInfoHash(selfInfo);
     const canonicalHash = createInfoHash(getRelayInfo(canonical)?.info ?? null);
 
-    // A path proves different functionality only when it presents its own
-    // NIP-11 AND that NIP-11 differs from the canonical's. When the canonical
-    // has no fingerprint to merge into but the path does, the path keeps its
-    // own identity (we cannot assert they are the same relay). A path with no
-    // NIP-11 can never prove itself and loses to the canonical
-    // (pessimistic-on-missing-NIP-11).
+    // Distinct only if the path has its own NIP-11 that differs from the
+    // canonical. Caveat: if the canonical has no fingerprint but the path does,
+    // we keep the path (cannot assert they are the same relay). No NIP-11 at
+    // all always loses to the canonical.
     const provesDistinctFunctionality =
       selfHash !== "" && (canonicalHash === "" || selfHash !== canonicalHash);
 

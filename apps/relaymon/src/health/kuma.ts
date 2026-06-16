@@ -13,13 +13,9 @@ import type { QueueManager } from "../utils/queueManager.ts";
 
 const logger = getLogger("KumaPusher");
 
-/**
- * Default cap on the exponential-backoff multiplier for the heartbeat push.
- * A heartbeat must keep firing near its configured interval; the legacy cap of
- * 16 let the wait grow to ~32 min at a 2 min interval, which kept the monitor
- * reported DOWN long after a transient connectivity blip recovered (it resets
- * only on a successful push). 4 keeps the worst-case wait to 4× the interval.
- */
+// Cap on the heartbeat push backoff multiplier. A heartbeat must keep firing
+// near its interval (backoff resets only on a successful push), so worst-case
+// wait stays at 4× the interval rather than ballooning during an outage.
 const DEFAULT_MAX_BACKOFF_MULTIPLIER = 4;
 
 /**
@@ -104,10 +100,7 @@ export class KumaPusher {
   private calculateWaitTime(): number {
     const baseInterval = this.config.intervalMs;
 
-    // Apply exponential backoff on failures, capped LOW so the heartbeat keeps
-    // firing near its interval. A transient push failure (e.g. an IPv6
-    // connection-refused blip) must not stretch the next heartbeat far past
-    // Kuma's expectation, or the monitor stays DOWN long after recovery.
+    // Exponential backoff on failures, capped (see DEFAULT_MAX_BACKOFF_MULTIPLIER).
     const cap = typeof this.config.maxBackoffMultiplier === "number" &&
         this.config.maxBackoffMultiplier >= 1
       ? this.config.maxBackoffMultiplier

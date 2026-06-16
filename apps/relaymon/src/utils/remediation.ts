@@ -262,18 +262,13 @@ export async function rerunDedupForAllRowsMigration(): Promise<void> {
   }
 }
 
-// M2: offline-inclusive remediation. The Phase 20 migration above is scoped
-// to online+unignored rows, which leaves the offline path-spam backlog (root +
-// dozens of NATO-word paths, all offline, ignore=0) to converge only at
-// per-relay retry-backoff speed. This migration re-runs the dynamic dedup over
-// ALL unignored rows (online AND offline) using only stored NIP-11 (no
-// network), so the backlog clears once at boot. Separate sentinel so it is
-// additive to (not a replacement for) the Phase 20 migration and does not
-// disturb its online-only-scope tests.
+// Offline-inclusive companion to rerunDedupForAllRowsMigration (which is scoped
+// online+unignored): re-dedups ALL unignored rows so the offline backlog clears
+// at boot rather than only at per-relay backoff. Separate sentinel keeps it
+// additive.
 const ALL_UNIGNORED_MIGRATION_NAME = "rerun_dedup_all_unignored_v1";
 
-// Yield the event loop every YIELD_EVERY rows so a large (~30k) startup scan
-// cannot sustain a synchronous block long enough to starve other startup work.
+// Yield the loop every N rows so a large (~30k) scan can't block startup.
 const YIELD_EVERY = 500;
 
 /**

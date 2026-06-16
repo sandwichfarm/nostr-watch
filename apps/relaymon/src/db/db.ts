@@ -208,27 +208,18 @@ export async function initializeDB(
     logger.error(`rehashRelayInfoMigration threw: ${e}`);
   }
 
-  // M2: re-run the (now dynamic, NIP-11-functionality-based, O(family)) dedup
-  // over EVERY unignored row — online AND offline — so the existing
-  // mislabelled backlog self-heals at boot instead of converging only at
-  // per-relay retry-backoff speed. This supersedes the Phase 22 disable: the
-  // old interference with the NATO purge no longer applies because the dynamic
-  // dedup ignores path-spam structurally (no NIP-11 / same NIP-11 as the
-  // canonical) rather than fighting the heuristic word-ban. Pure DB (uses
-  // stored NIP-11 only, no network); idempotent via its own sentinel; yields
-  // the event loop in batches. MUST run AFTER rehashRelayInfoMigration so it
-  // sees stable hashes, and completes BEFORE the daemon constructs
-  // IgnoreListSync. Newly-ignored rows are queued for kind:5 deletion and
-  // drained by the daemon after wiring.
+  // Re-dedup every unignored row (online + offline) so the existing mislabelled
+  // backlog self-heals at boot. MUST run after rehashRelayInfoMigration (stable
+  // hashes) and before IgnoreListSync is constructed. Newly-ignored rows are
+  // queued for kind:5 deletion and drained by the daemon after wiring.
   try {
     await rerunDedupAllUnignoredMigration();
   } catch (e) {
     logger.error(`rerunDedupAllUnignoredMigration threw: ${e}`);
   }
 
-  // The Phase 20 online-only remediation (rerunDedupForAllRowsMigration) is
-  // retained but remains unused at boot: rerunDedupAllUnignoredMigration above
-  // is a strict superset of its scope. Kept importable for its targeted tests.
+  // rerunDedupForAllRowsMigration (online-only scope) is a subset of the above
+  // and no longer run at boot; kept importable for its targeted tests.
   void rerunDedupForAllRowsMigration;
 
   // Nostrings sweep: re-run @nostrwatch/nostrings qualification over

@@ -1,16 +1,7 @@
 /**
- * M3 — KumaPusher heartbeat backoff resilience.
- *
- * Production evidence: the monitor computed health=up but its push to the
- * Uptime-Kuma endpoint flapped with TCP "Connection refused" (container IPv6
- * routing). The legacy backoff `Math.min(2^failures, 16)` let the wait between
- * heartbeats grow to 16× the interval (~32 min at intervalMs=2m), reset only
- * on a successful push — so a transient blip kept the monitor reported DOWN on
- * status.nostr.watch long after connectivity recovered.
- *
- * A heartbeat must keep firing near its configured interval. The wait between
- * attempts must stay bounded by a small multiple of intervalMs regardless of
- * how many consecutive failures have accrued.
+ * KumaPusher heartbeat backoff stays bounded: the wait between push attempts
+ * must remain a small multiple of intervalMs no matter how many consecutive
+ * failures accrue, so a transient blip can't keep the monitor reported DOWN.
  */
 
 import { assert } from "https://deno.land/std@0.218.2/assert/mod.ts";

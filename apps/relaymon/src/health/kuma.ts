@@ -13,6 +13,11 @@ import type { QueueManager } from "../utils/queueManager.ts";
 
 const logger = getLogger("KumaPusher");
 
+// Cap on the heartbeat push backoff multiplier. A heartbeat must keep firing
+// near its interval (backoff resets only on a successful push), so worst-case
+// wait stays at 4× the interval rather than ballooning during an outage.
+const DEFAULT_MAX_BACKOFF_MULTIPLIER = 4;
+
 /**
  * Kuma push context
  */
@@ -95,8 +100,12 @@ export class KumaPusher {
   private calculateWaitTime(): number {
     const baseInterval = this.config.intervalMs;
 
-    // Apply exponential backoff on failures
-    const backoffMultiplier = Math.min(Math.pow(2, this.failureCount), 16); // Max 16x
+    // Exponential backoff on failures, capped (see DEFAULT_MAX_BACKOFF_MULTIPLIER).
+    const cap = typeof this.config.maxBackoffMultiplier === "number" &&
+        this.config.maxBackoffMultiplier >= 1
+      ? this.config.maxBackoffMultiplier
+      : DEFAULT_MAX_BACKOFF_MULTIPLIER;
+    const backoffMultiplier = Math.min(Math.pow(2, this.failureCount), cap);
     const intervalWithBackoff = baseInterval * backoffMultiplier;
 
     // Add jitter (±10%)

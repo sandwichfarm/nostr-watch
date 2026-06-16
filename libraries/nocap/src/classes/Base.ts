@@ -364,7 +364,9 @@ export default class Base {
       reason = 'already fulfilled';
     }
     if (!ignore) return false;
-    this.logger.warn(`Ignoring ${key} check because the promise was ${reason} when finish() was called`);
+    // First result wins; a later finish() is harmlessly discarded here. Debug,
+    // not warn — this is an expected race, not an error.
+    this.logger.debug(`Ignoring ${key} check because the promise was ${reason} when finish() was called`);
     return true;
   }
 
@@ -896,6 +898,14 @@ export default class Base {
     if(!promise) 
       return this.logger.warn(`${this.current}: websocket_hard_fail(): No promise found for ${this.current} check on ${this.url}`)
     this.hard_fail = true
+    // Resolving the deferred directly here bypasses DeferredWrapper.resolve(),
+    // which is what clears the timeout — so clear it explicitly, else it fires
+    // later and finish()es an already-settled check (the spurious "already
+    // fulfilled" warning).
+    const hardFailKey = this.current ?? ""
+    if (hardFailKey && this?.timeouts?.has?.(hardFailKey)) {
+      this.timeouts.clear(hardFailKey)
+    }
     promise.resolve(promise)
     this.previous = this.current
     this.current = null

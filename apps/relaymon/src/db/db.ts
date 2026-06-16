@@ -1310,13 +1310,62 @@ export function markRelayIgnored(url: string, reason?: string): void {
  */
 export function markRelayUnignored(url: string): void {
   try {
+    // Clear the deletion marker too: if this relay is ignored again later, its
+    // deletion must be re-published once (the prior deletion only covered the
+    // earlier 30166).
     db.query(
-      `UPDATE relay_status SET ignore = 0, ignore_reason = '' WHERE url = ?`,
+      `UPDATE relay_status SET ignore = 0, ignore_reason = '', deletion_published_at = 0 WHERE url = ?`,
       [url],
     );
     logger.info(`Unmarked relay ${url} as ignored`);
   } catch (e) {
     logger.error(`Failed to unignore relay ${url}: ${e}`);
+  }
+}
+
+/**
+ * Whether a NIP-09 deletion has already been published for this relay's current
+ * ignore episode. The marker is cleared whenever the relay becomes unignored
+ * (markRelayUnignored / persistResult), so this only stays true while the relay
+ * remains ignored — letting deletion publishing send each deletion once.
+ */
+export function isDeletionPublished(url: string): boolean {
+  try {
+    const rows = db.query(
+      `SELECT deletion_published_at FROM relay_status WHERE url = ?`,
+      [url],
+    );
+    if (!rows || rows.length === 0) return false;
+    return ((rows[0][0] as number) || 0) > 0;
+  } catch (e) {
+    logger.error(`Failed to read deletion_published_at for ${url}: ${e}`);
+    return false;
+  }
+}
+
+/** Record that a NIP-09 deletion has been published for this relay. */
+export function markDeletionPublished(url: string, at: number = Date.now()): void {
+  try {
+    db.query(
+      `UPDATE relay_status SET deletion_published_at = ? WHERE url = ?`,
+      [at, url],
+    );
+  } catch (e) {
+    logger.error(`Failed to mark deletion published for ${url}: ${e}`);
+  }
+}
+
+/** URLs of ignored relays that have not yet had a deletion published. */
+export function getIgnoredRelaysPendingDeletion(): Array<{ url: string; reason: string }> {
+  try {
+    const rows = db.query(
+      `SELECT url, ignore_reason FROM relay_status
+       WHERE ignore = 1 AND COALESCE(deletion_published_at, 0) = 0`,
+    );
+    return rows.map((r) => ({ url: r[0] as string, reason: (r[1] as string) || "" }));
+  } catch (e) {
+    logger.error(`Failed to query ignored relays pending deletion: ${e}`);
+    return [];
   }
 }
 

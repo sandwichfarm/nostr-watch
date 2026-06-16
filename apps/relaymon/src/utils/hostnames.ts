@@ -805,8 +805,10 @@ export const reevaluateAllDeduplication = async (
             logger.info(`${relayUrl}: ignore status changed from ${wasIgnored} to ${updatedResult.ignore}`);
 
             db.query(
-              "UPDATE relay_status SET ignore = ?, parent = ? WHERE url = ?",
-              [updatedResult.ignore ? 1 : 0, updatedResult.parent || null, relayUrl]
+              // Clear the deletion marker when unignoring so a later re-ignore
+              // re-publishes its deletion exactly once.
+              "UPDATE relay_status SET ignore = ?, parent = ?, deletion_published_at = CASE WHEN ? = 1 THEN deletion_published_at ELSE 0 END WHERE url = ?",
+              [updatedResult.ignore ? 1 : 0, updatedResult.parent || null, updatedResult.ignore ? 1 : 0, relayUrl]
             );
 
             changedRelays.push({

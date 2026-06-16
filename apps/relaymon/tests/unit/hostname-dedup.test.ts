@@ -1339,14 +1339,17 @@ dedupTest("red-herring test: hostnames.ts:328-331 index===0 branch behavior when
  * Phase 18 regression target: snapshotLegitSolo.finalIgnore MUST be false,
  * and snapshotLegitWithMutation.finalIgnore MUST ALSO be false after the fix.
  */
-dedupTest("generalization: haven.nostrfreedom.net/inbox/ legit multi-segment vs /inbox/flint-* mutation", async () => {
+dedupTest("dynamic: legit path-only /inbox/ kept; no-NIP-11 spam mutation ignored (online or offline sibling)", async () => {
   const havenNip11 = mockRelayInfo("Haven", "inbox relay");
-  // A DIFFERENT info for the mutation — simulates spam instance that is on the
-  // same hostname but reports as a distinct server. Realistic failure shape.
-  const mutationNip11 = mockRelayInfo("Spam Relay", "mutation instance");
+  // Realistic path-spam shape: the mutation does NOT serve its own NIP-11
+  // (it cannot prove distinct functionality). Under the dynamic contract it
+  // loses to the canonical (the shortest/legit sibling). A mutation that DID
+  // serve a genuinely distinct NIP-11 would be kept — that is no longer "spam"
+  // by the functionality definition, and is covered by the lang.relays.land/en
+  // test.
 
-  // Variant SOLO: legit path-only relay alone (no siblings) — tests the
-  // baseline: a legit relay with no mutation sibling must never be ignored.
+  // Variant SOLO: legit path-only relay alone (no siblings) — a legit relay
+  // with no sibling to dedupe against must never be ignored.
   setupDatabase([
     { url: "wss://haven.nostrfreedom.net/inbox/", online: true, info: havenNip11 },
   ]);
@@ -1357,14 +1360,14 @@ dedupTest("generalization: haven.nostrfreedom.net/inbox/ legit multi-segment vs 
     info: { data: havenNip11 },
   });
 
-  // Variant 1: sibling online=1 — diagnostic only (current code has normalizeURL
-  // trailing-slash bug that causes CRITICAL ERROR for /inbox/ in this variant)
+  // Variant 1: legit sibling online, spam mutation (no NIP-11) online.
   setupDatabase([
     { url: "wss://haven.nostrfreedom.net/inbox/", online: true, info: havenNip11 },
-    { url: "wss://haven.nostrfreedom.net/inbox/flint-november-alpha", online: true, info: mutationNip11 },
+    { url: "wss://haven.nostrfreedom.net/inbox/flint-november-alpha", online: true },
   ]);
 
-  // Snapshot A: the legit path-only relay with mutation sibling present
+  // The legit path-only relay with the spam mutation sibling present: kept,
+  // because it is the shortest (canonical) sibling and has its own NIP-11.
   const snapshotLegitWithMutation = await captureDedupSnapshot({
     url: "wss://haven.nostrfreedom.net/inbox/",
     hostname: "haven.nostrfreedom.net",
@@ -1372,78 +1375,54 @@ dedupTest("generalization: haven.nostrfreedom.net/inbox/ legit multi-segment vs 
     info: { data: havenNip11 },
   });
 
-  // Snapshot B: the mutation — in prod this is missed
+  // The spam mutation (no NIP-11): ignored in favour of the canonical /inbox/.
   const snapshotMutation = await captureDedupSnapshot({
     url: "wss://haven.nostrfreedom.net/inbox/flint-november-alpha",
     hostname: "haven.nostrfreedom.net",
     protocol: "wss:",
-    info: { data: mutationNip11 },
   });
 
-  // Variant 2: legit path-only sibling online=0 (state-flip per hypothesis A)
+  // Variant 2: legit sibling OFFLINE, spam mutation online — the canonical is
+  // still found because the family is built from ALL siblings (online+offline).
   setupDatabase([
     { url: "wss://haven.nostrfreedom.net/inbox/", online: false, info: havenNip11 },
-    { url: "wss://haven.nostrfreedom.net/inbox/flint-november-alpha", online: true, info: mutationNip11 },
+    { url: "wss://haven.nostrfreedom.net/inbox/flint-november-alpha", online: true },
   ]);
   const snapshotMutationOfflineSibling = await captureDedupSnapshot({
     url: "wss://haven.nostrfreedom.net/inbox/flint-november-alpha",
     hostname: "haven.nostrfreedom.net",
     protocol: "wss:",
-    info: { data: mutationNip11 },
   });
 
-  console.log(JSON.stringify({
-    sample: "haven.nostrfreedom.net-multi-segment",
-    legitPathOnlySolo: snapshotLegitSolo,
-    legitPathOnlyWithMutation: snapshotLegitWithMutation,
-    mutationSiblingOnline: snapshotMutation,
-    mutationSiblingOffline: snapshotMutationOfflineSibling,
-    phase18RegressionTarget: {
-      note: "After Phase 18 fix: legitPathOnlyWithMutation.finalIgnore MUST be false. Current code incorrectly sets it true via CRITICAL ERROR path (normalizeURL trailing-slash bug).",
-    },
-  }, null, 2));
-
-  // CRITICAL narrowness invariant: solo legit relay (no mutation sibling) must
-  // NEVER be ignored. Phase 18 must not break this.
+  // Narrowness invariant: a solo legit relay (no sibling) must NEVER be ignored.
   assertEquals(
     snapshotLegitSolo.finalIgnore,
     false,
     "wss://haven.nostrfreedom.net/inbox/ is a legit path-only relay and MUST NOT be ignored (SOLO)",
   );
 
-  // Phase 18 Fix 3 regression (DEDUP-03, TEST-02): with a mutation sibling
-  // present, the legit path-only relay /inbox/ must ALSO remain un-ignored.
-  // Pre-Phase-18 this was wrongly set to ignore=true via the CRITICAL ERROR
-  // path due to the normalizeURL trailing-slash bug
-  // (orderedFamily.indexOf returned -1 because orderedFamily contained
-  // "wss://haven.nostrfreedom.net/inbox" but the search was for
-  // "wss://haven.nostrfreedom.net/inbox/"). Fix 3 canonicalizes mURL at
-  // function entry so indexOf succeeds.
+  // The legit path-only relay stays un-ignored even with a spam sibling: it is
+  // the canonical (shortest) form for its hostname.
   assertEquals(
     snapshotLegitWithMutation.finalIgnore,
     false,
-    "Phase 18 Fix 3 (DEDUP-03, TEST-02): wss://haven.nostrfreedom.net/inbox/ must NOT be ignored even when a mutation sibling is present",
+    "legit /inbox/ must NOT be ignored even when a spam mutation sibling is present",
   );
 
-  // The mutation with DIFFERENT NIP-11 and non-root parent is NOT caught by
-  // the case-based logic when both siblings are online. This is a known
-  // architectural limitation: cases 1/2/4 require eldestIsRoot, case 8
-  // requires matching NIP-11. Catching a mutation with distinct NIP-11
-  // when the parent is not a root URL requires a separate fix in Phase 19.
-  // Phase 18 Fix 3's primary goal is restoring DEDUP-03 (legit path-only
-  // relay protection), which is achieved by the snapshotLegitWithMutation
-  // assertion above.
-  assert(
-    snapshotMutation !== undefined,
-    "Phase 18 Fix 3: snapshotMutation captured for wss://haven.nostrfreedom.net/inbox/flint-november-alpha (note: different-NIP-11 mutation with non-root parent is not caught by case logic — Phase 19 concern)",
+  // The no-NIP-11 spam mutation cannot prove distinct functionality and is
+  // ignored in favour of the canonical — whether the canonical is online…
+  assertEquals(
+    snapshotMutation.finalIgnore,
+    true,
+    "no-NIP-11 spam mutation must be ignored (canonical sibling online)",
   );
 
-  // The transient-sibling-offline case for the mutation (sibling online=0)
-  // — should also catch via defensive-deny (Plan 18-01).
+  // …or offline. This is the production case: the whole hostname can be down
+  // and the spam path is still deduped to the canonical sibling.
   assertEquals(
     snapshotMutationOfflineSibling.finalIgnore,
     true,
-    "Phase 18 (Fix 1): mutation must be caught via defensive-deny when legit sibling is online=0",
+    "no-NIP-11 spam mutation must be ignored even when the canonical sibling is offline",
   );
 });
 
@@ -2003,22 +1982,15 @@ dedupTest("Phase 19 REMED-02: legit path-only relay WITHOUT root sibling is left
   assertEquals((row[0][1] as string) || "", "", "REMED-02: parent must stay empty for solo path-only relay");
 });
 
-dedupTest("Phase 20 philosophy: allow-known-paths overrides shortest-URL-wins for /inbox/", async () => {
+dedupTest("dynamic: /inbox/ with identical-NIP-11 root is deduped to root (overrides retired)", async () => {
   db.query("DELETE FROM relaymon_migrations WHERE name = 'rerun_dedup_online_unignored_v1'");
 
-  // Phase 20 inversion of the Phase 19 philosophy test:
-  // Even when haven.nostrfreedom.net/inbox/ has a matching-NIP-11 root
-  // sibling wss://haven.nostrfreedom.net/, the allow-known-paths override
-  // rule fires BEFORE case2 and keeps /inbox/ as a first-class relay. This
-  // is a deliberate product-level inversion — /inbox and /outbox are known-
-  // good paths regardless of NIP-11 state. See Phase 20 CONTEXT.md Dedup
-  // Philosophy Extension section.
-  //
-  // Historical note: Phase 19's original assertion was that /inbox/ MUST
-  // be flipped to ignore=1 when a matching-NIP-11 root sibling is present.
-  // Phase 20's allow-known-paths rule deliberately inverts that assertion
-  // for /inbox and /outbox specifically. The shortest-URL-wins philosophy
-  // remains the default for every URL that does NOT match an override rule.
+  // The static allow-known-paths override is retired. Dedup is now purely
+  // dynamic: when /inbox/ serves the SAME NIP-11 as the root, it is the same
+  // relay functionally and must be deduped to the root. (A path that serves a
+  // DISTINCT NIP-11 would survive — see the lang.relays.land/en test.) This
+  // restores the Phase 19 functionality semantics without any hardcoded path
+  // list, per the "purely dynamic" directive.
   const sharedInfo = mockRelayInfo("Haven", "same relay served at root and path");
   setupDatabase([
     {
@@ -2039,7 +2011,9 @@ dedupTest("Phase 20 philosophy: allow-known-paths overrides shortest-URL-wins fo
 
   await rerunDedupForAllRowsMigration();
 
-  // /inbox/ must remain un-ignored because allow-known-paths fires first.
+  // /inbox/ is deduped to the root because its NIP-11 is identical (no static
+  // rescue). normalizeURL strips the trailing slash on path URLs, so the row
+  // is stored/queried as .../inbox.
   const inboxRows = db.query(
     `SELECT url, ignore, parent FROM relay_status WHERE url LIKE ?`,
     ["%haven.nostrfreedom.net/inbox%"],
@@ -2047,16 +2021,16 @@ dedupTest("Phase 20 philosophy: allow-known-paths overrides shortest-URL-wins fo
   assertEquals(inboxRows.length, 1, "/inbox/ row must still exist");
   assertEquals(
     inboxRows[0][1],
-    0,
-    "Phase 20: /inbox/ must stay ignore=0 (allow-known-paths override)",
+    1,
+    "dynamic: identical-NIP-11 /inbox/ must be deduped to root (ignore=1)",
   );
   assertEquals(
     (inboxRows[0][2] as string) || "",
-    "",
-    "Phase 20: /inbox/ must stay parent=''",
+    "wss://haven.nostrfreedom.net/",
+    "dynamic: /inbox/ parent must be the canonical root",
   );
 
-  // Root must remain unchanged.
+  // Root must remain unchanged (the canonical is never ignored).
   const rootRows = db.query(
     `SELECT ignore, parent FROM relay_status WHERE url = ?`,
     ["wss://haven.nostrfreedom.net/"],
@@ -2308,14 +2282,18 @@ dedupTest("Phase 20 OVERRIDE allow: /outbox solo survives with ignore=false", as
   assertEquals(out.parent || "", "");
 });
 
-dedupTest("Phase 20 OVERRIDE allow: lang.relays.land/en survives with ignore=false", async () => {
-  const info = mockRelayInfo("LangEn", "english lang relay");
+dedupTest("dynamic: lang.relays.land/en survives via DISTINCT NIP-11 (no static override)", async () => {
+  // The retired allow-known-paths/lang-relays-land overrides are gone. A
+  // per-language relay must survive purely because it proves different
+  // functionality: its NIP-11 differs from the root's. No hardcoded host list.
+  const rootInfo = mockRelayInfo("Lang Root", "router");
+  const enInfo = mockRelayInfo("Lang EN", "english-only language relay");
   setupDatabase([
-    { url: "wss://lang.relays.land/en", online: true, ignore: false, parent: "", info },
-    { url: "wss://lang.relays.land/", online: true, ignore: false, parent: "", info },
+    { url: "wss://lang.relays.land/", online: true, ignore: false, parent: "", info: rootInfo },
+    { url: "wss://lang.relays.land/en", online: true, ignore: false, parent: "", info: enInfo },
   ]);
 
-  const result = {
+  const out = await relayHostnameDedup({
     url: "wss://lang.relays.land/en",
     hostname: "lang.relays.land",
     protocol: "wss:",
@@ -2325,12 +2303,35 @@ dedupTest("Phase 20 OVERRIDE allow: lang.relays.land/en survives with ignore=fal
     ignore_reason: "",
     parent: "",
     network: "clearnet" as const,
-    info: { data: info, duration: 0 },
-  };
-
-  const out = await relayHostnameDedup(result);
-  assertEquals(out.ignore, false, "Phase 20 OVERRIDE allow: /en must not be flipped to duplicate of root");
+    info: { data: enInfo, duration: 0 },
+  });
+  assertEquals(out.ignore, false, "distinct-NIP-11 language relay must be kept");
   assertEquals(out.parent || "", "");
+});
+
+dedupTest("dynamic: a path with IDENTICAL NIP-11 to root is deduped to root (no static rescue)", async () => {
+  // Counterpart: when a path's NIP-11 matches the root it is the same relay
+  // functionally and must be deduped — there is no static list to rescue it.
+  const shared = mockRelayInfo("Lang Root", "router");
+  setupDatabase([
+    { url: "wss://lang.relays.land/", online: true, ignore: false, parent: "", info: shared },
+    { url: "wss://lang.relays.land/mirror", online: true, ignore: false, parent: "", info: shared },
+  ]);
+
+  const out = await relayHostnameDedup({
+    url: "wss://lang.relays.land/mirror",
+    hostname: "lang.relays.land",
+    protocol: "wss:",
+    checked_at: Date.now(),
+    online: true,
+    ignore: false,
+    ignore_reason: "",
+    parent: "",
+    network: "clearnet" as const,
+    info: { data: shared, duration: 0 },
+  });
+  assertEquals(out.ignore, true, "identical-NIP-11 path is the same relay => deduped");
+  assertEquals(out.parent, "wss://lang.relays.land/");
 });
 
 dedupTest("Phase 20 OVERRIDE fall-through: /inbox/<mutation> is NOT protected (falls to case1-8)", async () => {

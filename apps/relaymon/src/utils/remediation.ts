@@ -262,6 +262,158 @@ export async function rerunDedupForAllRowsMigration(): Promise<void> {
   }
 }
 
+// M2: offline-inclusive remediation. The Phase 20 migration above is scoped
+// to online+unignored rows, which leaves the offline path-spam backlog (root +
+// dozens of NATO-word paths, all offline, ignore=0) to converge only at
+// per-relay retry-backoff speed. This migration re-runs the dynamic dedup over
+// ALL unignored rows (online AND offline) using only stored NIP-11 (no
+// network), so the backlog clears once at boot. Separate sentinel so it is
+// additive to (not a replacement for) the Phase 20 migration and does not
+// disturb its online-only-scope tests.
+const ALL_UNIGNORED_MIGRATION_NAME = "rerun_dedup_all_unignored_v1";
+
+// Yield the event loop every YIELD_EVERY rows so a large (~30k) startup scan
+// cannot sustain a synchronous block long enough to starve other startup work.
+const YIELD_EVERY = 500;
+
+/**
+ * Re-run the dynamic hostname dedup over every unignored row (online AND
+ * offline), persisting ignore/parent changes and queueing kind:5 deletions for
+ * newly-ignored rows. Pure DB — uses stored NIP-11 only, never the network.
+ * Idempotent via the `rerun_dedup_all_unignored_v1` sentinel.
+ */
+export async function rerunDedupAllUnignoredMigration(): Promise<void> {
+  try {
+    const existing = db.query(
+      `SELECT applied_at FROM relaymon_migrations WHERE name = ?`,
+      [ALL_UNIGNORED_MIGRATION_NAME],
+    );
+    if (existing.length > 0) {
+      logger.debug(
+        `Migration ${ALL_UNIGNORED_MIGRATION_NAME} already applied, skipping`,
+      );
+      return;
+    }
+
+    logger.info(`Running migration: ${ALL_UNIGNORED_MIGRATION_NAME}`);
+    const startTime = Date.now();
+
+    const rows = db.query(
+      `SELECT url, ignore, parent, online, ignore_reason, network, checked_at
+       FROM relay_status
+       WHERE ignore = 0`,
+    );
+
+    let evaluated = 0;
+    let newlyIgnored = 0;
+    let unchanged = 0;
+    let i = 0;
+
+    for (const row of rows) {
+      const [
+        urlRaw,
+        storedIgnoreRaw,
+        storedParentRaw,
+        onlineRaw,
+        ignoreReasonRaw,
+        networkRaw,
+        checkedAtRaw,
+      ] = row;
+
+      const url = urlRaw as string;
+      const storedIgnore = (storedIgnoreRaw as number) === 1;
+      const storedParent = (storedParentRaw as string) || "";
+      const online = (onlineRaw as number) === 1;
+      const ignoreReason = (ignoreReasonRaw as string) || "";
+      const network = ((networkRaw as string) || "clearnet") as NetworkType;
+      const checkedAt = (checkedAtRaw as number) || 0;
+
+      evaluated++;
+      if (++i % YIELD_EVERY === 0) {
+        // Yield to the event loop between batches.
+        await new Promise<void>((resolve) => setTimeout(resolve, 0));
+      }
+
+      try {
+        let parsed: URL;
+        try {
+          parsed = new URL(url);
+        } catch (e) {
+          logger.warn(`Skipping malformed URL in relay_status: ${url} (${e})`);
+          continue;
+        }
+
+        const cachedInfo = getRelayInfo(url);
+        const infoForDedup = cachedInfo
+          ? { data: cachedInfo.info, duration: 0 }
+          : undefined;
+
+        const result: RelayCheckResult = {
+          url,
+          hostname: parsed.hostname,
+          protocol: parsed.protocol,
+          checked_at: checkedAt,
+          online,
+          ignore: storedIgnore,
+          ignore_reason: ignoreReason,
+          parent: storedParent,
+          network,
+          info: infoForDedup,
+        };
+
+        const deduped = await relayHostnameDedup(result);
+        const newIgnore = deduped.ignore;
+        const newParent = deduped.parent || "";
+
+        if (newIgnore !== storedIgnore || newParent !== storedParent) {
+          db.query(
+            `UPDATE relay_status SET ignore = ?, parent = ? WHERE url = ?`,
+            [newIgnore ? 1 : 0, newParent, url],
+          );
+          if (newIgnore && !storedIgnore) {
+            newlyIgnored++;
+            const reason = newParent
+              ? `Duplicate of ${newParent} (remediation)`
+              : `Ignored by hostname dedup (remediation)`;
+            enqueueRemediationDeletion(url, reason);
+          }
+          logger.info(
+            `Remediation(all): ${url} ignore=${storedIgnore}/parent="${storedParent}" → ignore=${newIgnore}/parent="${newParent}"`,
+          );
+        } else {
+          unchanged++;
+        }
+      } catch (e) {
+        logger.error(`Remediation(all): failed to re-evaluate ${url}: ${e}`);
+      }
+    }
+
+    const durationMs = Date.now() - startTime;
+    logger.info(
+      JSON.stringify({
+        migration: ALL_UNIGNORED_MIGRATION_NAME,
+        scope: "all_unignored",
+        rows_evaluated: evaluated,
+        newly_ignored: newlyIgnored,
+        unchanged,
+        duration_ms: durationMs,
+      }),
+    );
+
+    db.query(
+      `INSERT INTO relaymon_migrations (name, applied_at) VALUES (?, ?)`,
+      [ALL_UNIGNORED_MIGRATION_NAME, Math.floor(Date.now() / 1000)],
+    );
+
+    logger.info(
+      `Migration ${ALL_UNIGNORED_MIGRATION_NAME} complete: ${evaluated} evaluated, ${newlyIgnored} newly ignored, ${unchanged} unchanged, ${durationMs}ms`,
+    );
+  } catch (e) {
+    logger.error(`Migration ${ALL_UNIGNORED_MIGRATION_NAME} failed: ${e}`);
+    // Never crash startup.
+  }
+}
+
 /**
  * Enqueue a URL for delayed kind:5 deletion publication. Called by the
  * remediation migration (which cannot publish directly because daemon

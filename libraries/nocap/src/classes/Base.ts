@@ -364,7 +364,13 @@ export default class Base {
       reason = 'already fulfilled';
     }
     if (!ignore) return false;
-    this.logger.warn(`Ignoring ${key} check because the promise was ${reason} when finish() was called`);
+    // Benign by design: the first result wins and any later finish() is
+    // correctly discarded here, so a stale result can never override a real
+    // one. The dominant source (a connect-failure timeout firing after the
+    // hard-fail already settled the check) is now prevented in
+    // websocket_hard_fail(); this remains as a guard for any residual race and
+    // logs at debug to avoid flooding logs with an expected, harmless event.
+    this.logger.debug(`Ignoring ${key} check because the promise was ${reason} when finish() was called`);
     return true;
   }
 
@@ -896,6 +902,17 @@ export default class Base {
     if(!promise) 
       return this.logger.warn(`${this.current}: websocket_hard_fail(): No promise found for ${this.current} check on ${this.url}`)
     this.hard_fail = true
+    // Clear the pending timeout for this check BEFORE resolving the deferred
+    // directly. DeferredWrapper.resolve() clears the timeout, but this path
+    // resolves the deferred object directly (promise.resolve), so the timeout
+    // would otherwise survive, fire later, and call finish() a second time on
+    // an already-settled check — producing the spurious "Ignoring <key> check
+    // because the promise was already fulfilled when finish() was called"
+    // warning (and wasted work) on every connect failure.
+    const hardFailKey = this.current ?? ""
+    if (hardFailKey && this?.timeouts?.has?.(hardFailKey)) {
+      this.timeouts.clear(hardFailKey)
+    }
     promise.resolve(promise)
     this.previous = this.current
     this.current = null

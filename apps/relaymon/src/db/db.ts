@@ -4,6 +4,7 @@ import type { RelayInfo } from "../types/relay.ts";
 import { createInfoHash } from "../utils/hostnames.ts";
 import {
   enqueueRemediationDeletion,
+  rerunDedupAllUnignoredMigration,
   rerunDedupForAllRowsMigration,
   rerunNostringsSweepMigration,
 } from "../utils/remediation.ts";
@@ -207,24 +208,28 @@ export async function initializeDB(
     logger.error(`rehashRelayInfoMigration threw: ${e}`);
   }
 
-  // DISABLED Phase 22: dedup migration disabled to prevent interference
-  // with NATO phonetic spam purge. Code preserved for future re-enablement.
-  //
-  // Phase 19 REMED-01/REMED-02: re-run dedup over every row in
-  // relay_status using the now-fixed relayHostnameDedup. Idempotent via
-  // relaymon_migrations sentinel. MUST run AFTER rehashRelayInfoMigration
-  // so the re-dedup sees stable hashes, and MUST complete BEFORE the
-  // daemon constructs IgnoreListSync (which snapshots relay_status
-  // ignore=1 rows into its in-memory map). initializeDB is therefore
-  // async so main.ts can await the migration before wiring the daemon.
-  // Migration writes deletion events to remediation_deletion_queue
-  // rather than publishing directly — the daemon drains that queue
-  // after setup via drainRemediationDeletionQueue.
-  // try {
-  //   await rerunDedupForAllRowsMigration();
-  // } catch (e) {
-  //   logger.error(`rerunDedupForAllRowsMigration threw: ${e}`);
-  // }
+  // M2: re-run the (now dynamic, NIP-11-functionality-based, O(family)) dedup
+  // over EVERY unignored row — online AND offline — so the existing
+  // mislabelled backlog self-heals at boot instead of converging only at
+  // per-relay retry-backoff speed. This supersedes the Phase 22 disable: the
+  // old interference with the NATO purge no longer applies because the dynamic
+  // dedup ignores path-spam structurally (no NIP-11 / same NIP-11 as the
+  // canonical) rather than fighting the heuristic word-ban. Pure DB (uses
+  // stored NIP-11 only, no network); idempotent via its own sentinel; yields
+  // the event loop in batches. MUST run AFTER rehashRelayInfoMigration so it
+  // sees stable hashes, and completes BEFORE the daemon constructs
+  // IgnoreListSync. Newly-ignored rows are queued for kind:5 deletion and
+  // drained by the daemon after wiring.
+  try {
+    await rerunDedupAllUnignoredMigration();
+  } catch (e) {
+    logger.error(`rerunDedupAllUnignoredMigration threw: ${e}`);
+  }
+
+  // The Phase 20 online-only remediation (rerunDedupForAllRowsMigration) is
+  // retained but remains unused at boot: rerunDedupAllUnignoredMigration above
+  // is a strict superset of its scope. Kept importable for its targeted tests.
+  void rerunDedupForAllRowsMigration;
 
   // Nostrings sweep: re-run @nostrwatch/nostrings qualification over
   // every row in relay_status, hard-deleting unparseable garbage and

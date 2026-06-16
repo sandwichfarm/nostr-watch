@@ -61,6 +61,13 @@ publishing:
   kind1166:
     enabled: true
     schedule: hourly
+  kind30385:
+    enabled: false
+    schedule: hourly
+    minObservations: 3
+    materialChangeThreshold: 0.05
+    historyRetention: 86400
+    publishUnreachable: false
   announce:
     frequency: '3600'
     userDataRelays:

@@ -1,0 +1,122 @@
+name: Docker Images
+
+# Unified Docker image CD for the matrix packages that produce images
+# (rstate, trawler, relaymon — nocapd is deprecated and intentionally omitted).
+#
+# Two paths, both publishing to Docker Hub (nostrwatch/<app>) AND GHCR
+# (ghcr.io/sandwichfarm/<app>):
+#
+#   dev     — on every push to the integration branch (`next`): rolling
+#             :dev and :dev-<sha> images for ALL matrix packages.
+#   tagged  — on a release tag `<package>@v<version>` (the format produced by
+#             the changesets release in publish-package.yml): :<version> for
+#             that package, plus :latest when it is the highest non-prerelease
+#             version.
+#
+# Both paths are runnable manually via workflow_dispatch. The decision of what
+# to build and which tags to push lives in scripts/ci/plan-docker-images.mjs,
+# which is dependency-free and locally runnable for verification.
+
+on:
+  push:
+    branches: [next]
+    tags:
+      - '*@v*'
+      - '**@v*'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Build path: dev (rolling :dev images) or tagged (:<version> [+ :latest])'
+        type: choice
+        options: [dev, tagged]
+        default: dev
+      package:
+        description: 'Which image(s) to build'
+        type: choice
+        options: [all, rstate, trawler, relaymon]
+        default: all
+      version:
+        description: 'tagged mode: version to publish (defaults to each package version file)'
+        type: string
+        required: false
+      update_latest:
+        description: 'tagged mode: move :latest? auto = only when highest non-prerelease'
+        type: choice
+        options: [auto, 'true', 'false']
+        default: auto
+
+concurrency:
+  group: docker-images-${{ github.ref }}-${{ github.event.inputs.package || 'auto' }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  prepare:
+    name: Plan images
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      any: ${{ steps.plan.outputs.any }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Need full tag history so the planner can decide whether a tagged
+          # build is the highest version and should move :latest.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Plan docker images
+        id: plan
+        env:
+          GH_EVENT_NAME: ${{ github.event_name }}
+          GH_REF_TYPE: ${{ github.ref_type }}
+          GH_REF_NAME: ${{ github.ref_name }}
+          GH_SHA: ${{ github.sha }}
+          IN_MODE: ${{ github.event.inputs.mode }}
+          IN_PACKAGE: ${{ github.event.inputs.package }}
+          IN_VERSION: ${{ github.event.inputs.version }}
+          IN_UPDATE_LATEST: ${{ github.event.inputs.update_latest }}
+        run: node scripts/ci/plan-docker-images.mjs
+
+  build:
+    name: ${{ matrix.name }} (${{ matrix.mode }})
+    needs: prepare
+    if: needs.prepare.outputs.any == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push ${{ matrix.name }}
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          platforms: linux/amd64
+          provenance: false
+          tags: ${{ matrix.tags }}

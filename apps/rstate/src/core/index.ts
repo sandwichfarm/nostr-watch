@@ -12,6 +12,7 @@ export type {
   PolicyInterface,
   IngestionInterface,
   StatsInterface,
+  TrustQuery,
 } from './api.js'
 export type { CoreConfig } from './config.js'
 export type {
@@ -22,3 +23,10 @@ export type {
   RelayState,
   AggregationPolicy,
 } from './types/aggregation.js'
+export type {
+  TrustedRelayAssertion,
+  TrustAssertionStatus,
+  TrustConfidenceLevel,
+  TrustListFilters,
+  TrustScoringOptions,
+} from './trust/trusted-relay-assertions.js'

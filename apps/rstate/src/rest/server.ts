@@ -7,6 +7,8 @@
 import Fastify, { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
 import cors from '@fastify/cors'
 import swagger from '@fastify/swagger'
+import { existsSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 // scalar API reference loaded via CDN in HTML template, not imported directly
 import type { StateCore } from '../core/index.js'
 import type { MetricsService } from '../services/metrics.js'
@@ -28,6 +30,12 @@ import { schemas } from './schemas.js'
 import { generateETag, etagMatches } from './etag.js'
 
 const logger = getLogger().child({ module: 'rest-server' })
+
+function expandLegacyPaidRoute(route: string): string[] {
+  if (route === '/relays/search') return ['/relays/search', '/relays/search/detailed', '/relays/search/full']
+  if (route === '/relays') return ['/relays', '/relays/detailed', '/relays/full']
+  return [route]
+}
 
 /**
  * REST server configuration
@@ -165,6 +173,34 @@ export class RestServer {
         logger.info({ paidRoutes: paidEntries.length }, 'Loaded pricing for OpenAPI documentation')
       } catch (err) {
         logger.warn({ err }, 'Failed to load pricing for OpenAPI documentation, skipping 402 schemas')
+      }
+    } else {
+      const legacyPath = process.env.PAY_PRICES_JSON
+        ?? (process.env.NODE_ENV === 'test' ? join(process.cwd(), 'config/payments.prices.example.json') : undefined)
+      if (legacyPath && existsSync(legacyPath)) {
+        try {
+          const policy = JSON.parse(readFileSync(legacyPath, 'utf8')) as {
+            routes?: Record<string, { priceMsat?: number; methods?: string[] }>
+          }
+          for (const [route, routePolicy] of Object.entries(policy.routes ?? {})) {
+            const priceMsat = routePolicy.priceMsat ?? 0
+            if (priceMsat <= 0) continue
+            const entry: PricingEntry = {
+              name: route,
+              amount: priceMsat / 1000,
+              currencyUnit: 'sats',
+              description: 'Legacy payment policy',
+            }
+            paidEntries.push(entry)
+            for (const pricedRoute of expandLegacyPaidRoute(route)) {
+              routePriceMap.set(pricedRoute, entry)
+              this.paidRoutePaths.add(pricedRoute)
+            }
+          }
+          logger.info({ paidRoutes: paidEntries.length, legacyPath }, 'Loaded legacy pricing for OpenAPI documentation')
+        } catch (err) {
+          logger.warn({ err, legacyPath }, 'Failed to load legacy pricing for OpenAPI documentation, skipping 402 schemas')
+        }
       }
     }
 

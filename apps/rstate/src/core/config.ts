@@ -6,12 +6,19 @@
  */
 
 import type { AggregationPolicy } from './types/aggregation.js'
+import type { TrustScoringOptions } from './trust/trusted-relay-assertions.js'
 
 export interface CoreConfig {
   /**
    * Aggregation policy for conflict resolution
    */
   aggregation: AggregationPolicy
+
+  /**
+   * Trusted Relay Assertion scoring and optional aggregate history.
+   * History is enabled only when kind 30385 publishing is enabled.
+   */
+  trust?: Partial<TrustScoringOptions>
 
   /**
    * Optional logger configuration

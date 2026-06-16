@@ -9,19 +9,21 @@
 
 import { describe, it, expect, beforeEach } from 'vitest'
 import { initStateCore } from '../src/core/index.js'
-import type { MonitorAnnouncement, RelayObservation } from '../src/core/index.js'
 import { DEFAULT_POLICY } from '../src/types/aggregation.js'
 
 describe('StateCore Parity Tests', () => {
   let core: ReturnType<typeof initStateCore>
 
-  // Seeded test data
+  // NOTE: This test uses its own simpler seed data with short pubkeys ('monitor1pubkey', etc.)
+  // rather than the shared seed data in fixtures/, which uses 64-char hex pubkeys.
+  // This is intentional — the parity test predates the shared fixtures and uses
+  // different pubkey formats that would break assertions if changed.
   const baseTime = Math.floor(Date.now() / 1000) - 3600 // 1 hour ago
 
-  const monitors: MonitorAnnouncement[] = [
+  const monitors = [
     {
       pubkey: 'monitor1pubkey',
-      frequency: 600, // 10 minutes
+      frequency: 600,
       timeout: { open: 5000, read: 5000, write: 5000 },
       checks: ['open', 'read', 'write', 'nips'],
       lastSeen: baseTime,
@@ -29,7 +31,7 @@ describe('StateCore Parity Tests', () => {
     },
     {
       pubkey: 'monitor2pubkey',
-      frequency: 300, // 5 minutes
+      frequency: 300,
       timeout: { open: 5000, read: 5000, write: 5000 },
       checks: ['open', 'read', 'write', 'nips'],
       lastSeen: baseTime,
@@ -37,8 +39,7 @@ describe('StateCore Parity Tests', () => {
     },
   ]
 
-  const observations: RelayObservation[] = [
-    // Relay 1: wss://relay1.example.com - clearnet, strfry, multiple monitors
+  const observations = [
     {
       id: 'obs1-monitor1',
       author: 'monitor1pubkey',
@@ -71,8 +72,6 @@ describe('StateCore Parity Tests', () => {
       ],
       geohashes: ['9q8yy', '9q8y', '9q8'],
     },
-
-    // Relay 2: wss://relay2.example.com - tor, nostr-rs-relay
     {
       id: 'obs2-monitor1',
       author: 'monitor1pubkey',
@@ -95,8 +94,6 @@ describe('StateCore Parity Tests', () => {
       software: { family: 'nostr-rs-relay', version: '0.8.0' },
       labels: [],
     },
-
-    // Relay 3: wss://relay3.example.com - offline (last open was long ago)
     {
       id: 'obs3-monitor1',
       author: 'monitor1pubkey',
@@ -113,20 +110,15 @@ describe('StateCore Parity Tests', () => {
   ]
 
   beforeEach(() => {
-    // Initialize StateCore with test data
     core = initStateCore({
       aggregation: DEFAULT_POLICY,
     })
 
-    // Ingest monitors
     for (const monitor of monitors) {
-      core.ingest.monitor(monitor)
+      core.ingest.monitor(monitor as any)
     }
 
-    // Ingest observations
-    core.ingest.observations(observations)
-
-    // Compute state
+    core.ingest.observations(observations as any)
     core.computeAll()
   })
 

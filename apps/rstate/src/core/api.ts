@@ -13,6 +13,11 @@ import { LabelIndexService } from './index/label-index.js'
 import { GeoService } from './geo/geo.js'
 import { RelayStateManager } from './state/relay-state-manager.js'
 import { MonitorScoringService } from './score/monitor-scoring.js'
+import {
+  TrustedRelayAssertionService,
+  type TrustedRelayAssertion,
+  type TrustListFilters,
+} from './trust/trusted-relay-assertions.js'
 import { QueryCache } from './cache/cache.js'
 import { getLogger } from '../utils/logger.js'
 
@@ -207,6 +212,23 @@ export interface StatsInterface {
   }
 }
 
+export interface TrustQuery {
+  /**
+   * Get rstate's current trusted relay assertion for one relay.
+   */
+  trust(relayUrl: string): TrustedRelayAssertion | null
+
+  /**
+   * List rstate trusted relay assertions.
+   */
+  trustList(filters?: TrustListFilters): TrustedRelayAssertion[]
+
+  /**
+   * Count retained aggregate history samples.
+   */
+  historyCount(relayUrl?: string): number
+}
+
 /**
  * State Core handle
  */
@@ -229,6 +251,9 @@ export interface StateCore {
     relays: RelayQuery
     monitors: MonitorQuery
     policy: PolicyInterface
+    trust: (relayUrl: string) => TrustedRelayAssertion | null
+    trustList: (filters?: TrustListFilters) => TrustedRelayAssertion[]
+    trustHistoryCount: (relayUrl?: string) => number
   }
 
   /**
@@ -274,6 +299,12 @@ export function initStateCore(config: CoreConfig): StateCore {
 
   const scoringService = new MonitorScoringService(observationStore, stateManager)
   stateManager.setScoringService(scoringService)
+  const trustService = new TrustedRelayAssertionService({
+    minObservations: config.trust?.minObservations ?? 3,
+    historyRetention: config.trust?.historyRetention ?? 24 * 3600,
+    historyEnabled: config.trust?.historyEnabled ?? false,
+    publishUnreachable: config.trust?.publishUnreachable ?? false,
+  })
 
   // Track policy for updates
   let currentPolicy = { ...config.aggregation }
@@ -482,6 +513,21 @@ export function initStateCore(config: CoreConfig): StateCore {
     },
   }
 
+  const trustQuery: TrustQuery = {
+    trust(relayUrl: string): TrustedRelayAssertion | null {
+      const state = stateManager.getRelayState(relayUrl)
+      return state ? trustService.trust(state) : null
+    },
+
+    trustList(filters: TrustListFilters = {}): TrustedRelayAssertion[] {
+      return trustService.trustList(stateManager.getAllRelayStates(), filters)
+    },
+
+    historyCount(relayUrl?: string): number {
+      return trustService.getHistoryCount(relayUrl)
+    },
+  }
+
   // Stats interface
   const stats: StatsInterface = {
     get() {
@@ -517,12 +563,16 @@ export function initStateCore(config: CoreConfig): StateCore {
     computeAll(): void {
       stateManager.computeAllStates()
       scoringService.computeAllScores()
+      trustService.recordAggregateCycle(stateManager.getAllRelayStates())
     },
 
     query: {
       relays: relayQuery,
       monitors: monitorQuery,
       policy: policyInterface,
+      trust: trustQuery.trust,
+      trustList: trustQuery.trustList,
+      trustHistoryCount: trustQuery.historyCount,
     },
 
     stats,

@@ -77,7 +77,7 @@
 		"clsx": "^2.1.1",
 		"d3-geo": "^3.1.1",
 		"gh-pages": "^6.2.0",
-		"http-proxy-middleware": "^3.0.3",
+		"http-proxy-middleware": "^3.0.7",
 		"jsdom": "^29.0.1",
 		"node-fetch": "^3.3.2",
 		"paneforge": "^0.0.6",

@@ -42,7 +42,7 @@
   "devDependencies": {
     "@changesets/changelog-github": "^0.6.0",
     "@changesets/cli": "2.27.11",
-    "esbuild": "^0.25.0",
+    "esbuild": "^0.28.1",
     "gh-pages": "^6.2.0",
     "markdownlint-cli2": "^0.17.0",
     "rimraf": "^6.0.1",

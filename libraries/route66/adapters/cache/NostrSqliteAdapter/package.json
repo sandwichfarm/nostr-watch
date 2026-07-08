@@ -26,7 +26,7 @@
     "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
     "@esbuild-plugins/node-modules-polyfill": "^0.2.2",
     "@jgoz/esbuild-plugin-livereload": "^2.1.2",
-    "esbuild": "^0.25.0",
+    "esbuild": "^0.28.1",
     "esbuild-plugin-alias": "^0.2.1",
     "esbuild-plugin-clean": "^1.0.1",
     "esbuild-plugin-inline-worker": "^0.1.1",

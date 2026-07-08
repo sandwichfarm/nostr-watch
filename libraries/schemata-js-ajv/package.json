@@ -28,7 +28,7 @@
   },
   "devDependencies": {
     "@hyrious/esbuild-plugin-commonjs": "^0.2.4",
-    "esbuild": "^0.25.0",
+    "esbuild": "^0.28.1",
     "esbuild-plugin-polyfill-node": "^0.3.0",
     "typescript": "^5.7.2",
     "vitest": "3.2.6"

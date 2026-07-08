@@ -162,6 +162,10 @@ export const prettyNames: NameFormatter = {
         short: 'NIP-11?',
         long: 'Has NIP-11'
     },
+    hasLimitations: {
+        short: 'Limits?',
+        long: 'Has Limitations'
+    },
     operatorPubkey: {
         short: 'Op. Pk',
         long: 'Operator Pubkey'
@@ -531,6 +535,11 @@ export const tableFormatters: Formatters = {
     hasNip11: (r) => {
         if(!r) return ''
         return `<img class="text-green" src="${IconBadgeCheckGreen}" />`
+    },
+    hasLimitations: (r) => {
+        const text = r? 'yes': ''
+        const style = r? '': 'text-opacity-50'
+        return `<span class="p-1 inline-block mr-1 uppercase text-xs bold text-${style}">${text}</span>`
     },
     nip11IsValid: (valid: boolean, row: any) => {
         if(row.hasNip11 === undefined) return '<span class="opacity-20">n/a</span>';

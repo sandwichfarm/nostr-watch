@@ -109,7 +109,7 @@
 		"vite-plugin-wasm": "^3.3.0",
 		"vite-plugin-yaml": "^1.0.5",
 		"vitest": "^2.0.0",
-		"ws": "^8.18.0"
+		"ws": "^8.20.1"
 	},
 	"svelte": "./dist/index.js",
 	"types": "./dist/index.d.ts",

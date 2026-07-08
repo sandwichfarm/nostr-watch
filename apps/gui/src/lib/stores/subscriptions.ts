@@ -1,5 +1,4 @@
 import { get, writable, type Writable } from "svelte/store";
-import type { S } from "vitest/dist/chunks/config.Cy0C388Z.js";
 
 export type SubscriptionHandler = () => Promise<undefined>;
 

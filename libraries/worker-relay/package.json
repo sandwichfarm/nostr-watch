@@ -12,8 +12,7 @@
   "scripts": {
     "clean": "rm -rf dist",
     "tsc": "tsc",
-    "build": "pnpm clean && pnpm tsc && pnpm run build:esm && pnpm run copy:wasm",
-    "build:esm": "esbuild src/worker.ts --bundle --minify --sourcemap --outdir=dist/esm --format=esm --out-extension:.js=.mjs --loader:.wasm=copy",
+    "build": "pnpm clean && pnpm tsc && node build.mjs && pnpm run copy:wasm",
     "copy:wasm": "cp src/sqlite/sqlite3.wasm dist/sqlite/sqlite3.wasm"
   },
   "files": [

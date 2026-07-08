@@ -890,6 +890,10 @@ export default class Base {
         }
       else
         message = "Check skipped because no connection could be made to relay's websocket."
+      // Don't overwrite checks that already completed successfully
+      // (e.g. open check passed before the websocket dropped during read)
+      const existing = this?.results?.get(key as keyof IResult);
+      if (existing?.data === true) return;
       this?.results?.set(key as keyof IResult, { data: false, duration: -1, status: "error", message }) 
     })
     const promise = this?.promises?.get(this?.current ?? "")

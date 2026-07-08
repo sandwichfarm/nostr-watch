@@ -100,10 +100,31 @@ class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
         this.handle_nostr_event(data);
       });
       this.base.ws.on("close", (closeEvent: CloseEvent) => {
+        // Unexpected close during read/write after successful open means the
+        // server rejected our NIP-01 subscription → not NIP-01 compatible.
+        if (!this.base.hard_fail) {
+          const openResult = this.base.results?.get('open');
+          if ((this.base.current === 'read' || this.base.current === 'write') && openResult?.data === true) {
+            this.base.websocket_hard_fail(
+              this.notNip01Compat(`WebSocket closed with code ${closeEvent.code}: ${closeEvent.reason || 'no reason'} after ${this.base.current} check`)
+            );
+            return;
+          }
+        }
         this.base.on_close();
       });
       this.base.ws.on("error", (error: Event) => {
         this.abortController.abort();
+        // Error during read/write after successful open → server rejected NIP-01.
+        if (!this.base.hard_fail) {
+          const openResult = this.base.results?.get('open');
+          if ((this.base.current === 'read' || this.base.current === 'write') && openResult?.data === true) {
+            this.base.websocket_hard_fail(
+              this.notNip01Compat(`WebSocket connected but received error during ${this.base.current} check`)
+            );
+            return;
+          }
+        }
         this.base.on_error(error);
       })
     } catch (e) {

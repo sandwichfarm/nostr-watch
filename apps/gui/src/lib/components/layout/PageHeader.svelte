@@ -29,7 +29,7 @@
     // sanitize via DOMPurify rather than dropping {@html} entirely. DOMPurify
     // is already a dependency of apps/gui (used in $utils/notes.ts).
     // sanitize() defaults strip script tags and event-handler attributes.
-    $: safeSubtitle = subtitle ? DOMPurify(subtitle) : '';
+    $: safeSubtitle = subtitle ? DOMPurify.sanitize(subtitle) : '';
 
 </script>
 <header

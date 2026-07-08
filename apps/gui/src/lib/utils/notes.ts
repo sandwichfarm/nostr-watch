@@ -292,7 +292,7 @@ async function applyMarkdown(text: string, options: MarkedOptions): Promise<stri
  * replace the default allowlist); ADD_TAGS / ADD_ATTR extend it.
  */
 function applySanitize(text: string): string {
-  return DOMPurify(text, {
+  return DOMPurify.sanitize(text, {
     ADD_TAGS: ['iframe'],
     ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'scrolling', 'src'],
   });

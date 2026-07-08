@@ -23,7 +23,6 @@
         videos: true,
         truncate: true,
         truncateLength: 100,
-        sanitize: false,
         replaceAmpersand: true,
     };
     

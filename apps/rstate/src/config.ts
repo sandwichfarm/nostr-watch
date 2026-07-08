@@ -44,6 +44,14 @@ export interface Config {
       enabled: boolean
       schedule: PublishSchedule
     }
+    kind30385: {
+      enabled: boolean
+      schedule: PublishSchedule
+      minObservations: number
+      materialChangeThreshold: number
+      historyRetention: number
+      publishUnreachable: boolean
+    }
     announce: {
       profile?: Record<string, unknown>
       frequency: string
@@ -352,6 +360,12 @@ function buildEnvOverrides(): Record<string, unknown> {
   if (env.PUBLISH_KIND20066_ENABLED !== undefined) o.publishKind20066Enabled = env.PUBLISH_KIND20066_ENABLED.toLowerCase() !== 'false'
   if (env.PUBLISH_KIND1166_ENABLED !== undefined) o.publishKind1166Enabled = env.PUBLISH_KIND1166_ENABLED.toLowerCase() !== 'false'
   if (env.PUBLISH_KIND1166_SCHEDULE !== undefined) o.publishKind1166Schedule = env.PUBLISH_KIND1166_SCHEDULE
+  if (env.PUBLISH_KIND30385_ENABLED !== undefined) o.publishKind30385Enabled = env.PUBLISH_KIND30385_ENABLED.toLowerCase() === 'true'
+  if (env.PUBLISH_KIND30385_SCHEDULE !== undefined) o.publishKind30385Schedule = env.PUBLISH_KIND30385_SCHEDULE
+  if (env.PUBLISH_KIND30385_MIN_OBSERVATIONS !== undefined) o.publishKind30385MinObservations = parseNumber(env.PUBLISH_KIND30385_MIN_OBSERVATIONS, 3)
+  if (env.PUBLISH_KIND30385_MATERIAL_CHANGE_THRESHOLD !== undefined) o.publishKind30385MaterialChangeThreshold = parseNumber(env.PUBLISH_KIND30385_MATERIAL_CHANGE_THRESHOLD, 0.05)
+  if (env.PUBLISH_KIND30385_HISTORY_RETENTION !== undefined) o.publishKind30385HistoryRetention = parseNumber(env.PUBLISH_KIND30385_HISTORY_RETENTION, 86400)
+  if (env.PUBLISH_KIND30385_PUBLISH_UNREACHABLE !== undefined) o.publishKind30385PublishUnreachable = env.PUBLISH_KIND30385_PUBLISH_UNREACHABLE.toLowerCase() === 'true'
   if (env.PUBLISH_FREQUENCY !== undefined) o.publishFrequency = env.PUBLISH_FREQUENCY
   if (env.PUBLISH_USER_DATA_RELAYS !== undefined) o.publishUserDataRelays = parseList(env.PUBLISH_USER_DATA_RELAYS)
   if (env.PUBLISH_PROFILE_NAME !== undefined) o.publishProfileName = env.PUBLISH_PROFILE_NAME
@@ -557,6 +571,7 @@ function buildConfigFromYaml(yaml: Record<string, unknown>, env: Record<string, 
     const kind1066Yaml = (pubYaml.kind1066 ?? {}) as Record<string, unknown>
     const kind20066Yaml = (pubYaml.kind20066 ?? {}) as Record<string, unknown>
     const kind1166Yaml = (pubYaml.kind1166 ?? {}) as Record<string, unknown>
+    const kind30385Yaml = (pubYaml.kind30385 ?? {}) as Record<string, unknown>
     const announceYaml = (pubYaml.announce ?? {}) as Record<string, unknown>
 
     const kind1066Enabled = env.publishKind1066Enabled !== undefined
@@ -576,6 +591,25 @@ function buildConfigFromYaml(yaml: Record<string, unknown>, env: Record<string, 
     const kind1166Schedule = validatePublishSchedule(
       (env.publishKind1166Schedule as string | undefined) ?? (kind1166Yaml.schedule as string | undefined)
     )
+
+    const kind30385Enabled = env.publishKind30385Enabled !== undefined
+      ? env.publishKind30385Enabled as boolean
+      : toBool(kind30385Yaml.enabled, false)
+    const kind30385Schedule = validatePublishSchedule(
+      (env.publishKind30385Schedule as string | undefined) ?? (kind30385Yaml.schedule as string | undefined)
+    )
+    const kind30385MinObservations = env.publishKind30385MinObservations !== undefined
+      ? env.publishKind30385MinObservations as number
+      : toNumber(kind30385Yaml.minObservations, 3)
+    const kind30385MaterialChangeThreshold = env.publishKind30385MaterialChangeThreshold !== undefined
+      ? env.publishKind30385MaterialChangeThreshold as number
+      : toNumber(kind30385Yaml.materialChangeThreshold, 0.05)
+    const kind30385HistoryRetention = env.publishKind30385HistoryRetention !== undefined
+      ? env.publishKind30385HistoryRetention as number
+      : toNumber(kind30385Yaml.historyRetention, 86400)
+    const kind30385PublishUnreachable = env.publishKind30385PublishUnreachable !== undefined
+      ? env.publishKind30385PublishUnreachable as boolean
+      : toBool(kind30385Yaml.publishUnreachable, false)
 
     // Announce config — profile is free-form from YAML, env vars add/override specific keys
     let profile: Record<string, unknown> | undefined = announceYaml.profile != null
@@ -603,6 +637,14 @@ function buildConfigFromYaml(yaml: Record<string, unknown>, env: Record<string, 
       kind1066: { enabled: kind1066Enabled, schedule: kind1066Schedule },
       kind20066: { enabled: kind20066Enabled },
       kind1166: { enabled: kind1166Enabled, schedule: kind1166Schedule },
+      kind30385: {
+        enabled: kind30385Enabled,
+        schedule: kind30385Schedule,
+        minObservations: Math.max(0, Math.floor(kind30385MinObservations)),
+        materialChangeThreshold: Math.max(0, kind30385MaterialChangeThreshold),
+        historyRetention: Math.max(0, Math.floor(kind30385HistoryRetention)),
+        publishUnreachable: kind30385PublishUnreachable,
+      },
       announce: {
         profile: profile && Object.keys(profile).length > 0 ? profile : undefined,
         frequency: announceFrequency,
@@ -753,6 +795,7 @@ function buildConfigFromEnv(): Config {
 
     const kind1066Schedule = validatePublishSchedule(process.env.PUBLISH_KIND1066_SCHEDULE)
     const kind1166Schedule = validatePublishSchedule(process.env.PUBLISH_KIND1166_SCHEDULE)
+    const kind30385Schedule = validatePublishSchedule(process.env.PUBLISH_KIND30385_SCHEDULE)
 
     // Announce config
     const announceProfile: Record<string, unknown> = {}
@@ -777,6 +820,14 @@ function buildConfigFromEnv(): Config {
       kind1166: {
         enabled: (process.env.PUBLISH_KIND1166_ENABLED ?? 'true').toLowerCase() !== 'false',
         schedule: kind1166Schedule,
+      },
+      kind30385: {
+        enabled: (process.env.PUBLISH_KIND30385_ENABLED ?? 'false').toLowerCase() === 'true',
+        schedule: kind30385Schedule,
+        minObservations: Math.max(0, Math.floor(parseNumber(process.env.PUBLISH_KIND30385_MIN_OBSERVATIONS, 3))),
+        materialChangeThreshold: Math.max(0, parseNumber(process.env.PUBLISH_KIND30385_MATERIAL_CHANGE_THRESHOLD, 0.05)),
+        historyRetention: Math.max(0, Math.floor(parseNumber(process.env.PUBLISH_KIND30385_HISTORY_RETENTION, 86400))),
+        publishUnreachable: (process.env.PUBLISH_KIND30385_PUBLISH_UNREACHABLE ?? 'false').toLowerCase() === 'true',
       },
       announce: {
         profile: Object.keys(announceProfile).length > 0 ? announceProfile : undefined,

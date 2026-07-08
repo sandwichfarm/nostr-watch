@@ -117,20 +117,20 @@ export const tableFormatters: Formatters = {
         // Nostr identifier guard — must be a bech32-style nostr id before
         // we interpolate into href. Anything else is rejected.
         if (!/^(npub|nprofile|nevent|note|naddr)1[a-z0-9]+$/i.test(reference)) return '-';
-        const referenceHtml = `<a href="https://njump.me/${reference}" target="_blank" class="text-sm underline">jump</a>`;
+        const referenceHtml = `<a href="https://njump.me/${escapeHtml(String(reference))}" target="_blank" class="text-sm underline">jump</a>`;
         return referenceHtml;
     },
     relaysCount: (relaysCount: number) => {
         if(typeof relaysCount !== 'number') return '-';
-        return `<span class="text-sm rounded-full full py-2 px-3 bg-black/10 dark:bg-white/10">${relaysCount}</span>`;
+        return `<span class="text-sm rounded-full full py-2 px-3 bg-black/10 dark:bg-white/10">${Number(relaysCount)}</span>`;
     },
     ispsCount: (ispsCount: number) => {
         if(typeof ispsCount !== 'number') return '-';
-        return `<span class="text-sm rounded-full full py-2 px-3 bg-black/10 dark:bg-white/10">${ispsCount}</span>`;
+        return `<span class="text-sm rounded-full full py-2 px-3 bg-black/10 dark:bg-white/10">${Number(ispsCount)}</span>`;
     },
     softwaresCount: (softwaresCount: number) => {
         if(typeof softwaresCount !== 'number') return '-';
-        return `<span class="text-sm rounded-full full py-2 px-3 bg-black/10 dark:bg-white/10">${softwaresCount}</span>`;
+        return `<span class="text-sm rounded-full full py-2 px-3 bg-black/10 dark:bg-white/10">${Number(softwaresCount)}</span>`;
     }
 
 }

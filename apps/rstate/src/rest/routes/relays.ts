@@ -8,6 +8,7 @@
 import type { FastifyInstance } from 'fastify'
 import type { RestContext } from '../server.js'
 import type { RelayState } from '../../types/aggregation.js'
+import type { TrustAssertionStatus } from '../../core/trust/trusted-relay-assertions.js'
 import { getLogger } from '../../utils/logger.js'
 import { applyShapeList, applyShapeSingle } from '../../types/response-formats.js'
 import { schemas } from '../schemas.js'
@@ -62,6 +63,62 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
     sortRelays(all, sortBy, sortOrder)
     return all
   }
+
+  // GET /relays/trust — single relay trust assertion
+  app.get<{
+    Querystring: { relayUrl: string }
+  }>('/relays/trust', {
+    schema: {
+      tags: ['relays'],
+      description: 'Get rstate trusted relay assertion for a specific relay',
+      querystring: {
+        type: 'object',
+        properties: { relayUrl: { type: 'string', format: 'uri' } },
+        required: ['relayUrl'],
+      },
+      response: { 200: schemas.relays.trust },
+    },
+  }, async (request, reply) => {
+    const trust = core.query.trust(request.query.relayUrl)
+    if (!trust) {
+      return reply.status(404).send({ error: { code: 'RELAY_NOT_FOUND', message: `Relay ${request.query.relayUrl} not found` } })
+    }
+    return { trust }
+  })
+
+  // GET /relays/trust/list — paginated trust assertions
+  app.get<{
+    Querystring: {
+      status?: TrustAssertionStatus
+      minScore?: number
+      minConfidence?: number
+      includeUnreachable?: boolean
+      limit?: number
+      offset?: number
+    }
+  }>('/relays/trust/list', {
+    schema: {
+      tags: ['relays'],
+      description: 'List rstate trusted relay assertions',
+      querystring: {
+        type: 'object',
+        properties: {
+          status: { type: 'string', enum: ['evaluated', 'insufficient_data', 'unreachable', 'blocked'] },
+          minScore: { type: 'number', minimum: 0, maximum: 100 },
+          minConfidence: { type: 'number', minimum: 0, maximum: 100 },
+          includeUnreachable: { type: 'boolean', default: true },
+          limit: { type: 'number', default: 50, maximum: 500 },
+          offset: { type: 'number', default: 0, minimum: 0 },
+        },
+      },
+      response: { 200: schemas.relays.trustList },
+    },
+  }, async (request) => {
+    const { limit = 50, offset = 0, ...filters } = request.query
+    const total = core.query.trustList(filters).length
+    const assertions = core.query.trustList({ ...filters, limit, offset })
+    return { assertions, total, limit, offset }
+  })
 
   // GET /relays — no pagination, all results (simple format)
   app.get<{

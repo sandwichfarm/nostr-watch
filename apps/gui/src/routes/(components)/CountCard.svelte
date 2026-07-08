@@ -4,6 +4,7 @@
 import { onMount } from "svelte";
 	import { writable, type Readable, type Writable } from "svelte/store";
 	import { fly, fade } from "svelte/transition";
+	import { safeHttpUrl } from "$utils/sanitize";
 
 	export let topText: string | undefined = undefined;
 	export let value: Readable<string | number | null>;
@@ -15,46 +16,58 @@ import { onMount } from "svelte";
     export let index: number = 0;
 	export let innerClass: string | undefined = undefined;
 
+    // Defensive wrap (CARD-01): closes a future regression vector. External
+    // URLs route through Phase 24's safeHttpUrl allowlist (http/https only,
+    // rejects javascript:/data:/breakout chars). Internal app routes
+    // (`/relays`, `/monitors`, ...) bind directly because safeHttpUrl rejects
+    // them (no scheme). The `(?!\/)` lookahead rejects protocol-relative
+    // `//evil.com` paths — those would otherwise let an attacker control the
+    // host through a leading-slash bypass.
+    $: safeLink = safeHttpUrl(link);
+    $: internalLink = (typeof link === 'string' && /^\/(?!\/)/.test(link)) ? link : '';
+
     let show: Writable<boolean> =  writable(false);
 
     onMount(() => {
         setTimeout(() => {
             show.set(true);
         }, 50*index);
-    })  
+    })
 </script>
 
 <div class="{$$restProps.class || ''} grid hp-card-wrapper">
 	<AlwaysSquare>
 	<div class="hp-card {innerClass? innerClass: 'bg-white/10 dark:bg-black/10'}">
-		
+
 		{#if $show && (($value !== null && $value !== undefined) || (display === 'donut' && donutPercent !== null && donutPercent !== undefined))}
 			<div class="content" in:fade>
                 <div in:fly={{ y: 20, duration: 300 }}>
-					{#if topText}
-                    <div class="label text-center">{@html topText}</div>
+					{#if topText || $$slots.topText}
+                    <div class="label text-center"><slot name="topText">{topText ?? ''}</slot></div>
 					{/if}
                     <div class="value text-7xl font-bold text-center">
 						{#if display === 'donut' && donutPercent !== null && donutPercent !== undefined}
 							<DonutRing percent={donutPercent} title={donutTitle} />
 						{:else}
-							{#if link}
-								<a href={link}>{@html $value}</a>
+							{#if internalLink}
+								<a href={internalLink}><slot>{$value ?? ''}</slot></a>
+							{:else if safeLink}
+								<a href={safeLink}><slot>{$value ?? ''}</slot></a>
 							{:else}
-								{@html $value}
+								<slot>{$value ?? ''}</slot>
 							{/if}
 						{/if}
-                        
+
                     </div>
-					{#if bottomText}
-                    <div class="label text-center px-4">{@html bottomText}</div>
+					{#if bottomText || $$slots.bottomText}
+                    <div class="label text-center px-4"><slot name="bottomText">{bottomText ?? ''}</slot></div>
 					{/if}
                 </div>
 			</div>
 		{/if}
 	</div>
 	</AlwaysSquare>
-	
+
 </div>
 
 <style lang="postcss">
@@ -63,13 +76,13 @@ import { onMount } from "svelte";
 	}
 
 	.hp-card {
-		@apply 
+		@apply
 			flex
-			border-white/5 border-[2px] 
-			 hover:bg-white/15 
+			border-white/5 border-[2px]
+			 hover:bg-white/15
 			rounded-md
 			items-center justify-center
-			shadow-start hover:shadow-end transition-shadow duration-200 
+			shadow-start hover:shadow-end transition-shadow duration-200
 			drop-shadow-[0_25px_25px_rgba(255,255,255,0.35)]
             min-h-[240px]
 			h-full;

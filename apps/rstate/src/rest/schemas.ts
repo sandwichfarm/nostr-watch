@@ -89,6 +89,8 @@ export const schemas = {
     get byNip() { return loadSchema('relays-by-nip-output.json') },
     get byCountry() { return loadSchema('relays-by-country-output.json') },
     get compare() { return loadSchema('relays-compare-output.json') },
+    get trust() { return loadSchema('relays-trust-output.json') },
+    get trustList() { return loadSchema('relays-trust-list-output.json') },
   },
   monitors: {
     get get() { return loadSchema('monitors-get-output.json') },

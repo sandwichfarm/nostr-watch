@@ -2,6 +2,7 @@
 
     import { clickToCopy } from "$utils/ux";
     import { safeImageUrl } from "$utils/sanitize";
+    import { bannerStyleString } from "$utils/style-helpers";
     import * as DOMPurify from "dompurify";
 
     export let title: string;
@@ -13,10 +14,12 @@
 
     const noop=()=>{}
 
-    // Validate the relay-controlled banner URL before interpolating it into a
-    // CSS `url('...')` value. safeImageUrl rejects any URL containing the
-    // attribute/CSS breakout characters and entity-encodes the result.
-    $: safeBanner = safeImageUrl(banner);
+    // Build the banner CSS style string via the shared helper. The helper gates
+    // the relay-controlled banner URL through safeImageUrl (rejecting CSS-context
+    // breakout characters) before interpolating it into the gradient + url('...')
+    // template. Returns '' when banner is missing or rejected, which Svelte
+    // renders as no `style` attribute applied.
+    $: bannerStyle = bannerStyleString(banner, { opacity: bgOpacity });
 
     // Validate the relay-controlled icon URL before binding it to <img src>.
     $: safeIcon = safeImageUrl(icon);
@@ -32,9 +35,7 @@
 <header
   id="relay-header"
   class="relative bg-center bg-cover bg-no-repeat px-3 pb-10 gradient-purple pt-24"
-  style={safeBanner ? `background: linear-gradient(rgba(0, 0, 0, ${bgOpacity}), rgba(0, 0, 0, ${bgOpacity})), url('${safeBanner}');
-    background-repeat: no-repeat;
-    background-size: cover;` : ''}
+  style={bannerStyle}
 >
   <!-- Absolute positioned slot for overlays like maps -->
   <slot name="absolute" />

@@ -5,6 +5,7 @@
     import * as Card from '$lib/components/ui/card';
 	import ProfileCompact from '$lib/components/partials/ProfileCompact.svelte';
     import { darkMode } from '$lib/stores/app';
+    import { bannerStyleString } from '$utils/style-helpers';
     import { delay } from "@nostrwatch/utils";
 	
 	import { route66 } from '$lib/stores';
@@ -72,23 +73,13 @@
     </Card.Header>  
     <Card.Content class="flex flex-col xl:flex-row pt-10">
         <div class="flex-row xl:flex-none w-full xl:w-1/4">
-            <div 
+            <div
                 class="p-3 pr-10 -mr-5 rounded-md relative"
-                style="{
+                style={
                     $profile?.banner
-                        ? 
-                            $darkMode
-                                ? 
-                                    `background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)),  url('${$profile.banner}'); 
-                                    background-repeat: no-repeat; 
-                                    background-size: cover;`
-                                :
-                                    `background: linear-gradient(rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.8)),  url('${$profile.banner}'); 
-                                    background-repeat: no-repeat; 
-                                    background-size: cover;`
-                            
+                        ? bannerStyleString($profile.banner, { darkMode: $darkMode, opacity: 0.8 })
                         : ''
-                }"
+                }
                 >
                 <div class="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-black to-transparent pointer-events-none z-10"></div>
 

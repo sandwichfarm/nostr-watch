@@ -3,7 +3,7 @@ import { SimplePool, nip19, getPublicKey } from "npm:nostr-tools";
 import { hexToBytes } from "@noble/hashes/utils";
 import type { Event } from "npm:nostr-tools";
 import { normalizeURL } from "npm:nostr-tools/utils";
-import { db } from "../db/db.ts";
+import { db, getIgnoredRelaysPendingDeletion } from "../db/db.ts";
 import type { Config, IgnoreListConfig } from "../types/config.ts";
 import { getErrorMessage } from "../types/errors.ts";
 
@@ -387,13 +387,20 @@ export class IgnoreListSync {
       return;
     }
 
-    this.logger.info(`Publishing NIP-09 deletions for ${this.localIgnoredRelays.size} ignored relays...`);
+    // Only publish for ignored relays whose deletion has NOT already been sent
+    // (deletion_published_at = 0). This is what prevents re-sending a deletion
+    // for every ignored relay on each boot; deleteRelayCheckEvent marks each on
+    // success and the marker survives restarts.
+    const pending = getIgnoredRelaysPendingDeletion();
+    this.logger.info(
+      `Publishing NIP-09 deletions for ${pending.length} ignored relays pending deletion (of ${this.localIgnoredRelays.size} total)...`,
+    );
 
     // Import deletion utility
     const { deleteRelayCheckEvent } = await import("./deletion.ts");
 
     let deletionCount = 0;
-    for (const [relayUrl, reason] of this.localIgnoredRelays) {
+    for (const { url: relayUrl, reason } of pending) {
       try {
         const ok = await deleteRelayCheckEvent(
           relayUrl,

@@ -26,7 +26,7 @@ export class ObservationStore {
   // Event ID set for de-duplication
   private seenEventIds: Set<string> = new Set()
 
-  constructor(private policy: AggregationPolicy) {
+  constructor(_policy: AggregationPolicy) {
     logger.info('Observation store initialized')
   }
 
@@ -34,7 +34,6 @@ export class ObservationStore {
    * Update the aggregation policy
    */
   updatePolicy(newPolicy: AggregationPolicy): void {
-    this.policy = newPolicy
     logger.debug({ policy: newPolicy }, 'Policy updated')
   }
 

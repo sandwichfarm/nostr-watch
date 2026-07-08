@@ -20,6 +20,7 @@
 	import Button from '../../ui/button/button.svelte';
 	import type { DataTableConfig } from './DataTableTypes';
 	import { darkMode } from '$lib/stores/theme';
+	import { bannerStyleString } from '$utils/style-helpers';
 	import { randomLoadingMessage } from '$utils/ux';
 	import Loading from '$lib/components/partials/Loading.svelte';
 
@@ -331,23 +332,13 @@
                     </Table.Header>
                     <Table.Body>
                         {#each tableInstance?.rows as row, rowIndex (`${row.id ?? ''}:${rowIndex}`)}
-                            <Table.Row 
-                                class="{$rowStyles.get(row.pubkey)}" 
-                                style="{
+                            <Table.Row
+                                class="{$rowStyles.get(row.pubkey)}"
+                                style={
                                     $config.rowBannerEnabled !== false && row.banner
-                                        ? 
-                                            $darkMode
-                                                ? 
-                                                    `background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)),  url('${row.banner}'); 
-                                                    background-repeat: no-repeat; 
-                                                    background-size: cover;`
-                                                :
-                                                    `background: linear-gradient(rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.8)),  url('${row.banner}'); 
-                                                    background-repeat: no-repeat; 
-                                                    background-size: cover;`
-                                            
+                                        ? bannerStyleString(row.banner, { darkMode: $darkMode, opacity: 0.8 })
                                         : ''
-                                }"
+                                }
                                 >
                                 {#if actionsComponent}
                                     <svelte:component this={actionsComponent} data={row} />

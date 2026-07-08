@@ -174,17 +174,6 @@ export async function runDaemon(config: Config): Promise<void> {
 
     const worker = new Worker(pubkey, queueManager, config, ignoreListSync);
 
-    // Drain remediation deletion queue now that config + keys + sync
-    // + worker are all wired. Deletions are published one-at-a-time
-    // via the normal deletion.ts pipeline; successfully OK'd entries
-    // are removed from the queue, failures are retried next startup.
-    try {
-      const { drainRemediationDeletionQueue } = await import("../utils/remediation.ts");
-      await drainRemediationDeletionQueue(config);
-    } catch (e) {
-      logger.error(`drainRemediationDeletionQueue failed: ${e}`);
-    }
-
     let seeder: RelaySeeder | undefined
     
     if(config?.relaymon?.seed) {
@@ -303,12 +292,77 @@ export async function runDaemon(config: Config): Promise<void> {
       logger.info("No seeder found, skipping initial seeding.");
     }
 
+    // Start health reporting before warmup. Warmup can run for a long time, and
+    // external push monitors should still see that RelayMon is alive.
+    let healthServer: HealthServer | null = null;
+    if (config.health?.enabled && config.health.server.enabled) {
+      try {
+        logger.info("Starting health server...");
+
+        // Load auth token if auth is enabled
+        let authToken: string | undefined;
+        if (config.health.server.authEnabled) {
+          authToken = await loadHealthAuthToken();
+          if (!authToken) {
+            logger.warn("Health server auth enabled but no token configured (RELAYMON_HEALTH_AUTH_TOKEN)");
+          }
+        }
+
+        healthServer = await startHealthServer(
+          config.health.server,
+          {
+            queueManager,
+            privkey,
+            heartbeat: heartbeatTracker,
+            errorTracker,
+            authToken,
+            thresholds: config.health.thresholds,
+          },
+        );
+      } catch (error) {
+        logger.error(`Failed to start health server: ${error.message}`);
+        errorTracker.track(`Failed to start health server: ${error.message}`, "daemon");
+      }
+    }
+
+    let kumaPusher: KumaPusher | null = null;
+    if (config.health?.enabled && config.health.kuma.enabled) {
+      try {
+        logger.info("Starting Kuma pusher...");
+
+        // Load Kuma push URL
+        const kumaPushUrl = await loadKumaPushUrl();
+        if (!kumaPushUrl) {
+          logger.error("Kuma pusher enabled but no push URL configured");
+          logger.error("Set RELAYMON_KUMA_PUSH_URL or RELAYMON_KUMA_BASE_URL + RELAYMON_KUMA_TOKEN");
+        } else {
+          logger.info(`Kuma push URL configured: ${redactUrl(kumaPushUrl)}`);
+
+          kumaPusher = await startKumaPusher(
+            config.health.kuma,
+            {
+              queueManager,
+              privkey,
+              heartbeat: heartbeatTracker,
+              errorTracker,
+              thresholds: config.health.thresholds,
+            },
+            kumaPushUrl,
+          );
+        }
+      } catch (error) {
+        logger.error(`Failed to start Kuma pusher: ${error.message}`);
+        errorTracker.track(`Failed to start Kuma pusher: ${error.message}`, "daemon");
+      }
+    }
+
     // Warmup runner - checks all unchecked relays (checked_at = -1) for configured networks
     async function runWarmup(): Promise<void> {
       try {
         // Turn on warmup mode in the worker to suppress publishing and bypass DB-ignore for first checks
         worker.setWarmupMode(true);
         queueManager.setWarmupActive(true);
+        heartbeatTracker.checkLoop = Date.now();
         while (true) {
           // Build network filter from config
           const networks: string[] = Array.isArray(config.relaymon.networks) ? config.relaymon.networks : ["clearnet"];
@@ -323,6 +377,7 @@ export async function runDaemon(config: Config): Promise<void> {
           }
 
           logger.info(`Warmup: processing ${urls.length} unchecked relays`);
+          heartbeatTracker.checkLoop = Date.now();
           // Enqueue all unchecked relays
           for (const url of urls) {
             // Skip any malformed items defensively
@@ -352,6 +407,16 @@ export async function runDaemon(config: Config): Promise<void> {
 
     // Run warmup before starting normal loops
     await runWarmup();
+
+    // Drain remediation deletion queue after warmup re-enables deletion
+    // publishing. Draining earlier makes deletion.ts return false before
+    // sending any kind:5 event, which leaves valid removals in the queue.
+    try {
+      const { drainRemediationDeletionQueue } = await import("../utils/remediation.ts");
+      await drainRemediationDeletionQueue(config);
+    } catch (e) {
+      logger.error(`drainRemediationDeletionQueue failed: ${e}`);
+    }
 
     // Auto-recover from retry poisoning (e.g. after prolonged proxy outage)
     // Only checks relays whose last known state was online=1 — dead relays
@@ -545,70 +610,6 @@ export async function runDaemon(config: Config): Promise<void> {
           logger.error(`Error in runIgnoredRelayReevaluation: ${error.message}`);
           await delay(60000);
         }
-      }
-    }
-
-    // Initialize health server if enabled
-    let healthServer: HealthServer | null = null;
-    if (config.health?.enabled && config.health.server.enabled) {
-      try {
-        logger.info("Starting health server...");
-
-        // Load auth token if auth is enabled
-        let authToken: string | undefined;
-        if (config.health.server.authEnabled) {
-          authToken = await loadHealthAuthToken();
-          if (!authToken) {
-            logger.warn("Health server auth enabled but no token configured (RELAYMON_HEALTH_AUTH_TOKEN)");
-          }
-        }
-
-        healthServer = await startHealthServer(
-          config.health.server,
-          {
-            queueManager,
-            privkey,
-            heartbeat: heartbeatTracker,
-            errorTracker,
-            authToken,
-            thresholds: config.health.thresholds,
-          },
-        );
-      } catch (error) {
-        logger.error(`Failed to start health server: ${error.message}`);
-        errorTracker.track(`Failed to start health server: ${error.message}`, "daemon");
-      }
-    }
-
-    // Initialize Kuma pusher if enabled
-    let kumaPusher: KumaPusher | null = null;
-    if (config.health?.enabled && config.health.kuma.enabled) {
-      try {
-        logger.info("Starting Kuma pusher...");
-
-        // Load Kuma push URL
-        const kumaPushUrl = await loadKumaPushUrl();
-        if (!kumaPushUrl) {
-          logger.error("Kuma pusher enabled but no push URL configured");
-          logger.error("Set RELAYMON_KUMA_PUSH_URL or RELAYMON_KUMA_BASE_URL + RELAYMON_KUMA_TOKEN");
-        } else {
-          logger.info(`Kuma push URL configured: ${redactUrl(kumaPushUrl)}`);
-
-          kumaPusher = await startKumaPusher(
-            config.health.kuma,
-            {
-              queueManager,
-              privkey,
-              heartbeat: heartbeatTracker,
-              errorTracker,
-              thresholds: config.health.thresholds,
-            },
-            kumaPushUrl,
-          );
-        }
-      } catch (error) {
-        logger.error(`Failed to start Kuma pusher: ${error.message}`);
-        errorTracker.track(`Failed to start Kuma pusher: ${error.message}`, "daemon");
       }
     }
 

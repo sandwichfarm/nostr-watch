@@ -4,7 +4,7 @@ Runs RelayMon in clearnet mode, with all traffic routed through a VPN via [Gluet
 
 ## How It Works
 
-This stack adds a Gluetun VPN container in front of RelayMon. RelayMon uses Gluetun's network (`network_mode: container:gluetun`), so all outbound traffic — relay connections, DNS lookups, event publishing — goes through the VPN tunnel. The relay monitoring behavior is identical to the clearnet stack, just routed differently.
+This stack adds a Gluetun VPN container in front of RelayMon. RelayMon uses Gluetun's network (`network_mode: container:gluetun`), so all outbound traffic — relay connections, DNS lookups, NIP-66 publishing, and optional Trusted Relay Assertion publishing — goes through the VPN tunnel. The relay monitoring behavior is identical to the clearnet stack, just routed differently.
 
 ## Setup
 
@@ -56,4 +56,4 @@ To change the VPN provider, also update `VPN_SERVICE_PROVIDER` in `docker-compos
 
 ### `config.yaml`
 
-See `config.yaml.example` for a fully commented template. Configuration is the same as the clearnet stack.
+See `config.yaml.example` for a fully commented template. Configuration is the same as the clearnet stack. Set `relaymon.trustedRelayAssertions.enabled` to `true` to publish optional kind `30385` trust assertions.

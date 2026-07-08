@@ -7,7 +7,7 @@ Runs Trawler and RelayMon with Tor and I2P proxy support. RelayMon uses [hedprox
 This stack runs four containers on a shared Docker bridge network (`relaymon-net`):
 
 - **Trawler** — Crawls relay lists over clearnet to discover new relays, writes them to its own SQLite database (`trawler.db`)
-- **RelayMon** — Runs in `multinet` mode, maintaining its own database (`relaymon.db`) for check state. Seeds its relay list by reading from trawler's database as a read-only source. hedproxy routes connections based on URL scheme (`.onion` to Tor, `.i2p` to I2P, everything else direct)
+- **RelayMon** — Runs in `multinet` mode, maintaining its own database (`relaymon.db`) for check state. Seeds its relay list by reading from trawler's database as a read-only source and can optionally publish Trusted Relay Assertions (kind `30385`). hedproxy routes connections based on URL scheme (`.onion` to Tor, `.i2p` to I2P, everything else direct)
 - **tor-proxy** — Tor daemon exposing SOCKS5 on port 9050
 - **i2pd** — I2P daemon with SAM bridge
 
@@ -65,7 +65,7 @@ The default `docker-compose.yaml` does not mount a trawler `.env` file. If you n
 
 ### `relaymon-config.yaml` / `trawler-config.yaml`
 
-See the `.example` files for fully commented templates. The relaymon config enables all three networks (`clearnet`, `tor`, `i2pd`) and seeds from trawler's database.
+See the `.example` files for fully commented templates. The relaymon config enables all three networks (`clearnet`, `tor`, `i2pd`) and seeds from trawler's database. Set `relaymon.trustedRelayAssertions.enabled` to `true` to publish optional kind `30385` trust assertions.
 
 ### Database Architecture
 

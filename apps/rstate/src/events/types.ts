@@ -1,8 +1,10 @@
 /**
  * Event Publishing Types
  *
- * Shared types for Kind 1066, 20066, and 1166 event publishing
+ * Shared types for Kind 1066, 20066, 1166, and 30385 event publishing
  */
+
+import type { TrustedRelayAssertion } from '../core/trust/trusted-relay-assertions.js'
 
 export type OperationalStatus = 'init' | 'up' | 'down'
 
@@ -33,4 +35,8 @@ export interface Kind1166Category {
   category: string
   key: string
   value: string
+}
+
+export interface Kind30385Data {
+  assertion: TrustedRelayAssertion
 }

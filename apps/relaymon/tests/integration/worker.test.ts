@@ -10,14 +10,18 @@
  * - Status tracking
  */
 
-import { assertEquals, assert, assertExists } from "https://deno.land/std@0.218.2/assert/mod.ts";
+import {
+  assert,
+  assertEquals,
+  assertExists,
+} from "https://deno.land/std@0.218.2/assert/mod.ts";
 import { Worker } from "../../src/core/worker.ts";
 import { QueueManager } from "../../src/utils/queueManager.ts";
-import { initializeDB, db } from "../../src/db/db.ts";
+import { db, initializeDB } from "../../src/db/db.ts";
 import { mockConfig } from "../helpers/fixtures.ts";
 import type { Config } from "../../src/types/config.ts";
 import { getPublicKey, nip19 } from "npm:nostr-tools";
-import { hexToBytes } from "npm:@noble/hashes/utils";
+import { hexToBytes } from "@noble/hashes/utils";
 
 // Initialize test database
 const testDbPath = ":memory:";
@@ -25,7 +29,7 @@ initializeDB(testDbPath, false);
 
 // Test private key for signing
 const testPrivkey = "a".repeat(64);
-const testPubkey = getPublicKey(testPrivkey);
+const testPubkey = getPublicKey(hexToBytes(testPrivkey));
 
 // Set env var for tests (convert to nsec format)
 const testNsec = nip19.nsecEncode(hexToBytes(testPrivkey));
@@ -49,7 +53,7 @@ function workerTest(name: string, fn: () => void | Promise<void>) {
     name,
     sanitizeResources: false,
     sanitizeOps: false,
-    fn
+    fn,
   });
 }
 
@@ -78,15 +82,18 @@ workerTest("Worker - can be instantiated with valid config", () => {
 /**
  * Test: Worker initializes relay status from database
  */
-workerTest("Worker - initializes relay status from database on construction", () => {
-  clearDatabase();
-  db.query(
-    "INSERT INTO relay_status (url, online, retries, checked_at, network) VALUES (?, ?, ?, ?, ?)",
-    ["wss://test.relay.com", 1, 3, Date.now(), "clearnet"]
-  );
-  const { worker } = createTestWorker();
-  assertExists(worker);
-});
+workerTest(
+  "Worker - initializes relay status from database on construction",
+  () => {
+    clearDatabase();
+    db.query(
+      "INSERT INTO relay_status (url, online, retries, checked_at, network) VALUES (?, ?, ?, ?, ?)",
+      ["wss://test.relay.com", 1, 3, Date.now(), "clearnet"],
+    );
+    const { worker } = createTestWorker();
+    assertExists(worker);
+  },
+);
 
 /**
  * Test: processRelay skips blocked hostnames
@@ -113,7 +120,7 @@ workerTest("Worker - processRelay skips already ignored relays", async () => {
   // Pre-populate database with an ignored relay
   db.query(
     "INSERT INTO relay_status (url, online, ignore, checked_at, network) VALUES (?, ?, ?, ?, ?)",
-    ["wss://ignored.relay.com", 0, 1, Date.now(), "clearnet"]
+    ["wss://ignored.relay.com", 0, 1, Date.now(), "clearnet"],
   );
 
   const { worker } = createTestWorker();
@@ -122,7 +129,9 @@ workerTest("Worker - processRelay skips already ignored relays", async () => {
   await worker.processRelay("wss://ignored.relay.com");
 
   // Verify it's still marked as ignored
-  const result = db.query("SELECT ignore FROM relay_status WHERE url = ?", ["wss://ignored.relay.com"]);
+  const result = db.query("SELECT ignore FROM relay_status WHERE url = ?", [
+    "wss://ignored.relay.com",
+  ]);
   assertEquals(result.length, 1);
   assertEquals(result[0][0], 1); // Still ignored
 });
@@ -136,7 +145,7 @@ workerTest("Worker - processRelay handles first-time relay check", async () => {
   // Insert a relay with checked_at = -1 (first check marker)
   db.query(
     "INSERT INTO relay_status (url, online, checked_at, network) VALUES (?, ?, ?, ?)",
-    ["wss://new.relay.com", 0, -1, "clearnet"]
+    ["wss://new.relay.com", 0, -1, "clearnet"],
   );
 
   const { worker } = createTestWorker();
@@ -146,7 +155,9 @@ workerTest("Worker - processRelay handles first-time relay check", async () => {
   await worker.processRelay("wss://new.relay.com");
 
   // Verify it completed without error (checked_at may or may not be updated depending on error handling)
-  const result = db.query("SELECT checked_at FROM relay_status WHERE url = ?", ["wss://new.relay.com"]);
+  const result = db.query("SELECT checked_at FROM relay_status WHERE url = ?", [
+    "wss://new.relay.com",
+  ]);
   // Test passes if the relay still exists in the database
   assert(result.length > 0);
 });
@@ -154,63 +165,77 @@ workerTest("Worker - processRelay handles first-time relay check", async () => {
 /**
  * Test: processRelay persists check results to database
  */
-workerTest("Worker - processRelay persists check results to database", async () => {
-  clearDatabase();
+workerTest(
+  "Worker - processRelay persists check results to database",
+  async () => {
+    clearDatabase();
 
-  const { worker } = createTestWorker();
-  const testUrl = "wss://test-persistence.relay.com";
+    const { worker } = createTestWorker();
+    const testUrl = "wss://test-persistence.relay.com";
 
-  // Process a relay (will fail to connect, but should persist the attempt)
-  await worker.processRelay(testUrl);
+    // Process a relay (will fail to connect, but should persist the attempt)
+    await worker.processRelay(testUrl);
 
-  // Check that a database entry was created or updated
-  const result = db.query("SELECT url, checked_at FROM relay_status WHERE url = ?", [testUrl]);
+    // Check that a database entry was created or updated
+    const result = db.query(
+      "SELECT url, checked_at FROM relay_status WHERE url = ?",
+      [testUrl],
+    );
 
-  // Should have persisted something about this relay
-  assertExists(result);
-});
+    // Should have persisted something about this relay
+    assertExists(result);
+  },
+);
 
 /**
  * Test: processRelay handles relay check errors gracefully
  */
-workerTest("Worker - processRelay handles relay check errors gracefully", async () => {
-  clearDatabase();
+workerTest(
+  "Worker - processRelay handles relay check errors gracefully",
+  async () => {
+    clearDatabase();
 
-  const { worker } = createTestWorker();
+    const { worker } = createTestWorker();
 
-  // Process an invalid relay URL - should handle error gracefully
-  await worker.processRelay("wss://nonexistent-test-relay-12345.invalid");
+    // Process an invalid relay URL - should handle error gracefully
+    await worker.processRelay("wss://nonexistent-test-relay-12345.invalid");
 
-  // Should complete without throwing
-  assert(true);
-});
+    // Should complete without throwing
+    assert(true);
+  },
+);
 
 /**
  * Test: processRelay tracks retry counts for offline relays
  */
-workerTest("Worker - processRelay tracks retry counts for offline relays", async () => {
-  clearDatabase();
+workerTest(
+  "Worker - processRelay tracks retry counts for offline relays",
+  async () => {
+    clearDatabase();
 
-  const testUrl = "wss://offline-retry.relay.com";
+    const testUrl = "wss://offline-retry.relay.com";
 
-  // Pre-populate with an offline relay
-  db.query(
-    "INSERT INTO relay_status (url, online, retries, checked_at, network) VALUES (?, ?, ?, ?, ?)",
-    [testUrl, 0, 0, Date.now() - 1000000, "clearnet"]
-  );
+    // Pre-populate with an offline relay
+    db.query(
+      "INSERT INTO relay_status (url, online, retries, checked_at, network) VALUES (?, ?, ?, ?, ?)",
+      [testUrl, 0, 0, Date.now() - 1000000, "clearnet"],
+    );
 
-  const { worker } = createTestWorker();
+    const { worker } = createTestWorker();
 
-  // Process the relay - it will fail again, incrementing retry count
-  await worker.processRelay(testUrl);
+    // Process the relay - it will fail again, incrementing retry count
+    await worker.processRelay(testUrl);
 
-  // Check if retries were incremented
-  const result = db.query("SELECT retries FROM relay_status WHERE url = ?", [testUrl]);
-  if (result.length > 0) {
-    // Retries should have been incremented (could be 0 or 1 depending on logic)
-    assert((result[0][0] as number) >= 0);
-  }
-});
+    // Check if retries were incremented
+    const result = db.query("SELECT retries FROM relay_status WHERE url = ?", [
+      testUrl,
+    ]);
+    if (result.length > 0) {
+      // Retries should have been incremented (could be 0 or 1 depending on logic)
+      assert((result[0][0] as number) >= 0);
+    }
+  },
+);
 
 /**
  * Test: Worker respects publish retry configuration
@@ -223,9 +248,9 @@ workerTest("Worker - respects publish retry configuration from config", () => {
     publisher: {
       retry: {
         maxRetries: 10,
-        initialBackoffMs: 5000
-      }
-    }
+        initialBackoffMs: 5000,
+      },
+    },
   };
 
   const queueManager = new QueueManager(5, 2, customConfig as Config);
@@ -246,7 +271,7 @@ workerTest("Worker - can process multiple relays sequentially", async () => {
   const relays = [
     "wss://test1.relay.com",
     "wss://test2.relay.com",
-    "wss://test3.relay.com"
+    "wss://test3.relay.com",
   ];
 
   // Process all relays
@@ -262,40 +287,46 @@ workerTest("Worker - can process multiple relays sequentially", async () => {
 /**
  * Test: Worker handles relay recovery (offline -> online)
  */
-workerTest("Worker - tracks relay recovery from offline to online", async () => {
-  clearDatabase();
+workerTest(
+  "Worker - tracks relay recovery from offline to online",
+  async () => {
+    clearDatabase();
 
-  const testUrl = "wss://recovery-test.relay.com";
+    const testUrl = "wss://recovery-test.relay.com";
 
-  // Pre-populate with an offline relay that had retries
-  db.query(
-    "INSERT INTO relay_status (url, online, retries, checked_at, network) VALUES (?, ?, ?, ?, ?)",
-    [testUrl, 0, 5, Date.now() - 1000000, "clearnet"]
-  );
+    // Pre-populate with an offline relay that had retries
+    db.query(
+      "INSERT INTO relay_status (url, online, retries, checked_at, network) VALUES (?, ?, ?, ?, ?)",
+      [testUrl, 0, 5, Date.now() - 1000000, "clearnet"],
+    );
 
-  const { worker } = createTestWorker();
+    const { worker } = createTestWorker();
 
-  // Process the relay (will fail to connect, but tests the recovery logic)
-  await worker.processRelay(testUrl);
+    // Process the relay (will fail to connect, but tests the recovery logic)
+    await worker.processRelay(testUrl);
 
-  // The test verifies the worker doesn't crash when handling potential recovery scenarios
-  assert(true);
-});
+    // The test verifies the worker doesn't crash when handling potential recovery scenarios
+    assert(true);
+  },
+);
 
 /**
  * Test: Worker integrates with QueueManager for publishing
  */
-workerTest("Worker - integrates with QueueManager for publishing events", async () => {
-  clearDatabase();
+workerTest(
+  "Worker - integrates with QueueManager for publishing events",
+  async () => {
+    clearDatabase();
 
-  const { worker, queueManager } = createTestWorker();
+    const { worker, queueManager } = createTestWorker();
 
-  // Check that queue manager is accessible and functional
-  assertExists(queueManager);
+    // Check that queue manager is accessible and functional
+    assertExists(queueManager);
 
-  // Process a relay - should add publish jobs to the queue
-  await worker.processRelay("wss://publish-test.relay.com");
+    // Process a relay - should add publish jobs to the queue
+    await worker.processRelay("wss://publish-test.relay.com");
 
-  // Queue manager should have been used (no crash = success)
-  assert(true);
-});
+    // Queue manager should have been used (no crash = success)
+    assert(true);
+  },
+);

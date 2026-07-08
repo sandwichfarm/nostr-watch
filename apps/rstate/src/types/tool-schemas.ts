@@ -6,6 +6,7 @@
  */
 
 import type { RelayState, AggregationPolicy } from './aggregation.js'
+import type { TrustedRelayAssertion, TrustAssertionStatus } from '../core/trust/trusted-relay-assertions.js'
 import type { MonitorAnnouncement } from './events.js'
 import type { MonitorAnalytics } from './monitor-scoring.js'
 
@@ -67,6 +68,30 @@ export interface RelaysGetStateInput {
 
 export interface RelaysGetStateOutput {
   relay: RelayState | null
+}
+
+export interface RelaysTrustInput {
+  relayUrl: string
+}
+
+export interface RelaysTrustOutput {
+  trust: TrustedRelayAssertion | null
+}
+
+export interface RelaysTrustListInput {
+  status?: TrustAssertionStatus
+  minScore?: number
+  minConfidence?: number
+  includeUnreachable?: boolean
+  limit?: number
+  offset?: number
+}
+
+export interface RelaysTrustListOutput {
+  assertions: TrustedRelayAssertion[]
+  total: number
+  limit: number
+  offset: number
 }
 
 /**

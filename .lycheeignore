@@ -9,5 +9,7 @@
 ^/architecture
 ^/getting-started
 ^/packages
+# Local planning artifacts — intentionally absent from CI checkouts and package docs
+^file://.*/\.planning/
 # localhost dev server — not available in CI
 ^http://localhost

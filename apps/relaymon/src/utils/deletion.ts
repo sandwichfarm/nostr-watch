@@ -4,7 +4,12 @@ import { getEventHash, getPublicKey } from "npm:nostr-tools";
 import { hexToBytes } from "@noble/hashes/utils";
 import type { Config } from "../config/config.ts";
 import type { QueueManager } from "./queueManager.ts";
-import { clearDeltaState, clearPeriodSnapshots } from "../db/db.ts";
+import {
+  clearDeltaState,
+  clearPeriodSnapshots,
+  isDeletionPublished,
+  markDeletionPublished,
+} from "../db/db.ts";
 import { getPrivateKey } from "../core/daemon.ts";
 
 const logger = getLogger("Deletion");
@@ -60,7 +65,9 @@ export class Kind5Event extends Event {
 }
 
 /**
- * Track deleted relays to prevent publishing duplicate deletion events
+ * In-memory fast path for the current run. The durable guarantee lives in the
+ * relay_status.deletion_published_at column (isDeletionPublished) so the
+ * "publish each deletion once" rule survives reboots.
  */
 const deletedRelays = new Set<string>();
 
@@ -100,8 +107,11 @@ export async function deleteRelayCheckEvent(
       return false;
     }
     
-    // Check if we've already deleted this relay
-    if (deletedRelays.has(relayUrl)) {
+    // Check if we've already deleted this relay — in this run (fast path) or in
+    // a previous one (durable, survives reboot). This is what stops re-sending a
+    // deletion for every ignored relay on every boot.
+    if (deletedRelays.has(relayUrl) || isDeletionPublished(relayUrl)) {
+      deletedRelays.add(relayUrl);
       logger.debug(`Relay ${relayUrl} already has deletion event, skipping.`);
       return false;
     }
@@ -125,8 +135,10 @@ export async function deleteRelayCheckEvent(
           await publisher.publishEvent(signedEvent);
           logger.info(`Queued deletion event for relay ${relayUrl} using a-tag`);
 
-          // Add to the set of deleted relays on successful publish
+          // Record on successful publish (in-memory + durable) so we never
+          // re-send this deletion.
           deletedRelays.add(relayUrl);
+          markDeletionPublished(relayUrl);
 
           // Clear delta state and period snapshots for this relay
           clearDeltaState(relayUrl);
@@ -143,8 +155,9 @@ export async function deleteRelayCheckEvent(
       const publisher = new Publisher(pubkey, config.publisher.relays);
       await publisher.publishEvent(signedEvent);
 
-      // Add to the set of deleted relays
+      // Record on successful publish (in-memory + durable).
       deletedRelays.add(relayUrl);
+      markDeletionPublished(relayUrl);
 
       // Clear delta state and period snapshots for this relay
       clearDeltaState(relayUrl);

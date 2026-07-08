@@ -10,7 +10,7 @@ import { loadPricedCapabilities } from './payments/cvm-pricing.js'
 import { ResilientRelayPool } from './resilient-relay-pool.js'
 import type { Config } from './config.js'
 import { getLogger } from './utils/logger.js'
-import { ToolRegistry, registerToolset, type TransportContext } from './mcp/tool-adapter.js'
+import { ToolRegistry, registerToolset } from './mcp/tool-adapter.js'
 import { createHealthTool } from './tools/health.js'
 import { initStateCore, type StateCore } from './core/index.js'
 import { IngestionService } from './services/ingestion.js'
@@ -25,12 +25,15 @@ import { MetricsService } from './services/metrics.js'
 import { QueryCache } from './services/cache.js'
 import { EventPublisherService } from './services/event-publisher.js'
 import { DEFAULT_QUERY_SHAPE } from './utils/validation.js'
+import { getCacheConfig } from './tool-cache-config.js'
 import { verifyCriticalSchemas } from './utils/startup-checks.js'
 import {
   createRelaysListTool,
   createRelaysListDetailedTool,
   createRelaysListFullTool,
   createRelaysGetStateTool,
+  createRelaysTrustTool,
+  createRelaysTrustListTool,
   createRelaysSearchTool,
   createRelaysSearchDetailedTool,
   createRelaysSearchFullTool,
@@ -71,7 +74,6 @@ export class CVMServer {
   private transportPool?: ResilientRelayPool
   private signer?: PrivateKeySigner
   private toolRegistry?: ToolRegistry
-  private _transportContext?: TransportContext
   // DISABLED: Subscription system
   // private notificationDelivery?: NotificationDeliveryService
 
@@ -109,6 +111,12 @@ export class CVMServer {
     // Initialize State Core (transport-agnostic)
     this.core = initStateCore({
       aggregation: config.aggregation,
+      trust: {
+        minObservations: config.publishing?.kind30385.minObservations ?? 3,
+        historyRetention: config.publishing?.kind30385.historyRetention ?? 24 * 3600,
+        historyEnabled: config.publishing?.kind30385.enabled ?? false,
+        publishUnreachable: config.publishing?.kind30385.publishUnreachable ?? false,
+      },
     })
 
     // Create shared services (transport-agnostic)
@@ -176,11 +184,6 @@ export class CVMServer {
         getClientPubkey: () => this.toolRegistry!.getCurrentClientPubkey(),
       },
     })
-
-    // Store transport context reference for subscription tools
-    this._transportContext = {
-      getClientPubkey: () => this.toolRegistry!.getCurrentClientPubkey(),
-    }
 
     // Create MCP Server instance
     this.mcpServer = new Server(
@@ -356,119 +359,37 @@ export class CVMServer {
       { enabled: false }
     )
 
-    // Relay list tools (3 shapes, cached)
-    registry.registerTool(
-      createRelaysListTool(toolsContext),
-      { enabled: true, cacheKeyFn: (p) => `relays:list:${p.sortBy || 'url'}:${p.sortOrder || 'asc'}` }
-    )
-    registry.registerTool(
-      createRelaysListDetailedTool(toolsContext),
-      { enabled: true, cacheKeyFn: (p) => `relays:list:detailed:${p.sortBy || 'url'}:${p.sortOrder || 'asc'}` }
-    )
-    registry.registerTool(
-      createRelaysListFullTool(toolsContext),
-      { enabled: true, cacheKeyFn: (p) => `relays:list:full:${p.sortBy || 'url'}:${p.sortOrder || 'asc'}` }
-    )
-    registry.registerTool(
-      createRelaysGetStateTool(toolsContext),
-      { enabled: true, cacheKeyFn: (p) => `relays:state:${p.relayUrl}` }
-    )
-    // Relay search tools (3 shapes, cached)
-    registry.registerTool(
-      createRelaysSearchTool(toolsContext),
-      { enabled: true, cacheKeyFn: (p) => `relays:search:${JSON.stringify(p)}` }
-    )
-    registry.registerTool(
-      createRelaysSearchDetailedTool(toolsContext),
-      { enabled: true, cacheKeyFn: (p) => `relays:search:detailed:${JSON.stringify(p)}` }
-    )
-    registry.registerTool(
-      createRelaysSearchFullTool(toolsContext),
-      { enabled: true, cacheKeyFn: (p) => `relays:search:full:${JSON.stringify(p)}` }
-    )
-    // Relay nearby tools (3 shapes, cached)
-    registry.registerTool(
-      createRelaysNearbyTool(toolsContext),
-      { enabled: true, cacheKeyFn: (p) => `nearby:${p.lat}:${p.lon}:${p.radius || 100}` }
-    )
-    registry.registerTool(
-      createRelaysNearbyDetailedTool(toolsContext),
-      { enabled: true, cacheKeyFn: (p) => `nearby:detailed:${p.lat}:${p.lon}:${p.radius || 100}` }
-    )
-    registry.registerTool(
-      createRelaysNearbyFullTool(toolsContext),
-      { enabled: true, cacheKeyFn: (p) => `nearby:full:${p.lat}:${p.lon}:${p.radius || 100}` }
-    )
-    // Relay bbox tools (3 shapes, cached)
-    registry.registerTool(
-      createRelaysBboxTool(toolsContext),
-      { enabled: true, cacheKeyFn: (p) => `bbox:${p.sw.lat}:${p.sw.lon}:${p.ne.lat}:${p.ne.lon}` }
-    )
-    registry.registerTool(
-      createRelaysBboxDetailedTool(toolsContext),
-      { enabled: true, cacheKeyFn: (p) => `bbox:detailed:${p.sw.lat}:${p.sw.lon}:${p.ne.lat}:${p.ne.lon}` }
-    )
-    registry.registerTool(
-      createRelaysBboxFullTool(toolsContext),
-      { enabled: true, cacheKeyFn: (p) => `bbox:full:${p.sw.lat}:${p.sw.lon}:${p.ne.lat}:${p.ne.lon}` }
-    )
-    registry.registerTool(
-      createRelaysGetLabelsTool(toolsContext),
-      { enabled: true, cacheKeyFn: (p) => `labels:${p.relayUrl}:${p.namespace || 'all'}` }
-    )
-    registry.registerTool(
-      createRelaysListLabelsTool(toolsContext),
-      { enabled: true, cacheKeyFn: (p) => `list-labels:${p.namespace || 'all'}` }
-    )
-    // Relay by-label tools (3 shapes, cached)
-    registry.registerTool(
-      createRelaysByLabelTool(toolsContext),
-      { enabled: true, cacheKeyFn: (p) => `relays:group:label:${p.namespace}:${p.value}` }
-    )
-    registry.registerTool(
-      createRelaysByLabelDetailedTool(toolsContext),
-      { enabled: true, cacheKeyFn: (p) => `relays:group:label:detailed:${p.namespace}:${p.value}` }
-    )
-    registry.registerTool(
-      createRelaysByLabelFullTool(toolsContext),
-      { enabled: true, cacheKeyFn: (p) => `relays:group:label:full:${p.namespace}:${p.value}` }
-    )
-    registry.registerTool(
-      createRelaysBySoftwareTool(toolsContext),
-      { enabled: true, cacheKeyFn: (p) => `relays:group:software${p.family ? ':' + p.family : ''}` }
-    )
-    registry.registerTool(
-      createRelaysByNetworkTool(toolsContext),
-      { enabled: true, cacheKeyFn: () => `relays:group:network` }
-    )
-    registry.registerTool(
-      createRelaysByNipTool(toolsContext),
-      { enabled: true, cacheKeyFn: (p) => `relays:group:nip${p.nip ? ':' + p.nip : ''}` }
-    )
-    registry.registerTool(
-      createRelaysByCountryTool(toolsContext),
-      { enabled: true, cacheKeyFn: (p) => `relays:group:country${p.countryCode ? ':' + p.countryCode : ''}` }
-    )
-    registry.registerTool(
-      createRelaysCompareTool(toolsContext),
-      { enabled: true, cacheKeyFn: (p) => `compare:${p.relayUrls.sort().join(',')}` }
-    )
+    // Relay tools (cached via tool-cache-config.ts)
+    registry.registerTool(createRelaysListTool(toolsContext), getCacheConfig('relays/list'))
+    registry.registerTool(createRelaysListDetailedTool(toolsContext), getCacheConfig('relays/list/detailed'))
+    registry.registerTool(createRelaysListFullTool(toolsContext), getCacheConfig('relays/list/full'))
+    registry.registerTool(createRelaysGetStateTool(toolsContext), getCacheConfig('relays/state'))
+    registry.registerTool(createRelaysTrustTool(toolsContext), getCacheConfig('relays/trust'))
+    registry.registerTool(createRelaysTrustListTool(toolsContext), getCacheConfig('relays/trust/list'))
+    registry.registerTool(createRelaysSearchTool(toolsContext), getCacheConfig('relays/search'))
+    registry.registerTool(createRelaysSearchDetailedTool(toolsContext), getCacheConfig('relays/search/detailed'))
+    registry.registerTool(createRelaysSearchFullTool(toolsContext), getCacheConfig('relays/search/full'))
+    registry.registerTool(createRelaysNearbyTool(toolsContext), getCacheConfig('relays/nearby'))
+    registry.registerTool(createRelaysNearbyDetailedTool(toolsContext), getCacheConfig('relays/nearby/detailed'))
+    registry.registerTool(createRelaysNearbyFullTool(toolsContext), getCacheConfig('relays/nearby/full'))
+    registry.registerTool(createRelaysBboxTool(toolsContext), getCacheConfig('relays/bbox'))
+    registry.registerTool(createRelaysBboxDetailedTool(toolsContext), getCacheConfig('relays/bbox/detailed'))
+    registry.registerTool(createRelaysBboxFullTool(toolsContext), getCacheConfig('relays/bbox/full'))
+    registry.registerTool(createRelaysGetLabelsTool(toolsContext), getCacheConfig('relays/labels'))
+    registry.registerTool(createRelaysListLabelsTool(toolsContext), getCacheConfig('relays/labels/list'))
+    registry.registerTool(createRelaysByLabelTool(toolsContext), getCacheConfig('relays/by/label'))
+    registry.registerTool(createRelaysByLabelDetailedTool(toolsContext), getCacheConfig('relays/by/label/detailed'))
+    registry.registerTool(createRelaysByLabelFullTool(toolsContext), getCacheConfig('relays/by/label/full'))
+    registry.registerTool(createRelaysBySoftwareTool(toolsContext), getCacheConfig('relays/by/software'))
+    registry.registerTool(createRelaysByNetworkTool(toolsContext), getCacheConfig('relays/by/network'))
+    registry.registerTool(createRelaysByNipTool(toolsContext), getCacheConfig('relays/by/nip'))
+    registry.registerTool(createRelaysByCountryTool(toolsContext), getCacheConfig('relays/by/country'))
+    registry.registerTool(createRelaysCompareTool(toolsContext), getCacheConfig('relays/compare'))
 
-    // Availability tools (short TTL caching)
-    const availabilityTtl = 30 // seconds
-    const filterHash = (filters: any) => (filters ? JSON.stringify(filters) : 'none')
-    registry.registerTool(
-      createRelaysOnlineTool(toolsContext),
-      { enabled: true, cacheKeyFn: (p: any) => `availability:online:${p.onlineWindowSeconds || 'auto'}:${filterHash(p.filters)}`, ttlSeconds: availabilityTtl }
-    )
-    registry.registerTool(
-      createRelaysOfflineTool(toolsContext),
-      { enabled: true, cacheKeyFn: (p: any) => `availability:offline:${p.offlineThresholdSeconds || 'auto'}:${p.deadThresholdSeconds || 604800}:${filterHash(p.filters)}`, ttlSeconds: availabilityTtl }
-    )
-    registry.registerTool(
-      createRelaysDeadTool(toolsContext),
-      { enabled: true, cacheKeyFn: (p: any) => `availability:dead:${p.deadThresholdSeconds || 604800}:${filterHash(p.filters)}`, ttlSeconds: availabilityTtl }
-    )
+    // Availability tools (short TTL caching — TTL set in tool-cache-config.ts)
+    registry.registerTool(createRelaysOnlineTool(toolsContext), getCacheConfig('relays/online'))
+    registry.registerTool(createRelaysOfflineTool(toolsContext), getCacheConfig('relays/offline'))
+    registry.registerTool(createRelaysDeadTool(toolsContext), getCacheConfig('relays/dead'))
 
     // Monitor tools (cached)
     registry.registerTool(

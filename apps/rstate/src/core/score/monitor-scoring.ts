@@ -41,12 +41,12 @@ export class MonitorScoringService {
       const relayUrls = this.observationStore.getAllRelayUrls()
       let obsCount = 0
       for (const relayUrl of relayUrls) {
-        const obs = this.observationStore.getObservationsByAuthor(relayUrl, monitor.pubkey, now)
+        const obs = this.observationStore.getObservationsByAuthor(relayUrl, monitor.pubkey)
         obsCount += obs.length
       }
       console.log('[DEBUG] Monitor', monitor.pubkey, 'observation count:', obsCount)
       this.computeMonitorScore(monitor.pubkey, now)
-      this.computeMonitorCoverage(monitor.pubkey, now)
+      this.computeMonitorCoverage(monitor.pubkey)
     }
 
     console.log('[DEBUG] Scores computed. Scores:', this.scores.size, 'Coverages:', this.coverages.size)
@@ -64,7 +64,7 @@ export class MonitorScoringService {
     const observations: RelayObservation[] = []
 
     for (const relayUrl of allRelayUrls) {
-      const obs = this.observationStore.getObservationsByAuthor(relayUrl, pubkey, now)
+      const obs = this.observationStore.getObservationsByAuthor(relayUrl, pubkey)
       observations.push(...obs)
     }
 
@@ -232,7 +232,7 @@ export class MonitorScoringService {
   /**
    * Compute coverage analytics for a monitor
    */
-  private computeMonitorCoverage(pubkey: string, now: number): void {
+  private computeMonitorCoverage(pubkey: string): void {
     const monitor = this.observationStore.getMonitor(pubkey)
     if (!monitor) return
 
@@ -243,7 +243,7 @@ export class MonitorScoringService {
     const namespacesSet = new Set<string>()
 
     for (const relayUrl of allRelayUrls) {
-      const obs = this.observationStore.getObservationsByAuthor(relayUrl, pubkey, now)
+      const obs = this.observationStore.getObservationsByAuthor(relayUrl, pubkey)
       observations.push(...obs)
 
       for (const o of obs) {

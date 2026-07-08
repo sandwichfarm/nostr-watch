@@ -38,7 +38,8 @@ export function initDB(dbPath: string = DEFAULT_DB_PATH, enableWAL: boolean = tr
       checked_at INTEGER,
       rtt INTEGER,
       network TEXT,
-      retries INTEGER DEFAULT 0
+      retries INTEGER DEFAULT 0,
+      deletion_published_at INTEGER DEFAULT 0
     )
   `);
 
@@ -69,6 +70,22 @@ export function initDB(dbPath: string = DEFAULT_DB_PATH, enableWAL: boolean = tr
   if (!hasIgnoreReasonColumn) {
     logger.info("Adding ignore_reason column to relay_status table");
     db.query(`ALTER TABLE relay_status ADD COLUMN ignore_reason TEXT DEFAULT ''`);
+  }
+
+  // Timestamp of the last NIP-09 deletion we published for this relay (0 = not
+  // yet published). Lets deletion publishing be idempotent across reboots so an
+  // ignored relay's deletion is sent once rather than on every boot.
+  let hasDeletionPublishedColumn = false;
+  for (const row of tableInfo) {
+    if (row[1] === "deletion_published_at") {
+      hasDeletionPublishedColumn = true;
+      break;
+    }
+  }
+
+  if (!hasDeletionPublishedColumn) {
+    logger.info("Adding deletion_published_at column to relay_status table");
+    db.query(`ALTER TABLE relay_status ADD COLUMN deletion_published_at INTEGER DEFAULT 0`);
   }
 
   // Create timestamp table to track seeder methods' last run times
@@ -201,6 +218,9 @@ export function persistResult(result: any): void {
       checked_at = excluded.checked_at,
       rtt = excluded.rtt,
       network = excluded.network,
+      -- Clear the deletion marker whenever the relay is no longer ignored, so a
+      -- future re-ignore publishes a fresh deletion exactly once.
+      deletion_published_at = CASE WHEN excluded.ignore = 1 THEN deletion_published_at ELSE 0 END,
       ${retryUpdate}
     `,
     [result.url, online, ignore, ignore_reason, parent, checked_at, rtt, network]

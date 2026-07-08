@@ -4,7 +4,7 @@ Runs RelayMon in clearnet mode — direct connections to relays with no proxy or
 
 ## How It Works
 
-RelayMon connects directly to nostr relays over the public internet, runs connectivity checks (WebSocket open, read, NIP-11 info, DNS), and publishes the results as nostr events. This is the simplest stack — a single container with no network routing.
+RelayMon connects directly to nostr relays over the public internet, runs connectivity checks (WebSocket open, read, NIP-11 info, DNS), and publishes the results as nostr events. It can also publish optional Trusted Relay Assertions (kind `30385`) when `relaymon.trustedRelayAssertions.enabled` is set. This is the simplest stack — a single container with no network routing.
 
 ## Setup
 
@@ -50,3 +50,4 @@ See `config.yaml.example` for a fully commented template. Key settings to custom
 - **`monitor.owner`** — Your nostr public key (hex format)
 - **`relaymon.seed`** — Where to get the list of relays to monitor
 - **`relaymon.checks`** — Which checks to run and how often
+- **`relaymon.trustedRelayAssertions`** — Optional kind `30385` assertion publishing controls

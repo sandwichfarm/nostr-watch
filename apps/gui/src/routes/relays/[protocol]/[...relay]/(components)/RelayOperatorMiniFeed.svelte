@@ -20,7 +20,6 @@
         videos: false,
         truncate: true,
         truncateLength: 500,
-        sanitize: false,
         nip19: true,
     }
 

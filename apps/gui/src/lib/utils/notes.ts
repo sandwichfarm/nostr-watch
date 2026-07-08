@@ -1,5 +1,5 @@
 import { marked, type MarkedOptions } from 'marked';
-import * as DOMPurify from 'dompurify';
+import DOMPurify from 'dompurify';
 import { writable, get, type Writable } from 'svelte/store';
 import { nip19 } from 'nostr-tools';
 import type { UserService } from '$lib/services/UserService';
@@ -292,14 +292,7 @@ async function applyMarkdown(text: string, options: MarkedOptions): Promise<stri
  * replace the default allowlist); ADD_TAGS / ADD_ATTR extend it.
  */
 function applySanitize(text: string): string {
-  // DOMPurify's CommonJS shape: in some bundler setups DOMPurify is the
-  // default export; in others it's the module namespace. The current
-  // codebase uses `import * as DOMPurify` — the .sanitize is on the
-  // namespace OR on .default depending on bundler. Defensive lookup.
-  const purify =
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (DOMPurify as any).sanitize ?? (DOMPurify as any).default?.sanitize;
-  return purify(text, {
+  return DOMPurify.sanitize(text, {
     ADD_TAGS: ['iframe'],
     ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'scrolling', 'src'],
   });

@@ -3,7 +3,7 @@
     import { clickToCopy } from "$utils/ux";
     import { safeImageUrl } from "$utils/sanitize";
     import { bannerStyleString } from "$utils/style-helpers";
-    import * as DOMPurify from "dompurify";
+    import DOMPurify from "dompurify";
 
     export let title: string;
     export let icon: string | undefined = undefined;
@@ -29,7 +29,7 @@
     // sanitize via DOMPurify rather than dropping {@html} entirely. DOMPurify
     // is already a dependency of apps/gui (used in $utils/notes.ts).
     // sanitize() defaults strip script tags and event-handler attributes.
-    $: safeSubtitle = subtitle ? (DOMPurify as any).sanitize(subtitle) : '';
+    $: safeSubtitle = subtitle ? DOMPurify.sanitize(subtitle) : '';
 
 </script>
 <header

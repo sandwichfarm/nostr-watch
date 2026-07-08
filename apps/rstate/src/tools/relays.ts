@@ -448,12 +448,13 @@ export function createRelaysBboxTool(ctx: RelayToolsContext): CVMTool {
     outputSchema: loadSchema('relays-bbox-simple-output.json'),
     handler: async (params: RelaysBboxInput) => {
       const limit = params.limit || 100
+      const offset = params.offset || 0
       const results = relaysBboxCore(ctx, params)
       const total = results.length
-      const paged = results.slice(0, limit)
+      const paged = results.slice(offset, offset + limit)
       const relays = applyShapeList(paged, 'simple')
       logger.info({ bbox: params, found: total, shape: 'simple' }, 'Bbox/simple query requested')
-      return { relays, bbox: { sw: params.sw, ne: params.ne }, total }
+      return { relays, bbox: { sw: params.sw, ne: params.ne }, total, limit, offset }
     },
   }
 }
@@ -470,12 +471,13 @@ export function createRelaysBboxDetailedTool(ctx: RelayToolsContext): CVMTool {
     outputSchema: loadSchema('relays-bbox-object-output.json'),
     handler: async (params: RelaysBboxInput) => {
       const limit = params.limit || 100
+      const offset = params.offset || 0
       const results = relaysBboxCore(ctx, params)
       const total = results.length
-      const paged = results.slice(0, limit)
+      const paged = results.slice(offset, offset + limit)
       const relays = applyShapeList(paged, 'detailed')
       logger.info({ bbox: params, found: total, shape: 'detailed' }, 'Bbox/detailed query requested')
-      return { relays, bbox: { sw: params.sw, ne: params.ne }, total, limit, offset: 0 }
+      return { relays, bbox: { sw: params.sw, ne: params.ne }, total, limit, offset }
     },
   }
 }
@@ -492,12 +494,13 @@ export function createRelaysBboxFullTool(ctx: RelayToolsContext): CVMTool {
     outputSchema: loadSchema('relays-bbox-object-output.json'),
     handler: async (params: RelaysBboxInput) => {
       const limit = params.limit || 100
+      const offset = params.offset || 0
       const results = relaysBboxCore(ctx, params)
       const total = results.length
-      const paged = results.slice(0, limit)
+      const paged = results.slice(offset, offset + limit)
       const relays = applyShapeList(paged, 'full')
       logger.info({ bbox: params, found: total, shape: 'full' }, 'Bbox/full query requested')
-      return { relays, bbox: { sw: params.sw, ne: params.ne }, total, limit, offset: 0 }
+      return { relays, bbox: { sw: params.sw, ne: params.ne }, total, limit, offset }
     },
   }
 }

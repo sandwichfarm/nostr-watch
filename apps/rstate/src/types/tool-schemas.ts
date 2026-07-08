@@ -150,6 +150,7 @@ export interface RelaysBboxInput {
   sw: { lat: number; lon: number }
   ne: { lat: number; lon: number }
   limit?: number
+  offset?: number
 }
 
 export interface RelaysBboxOutput {

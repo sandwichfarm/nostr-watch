@@ -30,7 +30,7 @@
     "clean": "rm -rf dist",
     "tsc": "tsc",
     "build": "pnpm clean && pnpm tsc && pnpm node build.js",
-    "build:esm": "esbuild src/index.ts src/abstract.ts src/svelte.ts --bundle --minify --sourcemap --outdir=dist/esm --format=esm --out-extension:.js=.mjs"
+    "build:esm": "node build.mjs"
   },
   "files": [
     "src",

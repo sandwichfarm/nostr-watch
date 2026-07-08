@@ -1,20 +1,34 @@
 packages:
-    - "apps/*"
-    - "demos/*"
-    - "internal/*"
-    - "internal/publisher/adapters/**/*"
-    - "libraries/*"
-    - "libraries/nocap/adapters/**/*"
-    - "libraries/kit/adapters/**/*"
-    - "libraries/route66/adapters/cache/**/*"
-    - "libraries/route66/adapters/websocket/**/*"
-    - "libraries/adapters/**/*"
-    - "libraries/validators/**/*"
-    - "libraries/schemata/*"
-    
-    #skip
-    - '!internal/controlflow'
-    - '!apps/nocapd' #node
-    - '!libraries/nocap-route66' #deprecated
-    - '!apps/umon' #experimental
-    - '!apps/relaymon' #deno
+  - "apps/*"
+  - "demos/*"
+  - "internal/*"
+  - "internal/publisher/adapters/**/*"
+  - "libraries/*"
+  - "libraries/nocap/adapters/**/*"
+  - "libraries/kit/adapters/**/*"
+  - "libraries/route66/adapters/cache/**/*"
+  - "libraries/route66/adapters/websocket/**/*"
+  - "libraries/adapters/**/*"
+  - "libraries/validators/**/*"
+  - "libraries/schemata/*"
+
+  #skip
+  - '!internal/controlflow'
+  - '!apps/nocapd' #node
+  - '!libraries/nocap-route66' #deprecated
+  - '!apps/umon' #experimental
+  - '!apps/relaymon' #deno
+allowBuilds:
+  '@swc/core': true
+  better-sqlite3: true
+  bufferutil: true
+  core-js: true
+  ejs: true
+  es5-ext: true
+  esbuild: true
+  lmdb: true
+  maplibre-gl: true
+  msgpackr-extract: true
+  secp256k1: true
+  svelte-preprocess: true
+  utf-8-validate: true

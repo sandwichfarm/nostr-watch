@@ -1,25 +1,23 @@
-// build.js
-const esbuild = require('esbuild');
+import esbuild from 'esbuild';
 
-const commonOptions = {
+const common = {
   entryPoints: ['src/index.ts'],
   bundle: true,
   sourcemap: true,
-  minify: true,
 };
 
-esbuild.build({
-  ...commonOptions,
+await esbuild.build({
+  ...common,
   platform: 'node',
-  target: ['node14'],
+  target: 'node14',
   outfile: 'dist/index.node.js',
   format: 'cjs',
 });
 
-esbuild.build({
-  ...commonOptions,
+await esbuild.build({
+  ...common,
   platform: 'browser',
-  target: ['es2020'],
+  target: 'es2020',
   outfile: 'dist/index.browser.js',
   format: 'esm',
 });

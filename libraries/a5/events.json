@@ -1,0 +1,57 @@
+{
+  "kind-10166": {
+    "kind": 1227,
+    "tags": [
+      ["name", "nip66-monitors"],
+      ["description", "View NIP-66 relay monitor announcements (kind 10166)"],
+      ["param", "monitor1", "monitor pubkey to filter by", "public_key", ""],
+      ["param", "monitor2", "additional monitor pubkey", "public_key", ""],
+      ["param", "monitor3", "additional monitor pubkey", "public_key", ""],
+      ["param", "monitor4", "additional monitor pubkey", "public_key", ""],
+      ["param", "monitor5", "additional monitor pubkey", "public_key", ""],
+      ["param", "network", "network type: clearnet, tor, or i2p", "string", ""],
+      ["param", "check_type", "check performed: open, read, write, ssl, dns, geo, info", "string", ""]
+    ]
+  },
+  "kind-30166": {
+    "kind": 1227,
+    "tags": [
+      ["name", "nip66-relay-status"],
+      ["description", "Query NIP-66 relay liveness: online, offline, or dead (kind 30166)"],
+      ["param", "mode", "0 = online, 1 = offline, 2 = dead", "number", "required"],
+      ["param", "frequency", "monitor check frequency in seconds", "number", "required"],
+      ["param", "staleness", "staleness multiplier (default 1, min 1)", "number", ""],
+      ["param", "dead_threshold", "dead cutoff in seconds (default 2592000 = 30 days)", "number", ""],
+      ["param", "now", "current unix timestamp", "timestamp", "required"],
+      ["param", "monitor1", "monitor pubkey to filter by", "public_key", ""],
+      ["param", "monitor2", "additional monitor pubkey", "public_key", ""],
+      ["param", "monitor3", "additional monitor pubkey", "public_key", ""],
+      ["param", "monitor4", "additional monitor pubkey", "public_key", ""],
+      ["param", "monitor5", "additional monitor pubkey", "public_key", ""],
+      ["param", "network", "network type: clearnet, tor, or i2p", "string", ""],
+      ["param", "supported_nips", "supported NIP number (e.g. 42)", "string", ""],
+      ["param", "requires", "relay must require this: auth, payment, pow, ssl", "string", ""],
+      ["param", "does_not_require", "relay must NOT require this: auth, payment, pow, ssl", "string", ""],
+      ["param", "software", "relay software name (e.g. strfry, nostr-rs-relay)", "string", ""],
+      ["param", "geohash", "geohash location prefix", "string", ""],
+      ["param", "label_namespace", "NIP-32 label namespace (e.g. countryCode, host.isp, dns.ipv4, nip11.version)", "string", ""],
+      ["param", "label_value", "NIP-32 label value (e.g. US, Contabo GmbH, 207.244.244.88)", "string", ""]
+    ]
+  },
+  "kind-1066": {
+    "kind": 1227,
+    "tags": [
+      ["name", "nip66-relay-deltas"],
+      ["description", "View NIP-66 relay status deltas and historical changes (kind 1066)"],
+      ["param", "relay", "relay URL to check", "relay", "required"]
+    ]
+  },
+  "kind-20166": {
+    "kind": 1227,
+    "tags": [
+      ["name", "nip66-relay-live"],
+      ["description", "Live NIP-66 relay state changes, ephemeral (kind 20166)"],
+      ["param", "relay", "relay URL to monitor live", "relay", "required"]
+    ]
+  }
+}

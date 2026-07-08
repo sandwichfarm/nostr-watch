@@ -1,0 +1,4 @@
+node_modules/
+build/*.wasm
+build/*.wat
+build/*.map

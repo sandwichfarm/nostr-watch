@@ -1,0 +1,34 @@
+{
+  "options": {
+    "optimize": true,
+    "noAssert": true,
+    "runtime": "stub",
+    "use": "abort=",
+    "exportMemory": true,
+    "importMemory": false,
+    "initialMemory": 1,
+    "maximumMemory": 4
+  },
+  "targets": {
+    "kind-10166": {
+      "outFile": "build/kind-10166.wasm",
+      "textFile": "build/kind-10166.wat",
+      "sourceMap": false
+    },
+    "kind-30166": {
+      "outFile": "build/kind-30166.wasm",
+      "textFile": "build/kind-30166.wat",
+      "sourceMap": false
+    },
+    "kind-1066": {
+      "outFile": "build/kind-1066.wasm",
+      "textFile": "build/kind-1066.wat",
+      "sourceMap": false
+    },
+    "kind-20166": {
+      "outFile": "build/kind-20166.wasm",
+      "textFile": "build/kind-20166.wat",
+      "sourceMap": false
+    }
+  }
+}

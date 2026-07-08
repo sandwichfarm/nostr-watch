@@ -1,0 +1,20 @@
+{
+  "name": "@nostrwatch/a5",
+  "version": "0.1.0",
+  "description": "NIP-A5 WASM programs for NIP-66 relay monitoring events",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "npm run build:10166 && npm run build:30166 && npm run build:1066 && npm run build:20166",
+    "build:10166": "asc assembly/kind-10166/index.ts --outFile build/kind-10166.wasm --optimize --noAssert --runtime stub --use abort=",
+    "build:30166": "asc assembly/kind-30166/index.ts --outFile build/kind-30166.wasm --optimize --noAssert --runtime stub --use abort=",
+    "build:1066": "asc assembly/kind-1066/index.ts --outFile build/kind-1066.wasm --optimize --noAssert --runtime stub --use abort=",
+    "build:20166": "asc assembly/kind-20166/index.ts --outFile build/kind-20166.wasm --optimize --noAssert --runtime stub --use abort="
+  },
+  "files": [
+    "build/*.wasm"
+  ],
+  "devDependencies": {
+    "assemblyscript": "^0.27.32"
+  }
+}

@@ -1,9 +1,8 @@
 <script lang="ts">
 
     import { clickToCopy } from "$utils/ux";
-    import { safeImageUrl } from "$utils/sanitize";
+    import { safeImageUrl, sanitizeHtml } from "$utils/sanitize";
     import { bannerStyleString } from "$utils/style-helpers";
-    import DOMPurify from "dompurify";
 
     export let title: string;
     export let icon: string | undefined = undefined;
@@ -26,10 +25,9 @@
 
     // Most callers pass plain text (e.g. NIP-11 description). The
     // /relays/software/[softwareKey] page passes pre-formatted HTML, so we
-    // sanitize via DOMPurify rather than dropping {@html} entirely. DOMPurify
-    // is already a dependency of apps/gui (used in $utils/notes.ts).
+    // sanitize via DOMPurify rather than dropping {@html} entirely.
     // sanitize() defaults strip script tags and event-handler attributes.
-    $: safeSubtitle = subtitle ? DOMPurify.sanitize(subtitle) : '';
+    $: safeSubtitle = sanitizeHtml(subtitle);
 
 </script>
 <header

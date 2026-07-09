@@ -1,6 +1,6 @@
 import { glob } from 'glob';
 import esbuild from 'esbuild';
-import babel from '@babel/core';
+import * as babel from '@babel/core';
 import { generateIndexFiles } from './src/utils/generateTestIndices.js';
 import { polyfillNode } from 'esbuild-plugin-polyfill-node';
 import { exec } from 'child_process';

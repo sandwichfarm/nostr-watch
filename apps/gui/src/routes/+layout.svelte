@@ -288,12 +288,12 @@
   <div class="text-xs opacity-30">This version of nostr.watch does not support mobile devices.</div>
 </div>
 {:else}
-	  <HeaderComponent navDisabled={!loadedEnough || needsSeedBootstrap || seedInProgress} />
 	  {#if showBootstrapLoading}
 	    <BootstrapLoading {isReady} />
 	  {:else if showFollowerWaiting}
 	    <FollowerLoading />
 	  {:else if showContent}
+	    <HeaderComponent navDisabled={false} />
 	    <MonitorsBanner />
 	    <div id="content-wrapper" class="block flow-root">
 	      <slot />

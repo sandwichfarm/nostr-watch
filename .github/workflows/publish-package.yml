@@ -25,7 +25,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 11
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
@@ -77,10 +77,12 @@ jobs:
           node-version: 20
       - uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 11
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @nostrwatch/gui... build
       - run: pnpm --filter @nostrwatch/gui build:seeded
+        env:
+          SEED_ALLOW_EMPTY: "true"
 
       - name: Deploy to nsite
         uses: sandwichfarm/nsite-action@v0.1.3

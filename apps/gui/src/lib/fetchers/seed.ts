@@ -32,6 +32,7 @@ type SeedManifestV1 = {
 
 const SEED_MANIFEST_URL = '/seed/manifest.json';
 const STATE_KEY_GENERATED_AT = 'seed:build:generatedAt';
+const DEFAULT_SEEDED_ENABLED_MONITORS = 3;
 
 function resolveSeedAssetUrl(pathOrUrl: string): string {
   if (/^[a-z]+:\/\//i.test(pathOrUrl)) return pathOrUrl;
@@ -140,6 +141,10 @@ async function yieldToBrowser(): Promise<void> {
 function formatProgress(loaded: number, total?: number): string {
   if (typeof total === 'number' && Number.isFinite(total) && total > 0) return `${loaded}/${total}`;
   return `${loaded}`;
+}
+
+function registrationCheckCount(event?: IEvent): number {
+  return event?.tags?.filter((tag: string[]) => tag[0] === 'c')?.length ?? 0;
 }
 
 function withSeedVersion(url: string, seedKey: string): string {
@@ -327,21 +332,18 @@ export const seedBuildData = async (): Promise<void> => {
       const sortedMonitorEntries = Array.from(monitorEventsByPubkey.entries())
         .filter(([_, data]) => data.registration)
         .sort((a, b) => {
-          const aChecks = (a[1].registration as any)?.tags?.filter((t: any) => t[0] === 'c')?.length ?? 0;
-          const bChecks = (b[1].registration as any)?.tags?.filter((t: any) => t[0] === 'c')?.length ?? 0;
+          const aChecks = registrationCheckCount(a[1].registration);
+          const bChecks = registrationCheckCount(b[1].registration);
           return bChecks - aChecks; // Descending by check count
         });
 
-      // Don't pre-enable monitors in seed — seed data lacks check events to
-      // determine real activity.  Let bootstrap's maybeEnableMonitors() handle
-      // enabling after ensureMonitorsActive() sets real lastActive values.
-      const monitorsCache = sortedMonitorEntries.map(([pubkey, data]) => ({
+      const monitorsCache = sortedMonitorEntries.map(([pubkey, data], index) => ({
         pubkey,
         registration: data.registration,
         profile: data.profile,
         relays: data.relays,
-        priority: 0,
-        enabled: false,
+        priority: index,
+        enabled: index < DEFAULT_SEEDED_ENABLED_MONITORS,
         lastActive: -1,
       }));
 

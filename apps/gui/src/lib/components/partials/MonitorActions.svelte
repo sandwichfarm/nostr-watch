@@ -3,7 +3,7 @@
     import { Checkbox } from "$lib/components/ui/checkbox/index.js";
     import * as Table from '$lib/components/ui/table/index.js'
 
-    import { monitorsMap } from "$lib/stores/monitors.js";
+    import { monitorSelectionLocked, monitorsMap } from "$lib/stores/monitors.js";
     import type { IEvent, Monitor } from '@nostrwatch/route66/models';
     import { events, eventsArray } from '$lib/stores/events.js';
 
@@ -12,7 +12,7 @@
 	import { onMount } from 'svelte';
 	import { eventKey } from '$lib/utils/event-keys';
 	import { activeMonitorChecksCount } from '$lib/stores';
-    import { pauseLiveSync } from '$lib/utils/live-sync';
+    import { pauseLiveSync, type LiveSyncResumer } from '$lib/utils/live-sync';
 	import { delay } from '@nostrwatch/utils';
 	import type { Nip05 } from 'nostr-tools/nip05';
 	import { nip05Service } from '$stores/nip05s';
@@ -75,61 +75,69 @@
 
     onMount(() => {
         toggleEnableMonitor = async () => {
+            if($monitorSelectionLocked) return;
             if(busy) return;
             busy = true;
             disabled.set(true);
-            const { publishEventsToMemoryRelay } = await import('$lib/stores/events-helpers.js');
-            const resumer = await pauseLiveSync();
-            // console.log('monitors: toggleEnableMonitor', $monitor.enabled)
-            if(!$monitor) return console.warn('Monitor not found');
-            if($monitor?.enabled) {
-                // console.log('monitors:  disabling monitor')
-                $monitor.disable();
-                events.update($events => {
-                    $events.entries().forEach( ([key, event]) => {
-                        if(event.pubkey === $monitor.pubkey){
-                            $events.delete(key);
-                        }
-                    })
-                    return $events;
-                })
-                await updateState($monitor, false);
-                await resumer();
-                disabled.set(false);
-            } 
-            else {
-                // console.log('monitors: enabling monitor')
-                $monitor?.enable()
-                const options = {
-                    filters: [ $monitor.checkFilter ],
-                    options: {
-                        stream: true,
-                        returnResults: true,
-                        cache: true,
-                        sync: true,
-                        batch: 25
-                    },
-                    relays: [ ...($route66?.services?.monitors?.nip66Relays || []), ...$monitor.relays ],
-                    priority: 20
+            let resumer: LiveSyncResumer | undefined;
+            try {
+                const { publishEventsToMemoryRelay } = await import('$lib/stores/events-helpers.js');
+                resumer = await pauseLiveSync();
+                // console.log('monitors: toggleEnableMonitor', $monitor.enabled)
+                const currentMonitor = $monitor;
+                if(!currentMonitor) {
+                    console.warn('Monitor not found');
+                    return;
                 }
-                const onevents = publishEventsToMemoryRelay
-                await $route66?.services?.monitors?.subscribe(options, { onevents })
-                await updateState($monitor, true);
-                await resumer();
+                if(currentMonitor.enabled) {
+                    // console.log('monitors:  disabling monitor')
+                    currentMonitor.disable();
+                    events.update($events => {
+                        $events.entries().forEach( ([key, event]) => {
+                            if(event.pubkey === currentMonitor.pubkey){
+                                $events.delete(key);
+                            }
+                        })
+                        return $events;
+                    })
+                    await updateState(currentMonitor, false);
+                }
+                else {
+                    // console.log('monitors: enabling monitor')
+                    currentMonitor.enable()
+                    const options = {
+                        filters: [ currentMonitor.checkFilter ],
+                        options: {
+                            stream: true,
+                            returnResults: true,
+                            cache: true,
+                            keepAlive: false,
+                            sync: true,
+                            batch: 25
+                        },
+                        relays: [ ...($route66?.services?.monitors?.nip66Relays || []), ...currentMonitor.relays ],
+                        priority: 20
+                    }
+                    const onevents = publishEventsToMemoryRelay
+                    await ($route66?.services?.monitors as any)?.subscribe(options, { onevents })
+                    await updateState(currentMonitor, true);
+                }
+            } finally {
+                await resumer?.();
                 disabled.set(false);
-
+                busy = false;
             }
-            busy = false;
         }
     })
 
     $: checked = $monitor?.enabled
+    $: selectionDisabled = $disabled || $monitorSelectionLocked;
 </script>
 
 {#if view === 'cell'}
     <Table.Cell>
         {#if $monitor?.pubkey}
-        <Checkbox disabled={$disabled} id="toggle-${$monitor.pubkey.slice(0,21)}" bind:checked aria-labelledby="terms-label" onCheckedChange={toggleEnableMonitor} />
+        <Checkbox disabled={selectionDisabled} id="toggle-${$monitor.pubkey.slice(0,21)}" bind:checked aria-labelledby="terms-label" onCheckedChange={toggleEnableMonitor} />
         {/if}
     </Table.Cell>
 {:else}

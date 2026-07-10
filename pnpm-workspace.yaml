@@ -44,6 +44,7 @@ overrides:
   follow-redirects: '>=1.15.12'
   immutable: '>=5.1.5'
   js-yaml: '>=4.1.2'
+  read-yaml-file: 2.1.0
   '@babel/core': '>=7.29.1'
   protocol-buffers-schema: '>=3.6.1'
   yaml: '>=2.8.3'

@@ -1,49 +1,30 @@
-# Multi-stage build for RelayVM
+FROM node:22.15.0-alpine AS builder
 
-# Build stage
-FROM node:20-alpine AS builder
+WORKDIR /repo
 
-WORKDIR /app
+RUN apk add --no-cache python3 make g++
+RUN corepack enable && corepack prepare pnpm@11.11.0 --activate
 
-# Copy package files
-COPY package*.json ./
-COPY tsconfig.json ./
-COPY tsup.config.ts ./
+COPY . .
 
-# Install dependencies
-RUN npm ci
+RUN pnpm install --frozen-lockfile --filter @nostr-watch/rstate...
+RUN pnpm --filter @nostr-watch/rstate... build
+RUN pnpm --filter @nostr-watch/rstate deploy --legacy --prod /prod/rstate
 
-# Copy source
-COPY src ./src
-
-# Build
-RUN npm run build
-
-# Production stage
-FROM node:20-alpine AS production
+FROM node:22.15.0-alpine AS production
 
 WORKDIR /app
 
-# Install production dependencies only
-COPY package*.json ./
-RUN npm ci --omit=dev
+ENV NODE_ENV=production
 
-# Copy built artifacts from builder
-COPY --from=builder /app/dist ./dist
+COPY --from=builder /prod/rstate ./
 
-# Create non-root user
 RUN addgroup -g 1001 -S cvm && \
     adduser -S cvm -u 1001
 
-# Switch to non-root user
 USER cvm
 
-# Expose port (if using HTTP transport, future)
-# EXPOSE 3000
-
-# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD node -e "console.log('CVM running')" || exit 1
 
-# Run
 CMD ["node", "dist/index.js"]

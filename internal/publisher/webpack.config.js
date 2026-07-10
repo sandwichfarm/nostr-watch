@@ -1,6 +1,5 @@
 // adapters/nostr-tools/webpack.config.js
 const path = require('path');
-const NodePolyfillPlugin = require('node-polyfill-webpack-plugin');
 
 const baseConfig = {
   entry: './src/index.ts',
@@ -25,7 +24,6 @@ const baseConfig = {
 
 const browserConfig = {
   ...baseConfig,
-  plugins: [new NodePolyfillPlugin()],
   target: 'web',
   output: {
     path: path.resolve(__dirname, 'dist', 'browser'),

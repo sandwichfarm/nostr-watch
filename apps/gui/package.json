@@ -122,7 +122,6 @@
 		"@unovis/ts": "^1.6.7",
 		"ajv": "^8.20.0",
 		"ajv-errors": "^3.0.0",
-		"bolt11": "^1.4.1",
 		"chart.js": "^4.4.0",
 		"chartjs-adapter-date-fns": "^3.0.0",
 		"class-variance-authority": "^0.7.1",

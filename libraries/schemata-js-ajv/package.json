@@ -24,7 +24,7 @@
     "nostr-tools": "^2.10.4"
   },
   "peerDependencies": {
-    "ajv": "^8.17.1"
+    "ajv": "^8.20.0"
   },
   "devDependencies": {
     "@hyrious/esbuild-plugin-commonjs": "^0.2.4",

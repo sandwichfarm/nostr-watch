@@ -20,6 +20,7 @@
 	    appState,
 	    tabState,
 	    hasBeenBootstrapped,
+	    isBootstrapped,
 	    isSeeded,
 	    opfsStatus,
 	  } from '$lib/stores/app';
@@ -33,6 +34,7 @@
 	    resetBootActivities,
 	  } from '$lib/stores/boot-activity';
 	  import { seedBootStatus } from '$lib/stores/boot-state';
+	  import { getBootstrapRenderState } from '$lib/utils/bootstrap-render-state';
 
 
   let modules: Record<ModuleKey, any> | null = null;
@@ -258,25 +260,17 @@
   });
 
   // --------------------------------------------------------------------------------
-	  // Render gating
-	  // --------------------------------------------------------------------------------
-	  $: hasActualData = $relayCheckAggregates?.length > 0;
-	  $: seedInProgress = $seedBootStatus === 'in_progress';
-	  // "bootloaded" === seed import completed (or no seed payload available).
-	  $: seedReady = $isSeeded || $seedBootStatus === 'complete';
-
-	  // Fresh state: no prior bootstrap markers AND no seed marker.
-	  // This supports old installs (bootstrapped pre-seed) without forcing seed boot UI.
-	  $: isFreshState = !hasBeenBootstrapped() && !$isSeeded;
-
-	  // Bootloader = build-seed import (first run / after reset).
-	  $: needsSeedBootstrap = isFreshState && !seedReady;
-
-	  // Only show full-screen boot UI when a seed import is required.
-	  // After seed is loaded, show the app immediately; network sync continues in background.
-	  $: showBootstrapLoading = needsSeedBootstrap && ($tabState === 'leader' || !seedInProgress);
-	  $: showFollowerWaiting = needsSeedBootstrap && seedInProgress && $tabState === 'follower';
-	  $: showContent = !needsSeedBootstrap;
+  // Render gating
+  // --------------------------------------------------------------------------------
+  $: hasActualData = $relayCheckAggregates?.length > 0;
+  $: bootstrapRenderState = getBootstrapRenderState({
+    isReady,
+    hasActualData,
+    isBootstrapped: $isBootstrapped,
+    isSeeded: $isSeeded,
+    seedBootStatus: $seedBootStatus,
+    tabState: $tabState,
+  });
 </script>
 
 {#if $unsupported}
@@ -285,17 +279,17 @@
   <div class="text-xs opacity-30">This version of nostr.watch does not support mobile devices.</div>
 </div>
 {:else}
-	  <HeaderComponent navDisabled={!hasActualData || needsSeedBootstrap || seedInProgress} />
-	  {#if showBootstrapLoading}
-	    <BootstrapLoading {isReady} />
-	  {:else if showFollowerWaiting}
-	    <FollowerLoading />
-	  {:else if showContent}
-	    <MonitorsBanner />
-	    <div id="content-wrapper" class="block flow-root">
-	      <slot />
-	    </div>
-	  {/if}
+  <HeaderComponent navDisabled={bootstrapRenderState.navDisabled} />
+  {#if bootstrapRenderState.showBootstrapLoading}
+    <BootstrapLoading {isReady} />
+  {:else if bootstrapRenderState.showFollowerWaiting}
+    <FollowerLoading />
+  {:else if bootstrapRenderState.showContent}
+    <MonitorsBanner />
+    <div id="content-wrapper" class="block flow-root">
+      <slot />
+    </div>
+  {/if}
 {/if}
 
 {#if $showDebugButton}

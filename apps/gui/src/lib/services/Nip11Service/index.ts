@@ -1,5 +1,3 @@
-import type { nip11 } from 'nostr-tools';
-
 import { get, type Writable } from 'svelte/store';
 
 import type { Route66 } from '@nostrwatch/route66';
@@ -7,8 +5,8 @@ import { type Nip11 as Nip11Type, type RelayInformation } from '@nostrwatch/rout
 
 import { nip11sLocal } from '$lib/stores/nip11s-local.js';
 import { setRelayError } from '$lib/stores/relay-errors.js';
+import type { SerializedNip11FetchError } from './fetch-relay-information.js';
 
-import { instance } from '$lib/utils/lifecycle';
 // import { relaysErrors } from '$lib/stores/relay-errors';
 
 import PQueue from 'p-queue';
@@ -16,8 +14,8 @@ const queue = new PQueue({concurrency: 10});
 
 export type Nip11ServiceMessage = {
     relay: string,
-    nip11?: nip11.RelayInformation
-    error?: any
+    nip11?: RelayInformation
+    error?: SerializedNip11FetchError | string
 }
 
 type Nip11Constructor = new (info: RelayInformation) => Nip11Type;
@@ -26,6 +24,10 @@ type PendingRequest = {
     promise: Promise<Nip11Type | undefined>;
     resolve: (value: Nip11Type | undefined) => void;
     timeoutId: ReturnType<typeof setTimeout>;
+};
+
+type Nip11CheckOptions = {
+    timeoutMs?: number;
 };
 
 export class Nip11Service {
@@ -43,7 +45,7 @@ export class Nip11Service {
         return $nip11sLocal.get(relay)
     }
 
-    async check(relay: string, options: { timeoutMs?: number } = {}): Promise<Nip11Type | undefined> {
+    async check(relay: string, options: Nip11CheckOptions = {}): Promise<Nip11Type | undefined> {
         const timeoutMs = options.timeoutMs ?? 5_000;
 
         const existing = this.find(relay);
@@ -52,7 +54,7 @@ export class Nip11Service {
         const inFlight = this.pending.get(relay);
         if (inFlight) return inFlight.promise;
 
-        return queue.add(() => this.request(relay, timeoutMs));
+        return (await queue.add(() => this.request(relay, timeoutMs))) ?? undefined;
     }
 
     private async request(relay: string, timeoutMs: number): Promise<Nip11Type | undefined> {
@@ -72,11 +74,11 @@ export class Nip11Service {
         const timeoutId = setTimeout(() => {
             this.pending.delete(relay);
             resolveFn(undefined);
-        }, timeoutMs);
+        }, timeoutMs + 250);
 
         this.pending.set(relay, { promise, resolve: resolveFn, timeoutId });
 
-        worker.postMessage({ relay });
+        worker.postMessage({ relay, timeoutMs });
 
         return promise;
     }
@@ -123,7 +125,7 @@ export class Nip11Service {
         }
 
         if (error) {
-            setRelayError(relay, 'schema', 'nip11', error?.message ?? String(error));
+            setRelayError(relay, 'schema', 'nip11', typeof error === 'string' ? error : error.message);
             pending?.resolve(undefined);
             return;
         }
@@ -140,7 +142,8 @@ export class Nip11Service {
             return map;
         });
 
-        instance()
+        import('$lib/utils/lifecycle')
+            .then(({ instance }) => instance())
             .then(($route66: Route66) => {
                 void $route66?.adapters?.cacheAdapter?.upsertNip11?.(relay, nip11.json);
             })

@@ -29,7 +29,7 @@
     "build:adapters": "./scripts/build-adapters.sh",
     "dev": "rollup -c -w",
     "lint": "eslint . --ext .ts",
-    "test": "vitest",
+    "test": "vitest run --passWithNoTests",
     "test-ui": "vitest --ui --testTimeout=15000"
   },
   "dependencies": {
@@ -58,7 +58,7 @@
     "tsc-alias": "^1.8.10",
     "tslib": "^2.7.0",
     "typescript": "^5.6.2",
-    "vitest": "0.34.6",
+    "vitest": "^3.2.6",
     "vitest-nostr": "0.4.1",
     "vitest-websocket-mock": "^0.4.0",
     "webpack": "^5.104.1"

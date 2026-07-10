@@ -20,7 +20,7 @@
     "https-browserify": "^1.0.0",
     "modern-isomorphic-ws": "^1.0.5",
     "tslib": "^2.7.0",
-    "ws": "^8.20.1"
+    "ws": "^8.21.0"
   },
   "devDependencies": {
     "@types/ws": "^8.5.13",

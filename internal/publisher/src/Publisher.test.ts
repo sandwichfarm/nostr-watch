@@ -5,13 +5,14 @@ import wsAdapter from '@nostrwatch/publisher-nostrtools';
 vi.mock('@nostrwatch/logger', () => ({
   default: class {
     warn = vi.fn();
+    error = vi.fn();
   },
 }));
 
 vi.mock('nostr-tools', () => ({
   SimplePool: class {
     publish() {
-      return Promise.resolve('published');
+      return [Promise.resolve('published')];
     }
   }
 }));
@@ -37,7 +38,7 @@ describe('Publisher Class', () => {
 
   describe('publishEvent()', () => {
     it('should publish a signed event', async () => {
-      publisher.pool.publish = vi.fn().mockResolvedValue('published');
+      publisher.pool.publish = vi.fn().mockReturnValue([Promise.resolve('published')]);
       
       const signedEvent = { id: 'event1', content: 'test event' };
       const result = await publisher.publishEvent(signedEvent);
@@ -47,10 +48,12 @@ describe('Publisher Class', () => {
 
     it('should propagate errors during publish', async () => {
       const error = new Error('Publish failed');
-      publisher.pool.publish = vi.fn().mockRejectedValue(error);
+      publisher.pool.publish = vi.fn().mockReturnValue([Promise.reject(error)]);
       const signedEvent = { id: 'event1', content: 'test event' };
 
-      await expect(publisher.publishEvent(signedEvent)).rejects.toThrow(error);
+      await expect(publisher.publishEvent(signedEvent)).rejects.toMatchObject({
+        errors: [error],
+      });
       expect(publisher.pool.publish).toHaveBeenCalledWith(relays, signedEvent);
     });
   });

@@ -59,8 +59,8 @@ See the [Architecture Overview](docs/architecture.md) for details on the adapter
 | [`@nostrwatch/nip66`](libraries/nip66/) | NIP-66 protocol reference documentation | `docs` | — |
 | ~~[`@nostrwatch/schemata`](libraries/schemata/)~~ | ~~JSON schemas for Nostr protocol~~ — moved to `@nostrability/schemata` | `deprecated` | — |
 | ~~[`@nostrwatch/sanitize`](libraries/sanitize/)~~ | ~~Relay URL sanitization~~ — replaced by [`nostrings`](libraries/nostrings/) | `deprecated` | — |
-| ~~[`@nostrwatch/idb`](libraries/idb/)~~ | ~~IndexedDB wrapper~~ — never implemented | `deprecated` | — |
-| ~~[`@nostrwatch/kit`](libraries/kit/)~~ | ~~Adapter toolkit~~ — never completed | `deprecated` | — |
+| ~~`@nostrwatch/idb`~~ | ~~IndexedDB wrapper~~ — never implemented | `deprecated` | — |
+| ~~`@nostrwatch/kit`~~ | ~~Adapter toolkit~~ — never completed | `deprecated` | — |
 | ~~[`@nostrwatch/transform`](libraries/transform/)~~ | ~~Data transformation library~~ — never implemented | `deprecated` | — |
 
 ### Internal

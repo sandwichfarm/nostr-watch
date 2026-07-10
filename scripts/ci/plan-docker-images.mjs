@@ -33,7 +33,7 @@ import { readFileSync, appendFileSync, existsSync } from "node:fs";
 // nocapd is intentionally excluded (deprecated).
 const CATALOG = {
   rstate: {
-    context: "apps/rstate",
+    context: ".",
     dockerfile: "apps/rstate/Dockerfile",
     versionFile: "apps/rstate/package.json",
   },

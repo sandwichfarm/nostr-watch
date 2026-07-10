@@ -1,0 +1,29 @@
+# Exclude everything by default.
+*
+
+# Include root workspace controls needed by pnpm.
+!package.json
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
+
+# Include rstate and workspace packages it can build against.
+!apps/
+!apps/rstate/
+!apps/rstate/**
+!internal/
+!internal/**
+!libraries/
+!libraries/**
+
+# Re-exclude heavy or local-only content in included directories.
+**/node_modules/
+**/dist/
+**/tests/
+**/test/
+**/.claude/
+**/.hive-mind/
+**/.swarm/
+**/*.db
+**/*.db-*
+**/*.env*
+**/*.log

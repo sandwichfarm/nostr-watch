@@ -32,11 +32,11 @@ Each stack composes these services (and optional network proxies) into a ready-t
 
 | Stack | Services | Description |
 |-------|----------|-------------|
-| [`relaymon-clearnet/`](relaymon-clearnet/) | RelayMon | Standard clearnet relay monitoring |
-| [`relaymon-vpn/`](relaymon-vpn/) | RelayMon, Gluetun | Relay monitoring routed through a VPN |
-| [`relaymon-multinet/`](relaymon-multinet/) | RelayMon, Tor, I2P | Multi-network monitoring (clearnet + Tor + I2P) |
-| [`trawler-relaymon-clearnet/`](trawler-relaymon-clearnet/) | Trawler, RelayMon | Relay crawler and monitor on clearnet |
-| [`trawler-relaymon-multinet/`](trawler-relaymon-multinet/) | Trawler, RelayMon, Tor, I2P | Relay crawler and monitor with multi-network routing |
+| [`relaymon-clearnet/`](relaymon-clearnet/README.md) | RelayMon | Standard clearnet relay monitoring |
+| [`relaymon-vpn/`](relaymon-vpn/README.md) | RelayMon, Gluetun | Relay monitoring routed through a VPN |
+| [`relaymon-multinet/`](relaymon-multinet/README.md) | RelayMon, Tor, I2P | Multi-network monitoring (clearnet + Tor + I2P) |
+| [`trawler-relaymon-clearnet/`](trawler-relaymon-clearnet/README.md) | Trawler, RelayMon | Relay crawler and monitor on clearnet |
+| [`trawler-relaymon-multinet/`](trawler-relaymon-multinet/README.md) | Trawler, RelayMon, Tor, I2P | Relay crawler and monitor with multi-network routing |
 
 Each stack directory contains its own README with detailed setup instructions.
 

@@ -76,8 +76,6 @@ export default defineConfig({
           items: [
             { text: 'auditor', link: '/libraries/auditor/' },
             { text: 'db', link: '/libraries/db/' },
-            { text: 'idb', link: '/libraries/idb/' },
-            { text: 'kit', link: '/libraries/kit/' },
             { text: 'memory-relay', link: '/libraries/memory-relay/' },
             { text: 'negentropy', link: '/libraries/negentropy/' },
             { text: 'nip66', link: '/libraries/nip66/' },

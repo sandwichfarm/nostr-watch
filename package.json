@@ -10,6 +10,7 @@
     "nip66:dev": "vitepress dev nip66-docs",
     "nip66:build": "vitepress build nip66-docs",
     "nip66:preview": "vitepress preview nip66-docs",
+    "lint:actions": "bash scripts/run-actionlint.sh",
     "lint:docs": "markdownlint-cli2 'libraries/*/README.md' 'apps/*/README.md' 'internal/*/README.md'",
     "preinstall": "npx only-allow pnpm",
     "changeset": "changeset",

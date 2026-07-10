@@ -269,14 +269,16 @@
 	  // This supports old installs (bootstrapped pre-seed) without forcing seed boot UI.
 	  $: isFreshState = !hasBeenBootstrapped() && !$isSeeded;
 
+	  $: loadedEnough = hasActualData && (!isFreshState || seedReady);
+
 	  // Bootloader = build-seed import (first run / after reset).
 	  $: needsSeedBootstrap = isFreshState && !seedReady;
 
-	  // Only show full-screen boot UI when a seed import is required.
-	  // After seed is loaded, show the app immediately; network sync continues in background.
-	  $: showBootstrapLoading = needsSeedBootstrap && ($tabState === 'leader' || !seedInProgress);
-	  $: showFollowerWaiting = needsSeedBootstrap && seedInProgress && $tabState === 'follower';
-	  $: showContent = !needsSeedBootstrap;
+	  // Seed import is only an accelerator. Do not enter the app until
+	  // runtime bootstrap has produced actual relay-check aggregates.
+	  $: showContent = isReady && loadedEnough && !seedInProgress;
+	  $: showFollowerWaiting = $tabState === 'follower' && !showContent;
+	  $: showBootstrapLoading = !showContent && !showFollowerWaiting;
 </script>
 
 {#if $unsupported}
@@ -285,7 +287,7 @@
   <div class="text-xs opacity-30">This version of nostr.watch does not support mobile devices.</div>
 </div>
 {:else}
-	  <HeaderComponent navDisabled={!hasActualData || needsSeedBootstrap || seedInProgress} />
+	  <HeaderComponent navDisabled={!loadedEnough || needsSeedBootstrap || seedInProgress} />
 	  {#if showBootstrapLoading}
 	    <BootstrapLoading {isReady} />
 	  {:else if showFollowerWaiting}

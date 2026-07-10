@@ -1,7 +1,7 @@
 import { DataRegister } from "$lib/managers/DataRegister";
 import { get, writable, type Writable } from "svelte/store";
 import { doBootstrap } from "$stores/routines";
-import { doAggregateCache, doLiveSync, isBootstrapped, isBootstrapping, isSeeded, lastCompleteSync, setStatsAsOf, tabState } from "$stores/app";
+import { doAggregateCache, doLiveSync, hasUsableCachedData, isBootstrapped, isBootstrapping, isSeeded, lastCompleteSync, setStatsAsOf, tabState } from "$stores/app";
 import { backfillMonitorChecks, fetchDisabledMonitorsChecks, fetchMonitors, fetchMonitorsChecks, fetchNip11s, fetchOperators } from "$lib/fetchers/bootstrap";
 import { instance, removeStaleChecksFromStore, seedFromCache } from "$utils/lifecycle";
 import { liveSync } from "$utils/live-sync";
@@ -85,8 +85,16 @@ export const dataRegisterInit = async () => {
             // Only the leader tab should download + ingest the (potentially large) build-seed payload.
             if (get(tabState) !== 'leader') return false;
 
-            // Normal first-run: no bootstrap markers and no prior seed import.
-            if (!get(isBootstrapped) && !get(isSeeded)) return true;
+            const hasRenderableCache = hasUsableCachedData();
+
+            // Normal first-run: no bootstrap markers, no prior seed import, and no
+            // UI-renderable cache. A missing marker alone is not enough to hide
+            // cached monitors behind a long reseed/resync boot screen.
+            if (!get(isBootstrapped) && !get(isSeeded)) return !hasRenderableCache;
+
+            // Static cache is enough to render while the normal sync path repairs
+            // stale/missing backend cache state. Do not start a seed bootstrap over it.
+            if (hasRenderableCache) return false;
 
             // Recovery path: localStorage can say "seeded/bootstrapped" while the actual cache
             // is empty (e.g. OPFS/SQLite fallback, corruption reset, or user wiped SQLite only).
@@ -106,7 +114,7 @@ export const dataRegisterInit = async () => {
                 if (typeof cache?.ready === 'function') {
                     await withTimeout(cache.ready(), 5_000);
                 }
-                const checkCount = await withTimeout(cache.COUNT([{ kinds: [30166] }]), 5_000);
+                const checkCount = Number(await withTimeout(cache.COUNT([{ kinds: [30166] }]), 5_000));
                 return !Number.isFinite(checkCount) || checkCount < 100;
             } catch {
                 // If we cannot verify cache health, attempt build-seed so the UI can recover.
@@ -305,7 +313,7 @@ export const dataRegisterInit = async () => {
             // when this origin hasn't been "bootstrapped" yet.
             if (get(tabState) !== 'leader') return true;
             const bootstrapped = get(isBootstrapped);
-            if (!bootstrapped) {
+            if (!bootstrapped && !hasUsableCachedData()) {
                 console.log('[DataRegister] skipping sync:cache: fresh state');
                 return false;
             }

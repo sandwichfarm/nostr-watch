@@ -21,8 +21,10 @@
 	    tabState,
 	    hasBeenBootstrapped,
 	    isBootstrapped,
+	    hasUsableCachedData,
 	    isSeeded,
 	    opfsStatus,
+	    shouldForceFullBootstrap,
 	  } from '$lib/stores/app';
 	  import { relayCheckAggregates } from '$lib/stores';
 	  import { showDebugButton } from '$lib/stores/preferences';
@@ -124,9 +126,14 @@
 	    dataRegisterInit();
 	    const datas: string[] = ['sync:cache'];
 	    if (get(tabState) === 'leader') {
-	      const opfs = get(opfsStatus);
-	      const forceFullSync = opfs === 'fallback' || opfs === 'error';
-	      datas.push(forceFullSync ? 'sync:all-force' : hasBeenBootstrapped() ? 'sync:all' : 'sync:all-force');
+	      const bootstrapped = hasBeenBootstrapped();
+	      const hasCache = hasUsableCachedData();
+	      const forceFullSync = shouldForceFullBootstrap({
+	        bootstrapped,
+	        hasUsableCache: hasCache,
+	        opfsStatus: get(opfsStatus),
+	      });
+	      datas.push(forceFullSync ? 'sync:all-force' : 'sync:all');
 	    }
 	    void get(dataRegister)
 	      .require(datas)
@@ -262,9 +269,11 @@
   // Render gating
   // --------------------------------------------------------------------------------
   $: hasActualData = $relayCheckAggregates?.length > 0;
+  $: hasCachedData = hasUsableCachedData();
   $: bootstrapRenderState = getBootstrapRenderState({
     isReady,
     hasActualData,
+    hasUsableCache: hasCachedData,
     isBootstrapped: $isBootstrapped,
     isSeeded: $isSeeded,
     seedBootStatus: $seedBootStatus,
@@ -283,12 +292,12 @@
   {:else if bootstrapRenderState.showFollowerWaiting}
     <FollowerLoading />
   {:else if bootstrapRenderState.showContent}
-    <HeaderComponent navDisabled={false} />
+    <HeaderComponent navDisabled={bootstrapRenderState.navDisabled} />
     <MonitorsBanner />
     <div id="content-wrapper" class="block flow-root">
       <slot />
     </div>
-  {:else}
+  {:else if bootstrapRenderState.showInitialBootFallback}
     <div class="flex flex-col items-center justify-center h-screen px-4">
       <div class="text-7xl mb-3">booting.</div>
     </div>

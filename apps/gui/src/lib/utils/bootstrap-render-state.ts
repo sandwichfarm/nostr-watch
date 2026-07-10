@@ -4,6 +4,7 @@ import type { SeedBootStatus } from '$lib/stores/boot-state';
 export interface BootstrapRenderStateInput {
 	isReady: boolean;
 	hasActualData: boolean;
+	hasUsableCache: boolean;
 	isBootstrapped: boolean;
 	isSeeded: boolean;
 	seedBootStatus: SeedBootStatus;
@@ -19,17 +20,20 @@ export interface BootstrapRenderState {
 	showBootstrapLoading: boolean;
 	showFollowerWaiting: boolean;
 	showContent: boolean;
+	showInitialBootFallback: boolean;
 	navDisabled: boolean;
 }
 
 export function getBootstrapRenderState(input: BootstrapRenderStateInput): BootstrapRenderState {
 	const seedInProgress = input.seedBootStatus === 'in_progress';
 	const seedReady = input.isSeeded || input.seedBootStatus === 'complete';
-	const isFreshState = !input.isBootstrapped && !input.isSeeded;
-	const loadedEnough = input.hasActualData && (!isFreshState || seedReady);
+	const hasRenderableData = input.hasActualData || input.hasUsableCache;
+	const isFreshState = !input.isBootstrapped && !input.isSeeded && !input.hasUsableCache;
+	const loadedEnough = hasRenderableData && (!isFreshState || seedReady);
 	const needsSeedBootstrap = isFreshState && !seedReady;
-	const showContent = input.isReady && loadedEnough && !seedInProgress;
+	const showContent = input.isReady && loadedEnough;
 	const showFollowerWaiting = !showContent && input.tabState === 'follower';
+	const showBootstrapLoading = needsSeedBootstrap && input.tabState === 'leader';
 
 	return {
 		seedInProgress,
@@ -37,9 +41,11 @@ export function getBootstrapRenderState(input: BootstrapRenderStateInput): Boots
 		isFreshState,
 		loadedEnough,
 		needsSeedBootstrap,
-		showBootstrapLoading: needsSeedBootstrap && input.tabState === 'leader',
+		showBootstrapLoading,
 		showFollowerWaiting,
 		showContent,
-		navDisabled: !loadedEnough || needsSeedBootstrap || seedInProgress
+		showInitialBootFallback:
+			!showBootstrapLoading && !showFollowerWaiting && !showContent && !input.hasUsableCache,
+		navDisabled: !loadedEnough || needsSeedBootstrap
 	};
 }

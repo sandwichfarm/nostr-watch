@@ -7,6 +7,7 @@ describe('getBootstrapRenderState', () => {
 		const state = getBootstrapRenderState({
 			isReady: true,
 			hasActualData: false,
+			hasUsableCache: false,
 			isBootstrapped: false,
 			isSeeded: false,
 			seedBootStatus: 'complete',
@@ -25,6 +26,7 @@ describe('getBootstrapRenderState', () => {
 		const state = getBootstrapRenderState({
 			isReady: false,
 			hasActualData: false,
+			hasUsableCache: false,
 			isBootstrapped: false,
 			isSeeded: false,
 			seedBootStatus: 'in_progress',
@@ -40,6 +42,7 @@ describe('getBootstrapRenderState', () => {
 		const state = getBootstrapRenderState({
 			isReady: true,
 			hasActualData: true,
+			hasUsableCache: false,
 			isBootstrapped: false,
 			isSeeded: false,
 			seedBootStatus: 'complete',
@@ -56,6 +59,7 @@ describe('getBootstrapRenderState', () => {
 		const state = getBootstrapRenderState({
 			isReady: false,
 			hasActualData: true,
+			hasUsableCache: false,
 			isBootstrapped: true,
 			isSeeded: true,
 			seedBootStatus: 'complete',
@@ -71,6 +75,7 @@ describe('getBootstrapRenderState', () => {
 		const state = getBootstrapRenderState({
 			isReady: true,
 			hasActualData: false,
+			hasUsableCache: false,
 			isBootstrapped: false,
 			isSeeded: false,
 			seedBootStatus: 'complete',
@@ -80,5 +85,23 @@ describe('getBootstrapRenderState', () => {
 		expect(state.showContent).toBe(false);
 		expect(state.showFollowerWaiting).toBe(true);
 		expect(state.showBootstrapLoading).toBe(false);
+	});
+
+	it('shows cached content during an in-progress cached resync', () => {
+		const state = getBootstrapRenderState({
+			isReady: true,
+			hasActualData: false,
+			hasUsableCache: true,
+			isBootstrapped: false,
+			isSeeded: false,
+			seedBootStatus: 'in_progress',
+			tabState: 'leader'
+		});
+
+		expect(state.needsSeedBootstrap).toBe(false);
+		expect(state.loadedEnough).toBe(true);
+		expect(state.showBootstrapLoading).toBe(false);
+		expect(state.showContent).toBe(true);
+		expect(state.navDisabled).toBe(false);
 	});
 });

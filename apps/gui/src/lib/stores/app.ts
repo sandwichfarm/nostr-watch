@@ -131,6 +131,60 @@ export const shouldSync = () => {
     return false; 
 }
 
+function hasNonEmptyArrayCache(key: string): boolean {
+    try {
+        const value = StateManager.get(key);
+        return Array.isArray(value) && value.length > 0;
+    } catch {
+        return false;
+    }
+}
+
+function hasPositiveNumberCache(key: string): boolean {
+    try {
+        const value = Number(StateManager.get(key));
+        return Number.isFinite(value) && value > 0;
+    } catch {
+        return false;
+    }
+}
+
+export const hasUsableCachedData = (): boolean => {
+    try {
+        if (StateManager.get('aggregate:complete')) return true;
+    } catch {}
+
+    return (
+        hasPositiveNumberCache('count:events:checks') ||
+        hasNonEmptyArrayCache('cache:monitors') ||
+        hasNonEmptyArrayCache('aggregate:relays') ||
+        hasNonEmptyArrayCache('relays:minisearch') ||
+        hasNonEmptyArrayCache('aggregate:operators')
+    );
+}
+
+export type BootstrapGateState = {
+    bootstrapped: boolean;
+    seeded: boolean;
+    seedBootStatus: 'idle' | 'in_progress' | 'complete' | 'error';
+    hasUsableCache: boolean;
+}
+
+export const shouldRequireSeedBootstrap = (state: BootstrapGateState): boolean => {
+    const seedReady = state.seeded || state.seedBootStatus === 'complete';
+    const freshState = !state.bootstrapped && !state.seeded && !state.hasUsableCache;
+    return freshState && !seedReady;
+}
+
+export const shouldForceFullBootstrap = (state: {
+    bootstrapped: boolean;
+    hasUsableCache: boolean;
+    opfsStatus: OpfsStatusType;
+}): boolean => {
+    if (state.opfsStatus === 'fallback' || state.opfsStatus === 'error') return true;
+    return !state.bootstrapped && !state.hasUsableCache;
+}
+
 export const hasBeenBootstrapped = (): boolean => {
     // Check for both 'sync:all' (re-sync) and 'sync:all-force' (fresh bootstrap)
     return StateManager.get('register:sync:all') || StateManager.get('register:sync:all-force') ? true : false

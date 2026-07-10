@@ -274,11 +274,12 @@
 	  // Bootloader = build-seed import (first run / after reset).
 	  $: needsSeedBootstrap = isFreshState && !seedReady;
 
+	  $: showBootstrapLoading = needsSeedBootstrap && $tabState === 'leader';
+	  $: showFollowerWaiting = $tabState === 'follower' && !showContent;
+
 	  // Seed import is only an accelerator. Do not enter the app until
 	  // runtime bootstrap has produced actual relay-check aggregates.
 	  $: showContent = isReady && loadedEnough && !seedInProgress;
-	  $: showFollowerWaiting = $tabState === 'follower' && !showContent;
-	  $: showBootstrapLoading = !showContent && !showFollowerWaiting;
 </script>
 
 {#if $unsupported}
@@ -296,6 +297,10 @@
 	    <MonitorsBanner />
 	    <div id="content-wrapper" class="block flow-root">
 	      <slot />
+	    </div>
+	  {:else}
+	    <div class="flex flex-col items-center justify-center h-screen px-4">
+	      <div class="text-7xl mb-3">booting.</div>
 	    </div>
 	  {/if}
 {/if}

@@ -128,31 +128,41 @@ async function queryMany(pool, relays, filters, { maxWaitMs }) {
   return await new Promise((resolve) => {
     const events = [];
     const closes = [];
-    pool.subscribeManyEose(relays, filters, {
+    let subcloser;
+    let resolved = false;
+    const finish = (reasons) => {
+      if (resolved) return;
+      resolved = true;
+      if (Array.isArray(reasons)) closes.push(...reasons);
+      resolve({ events, closes });
+    };
+    const params = {
       maxWait: maxWaitMs,
       onevent: (event) => {
         events.push(event);
       },
-      onclose: (reasons) => {
-        if (Array.isArray(reasons)) closes.push(...reasons);
-        resolve({ events, closes });
+      onclose: finish,
+    };
+
+    if (filters.length === 1) {
+      subcloser = pool.subscribeManyEose(relays, filters[0], params);
+      return;
+    }
+
+    const requests = [];
+    for (const url of relays) {
+      for (const filter of filters) {
+        requests.push({ url, filter });
+      }
+    }
+
+    subcloser = pool.subscribeMap(requests, {
+      ...params,
+      oneose: () => {
+        subcloser?.close('closed automatically on eose');
       },
     });
   });
-}
-
-// After a query round, patch pool relays that failed to connect so they
-// throw immediately on subsequent steps instead of waiting for another
-// full connectionTimeout cycle.
-function skipFailedRelays(pool) {
-  for (const [url, relay] of pool.relays) {
-    if (!relay.connected && !relay.connectionPromise) {
-      console.warn(`[seed] skipping failed relay in future queries: ${url}`);
-      relay.connect = async () => {
-        throw new Error(`previously failed to connect to ${url}`);
-      };
-    }
-  }
 }
 
 async function main() {
@@ -214,7 +224,6 @@ async function main() {
     { maxWaitMs: registrationWaitMs }
   );
   if (registrationCloses.length) console.warn('[seed] registrations closes:', registrationCloses);
-  skipFailedRelays(pool);
 
   const registrationsByPubkey = new Map();
   for (const ev of registrationRaw) {
@@ -240,13 +249,14 @@ async function main() {
   const metaLimitMax = envNumber('SEED_META_LIMIT_MAX', 5000);
   const authorChunks = chunk(monitorPubkeys, envNumber('SEED_META_AUTHORS_PER_REQ', 50));
 
-  const monitorMetaResults = await Promise.all(
-    authorChunks.map(authors => {
-      const limit = Math.min(metaLimitMax, Math.max(50, authors.length * metaLimitMultiplier));
-      return queryMany(pool, userMetaRelays, [{ kinds: [0, 10002], authors, limit }], { maxWaitMs });
-    })
-  );
-  for (const { events, closes } of monitorMetaResults) {
+  for (const authors of authorChunks) {
+    const limit = Math.min(metaLimitMax, Math.max(50, authors.length * metaLimitMultiplier));
+    const { events, closes } = await queryMany(
+      pool,
+      userMetaRelays,
+      [{ kinds: [0, 10002], authors, limit }],
+      { maxWaitMs }
+    );
     if (closes.length) console.warn('[seed] monitor-meta closes:', closes);
     for (const ev of events) {
       if (ev?.kind !== 0 && ev?.kind !== 10002) continue;
@@ -257,19 +267,19 @@ async function main() {
 
   const monitorMeta = Array.from(monitorMetaByKey.values());
   console.log('[seed] monitor meta', monitorMeta.length);
-  skipFailedRelays(pool);
 
   // ---------------------------------------------------------------------------
   // 2b) Monitor blocklists (kind 10006)
   // ---------------------------------------------------------------------------
   const monitorBlocklistsByKey = new Map();
-  const blocklistResults = await Promise.all(
-    authorChunks.map(authors => {
-      const limit = Math.min(metaLimitMax, Math.max(50, authors.length * metaLimitMultiplier));
-      return queryMany(pool, [...userMetaRelays, ...nip66Relays], [{ kinds: [10006], authors, limit }], { maxWaitMs });
-    })
-  );
-  for (const { events, closes } of blocklistResults) {
+  for (const authors of authorChunks) {
+    const limit = Math.min(metaLimitMax, Math.max(50, authors.length * metaLimitMultiplier));
+    const { events, closes } = await queryMany(
+      pool,
+      [...userMetaRelays, ...nip66Relays],
+      [{ kinds: [10006], authors, limit }],
+      { maxWaitMs }
+    );
     if (closes.length) console.warn('[seed] monitor-blocklists closes:', closes);
     for (const ev of events) {
       if (ev?.kind !== 10006) continue;
@@ -292,9 +302,6 @@ async function main() {
     }
   }
   console.log('[seed] blocked relay URLs from blocklists:', blockedRelayUrls.size);
-
-  // Mark relays that failed to connect so they're skipped in subsequent steps
-  skipFailedRelays(pool);
 
   // Bootstrap logic adds monitors' own relay lists to the nip66 relay pool.
   // This improves coverage for check events that may not land on the defaults.
@@ -340,12 +347,8 @@ async function main() {
     });
   }
 
-  const activityResults = await Promise.all(
-    chunk(activityFilters, filtersPerReq).map(filters =>
-      queryMany(pool, nip66Relays, filters, { maxWaitMs: activityWaitMs })
-    )
-  );
-  for (const { events, closes } of activityResults) {
+  for (const filters of chunk(activityFilters, filtersPerReq)) {
+    const { events, closes } = await queryMany(pool, nip66Relays, filters, { maxWaitMs: activityWaitMs });
     if (closes.length) console.warn('[seed] activity closes:', closes);
     for (const ev of events) {
       if (ev?.kind !== 30166) continue;
@@ -355,7 +358,6 @@ async function main() {
       if (created > prev) activeLastSeen.set(ev.pubkey, created);
     }
   }
-  skipFailedRelays(pool);
 
   // Sort by most recently active, but include ALL registered monitors up to cap
   // This ensures we get data from all monitors, not just the most active
@@ -394,12 +396,9 @@ async function main() {
     checkFilters.push(filter);
   }
 
-  const checkResults = await Promise.all(
-    chunk(checkFilters, filtersPerReq).map(filters =>
-      queryMany(pool, nip66Relays, filters, { maxWaitMs })
-    )
-  );
-  for (const { events, closes } of checkResults) {
+  for (const filters of chunk(checkFilters, filtersPerReq)) {
+    if (checksByKey.size >= maxCheckEvents) break;
+    const { events, closes } = await queryMany(pool, nip66Relays, filters, { maxWaitMs });
     if (closes.length) console.warn('[seed] checks closes:', closes);
     for (const ev of events) {
       if (ev?.kind !== 30166) continue;
@@ -413,7 +412,6 @@ async function main() {
       upsertNewest(checksByKey, key, ev);
       if (checksByKey.size >= maxCheckEvents) break;
     }
-    if (checksByKey.size >= maxCheckEvents) break;
   }
 
   const checks = Array.from(checksByKey.values()).sort(
@@ -442,7 +440,29 @@ async function main() {
 
   console.log('[seed] operator pubkeys (capped)', operatorPubkeys.length);
 
-  // Prepare NIP-11 relay URLs (needed for step 6, can extract now)
+  const operatorMetaByKey = new Map();
+  for (const authors of chunk(operatorPubkeys, envNumber('SEED_OPERATOR_META_AUTHORS_PER_REQ', 50))) {
+    const limit = Math.min(metaLimitMax, Math.max(50, authors.length * metaLimitMultiplier));
+    const { events, closes } = await queryMany(
+      pool,
+      userMetaRelays,
+      [{ kinds: [0, 10002], authors, limit }],
+      { maxWaitMs }
+    );
+    if (closes.length) console.warn('[seed] operator-meta closes:', closes);
+    for (const ev of events) {
+      if (ev?.kind !== 0 && ev?.kind !== 10002) continue;
+      if (typeof ev?.pubkey !== 'string') continue;
+      upsertNewest(operatorMetaByKey, `${ev.pubkey}:${ev.kind}`, ev);
+    }
+  }
+
+  const operatorMeta = Array.from(operatorMetaByKey.values());
+  console.log('[seed] operator meta', operatorMeta.length);
+
+  // ---------------------------------------------------------------------------
+  // 6) Fetch NIP-11 relay info documents
+  // ---------------------------------------------------------------------------
   const relayUrls = new Set();
   for (const ev of checks) {
     const d = dTagValue(ev);
@@ -471,38 +491,21 @@ async function main() {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // 5 + 6) Operator meta and NIP-11 fetches in parallel
-  // ---------------------------------------------------------------------------
-  skipFailedRelays(pool);
-  const opMetaAuthorsPerReq = envNumber('SEED_OPERATOR_META_AUTHORS_PER_REQ', 50);
+  const nip11Results = [];
+  const nip11Batches = chunk(relayUrlsArray, nip11Concurrency);
+  let nip11Progress = 0;
 
-  const [opMetaResults, nip11FetchResults] = await Promise.all([
-    // Step 5: operator meta
-    Promise.all(
-      chunk(operatorPubkeys, opMetaAuthorsPerReq).map(authors => {
-        const limit = Math.min(metaLimitMax, Math.max(50, authors.length * metaLimitMultiplier));
-        return queryMany(pool, userMetaRelays, [{ kinds: [0, 10002], authors, limit }], { maxWaitMs });
-      })
-    ),
-    // Step 6: NIP-11 (all URLs concurrently)
-    Promise.all(relayUrlsArray.map(fetchNip11)),
-  ]);
-
-  const operatorMetaByKey = new Map();
-  for (const { events, closes } of opMetaResults) {
-    if (closes.length) console.warn('[seed] operator-meta closes:', closes);
-    for (const ev of events) {
-      if (ev?.kind !== 0 && ev?.kind !== 10002) continue;
-      if (typeof ev?.pubkey !== 'string') continue;
-      upsertNewest(operatorMetaByKey, `${ev.pubkey}:${ev.kind}`, ev);
+  for (const batch of nip11Batches) {
+    const results = await Promise.all(batch.map(fetchNip11));
+    for (const result of results) {
+      if (result) nip11Results.push(result);
+    }
+    nip11Progress += batch.length;
+    if (nip11Progress % 100 === 0 || nip11Progress === relayUrlsArray.length) {
+      console.log(`[seed] NIP-11 progress: ${nip11Progress}/${relayUrlsArray.length} (${nip11Results.length} successful)`);
     }
   }
 
-  const operatorMeta = Array.from(operatorMetaByKey.values());
-  console.log('[seed] operator meta', operatorMeta.length);
-
-  const nip11Results = nip11FetchResults.filter(Boolean);
   console.log('[seed] NIP-11s fetched', nip11Results.length);
 
   // ---------------------------------------------------------------------------
@@ -595,6 +598,6 @@ scriptTimer.unref();
 main()
   .catch((err) => {
     console.error('[seed] failed', err);
-    process.exitCode = 1;
+    process.exit(1);
   })
   .finally(() => clearTimeout(scriptTimer));

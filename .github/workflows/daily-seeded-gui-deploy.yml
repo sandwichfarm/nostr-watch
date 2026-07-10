@@ -19,7 +19,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 11
 
       - name: Install
         run: pnpm install --frozen-lockfile
@@ -61,4 +61,3 @@ jobs:
           replication-timeout: "15000"
           request-timeout: "30000"
           retry-limit: "5"
-

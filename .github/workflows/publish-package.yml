@@ -81,8 +81,6 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @nostrwatch/gui... build
       - run: pnpm --filter @nostrwatch/gui build:seeded
-        env:
-          SEED_ALLOW_EMPTY: "true"
 
       - name: Deploy to nsite
         uses: sandwichfarm/nsite-action@v0.1.3

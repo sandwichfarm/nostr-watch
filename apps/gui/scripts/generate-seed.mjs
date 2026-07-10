@@ -9,6 +9,7 @@ const __dirname = path.dirname(__filename);
 
 const appRoot = path.resolve(__dirname, '..');
 const outDir = path.join(appRoot, 'static', 'seed');
+const scriptStartedAt = Date.now();
 
 const NIP66_RELAYS_DEFAULT = [
   'wss://relay.nostr.watch',
@@ -36,6 +37,8 @@ function envString(name, fallback) {
   if (raw === undefined || raw === null || raw === '') return fallback;
   return String(raw);
 }
+
+const scriptTimeoutMs = envNumber('SEED_SCRIPT_TIMEOUT_MS', 5 * 60 * 1000);
 
 function uniq(arr) {
   return Array.from(new Set(arr));
@@ -211,6 +214,8 @@ async function main() {
   const maxNip11Relays = envNumber('SEED_MAX_NIP11_RELAYS', 5_000);
   const nip11TimeoutMs = envNumber('SEED_NIP11_TIMEOUT_MS', 5_000);
   const nip11Concurrency = envNumber('SEED_NIP11_CONCURRENCY', 30);
+  const nip11BudgetMs = envNumber('SEED_NIP11_BUDGET_MS', 90_000);
+  const nip11WriteReserveMs = envNumber('SEED_NIP11_WRITE_RESERVE_MS', 15_000);
 
   console.log('[seed] relays', { nip66: nip66Relays.length, userMeta: userMetaRelays.length });
 
@@ -472,31 +477,48 @@ async function main() {
   const relayUrlsArray = Array.from(relayUrls).slice(0, maxNip11Relays);
   console.log('[seed] relay URLs for NIP-11', relayUrlsArray.length);
 
-  async function fetchNip11(wsUrl) {
+  async function fetchNip11(wsUrl, timeoutMs = nip11TimeoutMs) {
+    if (timeoutMs <= 0) return null;
+    let timeout;
     try {
       const httpUrl = wsUrl.replace(/^wss:\/\//, 'https://').replace(/^ws:\/\//, 'http://');
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), nip11TimeoutMs);
+      timeout = setTimeout(() => controller.abort(), timeoutMs);
       const response = await fetch(httpUrl, {
         signal: controller.signal,
         headers: { Accept: 'application/nostr+json' },
       });
-      clearTimeout(timeout);
       if (!response.ok) return null;
       const json = await response.json();
       if (!json || typeof json !== 'object') return null;
       return { relay: wsUrl, nip11: json };
     } catch {
       return null;
+    } finally {
+      if (timeout) clearTimeout(timeout);
     }
   }
 
   const nip11Results = [];
   const nip11Batches = chunk(relayUrlsArray, nip11Concurrency);
   let nip11Progress = 0;
+  const scriptElapsedMs = Date.now() - scriptStartedAt;
+  const remainingScriptMs = Math.max(0, scriptTimeoutMs - scriptElapsedMs - nip11WriteReserveMs);
+  const effectiveNip11BudgetMs = Math.max(0, Math.min(nip11BudgetMs, remainingScriptMs));
+  const nip11DeadlineMs = Date.now() + effectiveNip11BudgetMs;
+
+  if (effectiveNip11BudgetMs < nip11BudgetMs) {
+    console.warn(
+      `[seed] NIP-11 budget reduced to ${Math.round(effectiveNip11BudgetMs / 1000)}s to preserve seed write time`
+    );
+  }
 
   for (const batch of nip11Batches) {
-    const results = await Promise.all(batch.map(fetchNip11));
+    const remainingNip11Ms = nip11DeadlineMs - Date.now();
+    if (remainingNip11Ms <= 0) break;
+
+    const batchTimeoutMs = Math.min(nip11TimeoutMs, remainingNip11Ms);
+    const results = await Promise.all(batch.map((relayUrl) => fetchNip11(relayUrl, batchTimeoutMs)));
     for (const result of results) {
       if (result) nip11Results.push(result);
     }
@@ -504,6 +526,12 @@ async function main() {
     if (nip11Progress % 100 === 0 || nip11Progress === relayUrlsArray.length) {
       console.log(`[seed] NIP-11 progress: ${nip11Progress}/${relayUrlsArray.length} (${nip11Results.length} successful)`);
     }
+  }
+
+  if (nip11Progress < relayUrlsArray.length) {
+    console.warn(
+      `[seed] NIP-11 budget exhausted after ${nip11Progress}/${relayUrlsArray.length}; writing partial NIP-11 seed`
+    );
   }
 
   console.log('[seed] NIP-11s fetched', nip11Results.length);
@@ -564,6 +592,10 @@ async function main() {
       operatorsChunkSize,
       nip11sChunkSize,
       maxNip11Relays,
+      nip11TimeoutMs,
+      nip11Concurrency,
+      nip11BudgetMs,
+      nip11WriteReserveMs,
     },
     groups: {
       monitors: { files: ['/seed/monitors.json'], events: monitorsPayload.length },
@@ -588,7 +620,6 @@ async function main() {
   });
 }
 
-const scriptTimeoutMs = envNumber('SEED_SCRIPT_TIMEOUT_MS', 5 * 60 * 1000);
 const scriptTimer = setTimeout(() => {
   console.error(`[seed] TIMEOUT: script exceeded ${scriptTimeoutMs / 1000}s limit — aborting`);
   process.exit(1);

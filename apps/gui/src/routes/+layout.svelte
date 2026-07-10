@@ -259,7 +259,6 @@
     activityManager?.destroy?.();
   });
 
-  // --------------------------------------------------------------------------------
   // Render gating
   // --------------------------------------------------------------------------------
   $: hasActualData = $relayCheckAggregates?.length > 0;
@@ -279,15 +278,19 @@
   <div class="text-xs opacity-30">This version of nostr.watch does not support mobile devices.</div>
 </div>
 {:else}
-  <HeaderComponent navDisabled={bootstrapRenderState.navDisabled} />
   {#if bootstrapRenderState.showBootstrapLoading}
     <BootstrapLoading {isReady} />
   {:else if bootstrapRenderState.showFollowerWaiting}
     <FollowerLoading />
   {:else if bootstrapRenderState.showContent}
+    <HeaderComponent navDisabled={false} />
     <MonitorsBanner />
     <div id="content-wrapper" class="block flow-root">
       <slot />
+    </div>
+  {:else}
+    <div class="flex flex-col items-center justify-center h-screen px-4">
+      <div class="text-7xl mb-3">booting.</div>
     </div>
   {/if}
 {/if}

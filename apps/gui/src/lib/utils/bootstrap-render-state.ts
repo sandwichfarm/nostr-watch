@@ -29,7 +29,7 @@ export function getBootstrapRenderState(input: BootstrapRenderStateInput): Boots
 	const loadedEnough = input.hasActualData && (!isFreshState || seedReady);
 	const needsSeedBootstrap = isFreshState && !seedReady;
 	const showContent = input.isReady && loadedEnough && !seedInProgress;
-	const showFollowerWaiting = !showContent && input.tabState === 'follower' && seedInProgress;
+	const showFollowerWaiting = !showContent && input.tabState === 'follower';
 
 	return {
 		seedInProgress,
@@ -37,7 +37,7 @@ export function getBootstrapRenderState(input: BootstrapRenderStateInput): Boots
 		isFreshState,
 		loadedEnough,
 		needsSeedBootstrap,
-		showBootstrapLoading: !showContent && !showFollowerWaiting,
+		showBootstrapLoading: needsSeedBootstrap && input.tabState === 'leader',
 		showFollowerWaiting,
 		showContent,
 		navDisabled: !loadedEnough || needsSeedBootstrap || seedInProgress

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { getBootstrapRenderState } from './bootstrap-render-state';
 
 describe('getBootstrapRenderState', () => {
-	it('keeps first-run users in the bootstrap UI when seed finishes without data', () => {
+	it('keeps first-run users out of the app when seed finishes without data', () => {
 		const state = getBootstrapRenderState({
 			isReady: true,
 			hasActualData: false,
@@ -16,8 +16,24 @@ describe('getBootstrapRenderState', () => {
 		expect(state.needsSeedBootstrap).toBe(false);
 		expect(state.loadedEnough).toBe(false);
 		expect(state.showContent).toBe(false);
-		expect(state.showBootstrapLoading).toBe(true);
+		expect(state.showBootstrapLoading).toBe(false);
+		expect(state.showFollowerWaiting).toBe(false);
 		expect(state.navDisabled).toBe(true);
+	});
+
+	it('shows the seed bootstrap checklist only while a leader needs seed bootstrap', () => {
+		const state = getBootstrapRenderState({
+			isReady: false,
+			hasActualData: false,
+			isBootstrapped: false,
+			isSeeded: false,
+			seedBootStatus: 'in_progress',
+			tabState: 'leader'
+		});
+
+		expect(state.needsSeedBootstrap).toBe(true);
+		expect(state.showBootstrapLoading).toBe(true);
+		expect(state.showContent).toBe(false);
 	});
 
 	it('shows content after first-run bootstrap has actual relay-check data', () => {
@@ -48,16 +64,16 @@ describe('getBootstrapRenderState', () => {
 
 		expect(state.loadedEnough).toBe(true);
 		expect(state.showContent).toBe(false);
-		expect(state.showBootstrapLoading).toBe(true);
+		expect(state.showBootstrapLoading).toBe(false);
 	});
 
-	it('keeps follower tabs on the follower wait screen while seed import is active', () => {
+	it('keeps follower tabs on the follower wait screen until content is ready', () => {
 		const state = getBootstrapRenderState({
 			isReady: true,
 			hasActualData: false,
 			isBootstrapped: false,
 			isSeeded: false,
-			seedBootStatus: 'in_progress',
+			seedBootStatus: 'complete',
 			tabState: 'follower'
 		});
 

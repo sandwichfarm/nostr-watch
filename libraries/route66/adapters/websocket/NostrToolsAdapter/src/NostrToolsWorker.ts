@@ -102,6 +102,47 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
     return relays.filter((r: string) => !r.includes(','));
   }
 
+  private subscribeToFilters(
+    relays: string[],
+    filters: any[],
+    handlers: {
+      onevent?: (event: any) => void;
+      oneose?: () => void;
+      onclose?: (reasons: string[]) => void;
+    }
+  ) {
+    const params = {
+      ...handlers,
+      maxWait: 15_000,
+    };
+
+    if (filters.length === 0) {
+      setTimeout(() => handlers.oneose?.(), 0);
+      return { close() {} };
+    }
+
+    const pool: any = this.pool!;
+
+    // nostr-tools 2.23 changed subscribeMany() to accept one Filter and added
+    // subscribeMap(); older 2.x accepts Filter[] and has no subscribeMap().
+    if (typeof pool.subscribeMap !== 'function') {
+      return pool.subscribeMany(relays, filters, params);
+    }
+
+    if (filters.length === 1) {
+      return pool.subscribeMany(relays, filters[0], params);
+    }
+
+    const requests: { url: string; filter: any }[] = [];
+    for (const url of relays) {
+      for (const filter of filters) {
+        requests.push({ url, filter });
+      }
+    }
+
+    return pool.subscribeMap(requests, params);
+  }
+
   async _subscribe(request: WebsocketRequestBody = defaultWebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean> {
     let { filters, relays, options, hash, priority } = request;
     const { stream, keepAlive } = options ?? defaultWebsocketAdapterOptions;
@@ -155,11 +196,7 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
           }
         }
 
-        const closer = this.pool!.subscribeMany(
-          effectiveRelays,
-          filters,
-          { onevent, oneose, onclose }
-        );
+        const closer = this.subscribeToFilters(effectiveRelays, filters, { onevent, oneose, onclose });
         
         this.subs.set(hash as string, () => {
           closer.close()
@@ -227,31 +264,27 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
               const events: any[] = [];
               let resolved = false;
 
-              const closer = this.pool!.subscribeMany(
-                effectiveRelays,
-                [filter],
-                {
-                  onevent: (event: any) => {
-                    console.log('[NostrToolsWorker] _fetch subscribeMany onevent:', event.kind, event.id?.slice(0, 8));
-                    events.push(event);
-                  },
-                  oneose: () => {
-                    console.log('[NostrToolsWorker] _fetch subscribeMany oneose, events:', events.length);
-                    if (!resolved) {
-                      resolved = true;
-                      closer.close();
-                      resolve(events);
-                    }
-                  },
-                  onclose: (reasons: string[]) => {
-                    console.log('[NostrToolsWorker] _fetch subscribeMany onclose:', reasons);
-                    if (!resolved) {
-                      resolved = true;
-                      resolve(events);
-                    }
+              const closer = this.subscribeToFilters(effectiveRelays, [filter], {
+                onevent: (event: any) => {
+                  console.log('[NostrToolsWorker] _fetch subscribeMany onevent:', event.kind, event.id?.slice(0, 8));
+                  events.push(event);
+                },
+                oneose: () => {
+                  console.log('[NostrToolsWorker] _fetch subscribeMany oneose, events:', events.length);
+                  if (!resolved) {
+                    resolved = true;
+                    closer.close();
+                    resolve(events);
+                  }
+                },
+                onclose: (reasons: string[]) => {
+                  console.log('[NostrToolsWorker] _fetch subscribeMany onclose:', reasons);
+                  if (!resolved) {
+                    resolved = true;
+                    resolve(events);
                   }
                 }
-              );
+              });
 
               // Timeout fallback in case EOSE never comes
               setTimeout(() => {

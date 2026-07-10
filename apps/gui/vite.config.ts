@@ -85,6 +85,12 @@ export default defineConfig(({ mode }) => {
     },
     resolve: {
       alias: {
+        '@nostrwatch/logger': path.resolve(__dirname, '../../internal/logger/src/index.ts'),
+        '@nostrwatch/memory-relay/abstract': path.resolve(__dirname, '../../libraries/memory-relay/src/abstract.ts'),
+        '@nostrwatch/memory-relay/svelte': path.resolve(__dirname, '../../libraries/memory-relay/src/svelte.ts'),
+        '@nostrwatch/memory-relay': path.resolve(__dirname, '../../libraries/memory-relay/src/index.ts'),
+        '@nostrwatch/relay-chronicle': path.resolve(__dirname, '../../libraries/relay-chronicle/src/index.ts'),
+        '@nostrwatch/utils': path.resolve(__dirname, '../../internal/utils/src/index.ts'),
         '@': path.resolve(__dirname, './src'),
         '@dist': path.resolve(__dirname, './dist'),
         '@components': path.resolve(__dirname, './src/components'),

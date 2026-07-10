@@ -183,7 +183,7 @@ export const monitorNip05s = derived(
   monitors,
   monitors => 
     monitors
-      .filter( m => m?.profile?.nip05 )
+      .filter((m): m is Monitor & { profile: NonNullable<Monitor["profile"]> & { nip05: string } } => Boolean(m?.profile?.nip05))
       .map( m => ({ pubkey: m.pubkey, nip05: m.profile.nip05 }) )
 )
 
@@ -471,6 +471,7 @@ if (typeof window !== "undefined") {
 }
 
 export const monitorsChecked: Writable<boolean> = writable(false);
+export const monitorSelectionLocked: Writable<boolean> = writable(true);
 
 export const monitorRows = derived(
   [monitors, monitorRelayLivenessCounts, nip05s, statsAsOf, livenessReady, monitorFreshness, monitorsLivenessLeniency],

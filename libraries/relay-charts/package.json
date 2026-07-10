@@ -43,7 +43,7 @@
   "peerDependencies": {
     "@nostrwatch/relay-chronicle": "^1.0.0",
     "chart.js": "^4.0.0",
-    "echarts": "^5.0.0",
+    "echarts": "^6.1.0",
     "recharts": "^2.0.0"
   },
   "peerDependenciesMeta": {

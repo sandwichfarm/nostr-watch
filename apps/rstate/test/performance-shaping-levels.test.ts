@@ -384,9 +384,12 @@ describe('Performance Benchmarks: Response Shaping', () => {
       console.log(`   Min:     ${Math.min(...times).toFixed(4)}ms`)
       console.log(`   Max:     ${Math.max(...times).toFixed(4)}ms`)
 
-      // Coefficient of variation should be reasonable (<50%)
-      const cv = (stdDev / avg) * 100
-      expect(cv).toBeLessThan(50)
+      // These calls are often below timer resolution, which makes coefficient
+      // of variation unstable. Bound absolute latency instead.
+      const sorted = [...times].sort((a, b) => a - b)
+      const p95 = sorted[Math.floor(sorted.length * 0.95)]
+      expect(avg).toBeLessThan(5)
+      expect(p95).toBeLessThan(10)
     })
   })
 })

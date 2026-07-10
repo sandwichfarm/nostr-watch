@@ -54,7 +54,6 @@
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.0",
     "glob": "^10.0.0",
-    "node-polyfill-webpack-plugin": "4.0.0",
     "prettier": "^3.4.2",
     "rimraf": "^5.0.0",
     "rollup-plugin-livereload": "2.0.5",
@@ -63,7 +62,7 @@
     "rollup-plugin-web-worker-loader": "1.6.1",
     "ts-loader": "^9.0.0",
     "typescript": "^5.0.0",
-    "vitest": "^0.34.1",
+    "vitest": "^3.2.6",
     "webpack": "^5.0.0",
     "webpack-cli": "^5.0.0"
   },

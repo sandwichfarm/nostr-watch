@@ -1,5 +1,4 @@
   const path = require('path');
-  const NodePolyfillPlugin = require('node-polyfill-webpack-plugin');
   const webpack = require('webpack');
 
   module.exports = {
@@ -19,7 +18,6 @@
       // new webpack.IgnorePlugin({
       //   resourceRegExp: /^node:(url|module)$/, 
       // }),
-      // new NodePolyfillPlugin()
     ],
     resolve: {
       extensions: ['.ts', '.js'],

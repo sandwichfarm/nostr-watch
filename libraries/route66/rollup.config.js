@@ -1,6 +1,6 @@
 import path from 'path'
 import { fileURLToPath } from 'url'
-import typescript from 'rollup-plugin-typescript2'
+import ts from 'typescript'
 import resolve from '@rollup/plugin-node-resolve'
 import commonjs from '@rollup/plugin-commonjs'
 import alias from '@rollup/plugin-alias'
@@ -53,6 +53,57 @@ const production = !process.env.ROLLUP_WATCH
 
 const input = glob.sync('src/**/index.ts')
 
+const parsedTsConfig = ts.parseJsonConfigFileContent(
+  ts.readConfigFile(path.resolve(__dirname, 'tsconfig.json'), ts.sys.readFile).config,
+  ts.sys,
+  __dirname
+)
+
+function transpileTypeScript() {
+  return {
+    name: 'transpile-typescript',
+    transform(code, id) {
+      if (!/\.[cm]?tsx?$/.test(id) || id.endsWith('.d.ts')) {
+        return null
+      }
+
+      const result = ts.transpileModule(code, {
+        compilerOptions: {
+          ...parsedTsConfig.options,
+          declaration: false,
+          declarationMap: false,
+          emitDeclarationOnly: false,
+          noEmit: false,
+          outDir: undefined,
+          declarationDir: undefined,
+          sourceMap: true,
+        },
+        fileName: id,
+        reportDiagnostics: true,
+      })
+
+      const errors = result.diagnostics?.filter(
+        (diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error
+      )
+
+      if (errors?.length) {
+        this.error(
+          ts.formatDiagnosticsWithColorAndContext(errors, {
+            getCanonicalFileName: (fileName) => fileName,
+            getCurrentDirectory: () => __dirname,
+            getNewLine: () => '\n',
+          })
+        )
+      }
+
+      return {
+        code: result.outputText,
+        map: result.sourceMapText ? JSON.parse(result.sourceMapText) : null,
+      }
+    },
+  }
+}
+
 const aliases = alias({
   entries: [
     { find: '@adapters', replacement: path.resolve(__dirname, 'adapters') },
@@ -61,6 +112,7 @@ const aliases = alias({
     { find: '@models', replacement: path.resolve(__dirname, 'src/models') },
     { find: '@interfaces', replacement: path.resolve(__dirname, 'src/interfaces') },
     { find: '@services', replacement: path.resolve(__dirname, 'src/services') },
+    { find: '@utils', replacement: path.resolve(__dirname, 'src/utils') },
     { find: '@workers', replacement: path.resolve(__dirname, 'src/workers') }
   ]
 })
@@ -71,11 +123,7 @@ const commonPlugins = [
     'process.env.NODE_ENV': JSON.stringify(production ? 'production' : 'development'),
     preventAssignment: true,
   }),
-  typescript({
-    tsconfig: './tsconfig.json',
-    clean: true,
-    useTsconfigDeclarationDir: true,
-  }),
+  transpileTypeScript(),
   nodePolyfills(),
   resolve({
     extensions: ['.ts', '.tsx', '.js', '.json', '.wasm'],

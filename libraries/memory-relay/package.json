@@ -11,19 +11,19 @@
   "license": "MIT",
   "exports": {
     ".": {
-      "types": "./dist/esm/index.d.ts",
+      "types": "./dist/index.d.ts",
       "import": "./dist/esm/index.mjs",
-      "require": "./dist/esm/index.js"
+      "default": "./dist/esm/index.mjs"
     },
     "./abstract": {
-      "types": "./dist/index.d.ts",
+      "types": "./dist/abstract.d.ts",
       "import": "./dist/esm/abstract.mjs",
-      "require": "./dist/esm/abstract.js"
+      "default": "./dist/esm/abstract.mjs"
     },
     "./svelte": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/esm/abstract.mjs",
-      "require": "./dist/esm/abstract.js"
+      "types": "./dist/svelte.d.ts",
+      "import": "./dist/esm/svelte.mjs",
+      "default": "./dist/esm/svelte.mjs"
     }
   },
   "scripts": {

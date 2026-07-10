@@ -1,10 +1,9 @@
 import { marked, type MarkedOptions } from 'marked';
-import DOMPurify from 'dompurify';
 import { writable, get, type Writable } from 'svelte/store';
 import { nip19 } from 'nostr-tools';
 import type { UserService } from '$lib/services/UserService';
 import { userService } from '$lib/stores/services.js';
-import { escapeHtml, safeImageUrl } from '$lib/utils/sanitize';
+import { escapeHtml, safeImageUrl, sanitizeHtml } from '$lib/utils/sanitize';
 
 /**
  * Nostr event content parser — sequential async pipeline with always-on
@@ -14,10 +13,10 @@ import { escapeHtml, safeImageUrl } from '$lib/utils/sanitize';
  *
  * Every async transform runs in order; each transform's output feeds the
  * next. applySanitize is the LAST async step and runs UNCONDITIONALLY —
- * the `config.sanitize` field is preserved for back-compat with the 4
- * caller files (FeedNoteContent, FeedNote, FeedMasonryNote, Reader) that
- * literally pass `sanitize: false`, but the field is now a NO-OP and the
- * applySanitize step always appends. Stripping the option from the 4
+ * the `config.sanitize` field is preserved for back-compat with the 3
+ * caller files (FeedNoteContent, FeedNote, Reader) that literally pass
+ * `sanitize: false`, but the field is now a NO-OP and the
+ * applySanitize step always appends. Stripping the option from the 3
  * callers is a Phase 29 AUDIT-01 cosmetic follow-up.
  *
  * Belt-and-suspenders per-step hardening:
@@ -292,7 +291,7 @@ async function applyMarkdown(text: string, options: MarkedOptions): Promise<stri
  * replace the default allowlist); ADD_TAGS / ADD_ATTR extend it.
  */
 function applySanitize(text: string): string {
-  return DOMPurify.sanitize(text, {
+  return sanitizeHtml(text, {
     ADD_TAGS: ['iframe'],
     ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'scrolling', 'src'],
   });

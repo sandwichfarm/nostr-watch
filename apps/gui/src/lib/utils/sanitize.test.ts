@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { escapeHtml, safeImageUrl, safeHttpUrl } from './sanitize';
+import { escapeHtml, safeImageUrl, safeHttpUrl, sanitizeHtml } from './sanitize';
 
 describe('escapeHtml', () => {
     it('escapes <script> tags', () => {
@@ -254,5 +254,29 @@ describe('safeHttpUrl', () => {
         expect(out).not.toMatch(/onerror=/);
         expect(out).not.toMatch(/"/);
         expect(out).toBe(''); // current contract: reject — change this assertion only if the contract changes
+    });
+});
+
+describe('sanitizeHtml', () => {
+    it('does not return executable script markup', () => {
+        expect(sanitizeHtml('<script>alert(1)</script><p>safe</p>')).not.toContain(
+            '<script>'
+        );
+    });
+
+    it('passes through DOMPurify config for intentional embed sinks', () => {
+        const out = sanitizeHtml(
+            '<iframe src="https://www.youtube.com/embed/abc123"></iframe>',
+            { ADD_TAGS: ['iframe'], ADD_ATTR: ['src'] }
+        );
+
+        expect(out).toContain('<iframe');
+        expect(out).toContain('src=');
+    });
+
+    it('returns empty string for non-string input', () => {
+        expect(sanitizeHtml(null)).toBe('');
+        expect(sanitizeHtml(undefined)).toBe('');
+        expect(sanitizeHtml(42)).toBe('');
     });
 });

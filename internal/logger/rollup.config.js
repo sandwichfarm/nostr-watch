@@ -1,6 +1,6 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
-import typescript from 'rollup-plugin-typescript2';
+import ts from 'typescript';
 import alias from '@rollup/plugin-alias';
 import commonjs from '@rollup/plugin-commonjs';
 import replace from '@rollup/plugin-replace';
@@ -24,6 +24,57 @@ const input = glob.sync('src/**/index.ts');
 
 console.log('inputs', input);
 
+const parsedTsConfig = ts.parseJsonConfigFileContent(
+  ts.readConfigFile(path.resolve(__dirname, 'tsconfig.json'), ts.sys.readFile).config,
+  ts.sys,
+  __dirname
+);
+
+function transpileTypeScript() {
+  return {
+    name: 'transpile-typescript',
+    transform(code, id) {
+      if (!/\.[cm]?tsx?$/.test(id) || id.endsWith('.d.ts')) {
+        return null;
+      }
+
+      const result = ts.transpileModule(code, {
+        compilerOptions: {
+          ...parsedTsConfig.options,
+          declaration: false,
+          declarationMap: false,
+          emitDeclarationOnly: false,
+          noEmit: false,
+          outDir: undefined,
+          declarationDir: undefined,
+          sourceMap: true,
+        },
+        fileName: id,
+        reportDiagnostics: true,
+      });
+
+      const errors = result.diagnostics?.filter(
+        (diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error
+      );
+
+      if (errors?.length) {
+        this.error(
+          ts.formatDiagnosticsWithColorAndContext(errors, {
+            getCanonicalFileName: (fileName) => fileName,
+            getCurrentDirectory: () => __dirname,
+            getNewLine: () => '\n',
+          })
+        );
+      }
+
+      return {
+        code: result.outputText,
+        map: result.sourceMapText ? JSON.parse(result.sourceMapText) : null,
+      };
+    },
+  };
+}
+
 const commonjsOptions = {
   include: /node_modules/,
   requireReturnsDefault: (id) => {
@@ -45,11 +96,7 @@ const commonPlugins = [
       { find: 'fs/promises', replacement: path.resolve(__dirname, 'src/shims/fs-promises.js') },
     ],
   }),
-  typescript({
-    tsconfig: './tsconfig.json',
-    clean: true,
-    useTsconfigDeclarationDir: true,
-  }),
+  transpileTypeScript(),
   production &&
     terser({
       keep_fnames: true,
@@ -59,6 +106,7 @@ const commonPlugins = [
 
 const serverPlugins = [
   nodeResolve({
+    extensions: ['.ts', '.tsx', '.mjs', '.js', '.json'],
     preferBuiltins: true,
     browser: false,
   }),
@@ -78,6 +126,7 @@ const browserPlugins = [
     sourceMap: true,
   }),
   nodeResolve({
+    extensions: ['.ts', '.tsx', '.mjs', '.js', '.json'],
     preferBuiltins: false,
     browser: true,
     mainFields: ['module', 'main', 'browser'],

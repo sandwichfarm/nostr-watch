@@ -1,3 +1,8 @@
+import createDOMPurify, {
+    type Config,
+    type DOMPurify as DOMPurifyInstance,
+} from 'dompurify';
+
 /**
  * Encode-on-output mitigation for relay-controlled NIP-11 / kind-0 / kind-1 fields.
  *
@@ -198,4 +203,26 @@ export function safeHttpUrl(input: unknown): string {
     // Encode entities (notably & in query strings) so the value is safe in
     // a double-quoted href="" attribute context.
     return escapeHtml(input);
+}
+
+let browserPurifier: DOMPurifyInstance | undefined;
+
+function getDomPurify(): DOMPurifyInstance | undefined {
+    const maybePurifier = createDOMPurify as DOMPurifyInstance;
+    if (typeof maybePurifier.sanitize === 'function') return maybePurifier;
+    if (typeof window === 'undefined') return undefined;
+    if (!browserPurifier) browserPurifier = createDOMPurify(window);
+    return browserPurifier;
+}
+
+/**
+ * Sanitize HTML for the remaining `{@html}` sinks that intentionally render
+ * formatted relay-controlled content. In SSR/no-window contexts DOMPurify
+ * cannot build a DOM-backed sanitizer, so fail closed by entity-escaping.
+ */
+export function sanitizeHtml(input: unknown, config?: Config): string {
+    if (typeof input !== 'string') return '';
+    const purifier = getDomPurify();
+    if (!purifier || typeof purifier.sanitize !== 'function') return escapeHtml(input);
+    return purifier.sanitize(input, config);
 }

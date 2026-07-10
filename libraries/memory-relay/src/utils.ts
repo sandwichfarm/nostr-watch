@@ -1,7 +1,12 @@
-import { isParameterizedReplaceableKind, isReplaceableKind } from "nostr-tools/kinds";
 import { EventKeyDataType, EventType } from "./types.js";
 import { Filter, NostrEvent } from "nostr-tools";
 import { IEvent } from "@nostrwatch/route66/models/Event";
+
+const isReplaceableKind = (kind: number): boolean =>
+    kind === 0 || kind === 3 || (kind >= 10000 && kind < 20000);
+
+const isParameterizedReplaceableKind = (kind: number): boolean =>
+    kind >= 30000 && kind < 40000;
 
 export const eventType = ( event: any ): EventType => {
     if(isReplaceableKind(event.kind)) {

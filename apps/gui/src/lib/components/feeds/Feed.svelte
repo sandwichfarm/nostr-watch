@@ -9,14 +9,13 @@
 	import { deterministicHash } from '@nostrwatch/route66/utils';
 	import type { NostrEvent } from '@nostrwatch/route66/models';
 	import Loading from '../partials/Loading.svelte';
-	import FeedMasonry from './FeedMasonry.svelte';
 	import FeedGrid from './FeedGrid.svelte';
     import Scroller from '$lib/components/partials/Scroller.svelte';
 	import type { ParseConfig } from '$utils/notes';
 
-    type FeedType = 'masonry' | 'list' | 'grid' | 'table' | 'scroller' | 'wiki';
+    type FeedType = 'list' | 'grid' | 'table' | 'scroller' | 'wiki';
 
-    export let type: FeedType = 'masonry';
+    export let type: FeedType = 'grid';
     export let filters: Filter[]; 
     export let relays: Readable<string[] | undefined>  = undefined;
 
@@ -74,12 +73,6 @@
     {/if}
 
     {#if $feedService && $items?.length}
-        {#if type === 'masonry'}
-        <section id="operator-feed" class="block relative">
-            <FeedMasonry {items} {feedService} {infiniteScroll} />
-        </section>
-        {/if}
-
         {#if type === 'grid'}
         <section id="operator-feed" class="block relative">
             <FeedGrid {items} {feedService} {infiniteScroll} {maxWidth} {parserOptions} />
@@ -115,7 +108,6 @@
                 {JSON.stringify(relays, null, 2)}
             </pre> -->
     {/if}
-
 
 
 

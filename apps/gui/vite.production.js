@@ -2,8 +2,11 @@ import { defineConfig } from 'vite';
 import { sveltekit } from '@sveltejs/kit/vite';
 import nodePolyfills from 'rollup-plugin-node-polyfills';
 import viteCompression from 'vite-plugin-compression';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const debug = process.env.DEBUG === 'true';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function globalHack() {
   return {
@@ -34,6 +37,14 @@ export default defineConfig({
   resolve: {
     mainFields: ['module', 'main'],
     preserveSymlinks: false,
+    alias: {
+      '@nostrwatch/logger': path.resolve(__dirname, '../../internal/logger/src/index.ts'),
+      '@nostrwatch/memory-relay/abstract': path.resolve(__dirname, '../../libraries/memory-relay/src/abstract.ts'),
+      '@nostrwatch/memory-relay/svelte': path.resolve(__dirname, '../../libraries/memory-relay/src/svelte.ts'),
+      '@nostrwatch/memory-relay': path.resolve(__dirname, '../../libraries/memory-relay/src/index.ts'),
+      '@nostrwatch/relay-chronicle': path.resolve(__dirname, '../../libraries/relay-chronicle/src/index.ts'),
+      '@nostrwatch/utils': path.resolve(__dirname, '../../internal/utils/src/index.ts'),
+    },
   },
   worker: {
     minify: false,
@@ -52,11 +63,10 @@ export default defineConfig({
     // define: {
     //   global: 'self'
     // },
-    plugins: [
-      sveltekit(),
+    plugins: () => [
       nodePolyfills(),
       globalHack(),
-    ]
+    ],
   },
   build: {
     minify: "terser", 

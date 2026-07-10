@@ -11,10 +11,10 @@
  * grow, as MIGR-01 (formatter migration to Svelte components, deferred to
  * v2.6+ as AUDIT-01) progresses.
  *
- * Inventory at v2.5 close (12 LIVE sinks; HTML comments stripped before walk):
+ * Inventory at v2.5 close (11 LIVE sinks; HTML comments stripped before walk):
  *   - PageHeader: safeSubtitle (Phase 24)                                — 1
- *   - 4 feed components: $content (Phase 28 DOMPurify)                    — 4
- *     (FeedNoteContent, FeedNote, FeedMasonryNote, Reader x1)
+ *   - 3 feed components: $content (Phase 28 DOMPurify)                    — 3
+ *     (FeedNoteContent, FeedNote, Reader x1)
  *   - Reader: $content (second sink)                                      — 1
  *   - CardLimitation: $NIP_11_LIMITATIONS?.[key] (static dict)            — 1
  *   - JsonHighlighter: highlightedHtml (local escapeHtml)                 — 1
@@ -24,7 +24,7 @@
  * Note: a third Reader `{@html $readerContent}` exists at Reader.svelte:110
  * but is wrapped in an `<!-- ... -->` comment block (dead Dialog code, lines
  * 101-115). The walker strips HTML comments before counting, matching the
- * live runtime surface — 12 sinks. The `$readerContent` whitelist entry stays
+ * live runtime surface — 11 sinks. The `$readerContent` whitelist entry stays
  * in case the dead-code block is re-enabled in the future.
  */
 
@@ -103,7 +103,7 @@ describe('html-sink audit', () => {
         ).toEqual([]);
     });
 
-    it('v2.5 inventory contains at least 12 live {@html} sinks', () => {
+    it('v2.5 inventory contains at least 11 live {@html} sinks', () => {
         // Locks the LIVE inventory floor at v2.5 close. HTML comments are
         // stripped before counting (matches the runtime surface — dead-code
         // sinks like Reader.svelte:110 inside <!-- ... --> are not rendered).
@@ -114,7 +114,8 @@ describe('html-sink audit', () => {
         // still caught by the first test above.
         //
         // The plan-time inventory listed 13 (counting the commented-out
-        // $readerContent at Reader.svelte:110). Live count is 12.
+        // $readerContent at Reader.svelte:110). Live count is now 11 after
+        // removing the unused masonry feed path.
         const allSvelte = walkSourceFiles(APPS_GUI_SRC, /\.svelte$/);
         let totalSinkCount = 0;
 
@@ -126,7 +127,7 @@ describe('html-sink audit', () => {
             if (matches) totalSinkCount += matches.length;
         }
 
-        expect(totalSinkCount).toBeGreaterThanOrEqual(12);
+        expect(totalSinkCount).toBeGreaterThanOrEqual(11);
     });
 });
 

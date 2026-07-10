@@ -1,0 +1,28 @@
+name: Actionlint
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/**"
+      - "scripts/run-actionlint.sh"
+      - "package.json"
+  push:
+    branches: [next]
+    paths:
+      - ".github/workflows/**"
+      - "scripts/run-actionlint.sh"
+      - "package.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  actionlint:
+    name: Actionlint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check GitHub Actions workflows
+        run: bash scripts/run-actionlint.sh -color

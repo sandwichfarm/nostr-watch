@@ -16,7 +16,7 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { tick } from 'svelte';
-import { readFileSync } from 'fs';
+import { readFileSync, readdirSync, statSync } from 'fs';
 import { resolve } from 'path';
 import { get, writable, type Readable } from 'svelte/store';
 import { safeHttpUrl, safeImageUrl } from './sanitize';
@@ -63,6 +63,20 @@ const BANNER_SINK_FILES = [
  */
 function stripHtmlComments(source: string): string {
     return source.replace(/<!--[\s\S]*?-->/g, '');
+}
+
+function sourceFiles(dir: string): string[] {
+    const files: string[] = [];
+    for (const entry of readdirSync(dir)) {
+        const path = resolve(dir, entry);
+        const stat = statSync(path);
+        if (stat.isDirectory()) {
+            files.push(...sourceFiles(path));
+        } else if (/\.(svelte|ts)$/.test(path) && !/\.test\.ts$/.test(path)) {
+            files.push(path);
+        }
+    }
+    return files;
 }
 
 /**
@@ -132,6 +146,22 @@ describe('v2.5 XSS milestone canary', () => {
         // Positive anchor: the safe wrapper `safePaymentsUrl` MUST appear in href context.
         // Real binding shape at CardFees.svelte:61 is `href="{safePaymentsUrl}"`.
         expect(live).toMatch(/href\s*=\s*["']?\{safePaymentsUrl\}/);
+    });
+
+    it('all target="_blank" links isolate the opener tab', () => {
+        const offenders: string[] = [];
+
+        for (const file of sourceFiles(APPS_GUI_SRC)) {
+            const live = stripHtmlComments(readFileSync(file, 'utf8'));
+            for (const match of live.matchAll(/<[^>]*target=["']_blank["'][^>]*>/gi)) {
+                const tag = match[0];
+                if (!/\brel=["'][^"']*\bnoopener\b/.test(tag)) {
+                    offenders.push(`${file.replace(`${APPS_GUI_SRC}/`, '')}: ${tag}`);
+                }
+            }
+        }
+
+        expect(offenders).toEqual([]);
     });
 
     // -------------------------------------------------------------------------

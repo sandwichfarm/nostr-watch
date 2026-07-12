@@ -104,6 +104,13 @@ describe('parseNote — XSS hardening — bare attack payloads (FEED-01)', () =>
         expect(out).not.toMatch(/<script\b/i);
         expect(out).not.toMatch(/onerror=/i);
     });
+
+    it('strips raw iframe navigation payloads from user-authored HTML', async () => {
+        const payload = '<iframe src="https://attacker.example/"></iframe>';
+        const out = await drain(parseNote(payload, CALLER_CONFIG));
+        expect(out).not.toMatch(/<iframe\b/i);
+        expect(out).not.toContain('attacker.example');
+    });
 });
 
 describe('parseNote — parseImages breakout (FEED-02)', () => {
@@ -224,10 +231,9 @@ describe('parseNote — preserves valid content', () => {
         // production embed could silently break and tests would still pass. We
         // lock the contract by asserting the iframe shape with src=.
         //
-        // GREEN constraint: applySanitize's ADD_ATTR list MUST include 'src'
-        // so DOMPurify preserves the iframe src attribute (default config
-        // strips <iframe> entirely; ADD_TAGS:['iframe'] re-allows the tag,
-        // but src is then stripped unless explicitly added to ADD_ATTR).
+        // GREEN constraint: raw <iframe> stays disallowed. YouTube survives only
+        // because replaceYoutubeLink stores a validated videoId behind a token
+        // before sanitize and restores an app-generated iframe after sanitize.
         // The iframe src is locked by replaceYoutubeLink's regex
         // (videoId = [a-zA-Z0-9_-]+) so no attacker input can reach it.
         expect(out).toMatch(/<iframe\b[^>]*\bsrc=["']https:\/\/www\.youtube\.com\/embed\/dQw4w9WgXcQ/);

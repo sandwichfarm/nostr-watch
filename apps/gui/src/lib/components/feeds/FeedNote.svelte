@@ -100,7 +100,7 @@
             <span class="">{timeAgo(note.created_at*1000)}</span>
         {/if} 
         | 
-        <a href="https://njump.me/{note.reference}" target="_blank">link</a>
+        <a href="https://njump.me/{note.reference}" target="_blank" rel="noopener noreferrer">link</a>
     </div>
     
     <div class="content text-black/55 dark:text-white/55 text-xl my-6 overflow-hidden overflow-ellipsis {noteClamp? `line-clamp-${noteClamp}` : ''}]">

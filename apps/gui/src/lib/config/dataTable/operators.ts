@@ -117,7 +117,7 @@ export const tableFormatters: Formatters = {
         // Nostr identifier guard — must be a bech32-style nostr id before
         // we interpolate into href. Anything else is rejected.
         if (!/^(npub|nprofile|nevent|note|naddr)1[a-z0-9]+$/i.test(reference)) return '-';
-        const referenceHtml = `<a href="https://njump.me/${escapeHtml(String(reference))}" target="_blank" class="text-sm underline">jump</a>`;
+        const referenceHtml = `<a href="https://njump.me/${escapeHtml(String(reference))}" target="_blank" rel="noopener noreferrer" class="text-sm underline">jump</a>`;
         return referenceHtml;
     },
     relaysCount: (relaysCount: number) => {

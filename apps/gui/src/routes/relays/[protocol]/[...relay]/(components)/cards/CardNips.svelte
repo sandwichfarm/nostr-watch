@@ -71,7 +71,10 @@
                 {#each chunk as nip}
                     <Table.Row>
                     <Table.Cell>
-                        <a target="_blank" href="https://github.com/nostr-protocol/nips/blob/master/{nipLeadingZero(nip)}.md" 
+                        <a
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            href="https://github.com/nostr-protocol/nips/blob/master/{nipLeadingZero(nip)}.md"
                             class="font-bold text-black/80 hover:text-black/90 py-1 px-2 bg-black/5 dark:bg-white/10 rounded-sm  dark:text-white/70">
                             {formatNip(nip)}
                         </a>
@@ -82,15 +85,6 @@
                 </Table.Body>
             </Table.Root>
             {/each}
-            <!-- {#each supportedNips as nip}
-                <span class="block mb-2">
-                    <a target="_blank" href="https://github.com/nostr-protocol/nips/blob/master/{nipLeadingZero(nip)}.md" 
-                        class="font-bold text-black/80 hover:text-black/90 py-1 px-2 bg-black/5 dark:bg-white/10 rounded-sm  dark:text-white/70">
-                        {formatNip(nip)}
-                    </a>
-                    <span class="text-black/70 dark:text-white/70">{ $NIP_NAMES[ nipLeadingZero(nip).toString() ] }</span>
-                </span>
-            {/each} -->
             {/if}
         </div>
     </Card.Content>

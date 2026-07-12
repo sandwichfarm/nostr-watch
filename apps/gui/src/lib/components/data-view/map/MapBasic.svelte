@@ -50,7 +50,7 @@
     {pointColor}
     clusterExpandOnClick={false}
     attribution={[
-      '<a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap contributors</a>',
+      '<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>',
     ]}
     fitViewOnInit={true}
     fitViewOnUpdate={true}

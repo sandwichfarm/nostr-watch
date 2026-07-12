@@ -59,7 +59,8 @@
                     size="lg"
                     class="text-lg py-1.5 font-mono inline-block gradient-orange" 
                     href="{safePaymentsUrl}"
-                    target="_blank">
+                    target="_blank"
+                    rel="noopener noreferrer">
                     purchase access
                 </Button>
                 {/if}
@@ -81,59 +82,3 @@
         </Card.Footer>            
     </Card.Root>
 {/if}
-
-<!-- 
-{#if keysLength > 0}
-<Card.Root class="relay-card">
-    <Card.Header>
-        <Card.Title>Fee Schedule</Card.Title>  
-        <Card.Description></Card.Description>
-    </Card.Header>  
-    <Card.Content>
-        {#if fees && type === 'object'}
-        {#each Object.entries(fees as FeesObject) as [key, keyfees]}
-        <h2>{capitalize(key)}</h2>
-        <Table.Root>
-            <Table.Header>
-                <Table.Row>
-                    <Table.Head>
-                        Amount
-                    </Table.Head>
-                    <Table.Head>
-                        Unit
-                    </Table.Head>
-                    <Table.Head>
-                        Period
-                    </Table.Head>
-                </Table.Row>
-            </Table.Header>
-            <Table.Body>
-                {#if keyfees}
-                {#each (keyfees as FeesArray[]) as fee}                
-                <Table.Row>
-                    <Table.Cell>
-                        {fee.amount}
-                    </Table.Cell>
-                    <Table.Cell>
-                        {fee.unit}
-                    </Table.Cell>
-                    <Table.Cell>
-                        {fee?.period? formatSeconds(fee?.period): 'n/a'}
-                    </Table.Cell>
-                </Table.Row>
-                {/each}
-                {/if}
-            </Table.Body>
-        </Table.Root>
-        {/each}
-        {/if}
-    </Card.Content>
-    <Card.Footer>
-        {#if paymentUrl}
-        <Button class="bg-orange-400 hover:bg-orange-500" href="{paymentUrl}" target="_blank">
-            Purchase Access
-        </Button>
-        {/if}
-    </Card.Footer>
-</Card.Root>
-{/if} -->

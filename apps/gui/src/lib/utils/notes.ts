@@ -36,11 +36,12 @@ import { escapeHtml, safeImageUrl, sanitizeHtml } from '$lib/utils/sanitize';
  *
  * # YouTube iframe survival
  *
- * DOMPurify's default config strips <iframe>. replaceYoutubeLink emits an
- * <iframe> shape; we extend ALLOWED_TAGS at the applySanitize step to
- * preserve YouTube embeds. The src attribute is locked by the
- * replaceYoutubeLink regex (videoId = `[a-zA-Z0-9_-]+`) so no attacker
- * input can reach the iframe.
+ * DOMPurify's default config strips <iframe>. replaceYoutubeLink stores
+ * validated YouTube IDs behind per-parse tokens before markdown/sanitize;
+ * applySanitize restores only those app-generated tokens after DOMPurify
+ * removes raw user-authored iframes. The src attribute is locked by the
+ * replaceYoutubeLink regex (videoId = `[a-zA-Z0-9_-]+`) so no attacker input
+ * can reach the iframe.
  *
  * # Pipeline order (CONTEXT.md locked decision)
  *
@@ -191,15 +192,43 @@ function replaceAmpersand(text: string): string {
   return text.replace(/&;/g, `'`);
 }
 
-function replaceYoutubeLink(text: string): string {
-  const youtubeRegex = /(https?:\/\/(?:www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+))/g;
-  if (!youtubeRegex.test(text)) return text;
-  // videoId is restricted to [a-zA-Z0-9_-]+ at the regex level — safe by
-  // construction. Still passes through DOMPurify at the final step (which
-  // is configured to allow <iframe> with a tight attribute allowlist).
-  return text.replace(youtubeRegex, (_match, _url, _domain, videoId) => {
-    return `<iframe width="100%" height="auto" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
-  });
+type YoutubeEmbed = {
+  token: string;
+  videoId: string;
+};
+
+const youtubeEmbedSrc = (videoId: string) => `https://www.youtube.com/embed/${videoId}`;
+
+function renderYoutubeEmbed(videoId: string): string {
+  return `<iframe width="100%" height="auto" src="${youtubeEmbedSrc(videoId)}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" sandbox="allow-scripts allow-same-origin allow-presentation"></iframe>`;
+}
+
+function createYoutubeEmbedTransforms() {
+  const embeds: YoutubeEmbed[] = [];
+  const nonce = Math.random().toString(36).slice(2);
+
+  const replaceYoutubeLink = (text: string): string => {
+    const youtubeRegex =
+      /(https?:\/\/(?:www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+))/g;
+    if (!youtubeRegex.test(text)) return text;
+    // videoId is restricted to [a-zA-Z0-9_-]+ at the regex level. Store it
+    // behind a per-parse token so raw user-authored iframes are still stripped.
+    return text.replace(youtubeRegex, (_match, _url, _domain, videoId) => {
+      const token = `NWYTOKEN${nonce}${embeds.length}END`;
+      embeds.push({ token, videoId });
+      return token;
+    });
+  };
+
+  const restoreYoutubeEmbeds = (text: string): string => {
+    let out = text;
+    for (const { token, videoId } of embeds) {
+      out = out.split(token).join(renderYoutubeEmbed(videoId));
+    }
+    return out;
+  };
+
+  return { replaceYoutubeLink, restoreYoutubeEmbeds };
 }
 
 /**
@@ -281,25 +310,20 @@ async function applyMarkdown(text: string, options: MarkedOptions): Promise<stri
  * event handlers (onerror, onclick, ...), and javascript: / data:text/html
  * URLs from href / src.
  *
- * <iframe> survival: ADD_TAGS includes 'iframe' so replaceYoutubeLink's
- * embed survives. ADD_ATTR includes 'src' (in addition to 'allow',
- * 'allowfullscreen', 'frameborder', 'scrolling') so DOMPurify preserves
- * the src attribute on the iframe — without it, DOMPurify allows the
- * <iframe> tag but strips src, breaking the embed. The iframe src is
- * locked by replaceYoutubeLink's regex (videoId = [a-zA-Z0-9_-]+) so no
- * attacker input can reach the iframe. ALLOW_TAGS is NOT used (would
- * replace the default allowlist); ADD_TAGS / ADD_ATTR extend it.
+ * YouTube embed survival is intentionally not implemented by globally allowing
+ * <iframe>. replaceYoutubeLink converts validated YouTube URLs to per-parse
+ * tokens before markdown/DOMPurify, then applySanitize restores only those
+ * app-generated tokens after DOMPurify strips raw user-authored iframes.
  */
-function applySanitize(text: string): string {
-  return sanitizeHtml(text, {
-    ADD_TAGS: ['iframe'],
-    ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'scrolling', 'src'],
-  });
+function applySanitize(text: string, restoreYoutubeEmbeds?: (text: string) => string): string {
+  const sanitized = sanitizeHtml(text);
+  return restoreYoutubeEmbeds ? restoreYoutubeEmbeds(sanitized) : sanitized;
 }
 
 export function parseNote(input: string, config: ParseConfig = defaultConfig): Writable<string> {
   const store = writable<string>(input);
   const parser = new Parser();
+  const youtubeEmbeds = createYoutubeEmbedTransforms();
 
   // ---- Sync stage (in CONTEXT.md-locked order) ----
   if (config.images) parser.addSync(parseImages);
@@ -307,7 +331,7 @@ export function parseNote(input: string, config: ParseConfig = defaultConfig): W
   if (config.removeHashtags) parser.addSync(removeHashtags);
   if (config.truncate) parser.addSync((s: string) => truncateText(s, config.truncateLength!));
   if (config.replaceAmpersand) parser.addSync(replaceAmpersand);
-  parser.addSync(replaceYoutubeLink);
+  parser.addSync(youtubeEmbeds.replaceYoutubeLink);
 
   const syncOut = parser.applySync(input);
   store.set(syncOut);
@@ -324,7 +348,7 @@ export function parseNote(input: string, config: ParseConfig = defaultConfig): W
   // config.sanitize field is preserved for back-compat (the 4 callers
   // literally pass `sanitize: false`) but it is now a no-op — the
   // pipeline always appends applySanitize.
-  parser.addAsync(async (text: string) => applySanitize(text));
+  parser.addAsync(async (text: string) => applySanitize(text, youtubeEmbeds.restoreYoutubeEmbeds));
 
   // Drain the sequential pipeline; emit on the writable store.
   parser

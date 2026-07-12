@@ -188,9 +188,9 @@ export class DataTable<T> {
 	 * @param {T[]} rows - The array of rows to reset the base data to.
 	 */
 	set baseRows(rows: T[]) {
-		this.#currentPage = 1;
 		this.#isFilterDirty = true;
 		this.#originalData = [...rows];
+		this.#currentPage = Math.min(this.#currentPage, this.totalPages);
 	}
 
 	/**

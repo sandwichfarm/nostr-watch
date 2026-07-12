@@ -1,10 +1,10 @@
 <script lang="ts">
-    import * as Dialog from "$lib/components/ui/dialog"
 	import Button from "$ui/button/button.svelte";
 	import { parseNote } from "$utils/notes";
 	import type { NostrEvent } from "@nostrwatch/route66/models";
 	import { onMount } from "svelte";
 	import { writable, type Readable, type Writable } from "svelte/store";
+	import { sanitizedHtml } from "$utils/sanitize";
     
 
     const showReader: Writable<boolean> = writable(false);
@@ -64,7 +64,10 @@
 
 {#if showSummary}
 <section class="reader-content line-clamp-6 relative">
-    {@html $content}
+    <div
+        class="reader-content-body"
+        use:sanitizedHtml={{ html: $content, allowYoutubeEmbeds: true }}
+    ></div>
     <div class="absolute bottom-0 right-0 left-0 bg-gradient-to-t from-{gradientColor} h-20"></div>
 </section>
 {/if}
@@ -92,37 +95,24 @@
         </a>
     </h2>
     {/if}
-    <section class="reader-content">
-        {@html $content}
-    </section>
+    <section
+        class="reader-content"
+        use:sanitizedHtml={{ html: $content, allowYoutubeEmbeds: true }}
+    ></section>
 </section>
-
-<!-- <Dialog.Root>
-    <Dialog.Trigger>{triggerText}</Dialog.Trigger>
-    <Dialog.Content class="w-3/4">
-      <Dialog.Header>
-        {#if readerTitle}
-          <Dialog.Title>{readerTitle}</Dialog.Title>
-        {/if}
-        <Dialog.Description>
-        <section class="reader-content">
-            {@html $readerContent}
-        </section>
-        </Dialog.Description>
-      </Dialog.Header>
-    </Dialog.Content>
-</Dialog.Root> -->
 
 <style lang="postcss" global>
     .reader-content {
         @apply p-4 text-xl overflow-y-scroll max-w-[750px] m-auto opacity-80;
     }
 
-    .reader-content > h2 {
+    .reader-content > h2,
+    .reader-content > .reader-content-body > h2 {
         @apply text-2xl mb-5 border-b-[1px] border-white/50 pb-4 mt-10;
     }
 
-    .reader-content > * {
+    .reader-content > *,
+    .reader-content > .reader-content-body > * {
         @apply text-left;
     }
 
@@ -130,7 +120,8 @@
         @apply leading-10 ;
     }
 
-    .reader-content > p {
+    .reader-content > p,
+    .reader-content > .reader-content-body > p {
         @apply block my-5;
     }
 

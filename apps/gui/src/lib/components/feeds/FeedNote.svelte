@@ -11,6 +11,7 @@
 	import FeedNoteZaps from './FeedNoteZaps.svelte';
 	import FeedNoteReactions from './FeedNoteReactions.svelte';
 	import { fade, fly } from 'svelte/transition';
+	import { sanitizedHtml } from '$utils/sanitize';
 
     export let note: NostrEvent;
     export let index: number = 0;
@@ -103,9 +104,10 @@
         <a href="https://njump.me/{note.reference}" target="_blank" rel="noopener noreferrer">link</a>
     </div>
     
-    <div class="content text-black/55 dark:text-white/55 text-xl my-6 overflow-hidden overflow-ellipsis {noteClamp? `line-clamp-${noteClamp}` : ''}]">
-        {@html $content}
-    </div>
+    <div
+        class="content text-black/55 dark:text-white/55 text-xl my-6 overflow-hidden overflow-ellipsis {noteClamp? `line-clamp-${noteClamp}` : ''}]"
+        use:sanitizedHtml={{ html: $content, allowYoutubeEmbeds: true }}
+    ></div>
     <div class="actions flex mt-2 hover:opacity-100 {actionsClass} min-h-6">
         <div class="flex-grow">
             
@@ -151,19 +153,19 @@
         @apply leading-8;
     }
 
-    .note > .content > p {
+    .note > .content :global(p) {
         margin-bottom: 10px;
     }
-    .note > .content > ul {
+    .note > .content :global(ul) {
         @apply p-2;
     }
 
-    .note > .content > ul > li {
+    .note > .content :global(ul > li) {
         @apply list-decimal list-item mb-4 list-inside leading-6 text-lg;
         padding: 5px;
     }
 
-    .note > .content pre {
+    .note > .content :global(pre) {
         display:none;
     }
 

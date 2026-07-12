@@ -1,4 +1,5 @@
 import type { RelayInformation } from '@nostrwatch/route66/models';
+import { readResponseBodyWithLimit } from '$lib/utils/response-body';
 
 export const NIP11_ACCEPT = 'application/nostr+json';
 export const NIP11_MAX_BODY_BYTES = 128 * 1024;
@@ -88,53 +89,6 @@ const isJsonContentType = (contentType: string): boolean => {
 
 const startsLikeJsonObject = (body: string): boolean => body.trimStart().startsWith('{');
 
-const bytesFor = (text: string): number => new TextEncoder().encode(text).byteLength;
-
-const readBodyWithLimit = async (response: Response, maxBodyBytes: number): Promise<string> => {
-	const contentLength = response.headers.get('content-length');
-	if (contentLength) {
-		const parsedLength = Number(contentLength);
-		if (Number.isFinite(parsedLength) && parsedLength > maxBodyBytes) {
-			throw new Nip11FetchError('oversize', `NIP-11 response exceeds ${maxBodyBytes} bytes.`);
-		}
-	}
-
-	if (!response.body) {
-		const text = await response.text();
-		if (bytesFor(text) > maxBodyBytes) {
-			throw new Nip11FetchError('oversize', `NIP-11 response exceeds ${maxBodyBytes} bytes.`);
-		}
-		return text;
-	}
-
-	const reader = response.body.getReader();
-	const chunks: Uint8Array[] = [];
-	let received = 0;
-
-	while (true) {
-		const { done, value } = await reader.read();
-		if (done) break;
-		if (!value) continue;
-
-		const chunk = value instanceof Uint8Array ? value : new Uint8Array(value);
-		received += chunk.byteLength;
-		if (received > maxBodyBytes) {
-			await reader.cancel();
-			throw new Nip11FetchError('oversize', `NIP-11 response exceeds ${maxBodyBytes} bytes.`);
-		}
-		chunks.push(chunk);
-	}
-
-	const body = new Uint8Array(received);
-	let offset = 0;
-	for (const chunk of chunks) {
-		body.set(chunk, offset);
-		offset += chunk.byteLength;
-	}
-
-	return new TextDecoder().decode(body);
-};
-
 const parseRelayInformation = (body: string): RelayInformation => {
 	let parsed: unknown;
 	try {
@@ -179,7 +133,11 @@ export const fetchRelayInformation = async (
 			);
 		}
 
-		const body = await readBodyWithLimit(response, maxBodyBytes);
+		const body = await readResponseBodyWithLimit(
+			response,
+			maxBodyBytes,
+			() => new Nip11FetchError('oversize', `NIP-11 response exceeds ${maxBodyBytes} bytes.`)
+		);
 		if (!contentType && !startsLikeJsonObject(body)) {
 			throw new Nip11FetchError(
 				'invalid-content-type',

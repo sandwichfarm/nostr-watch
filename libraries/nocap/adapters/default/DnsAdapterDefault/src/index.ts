@@ -72,7 +72,13 @@ export class DnsAdapterDefault extends AbstractAdapter implements IAdapter {
         const query = `https://1.1.1.1/dns-query?name=${sanitizedUrl}`;
         const headers = { accept: 'application/dns-json' };
 
-        const response = await fetch(query, { headers }).catch((e) => { result = error(e.message, data); return null; });
+        const response = await fetch(query, {
+          headers,
+          redirect: 'error',
+          credentials: 'omit',
+          referrerPolicy: 'no-referrer',
+          cache: 'no-store'
+        }).catch((e) => { result = error(e.message, data); return null; });
         
         if (response) {
           const jsonData = await response.json();

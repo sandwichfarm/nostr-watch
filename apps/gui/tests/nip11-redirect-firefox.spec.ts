@@ -1,6 +1,5 @@
-import { createHash } from 'node:crypto';
 import http from 'node:http';
-import { test } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 test.skip(({ browserName }) => browserName !== 'firefox', 'Firefox-only NIP-11 redirect repro');
 test.setTimeout(60_000);
@@ -40,55 +39,35 @@ test('hostile NIP-11 302 does not follow sentinel or navigate parent frame', asy
 		});
 		res.end();
 	});
-	server.on('upgrade', (req, socket) => {
-		const key = req.headers['sec-websocket-key'];
-		if (typeof key !== 'string') {
-			socket.destroy();
-			return;
-		}
-
-		const accept = createHash('sha1')
-			.update(`${key}258EAFA5-E914-47DA-95CA-C5AB0DC85B11`)
-			.digest('base64');
-		socket.write(
-			[
-				'HTTP/1.1 101 Switching Protocols',
-				'Upgrade: websocket',
-				'Connection: Upgrade',
-				`Sec-WebSocket-Accept: ${accept}`,
-				'\r\n'
-			].join('\r\n')
-		);
-	});
-
 	await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
 	const address = server.address();
 	if (!address || typeof address === 'string') throw new Error('Hostile server failed to bind.');
 
 	try {
-		const route = `/relays/ws/127.0.0.1:${address.port}/nip-11`;
-		await page.goto(route);
+		const mainFrameNavigations: string[] = [];
+		page.on('framenavigated', (frame) => {
+			if (frame === page.mainFrame()) mainFrameNavigations.push(frame.url());
+		});
+		await page.goto('/unsupported');
+		await page.waitForTimeout(500);
+		mainFrameNavigations.length = 0;
 		const initialFrameUrl = page.url();
-		const startedAt = Date.now();
-		while (nip11Hits === 0 && Date.now() - startedAt < 15_000) {
-			await page.waitForTimeout(100);
-		}
-		if (nip11Hits === 0) {
-			throw new Error(
-				`NIP-11 endpoint was not requested; hits=${JSON.stringify(hits)}; page=${page.url()}`
-			);
-		}
-		await new Promise((resolve) => setTimeout(resolve, 100));
+		const errorCode = await page.evaluate(async (relay) => {
+			const modulePath = '/src/lib/services/Nip11Service/fetch-relay-information.ts';
+			const { fetchRelayInformation } = await import(/* @vite-ignore */ modulePath);
+			try {
+				await fetchRelayInformation(relay, { timeoutMs: 2_000 });
+				return null;
+			} catch (error) {
+				return (error as { code?: string }).code ?? 'unknown';
+			}
+		}, `ws://127.0.0.1:${address.port}`);
 
-		const sentinelHits = hits['/sentinel'] ?? 0;
-		if (sentinelHits !== 0) {
-			throw new Error(
-				`Sentinel was requested ${sentinelHits} time(s); hits=${JSON.stringify(hits)}`
-			);
-		}
-		if (page.url() !== initialFrameUrl) {
-			throw new Error(`Parent frame URL changed from ${initialFrameUrl} to ${page.url()}`);
-		}
+		expect(errorCode).toBe('fetch-failed');
+		expect(nip11Hits).toBe(1);
+		expect(hits['/sentinel'] ?? 0).toBe(0);
+		expect(mainFrameNavigations).toEqual([]);
+		expect(page.url()).toBe(initialFrameUrl);
 	} finally {
 		await new Promise<void>((resolve, reject) =>
 			server.close((error) => (error ? reject(error) : resolve()))

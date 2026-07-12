@@ -25,6 +25,7 @@
 	import SavePreset from './SavePreset.svelte';
 	import { throttledDerived } from '$utils/stores.js';
 	import { delay } from '@nostrwatch/utils';
+	import { sanitizedHtml } from '$utils/sanitize';
 
     // **Props Passed to the Component**
     export let dataKey: string;
@@ -745,7 +746,7 @@
                                         disabled={$disabledFilters[filter.key]?.has(String(value).toLowerCase())}
                                     >
                                         {#if $config.filterFormatters?.[filter.key]}
-                                            {@html $config.filterFormatters[filter.key](value)}
+                                            <span use:sanitizedHtml={$config.filterFormatters[filter.key](value)}></span>
                                         {:else}
                                             {value}
                                         {/if}

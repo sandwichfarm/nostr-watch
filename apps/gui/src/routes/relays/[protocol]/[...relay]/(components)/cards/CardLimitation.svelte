@@ -8,6 +8,7 @@
 	import { relayNip11$ } from '$stores/helpers/helpers-nip11s';
 	import type { nip11 } from 'nostr-tools';
 	import { NIP_11_LIMITATIONS } from '$stores/nip11-meta';
+    import { sanitizedHtml } from '$utils/sanitize';
     const relayUrl = generateRelayUrlFromPath()
 
     export let checks = relayLivenessChecks$(relayUrl);
@@ -110,9 +111,10 @@
                         {/if}
 
                         {#if type === 'number'}
-                            <span class="{value > 0? '': 'line-through opacity-20'}">
-                                {@html $NIP_11_LIMITATIONS?.[key] || ''}
-                            </span>
+                            <span
+                                class="{value > 0? '': 'line-through opacity-20'}"
+                                use:sanitizedHtml={$NIP_11_LIMITATIONS?.[key] || ''}
+                            ></span>
                         {/if}
                         
                     </Table.Cell>

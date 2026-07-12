@@ -1,31 +1,10 @@
 /**
- * Cross-cutting {@html} audit — TEST-06.
+ * Cross-cutting HTML insertion audit.
  *
- * Walks every .svelte file in apps/gui/src and asserts every `{@html EXPR}`
- * matches a known-safe whitelist pattern. A new `{@html}` sink that doesn't
- * fit one of the whitelisted shapes fails this test loudly with a clear
- * "must be added to whitelist with security justification" message.
- *
- * The whitelist is INTENTIONALLY narrow. Adding an entry requires a written
- * security justification in code review. The whitelist should shrink, not
- * grow, as MIGR-01 (formatter migration to Svelte components, deferred to
- * v2.6+ as AUDIT-01) progresses.
- *
- * Inventory at v2.5 close (11 LIVE sinks; HTML comments stripped before walk):
- *   - PageHeader: safeSubtitle (Phase 24)                                — 1
- *   - 3 feed components: $content (Phase 28 DOMPurify)                    — 3
- *     (FeedNoteContent, FeedNote, Reader x1)
- *   - Reader: $content (second sink)                                      — 1
- *   - CardLimitation: $NIP_11_LIMITATIONS?.[key] (static dict)            — 1
- *   - JsonHighlighter: highlightedHtml (local escapeHtml)                 — 1
- *   - 2 DataTables: $config.tableFormatters[column.key](...) (#899/#900)  — 2
- *   - 2 Filters: $config.filterFormatters[filter.key](value) (#899/#900)  — 2
- *
- * Note: a third Reader `{@html $readerContent}` exists at Reader.svelte:110
- * but is wrapped in an `<!-- ... -->` comment block (dead Dialog code, lines
- * 101-115). The walker strips HTML comments before counting, matching the
- * live runtime surface — 11 sinks. The `$readerContent` whitelist entry stays
- * in case the dead-code block is re-enabled in the future.
+ * Raw Svelte `{@html}` delegates insertion to framework-owned `innerHTML`.
+ * Every formatted HTML surface must instead use the `sanitizedHtml` action,
+ * which prefers the browser-native Sanitizer API and has a DOMPurify fragment
+ * fallback for browsers without `Element.setHTML()`.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -35,29 +14,10 @@ import { resolve, join, relative } from 'path';
 // apps/gui/src — resolved relative to this file (apps/gui/src/lib/utils/...)
 const APPS_GUI_SRC = resolve(__dirname, '../..');
 
-// Capture the EXPR inside `{@html EXPR}`. `[^}]+` is fine — Svelte `{@html}`
-// cannot contain a literal `}` in the expression because it terminates the
-// directive.
 const HTML_SINK_RE = /\{@html\s+([^}]+)\}/g;
-
-const WHITELIST_PATTERNS: Array<{ pattern: RegExp; reason: string }> = [
-    { pattern: /^safeSubtitle$/, reason: 'PageHeader — wrapped via Phase 24 safe* helper' },
-    { pattern: /^\$content$/, reason: 'parseNote-produced store — Phase 28 always-on DOMPurify' },
-    { pattern: /^\$readerContent$/, reason: 'Reader alt path — same parseNote sanitization' },
-    {
-        pattern: /^\$NIP_11_LIMITATIONS\?\.\[key\](\s*\|\|\s*['"][^'"]*['"])?$/,
-        reason: 'CardLimitation — static dictionary lookup, no relay input',
-    },
-    { pattern: /^highlightedHtml$/, reason: 'JsonHighlighter — local escapeHtml on every value' },
-    {
-        pattern: /^\$config\.tableFormatters\[column\.key\]\(row\[column\.key\],\s*row\)$/,
-        reason: 'DataTable cells — registered formatters, encode-on-output safe (#899/#900)',
-    },
-    {
-        pattern: /^\$config\.filterFormatters\[filter\.key\]\(value\)$/,
-        reason: 'Filters — registered formatters, encode-on-output safe (#899/#900)',
-    },
-];
+const SANITIZED_HTML_ACTION_RE = /\buse:sanitizedHtml(?:\s|=|>)/g;
+const DIRECT_HTML_WRITE_RE =
+    /\.(?:innerHTML|outerHTML)\s*=|\.insertAdjacentHTML\s*\(|document\.write\s*\(|\.setHTMLUnsafe\s*\(/g;
 
 function walkSourceFiles(dir: string, ext: RegExp): string[] {
     const out: string[] = [];
@@ -75,7 +35,7 @@ function walkSourceFiles(dir: string, ext: RegExp): string[] {
 }
 
 describe('html-sink audit', () => {
-    it('every {@html EXPR} across apps/gui/src/**/*.svelte matches a known-safe whitelist', () => {
+    it('contains no live Svelte {@html} insertion sinks', () => {
         const allSvelte = walkSourceFiles(APPS_GUI_SRC, /\.svelte$/);
         const offenders: Array<{ file: string; expr: string }> = [];
 
@@ -84,50 +44,65 @@ describe('html-sink audit', () => {
             // Strip HTML comments so commented-out `{@html ...}` examples / dead
             // code blocks don't trigger the walker.
             const live = source.replace(/<!--[\s\S]*?-->/g, '');
-            HTML_SINK_RE.lastIndex = 0; // reset regex state across files
+            HTML_SINK_RE.lastIndex = 0;
             let match: RegExpExecArray | null;
             while ((match = HTML_SINK_RE.exec(live)) !== null) {
-                const trimmed = match[1].trim();
-                const ok = WHITELIST_PATTERNS.some(({ pattern }) => pattern.test(trimmed));
-                if (!ok) {
-                    offenders.push({ file: relative(APPS_GUI_SRC, fullPath), expr: trimmed });
-                }
+                offenders.push({
+                    file: relative(APPS_GUI_SRC, fullPath),
+                    expr: match[1].trim(),
+                });
             }
         }
 
         expect(
             offenders,
-            `Unknown {@html} sinks (must be added to whitelist with security justification):\n${offenders
+            `Raw {@html} sinks must use the sanitizedHtml action instead:\n${offenders
                 .map((o) => `  ${o.file}: ${o.expr}`)
                 .join('\n')}`
         ).toEqual([]);
     });
 
-    it('v2.5 inventory contains at least 11 live {@html} sinks', () => {
-        // Locks the LIVE inventory floor at v2.5 close. HTML comments are
-        // stripped before counting (matches the runtime surface — dead-code
-        // sinks like Reader.svelte:110 inside <!-- ... --> are not rendered).
-        //
-        // A future contributor REMOVING a live sink (shrinking the canary
-        // surface) will fail this test, prompting an explicit decision to
-        // lower the floor. ADDING a new sink without whitelist coverage is
-        // still caught by the first test above.
-        //
-        // The plan-time inventory listed 13 (counting the commented-out
-        // $readerContent at Reader.svelte:110). Live count is now 11 after
-        // removing the unused masonry feed path.
+    it('migrates the previous 11-sink inventory to sanitizedHtml actions', () => {
         const allSvelte = walkSourceFiles(APPS_GUI_SRC, /\.svelte$/);
-        let totalSinkCount = 0;
+        let actionCount = 0;
 
         for (const fullPath of allSvelte) {
             const source = readFileSync(fullPath, 'utf8');
             const live = source.replace(/<!--[\s\S]*?-->/g, '');
-            HTML_SINK_RE.lastIndex = 0;
-            const matches = live.match(HTML_SINK_RE);
-            if (matches) totalSinkCount += matches.length;
+            SANITIZED_HTML_ACTION_RE.lastIndex = 0;
+            actionCount += live.match(SANITIZED_HTML_ACTION_RE)?.length ?? 0;
         }
 
-        expect(totalSinkCount).toBeGreaterThanOrEqual(11);
+        expect(actionCount).toBeGreaterThanOrEqual(11);
+    });
+
+    it('contains no direct unsafe DOM HTML writes', () => {
+        const sourceFiles = walkSourceFiles(APPS_GUI_SRC, /\.(?:svelte|[cm]?[jt]s)$/).filter(
+            (file) => !/\.(?:test|spec)\.[cm]?[jt]s$/.test(file)
+        );
+        const offenders: Array<{ file: string; expression: string }> = [];
+
+        for (const fullPath of sourceFiles) {
+            const source = stripJsComments(readFileSync(fullPath, 'utf8')).replace(
+                /<!--[\s\S]*?-->/g,
+                ''
+            );
+            DIRECT_HTML_WRITE_RE.lastIndex = 0;
+            let match: RegExpExecArray | null;
+            while ((match = DIRECT_HTML_WRITE_RE.exec(source)) !== null) {
+                offenders.push({
+                    file: relative(APPS_GUI_SRC, fullPath),
+                    expression: match[0],
+                });
+            }
+        }
+
+        expect(
+            offenders,
+            `Unsafe DOM HTML writes must use setSanitizedHtml instead:\n${offenders
+                .map((o) => `  ${o.file}: ${o.expression}`)
+                .join('\n')}`
+        ).toEqual([]);
     });
 });
 

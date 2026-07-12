@@ -24,6 +24,7 @@
 	import Loading from '$lib/components/partials/Loading.svelte';
 	import RelayLivenessCounts from '$lib/components/partials/RelayLivenessCounts.svelte';
 	import DataViewTopBar from './DataViewTopBar.svelte';
+	import { sanitizedHtml } from '$utils/sanitize';
 
     export let dataKey: string;
     export let data: Readable<any[]>;
@@ -328,7 +329,7 @@
                             <Table.Cell>
                                 <div class="max-w-full truncate">
                                     {#if $config.tableFormatters?.[column.key]}
-                                        {@html $config.tableFormatters[column.key](row[column.key], row)}
+                                        <div use:sanitizedHtml={$config.tableFormatters[column.key](row[column.key], row)}></div>
                                     {:else}
                                         {row[column.key]}
                                     {/if}

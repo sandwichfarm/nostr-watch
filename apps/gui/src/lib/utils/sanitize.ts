@@ -12,8 +12,8 @@ import createDOMPurify, {
  * kind:0 metadata field, kind:1 note content, or any other relay-controlled
  * string reaches a Svelte template. Encode at the sink, not at the data layer.
  *
- * The DataTable layer renders cell contents via `{@html ...}` (see
- * apps/gui/src/lib/components/data-view/table/DataTable.svelte). Many of the
+ * The DataTable layer renders formatted cell contents through the
+ * `sanitizedHtml` action. Many of the
  * formatters in `apps/gui/src/lib/config/dataTable/*.ts` build HTML strings
  * that interpolate fields a relay operator controls (icon, banner, name,
  * description, photo, pubkey, paymentsUrl). Without escaping, a malicious
@@ -67,26 +67,12 @@ import createDOMPurify, {
  *   - `apps/gui/src/lib/utils/html-sink-audit.test.ts`                         — cross-cutting `{@html}` walker
  *   - `apps/gui/src/lib/utils/cardinsights-relayfeeitem-adversarial.test.ts`   — function-level CARD-02/03 smoke
  *
- * # Deferred AUDIT-01 (formatter migration)
+ * # HTML insertion boundary
  *
- * AUDIT-01 — replace the HTML-string formatters in
- * `apps/gui/src/lib/config/dataTable/*.ts` with Svelte components and drop
- * `{@html}` from `DataTable.svelte` and `PageHeader.svelte` — is FORMALLY
- * DEFERRED to v2.6+. v2.5 closed every live vector via encode-on-output
- * discipline; the dataTable formatters are encode-on-output safe today
- * (verified by #899/#900 tests + the html-sink-audit canary). Migration to
- * Svelte components is a larger refactor (5+ formatter files, hundreds of
- * HTML-string emissions per file, plus DataTable / PageHeader internals);
- * the right time is when there's a separate UI/styling milestone that
- * touches DataTable anyway.
- *
- * The deferral is recorded in `.planning/PROJECT.md` Key Decisions:
- *   "Defer AUDIT-01 (formatter migration to Svelte components) to v2.6+"
- *
- * When AUDIT-01 lands, this entire `sanitize.ts` module can be deleted.
- * Until then, the cross-cutting `{@html}` walker (html-sink-audit.test.ts)
- * is the canary that catches new sinks added without going through one
- * of these helpers.
+ * All formatted HTML is inserted through `sanitizedHtml`. Firefox 148+
+ * uses the browser-native Sanitizer API through `Element.setHTML()`; other
+ * browsers receive a DOMPurify-produced `DocumentFragment`. The structural
+ * audit rejects any new raw Svelte `{@html}` sink.
  *
  * # Module exports
  *
@@ -103,12 +89,8 @@ import createDOMPurify, {
  *                        breakout char set as `safeImageUrl`. Use at
  *                        `<a href>` / `<Button href>` sinks.
  *
- * Use these helpers at every {@html} sink that interpolates relay-controlled
- * data. The intent is encode-on-output at the formatter, not at the data layer.
- *
- * FOLLOW-UP: see "# Deferred AUDIT-01 (formatter migration)" above and
- * the corresponding row in `.planning/PROJECT.md` Key Decisions. Once
- * AUDIT-01 lands in v2.6+, this entire module can be deleted.
+ * Use these helpers when HTML strings interpolate relay-controlled data, then
+ * insert the completed string with `sanitizedHtml` for defense in depth.
  */
 
 // Module-private: single source of truth for the URL/CSS attribute breakout
@@ -216,13 +198,156 @@ function getDomPurify(): DOMPurifyInstance | undefined {
 }
 
 /**
- * Sanitize HTML for the remaining `{@html}` sinks that intentionally render
- * formatted relay-controlled content. In SSR/no-window contexts DOMPurify
- * cannot build a DOM-backed sanitizer, so fail closed by entity-escaping.
+ * Sanitize an HTML string before further processing. In SSR/no-window contexts
+ * DOMPurify cannot build a DOM-backed sanitizer, so fail closed by
+ * entity-escaping.
  */
 export function sanitizeHtml(input: unknown, config?: Config): string {
     if (typeof input !== 'string') return '';
     const purifier = getDomPurify();
     if (!purifier || typeof purifier.sanitize !== 'function') return escapeHtml(input);
     return purifier.sanitize(input, config);
+}
+
+const ACTIVE_CONTENT_ELEMENTS = [
+    'base',
+    'button',
+    'embed',
+    'form',
+    'frame',
+    'iframe',
+    'input',
+    'link',
+    'meta',
+    'object',
+    'script',
+    'select',
+    'style',
+    'textarea',
+];
+
+const YOUTUBE_EMBED_RE = /<iframe width="100%" height="auto" src="https:\/\/www\.youtube\.com\/embed\/([A-Za-z0-9_-]+)" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" sandbox="allow-scripts allow-same-origin allow-presentation"><\/iframe>/g;
+const YOUTUBE_SLOT_CLASS = 'nw-youtube-embed-slot';
+
+type SanitizedHtmlOptions = {
+    html: unknown;
+    allowYoutubeEmbeds?: boolean;
+};
+
+type NativeSanitizingElement = HTMLElement & {
+    setHTML?: (
+        input: string,
+        options?: { sanitizer: { removeElements: string[] } }
+    ) => void;
+};
+
+function normalizedOptions(value: unknown): Required<SanitizedHtmlOptions> {
+    if (
+        typeof value === 'object' &&
+        value !== null &&
+        Object.prototype.hasOwnProperty.call(value, 'html')
+    ) {
+        const options = value as SanitizedHtmlOptions;
+        return {
+            html: typeof options.html === 'string' ? options.html : '',
+            allowYoutubeEmbeds: options.allowYoutubeEmbeds === true,
+        };
+    }
+
+    return {
+        html: typeof value === 'string' ? value : '',
+        allowYoutubeEmbeds: false,
+    };
+}
+
+function prepareYoutubeSlots(html: string, allowYoutubeEmbeds: boolean): string {
+    if (!allowYoutubeEmbeds) return html;
+    return html.replace(
+        YOUTUBE_EMBED_RE,
+        (_match, videoId: string) =>
+            `<span class="${YOUTUBE_SLOT_CLASS}" data-nw-youtube-id="${videoId}"></span>`
+    );
+}
+
+function insertWithDomPurify(node: HTMLElement, html: string): void {
+    const purifier = getDomPurify();
+    if (!purifier || typeof purifier.sanitize !== 'function') {
+        node.textContent = html;
+        return;
+    }
+
+    const fragment = purifier.sanitize(html, {
+        ADD_ATTR: ['target'],
+        FORBID_TAGS: ACTIVE_CONTENT_ELEMENTS,
+        RETURN_DOM_FRAGMENT: true,
+    }) as DocumentFragment;
+    node.replaceChildren(fragment);
+}
+
+function normalizeInsertedLinks(node: HTMLElement): void {
+    for (const link of node.querySelectorAll<HTMLAnchorElement>('a[target]')) {
+        if (link.target.toLowerCase() !== '_blank') {
+            link.removeAttribute('target');
+            continue;
+        }
+
+        const rel = new Set(link.rel.split(/\s+/).filter(Boolean));
+        rel.add('noopener');
+        rel.add('noreferrer');
+        link.rel = [...rel].join(' ');
+    }
+}
+
+function restoreYoutubeEmbeds(node: HTMLElement, allowYoutubeEmbeds: boolean): void {
+    const slots = node.querySelectorAll<HTMLElement>(`.${YOUTUBE_SLOT_CLASS}`);
+    for (const slot of slots) {
+        const videoId = slot.dataset.nwYoutubeId;
+        if (!allowYoutubeEmbeds || !videoId || !/^[A-Za-z0-9_-]+$/.test(videoId)) {
+            slot.remove();
+            continue;
+        }
+
+        const iframe = document.createElement('iframe');
+        iframe.width = '100%';
+        iframe.height = 'auto';
+        iframe.src = `https://www.youtube.com/embed/${videoId}`;
+        iframe.setAttribute('frameborder', '0');
+        iframe.allow =
+            'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+        iframe.setAttribute('allowfullscreen', '');
+        iframe.referrerPolicy = 'strict-origin-when-cross-origin';
+        iframe.setAttribute(
+            'sandbox',
+            'allow-scripts allow-same-origin allow-presentation'
+        );
+        slot.replaceWith(iframe);
+    }
+}
+
+/** Insert formatted HTML without using Svelte's raw `{@html}` sink. */
+export function setSanitizedHtml(node: HTMLElement, value: unknown): void {
+    const { html, allowYoutubeEmbeds } = normalizedOptions(value);
+    const preparedHtml = prepareYoutubeSlots(String(html), allowYoutubeEmbeds);
+    const nativeNode = node as NativeSanitizingElement;
+
+    if (typeof nativeNode.setHTML === 'function') {
+        nativeNode.setHTML(preparedHtml, {
+            sanitizer: { removeElements: [...ACTIVE_CONTENT_ELEMENTS] },
+        });
+    } else {
+        insertWithDomPurify(node, preparedHtml);
+    }
+
+    normalizeInsertedLinks(node);
+    restoreYoutubeEmbeds(node, allowYoutubeEmbeds);
+}
+
+/** Svelte action that re-sanitizes whenever its input changes. */
+export function sanitizedHtml(node: HTMLElement, value: unknown) {
+    setSanitizedHtml(node, value);
+    return {
+        update(nextValue: unknown) {
+            setSanitizedHtml(node, nextValue);
+        },
+    };
 }

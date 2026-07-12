@@ -23,6 +23,7 @@
 	import { bannerStyleString } from '$utils/style-helpers';
 	import { randomLoadingMessage } from '$utils/ux';
 	import Loading from '$lib/components/partials/Loading.svelte';
+	import { sanitizedHtml } from '$utils/sanitize';
 
     export let dataKey: string;
     export let data: Readable<any[]>;
@@ -354,7 +355,7 @@
                                         <Table.Cell class="font-mono">
                                             <div class="max-w-full truncate">
                                                 {#if $config.tableFormatters?.[column.key]}
-                                                    {@html $config.tableFormatters[column.key](row[column.key], row)}
+                                                    <div use:sanitizedHtml={$config.tableFormatters[column.key](row[column.key], row)}></div>
                                                 {:else}
                                                     {row[column.key]}
                                                 {/if}

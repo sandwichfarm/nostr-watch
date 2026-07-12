@@ -1,7 +1,7 @@
 <script lang="ts">
 
     import { clickToCopy } from "$utils/ux";
-    import { safeImageUrl, sanitizeHtml } from "$utils/sanitize";
+    import { safeImageUrl, sanitizedHtml } from "$utils/sanitize";
     import { bannerStyleString } from "$utils/style-helpers";
 
     export let title: string;
@@ -22,12 +22,6 @@
 
     // Validate the relay-controlled icon URL before binding it to <img src>.
     $: safeIcon = safeImageUrl(icon);
-
-    // Most callers pass plain text (e.g. NIP-11 description). The
-    // /relays/software/[softwareKey] page passes pre-formatted HTML, so we
-    // sanitize via DOMPurify rather than dropping {@html} entirely.
-    // sanitize() defaults strip script tags and event-handler attributes.
-    $: safeSubtitle = sanitizeHtml(subtitle);
 
 </script>
 <header
@@ -65,7 +59,7 @@
           {/if}
         </h1>
         {#if subtitle}
-            <span class="ml-3 text-lg block">{@html safeSubtitle}</span>
+            <span class="ml-3 text-lg block" use:sanitizedHtml={subtitle}></span>
         {/if}
         <slot />
       </div>

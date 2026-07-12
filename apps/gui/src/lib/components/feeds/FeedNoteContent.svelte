@@ -4,6 +4,7 @@
 	import { onMount } from "svelte";
 	import { writable, type Writable } from "svelte/store";
 	import Reader from "../modal/Reader.svelte";
+	import { sanitizedHtml } from "$utils/sanitize";
 
     export let note: NostrEvent;
     export let useReaderModal: boolean = false;
@@ -29,5 +30,5 @@
 {#if useReaderModal && $content}
     <Reader readerContent={content} {readerTitle} />
 {:else}
-    {@html $content}
+    <div use:sanitizedHtml={{ html: $content, allowYoutubeEmbeds: true }}></div>
 {/if}

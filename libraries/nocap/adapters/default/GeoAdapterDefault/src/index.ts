@@ -47,7 +47,13 @@
         : `http://ip-api.com/json/${ip}?fields=${FIELDS}`;
 
       try {
-        const response = await fetch(endpoint, { headers: { accept: 'application/json' } });
+        const response = await fetch(endpoint, {
+          headers: { accept: 'application/json' },
+          redirect: 'error',
+          credentials: 'omit',
+          referrerPolicy: 'no-referrer',
+          cache: 'no-store'
+        });
         const jsonResponse = await response.json();
         delete jsonResponse.query;
         delete jsonResponse.status;

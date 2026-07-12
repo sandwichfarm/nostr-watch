@@ -16,6 +16,7 @@
     import Chart from 'chart.js/auto';
     import { decodeGeohash } from '$lib/utils/geohash';
     import { browser } from '$app/environment';
+    import { verifyNip05 } from '$lib/services/Nip05Service/verify-nip05';
     import 'leaflet/dist/leaflet.css';
 
     export const prerender = false;
@@ -56,30 +57,10 @@
     // NIP-05 validation
     let nip05Status: 'pending' | 'valid' | 'invalid' | null = null;
 
-    async function validateNip05(nip05: string, expectedPubkey: string): Promise<boolean> {
-        if (!nip05 || !expectedPubkey) return false;
-
-        try {
-            const [name, domain] = nip05.split('@');
-            if (!name || !domain) return false;
-
-            const url = `https://${domain}/.well-known/nostr.json?name=${encodeURIComponent(name)}`;
-            const response = await fetch(url);
-            if (!response.ok) return false;
-
-            const data = await response.json();
-            const registeredPubkey = data.names?.[name];
-
-            return registeredPubkey === expectedPubkey;
-        } catch {
-            return false;
-        }
-    }
-
     // Validate NIP-05 when monitor data is available
     $: if (browser && monitorData?.nip05 && pubkey) {
         nip05Status = 'pending';
-        validateNip05(monitorData.nip05, pubkey).then(valid => {
+        verifyNip05(pubkey, monitorData.nip05).then(valid => {
             nip05Status = valid ? 'valid' : 'invalid';
         });
     }

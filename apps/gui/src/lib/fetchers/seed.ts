@@ -13,6 +13,7 @@ import {
   completeBootActivity,
 } from '$lib/stores/boot-activity';
 import { setSeedBootComplete, setSeedBootError, setSeedBootInProgress } from '$lib/stores/boot-state';
+import { fetchJsonResource as fetchJson } from '$lib/utils/fetch-json';
 
 type SeedGroup = { files?: string[]; events?: number; count?: number };
 
@@ -79,33 +80,6 @@ function chunk<T>(arr: T[], size: number): T[][] {
   const out: T[][] = [];
   for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n));
   return out;
-}
-
-async function fetchJson<T>(
-  url: string,
-  opts: { timeoutMs?: number; cache?: RequestCache } = {}
-): Promise<T | null> {
-  const timeoutMs = Number.isFinite(opts.timeoutMs) ? Math.max(0, opts.timeoutMs as number) : 15_000;
-  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-  const timeoutId =
-    controller && timeoutMs > 0 ? globalThis.setTimeout(() => controller.abort(), timeoutMs) : null;
-  try {
-    const res = await fetch(
-      url,
-      controller
-        ? {
-            signal: controller.signal,
-            cache: opts.cache,
-          }
-        : { cache: opts.cache }
-    );
-    if (!res.ok) return null;
-    return (await res.json()) as T;
-  } catch {
-    return null;
-  } finally {
-    if (timeoutId !== null) globalThis.clearTimeout(timeoutId);
-  }
 }
 
 async function withTimeout<T>(

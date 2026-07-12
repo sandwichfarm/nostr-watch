@@ -34,7 +34,14 @@ const IPV4 = /\b(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01
     else 
       endpoint = `http://ip-api.com/json/${ip}?fields=${FIELDS}`
 
-    response = await fetch(endpoint, { headers, signal }).catch(this.$.logger.error)
+    response = await fetch(endpoint, {
+      headers,
+      signal,
+      redirect: 'error',
+      credentials: 'omit',
+      referrerPolicy: 'no-referrer',
+      cache: 'no-store'
+    }).catch(this.$.logger.error)
 
     delete response.query
     delete response.status

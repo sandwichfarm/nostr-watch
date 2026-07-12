@@ -49,7 +49,7 @@ export class Nip05Service {
         }, timeoutMs);
 
         this.pending.set(key, { promise, resolve: resolveFn, timeoutId });
-        worker.postMessage({ pubkey, nip05 });
+        worker.postMessage({ pubkey, nip05, timeoutMs });
         return promise;
     }
 

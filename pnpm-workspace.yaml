@@ -99,3 +99,5 @@ allowBuilds:
   secp256k1: true
   svelte-preprocess: false
   utf-8-validate: true
+minimumReleaseAgeExclude:
+  - '@contextvm/sdk@0.13.9'

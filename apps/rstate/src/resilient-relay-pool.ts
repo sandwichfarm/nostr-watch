@@ -171,6 +171,7 @@ export class ResilientRelayPool implements RelayPool {
         this.subscriptions.clear()
         logger.info('RelayHandler: all subscriptions unsubscribed')
       },
+      getRelayUrls: () => this.relays.map(relay => relay.url),
     }
   }
 

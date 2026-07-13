@@ -7,6 +7,7 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import { NostrServerTransport, PrivateKeySigner, EncryptionMode, withServerPayments, LnBolt11NwcPaymentProcessor } from '@contextvm/sdk'
 import { loadPricedCapabilities } from './payments/cvm-pricing.js'
+import { resolveCvmPaymentInteractionPolicy } from './payments/cvm-payment-policy.js'
 import { ResilientRelayPool } from './resilient-relay-pool.js'
 import type { Config } from './config.js'
 import { getLogger } from './utils/logger.js'
@@ -207,7 +208,7 @@ export class CVMServer {
         name: 'RelayVM',
         about: 'ContextVM server that aggregates NIP-66 relay intelligence and exposes it via MCP over Nostr. Service provided by nostr.watch',
       },
-      isPublicServer: cvmConfig.allowedPubkeys.length === 0,
+      isAnnouncedServer: cvmConfig.allowedPubkeys.length === 0,
       allowedPublicKeys: cvmConfig.allowedPubkeys.length > 0 ? cvmConfig.allowedPubkeys : undefined,
     })
 
@@ -224,13 +225,18 @@ export class CVMServer {
       })
 
       const pricedCapabilities = loadPricedCapabilities()
+      const paymentInteraction = resolveCvmPaymentInteractionPolicy()
 
       this.transport = withServerPayments(this.transport, {
         processors: [nwcProcessor],
         pricedCapabilities,
+        paymentInteraction,
       })
 
-      logger.info({ pricedTools: pricedCapabilities.length }, 'CVM payment gating enabled (CEP-8)')
+      logger.info({
+        pricedTools: pricedCapabilities.length,
+        paymentInteraction,
+      }, 'CVM payment gating enabled (CEP-8)')
     }
 
     // DISABLED: Subscription system

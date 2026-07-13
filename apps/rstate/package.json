@@ -35,11 +35,10 @@
     "docker:stop": "docker-compose down"
   },
   "dependencies": {
-    "@contextvm/sdk": "^0.6.2",
+    "@contextvm/sdk": "^0.13.9",
     "@fastify/cors": "^11.1.0",
     "@fastify/swagger": "^9.5.2",
     "@modelcontextprotocol/sdk": "^1.26.0",
-    "@noble/hashes": "^1.5.0",
     "@noble/secp256k1": "^2.1.0",
     "@nostrwatch/announce": "workspace:^",
     "@nostrwatch/publisher": "workspace:^",
@@ -60,7 +59,7 @@
     "@types/ws": "^8.5.13",
     "tsup": "^8.3.5",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.2",
+    "typescript": "^5.9.3",
     "vitest": "^3.2.6"
   },
   "engines": {

@@ -200,8 +200,8 @@ importers:
         specifier: ^4.4.4
         version: 4.4.4
       dompurify:
-        specifier: ^3.4.11
-        version: 3.4.11
+        specifier: ^3.4.12
+        version: 3.4.12
       html-entities:
         specifier: 2.6.0
         version: 2.6.0
@@ -1580,7 +1580,7 @@ importers:
         version: 5.8.3
       vitest:
         specifier: 4.1.0
-        version: 4.1.0(@types/node@22.15.3)(@vitest/ui@3.2.6)(jsdom@29.1.1(@noble/hashes@2.2.0))(vite@6.4.3(@types/node@22.15.3)(jiti@1.21.7)(sass-embedded@1.100.0)(sass@1.100.0)(terser@5.49.0)(tsx@4.20.6)(yaml@2.8.4))
+        version: 4.1.0(@types/node@22.15.3)(@vitest/ui@3.2.6)(jsdom@29.1.1(@noble/hashes@2.2.0))(vite@7.3.6(@types/node@22.15.3)(jiti@1.21.7)(sass-embedded@1.100.0)(sass@1.100.0)(terser@5.49.0)(tsx@4.20.6)(yaml@2.8.4))
       vitest-nostr:
         specifier: 0.4.1
         version: 0.4.1(vitest-websocket-mock@0.4.0(vitest@4.1.0))(vitest@4.1.0)
@@ -6970,8 +6970,8 @@ packages:
   dom-helpers@5.2.1:
     resolution: {integrity: sha512-nRCa7CK3VTrM2NmGkIy4cbK7IZlgBE/PYMn55rrXefr5xXDP0LdtfPnblFDoVdcAfslJ7or6iqAUnx0CCGIWQA==}
 
-  dompurify@3.4.11:
-    resolution: {integrity: sha512-zhlUV12GsaRzMsf9q5M254YhA4+VuF0fG+QFqu6aYpoGlKtz+w8//jBcGVYBgQkR5GHjUomejY84AV+/uPbWdw==}
+  dompurify@3.4.12:
+    resolution: {integrity: sha512-zQvGet8Z2sWbQhCmfFz/T5QWH2oBmjnqK3qvOjaqaNLrLEF912WamU+ohnTp0TCep/MFVHpdJuCZEdFOdTnEFg==}
 
   dotenv@16.3.1:
     resolution: {integrity: sha512-IPzF4w4/Rd94bA9imS68tZBaYyBWSCE47V1RGuMrB94iyTOIEwRmVL2x/4An+6mETpLrKJ5hQkB8W4kFAadeIQ==}
@@ -14145,8 +14145,8 @@ snapshots:
       quicktype: 23.0.170
       quicktype-core: 23.0.170
       typescript: 5.8.3
-      webpack: 5.104.1(esbuild@0.28.1)(webpack-cli@5.1.4)
-      webpack-cli: 5.1.4(webpack@5.104.1(esbuild@0.28.1))
+      webpack: 5.104.1(esbuild@0.28.1)
+      webpack-cli: 5.1.4(webpack@5.104.1)
       webpack-merge: 6.0.1
       webpack-node-externals: 3.0.0
       yaml: 2.8.4
@@ -14170,8 +14170,8 @@ snapshots:
       quicktype: 23.0.170
       quicktype-core: 23.0.170
       typescript: 5.8.3
-      webpack: 5.104.1(esbuild@0.28.1)(webpack-cli@5.1.4)
-      webpack-cli: 5.1.4(webpack@5.104.1(esbuild@0.28.1))
+      webpack: 5.104.1(esbuild@0.28.1)
+      webpack-cli: 5.1.4(webpack@5.104.1)
       webpack-merge: 6.0.1
       webpack-node-externals: 3.0.0
       yaml: 2.8.4
@@ -15656,13 +15656,13 @@ snapshots:
     optionalDependencies:
       vite: 6.4.3(@types/node@22.15.3)(jiti@1.21.7)(sass-embedded@1.100.0)(sass@1.100.0)(terser@5.49.0)(tsx@4.20.6)(yaml@2.8.4)
 
-  '@vitest/mocker@4.1.0(vite@6.4.3(@types/node@22.15.3)(jiti@1.21.7)(sass-embedded@1.100.0)(sass@1.100.0)(terser@5.49.0)(tsx@4.20.6)(yaml@2.8.4))':
+  '@vitest/mocker@4.1.0(vite@7.3.6(@types/node@22.15.3)(jiti@1.21.7)(sass-embedded@1.100.0)(sass@1.100.0)(terser@5.49.0)(tsx@4.20.6)(yaml@2.8.4))':
     dependencies:
       '@vitest/spy': 4.1.0
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
-      vite: 6.4.3(@types/node@22.15.3)(jiti@1.21.7)(sass-embedded@1.100.0)(sass@1.100.0)(terser@5.49.0)(tsx@4.20.6)(yaml@2.8.4)
+      vite: 7.3.6(@types/node@22.15.3)(jiti@1.21.7)(sass-embedded@1.100.0)(sass@1.100.0)(terser@5.49.0)(tsx@4.20.6)(yaml@2.8.4)
 
   '@vitest/mocker@4.1.10(vite@7.3.6(@types/node@22.15.3)(jiti@1.21.7)(sass-embedded@1.100.0)(sass@1.100.0)(terser@5.49.0)(tsx@4.20.6)(yaml@2.8.4))':
     dependencies:
@@ -15771,7 +15771,7 @@ snapshots:
       sirv: 3.0.2
       tinyglobby: 0.2.17
       tinyrainbow: 2.0.0
-      vitest: 4.1.0(@types/node@22.15.3)(@vitest/ui@3.2.6)(jsdom@29.1.1(@noble/hashes@2.2.0))(vite@6.4.3(@types/node@22.15.3)(jiti@1.21.7)(sass-embedded@1.100.0)(sass@1.100.0)(terser@5.49.0)(tsx@4.20.6)(yaml@2.8.4))
+      vitest: 4.1.0(@types/node@22.15.3)(@vitest/ui@3.2.6)(jsdom@29.1.1(@noble/hashes@2.2.0))(vite@7.3.6(@types/node@22.15.3)(jiti@1.21.7)(sass-embedded@1.100.0)(sass@1.100.0)(terser@5.49.0)(tsx@4.20.6)(yaml@2.8.4))
 
   '@vitest/utils@2.1.9':
     dependencies:
@@ -15998,30 +15998,15 @@ snapshots:
       '@webassemblyjs/ast': 1.14.1
       '@xtuc/long': 4.2.2
 
-  '@webpack-cli/configtest@2.1.1(webpack-cli@5.1.4(webpack@5.104.1(esbuild@0.28.1)))(webpack@5.104.1(esbuild@0.28.1))':
-    dependencies:
-      webpack: 5.104.1(esbuild@0.28.1)(webpack-cli@5.1.4)
-      webpack-cli: 5.1.4(webpack@5.104.1(esbuild@0.28.1))
-
   '@webpack-cli/configtest@2.1.1(webpack-cli@5.1.4)(webpack@5.104.1)':
     dependencies:
       webpack: 5.104.1(esbuild@0.28.1)(webpack-cli@5.1.4)
       webpack-cli: 5.1.4(webpack@5.104.1)
 
-  '@webpack-cli/info@2.0.2(webpack-cli@5.1.4(webpack@5.104.1(esbuild@0.28.1)))(webpack@5.104.1(esbuild@0.28.1))':
-    dependencies:
-      webpack: 5.104.1(esbuild@0.28.1)(webpack-cli@5.1.4)
-      webpack-cli: 5.1.4(webpack@5.104.1(esbuild@0.28.1))
-
   '@webpack-cli/info@2.0.2(webpack-cli@5.1.4)(webpack@5.104.1)':
     dependencies:
       webpack: 5.104.1(esbuild@0.28.1)(webpack-cli@5.1.4)
       webpack-cli: 5.1.4(webpack@5.104.1)
-
-  '@webpack-cli/serve@2.0.5(webpack-cli@5.1.4(webpack@5.104.1(esbuild@0.28.1)))(webpack@5.104.1(esbuild@0.28.1))':
-    dependencies:
-      webpack: 5.104.1(esbuild@0.28.1)(webpack-cli@5.1.4)
-      webpack-cli: 5.1.4(webpack@5.104.1(esbuild@0.28.1))
 
   '@webpack-cli/serve@2.0.5(webpack-cli@5.1.4)(webpack@5.104.1)':
     dependencies:
@@ -17281,7 +17266,7 @@ snapshots:
       '@babel/runtime': 7.27.1
       csstype: 3.2.3
 
-  dompurify@3.4.11:
+  dompurify@3.4.12:
     optionalDependencies:
       '@types/trusted-types': 2.0.7
 
@@ -23043,7 +23028,7 @@ snapshots:
 
   vitest-nostr@0.4.1(vitest-websocket-mock@0.4.0(vitest@4.1.0))(vitest@4.1.0):
     dependencies:
-      vitest: 4.1.0(@types/node@22.15.3)(@vitest/ui@3.2.6)(jsdom@29.1.1(@noble/hashes@2.2.0))(vite@6.4.3(@types/node@22.15.3)(jiti@1.21.7)(sass-embedded@1.100.0)(sass@1.100.0)(terser@5.49.0)(tsx@4.20.6)(yaml@2.8.4))
+      vitest: 4.1.0(@types/node@22.15.3)(@vitest/ui@3.2.6)(jsdom@29.1.1(@noble/hashes@2.2.0))(vite@7.3.6(@types/node@22.15.3)(jiti@1.21.7)(sass-embedded@1.100.0)(sass@1.100.0)(terser@5.49.0)(tsx@4.20.6)(yaml@2.8.4))
       vitest-websocket-mock: 0.4.0(vitest@4.1.0)
 
   vitest-websocket-mock@0.2.2(vitest@3.2.6):
@@ -23062,7 +23047,7 @@ snapshots:
     dependencies:
       '@vitest/utils': 2.1.9
       mock-socket: 9.3.1
-      vitest: 4.1.0(@types/node@22.15.3)(@vitest/ui@3.2.6)(jsdom@29.1.1(@noble/hashes@2.2.0))(vite@6.4.3(@types/node@22.15.3)(jiti@1.21.7)(sass-embedded@1.100.0)(sass@1.100.0)(terser@5.49.0)(tsx@4.20.6)(yaml@2.8.4))
+      vitest: 4.1.0(@types/node@22.15.3)(@vitest/ui@3.2.6)(jsdom@29.1.1(@noble/hashes@2.2.0))(vite@7.3.6(@types/node@22.15.3)(jiti@1.21.7)(sass-embedded@1.100.0)(sass@1.100.0)(terser@5.49.0)(tsx@4.20.6)(yaml@2.8.4))
 
   vitest@3.2.6(@types/debug@4.1.12)(@types/node@16.18.126)(@vitest/ui@3.2.6)(jiti@1.21.7)(jsdom@29.1.1(@noble/hashes@2.2.0))(sass-embedded@1.100.0)(sass@1.100.0)(terser@5.49.0)(tsx@4.20.6)(yaml@2.8.4):
     dependencies:
@@ -23372,10 +23357,10 @@ snapshots:
       - tsx
       - yaml
 
-  vitest@4.1.0(@types/node@22.15.3)(@vitest/ui@3.2.6)(jsdom@29.1.1(@noble/hashes@2.2.0))(vite@6.4.3(@types/node@22.15.3)(jiti@1.21.7)(sass-embedded@1.100.0)(sass@1.100.0)(terser@5.49.0)(tsx@4.20.6)(yaml@2.8.4)):
+  vitest@4.1.0(@types/node@22.15.3)(@vitest/ui@3.2.6)(jsdom@29.1.1(@noble/hashes@2.2.0))(vite@7.3.6(@types/node@22.15.3)(jiti@1.21.7)(sass-embedded@1.100.0)(sass@1.100.0)(terser@5.49.0)(tsx@4.20.6)(yaml@2.8.4)):
     dependencies:
       '@vitest/expect': 4.1.0
-      '@vitest/mocker': 4.1.0(vite@6.4.3(@types/node@22.15.3)(jiti@1.21.7)(sass-embedded@1.100.0)(sass@1.100.0)(terser@5.49.0)(tsx@4.20.6)(yaml@2.8.4))
+      '@vitest/mocker': 4.1.0(vite@7.3.6(@types/node@22.15.3)(jiti@1.21.7)(sass-embedded@1.100.0)(sass@1.100.0)(terser@5.49.0)(tsx@4.20.6)(yaml@2.8.4))
       '@vitest/pretty-format': 4.1.0
       '@vitest/runner': 4.1.0
       '@vitest/snapshot': 4.1.0
@@ -23392,7 +23377,7 @@ snapshots:
       tinyexec: 1.2.4
       tinyglobby: 0.2.17
       tinyrainbow: 3.1.0
-      vite: 6.4.3(@types/node@22.15.3)(jiti@1.21.7)(sass-embedded@1.100.0)(sass@1.100.0)(terser@5.49.0)(tsx@4.20.6)(yaml@2.8.4)
+      vite: 7.3.6(@types/node@22.15.3)(jiti@1.21.7)(sass-embedded@1.100.0)(sass@1.100.0)(terser@5.49.0)(tsx@4.20.6)(yaml@2.8.4)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 22.15.3
@@ -23470,23 +23455,6 @@ snapshots:
   webidl-conversions@4.0.2: {}
 
   webidl-conversions@8.0.1: {}
-
-  webpack-cli@5.1.4(webpack@5.104.1(esbuild@0.28.1)):
-    dependencies:
-      '@discoveryjs/json-ext': 0.5.7
-      '@webpack-cli/configtest': 2.1.1(webpack-cli@5.1.4(webpack@5.104.1(esbuild@0.28.1)))(webpack@5.104.1(esbuild@0.28.1))
-      '@webpack-cli/info': 2.0.2(webpack-cli@5.1.4(webpack@5.104.1(esbuild@0.28.1)))(webpack@5.104.1(esbuild@0.28.1))
-      '@webpack-cli/serve': 2.0.5(webpack-cli@5.1.4(webpack@5.104.1(esbuild@0.28.1)))(webpack@5.104.1(esbuild@0.28.1))
-      colorette: 2.0.20
-      commander: 10.0.1
-      cross-spawn: 7.0.6
-      envinfo: 7.14.0
-      fastest-levenshtein: 1.0.16
-      import-local: 3.2.0
-      interpret: 3.1.1
-      rechoir: 0.8.0
-      webpack: 5.104.1(esbuild@0.28.1)(webpack-cli@5.1.4)
-      webpack-merge: 5.10.0
 
   webpack-cli@5.1.4(webpack@5.104.1):
     dependencies:

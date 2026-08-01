@@ -78,7 +78,7 @@
 		"jsdom": "^29.1.1",
 		"node-fetch": "^3.3.2",
 		"paneforge": "^0.0.6",
-		"postcss": "^8.5.16",
+		"postcss": "^8.5.18",
 		"prettier": "^3.9.4",
 		"prettier-plugin-svelte": "^3.1.2",
 		"prettier-plugin-tailwindcss": "^0.8.0",

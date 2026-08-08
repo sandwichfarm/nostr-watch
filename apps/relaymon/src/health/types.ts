@@ -120,6 +120,12 @@ export interface KumaConfig {
   startupGraceMs: number;
   /** Message verbosity: "summary" or "detailed" */
   msgVerbosity: "summary" | "detailed";
+  /**
+   * Max backoff multiplier on `intervalMs` between push attempts after
+   * failures (default DEFAULT_MAX_BACKOFF_MULTIPLIER in kuma.ts; 1 disables
+   * backoff). Keeps the heartbeat firing near its interval.
+   */
+  maxBackoffMultiplier?: number;
 }
 
 /**

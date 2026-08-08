@@ -4,6 +4,7 @@ import type { RelayInfo } from "../types/relay.ts";
 import { createInfoHash } from "../utils/hostnames.ts";
 import {
   enqueueRemediationDeletion,
+  rerunDedupAllUnignoredMigration,
   rerunDedupForAllRowsMigration,
   rerunNostringsSweepMigration,
 } from "../utils/remediation.ts";
@@ -207,24 +208,19 @@ export async function initializeDB(
     logger.error(`rehashRelayInfoMigration threw: ${e}`);
   }
 
-  // DISABLED Phase 22: dedup migration disabled to prevent interference
-  // with NATO phonetic spam purge. Code preserved for future re-enablement.
-  //
-  // Phase 19 REMED-01/REMED-02: re-run dedup over every row in
-  // relay_status using the now-fixed relayHostnameDedup. Idempotent via
-  // relaymon_migrations sentinel. MUST run AFTER rehashRelayInfoMigration
-  // so the re-dedup sees stable hashes, and MUST complete BEFORE the
-  // daemon constructs IgnoreListSync (which snapshots relay_status
-  // ignore=1 rows into its in-memory map). initializeDB is therefore
-  // async so main.ts can await the migration before wiring the daemon.
-  // Migration writes deletion events to remediation_deletion_queue
-  // rather than publishing directly — the daemon drains that queue
-  // after setup via drainRemediationDeletionQueue.
-  // try {
-  //   await rerunDedupForAllRowsMigration();
-  // } catch (e) {
-  //   logger.error(`rerunDedupForAllRowsMigration threw: ${e}`);
-  // }
+  // Re-dedup every unignored row (online + offline) so the existing mislabelled
+  // backlog self-heals at boot. MUST run after rehashRelayInfoMigration (stable
+  // hashes) and before IgnoreListSync is constructed. Newly-ignored rows are
+  // queued for kind:5 deletion and drained by the daemon after wiring.
+  try {
+    await rerunDedupAllUnignoredMigration();
+  } catch (e) {
+    logger.error(`rerunDedupAllUnignoredMigration threw: ${e}`);
+  }
+
+  // rerunDedupForAllRowsMigration (online-only scope) is a subset of the above
+  // and no longer run at boot; kept importable for its targeted tests.
+  void rerunDedupForAllRowsMigration;
 
   // Nostrings sweep: re-run @nostrwatch/nostrings qualification over
   // every row in relay_status, hard-deleting unparseable garbage and

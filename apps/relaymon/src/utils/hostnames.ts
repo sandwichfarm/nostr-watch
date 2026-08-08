@@ -8,11 +8,6 @@ import type { Config } from "../config/config.ts";
 import type { RelayCheckResult, RelayInfo } from "../types/relay.ts";
 import { getErrorMessage } from "../types/errors.ts";
 import { normalizeNip11 } from "./nip11.ts";
-// Phase 20 OVERRIDE-01: import the override evaluator so relayHostnameDedup
-// can consult the override rules list before any case1-case8 branch. The
-// evaluator parses the URL exactly once and iterates rules[] in barrel order
-// with per-rule try/catch. See apps/relaymon/src/utils/dedup-overrides/.
-import { evaluateOverrides } from "./dedup-overrides/evaluator.ts";
 
 // Force console output for debugging
 
@@ -30,8 +25,6 @@ export function setConfig(config: Config): void {
   appConfig = config;
 }
 
-const isPubkey = (str: string): boolean => /^[0-9a-fA-F]{64}$/.test(str);
-const containsPubkey = (str: string): boolean => /[0-9a-fA-F]{64}/.test(str);
 
 /**
  * Phase 20 PERF: local timestring → ms converter for consumer-side lazy
@@ -162,37 +155,27 @@ export function createInfoHash(infoData: RelayInfo | Record<string, unknown> | n
   }
 }
 
-/**
- * Phase 20 PERF-02: optional context passed by callers that want to
- * pre-compute expensive dependencies (like the online-relays snapshot) once
- * per batch and inject it into each per-row dedup call. When omitted, the
- * function falls back to its Phase 19 behavior of computing the dependency
- * itself per call — back-compat for existing single-URL call sites.
- */
+/** Accepted for caller back-compat; unused by the current dynamic dedup. */
 export interface DedupContext {
-  /**
-   * Pre-cached list of online relay URLs (equivalent to the return value
-   * of `getOnlineRelays()`). When provided, the dedup function uses this
-   * snapshot instead of making a fresh DB query. Accepted shape is string[];
-   * pre-grouped Map is a deferred optimization per 20-CONTEXT.md.
-   */
   onlineUrls?: string[];
 }
 
 /**
- * Performs hostname deduplication on a relay result.
- * It uses online relay data from the database (via getOnlineRelays) to determine whether the relay should be ignored
- * or marked as a child of another relay based on its NIP-11 info and URL characteristics.
+ * Dynamic hostname deduplication for a relay check result. No hardcoded
+ * host/path lists.
  *
- * Phase 20 OVERRIDE-01: consults the dedup-overrides rule list BEFORE any
- * case1-case8 branch (including the same-NIP-11 early-return). First-match
- * wins in barrel order. An `allow` verdict short-circuits to ignore=false
- * without publishing a deletion or syncing to the ignore list. A `deny`
- * verdict short-circuits to ignore=true WITH deletion + ignore-list sync.
+ * 1. Relays on different hostnames serving identical NIP-11 collapse to the
+ *    shortest/root form.
+ * 2. Within a hostname the canonical is the root ("/"), else the shortest
+ *    sibling. The family is drawn from ALL known siblings (online and offline)
+ *    so an offline or unseeded root still wins.
+ * 3. A path is kept only when its NIP-11 proves different functionality from
+ *    the canonical; with no NIP-11, or NIP-11 equal to the canonical, it is
+ *    ignored with parent = canonical. This drops path spam while preserving
+ *    genuinely distinct path relays (e.g. lang.relays.land/en).
  *
- * Phase 20 PERF-02: `ctx.onlineUrls` lets callers inject a pre-cached online
- * relays snapshot. Back-compat: when ctx is undefined, the internal
- * getOnlineRelays() call path is preserved.
+ * NIP-11 is read only for the canonical (and the URL under check): O(family),
+ * not O(online).
  */
 export const relayHostnameDedup = async (
   result: RelayCheckResult,
@@ -219,43 +202,6 @@ export const relayHostnameDedup = async (
       canonicalMURL = normalizeURL(mURL);
     } catch {
       canonicalMURL = mURL;
-    }
-
-    // Phase 20 OVERRIDE-01: consult override rules BEFORE any case1-case8 branch
-    // and BEFORE the same-NIP-11 early-return below. First-match-wins in barrel
-    // order. Throwing rules are treated as no-match by the evaluator's per-rule
-    // try/catch. The evaluator parses canonicalMURL once and passes the URL
-    // object to every rule. See apps/relaymon/src/utils/dedup-overrides/.
-    //
-    // allow verdict: short-circuit to ignore=false, parent="". DOES NOT publish
-    //   a kind:5 deletion (allow semantically means "publish this URL as a
-    //   first-class relay") and DOES NOT push to the ignore list.
-    // deny verdict: short-circuit to ignore=true, parent=verdict.reason. DOES
-    //   publish a kind:5 deletion and DOES push to the ignore list, same as
-    //   the existing case1-case8 ignore paths.
-    const verdict = evaluateOverrides(canonicalMURL);
-    if (verdict.matched) {
-      if (verdict.action === "allow") {
-        result.ignore = false;
-        result.parent = "";
-        logger.info(
-          `Override '${verdict.rule}' allowed ${canonicalMURL}: ${verdict.reason}`,
-        );
-        return result;
-      } else {
-        result.ignore = true;
-        result.parent = verdict.reason;
-        logger.warn(
-          `Override '${verdict.rule}' denied ${canonicalMURL}: ${verdict.reason}`,
-        );
-        if (ignoreListSyncInstance) {
-          ignoreListSyncInstance.addToIgnoreList(canonicalMURL, verdict.reason);
-        }
-        if (appConfig) {
-          await deleteRelayCheckEvent(canonicalMURL, verdict.reason, appConfig);
-        }
-        return result;
-      }
     }
 
     // NOTE: local dedup logic is authoritative. The synced ignore list
@@ -340,271 +286,89 @@ export const relayHostnameDedup = async (
       }
     }
 
-    // Enhanced debug logging for problematic hostnames
-    logger.debug(`Processing hostname dedup for target URL: ${mURL}`);
-
-    // Phase 20 PERF-02: prefer caller-supplied onlineUrls when provided.
-    // Back-compat: when ctx is undefined or ctx.onlineUrls is undefined, fall
-    // back to the per-call DB query. The downstream filter on r.url !==
-    // canonicalMURL at the hostnameFamily construction remains unchanged —
-    // pre-cached list is expected to still contain the URL under check.
-    const onlineUrls = ctx?.onlineUrls ?? getOnlineRelays(); // returns string[]
-    
-    const targetRelays = onlineUrls.filter(url => url.includes(HOSTNAME));
-    logger.debug(`Found ${targetRelays.length} ${HOSTNAME} relays in online relays: ${JSON.stringify(targetRelays)}`);
-    
-    // Convert each URL into an object with URL, hostname, and protocol.
-    const online = onlineUrls.map((url: string) => {
-      try {
-        const parsed = new URL(url);
-        // Lookup relay info from DB to ensure we have full info data, not just URL/hostname
-        const relayInfo = getRelayInfo(url); // New function added to db.ts
-        return { 
-          url, 
-          hostname: parsed.hostname, 
-          protocol: parsed.protocol,
-          info: relayInfo?.info || null
-        };
-      } catch (e) {
-        return { url, hostname: "", protocol: "", info: null };
-      }
-    });
-
-    interface OnlineRelay {
-      url: string;
-      hostname: string;
-      protocol: string;
-      info: { info: RelayInfo; infoHash: string } | null;
-    }
-
-    const hostnameFamily = online.filter((r: OnlineRelay) =>
-      r.hostname === HOSTNAME && r.protocol === PROTOCOL && r.url !== canonicalMURL
-    );
-    const hostnameRelatives = [...hostnameFamily];
-
-    logger.debug(`Found ${hostnameRelatives.length} relatives for ${mURL}:`);
-    hostnameRelatives.forEach((r, idx) => {
-      logger.debug(`  [${idx}] ${r.url}`);
-    });
-
-    if (!hostnameRelatives?.length) {
-      // Defensive-deny against the no-relatives race: when a mutation URL's
-      // dedup runs before its legit sibling's relay_status online=1 commit is
-      // visible, the online family is empty and the mutation would escape.
-      // Before giving up, check for ANY sibling of the same hostname+protocol
-      // in relay_status (online or offline). Only mark the current URL as a
-      // duplicate when there is a STRICTLY SHORTER sibling — never flip a
-      // root URL, never flip a URL that is already the shortest known form
-      // for its hostname. The shortest-URL-wins bias is absolute here.
-      if (isRootUrl(canonicalMURL)) {
-        logger.debug(`${mURL} is a root URL — skipping defensive-deny`);
-        return result;
-      }
-      const allKnownSiblings = getRelaysByHostname(HOSTNAME, PROTOCOL).filter(
-        (u) => u !== canonicalMURL
-      );
-      if (allKnownSiblings.length > 0) {
-        allKnownSiblings.sort((a, b) => {
-          if (a.length !== b.length) return a.length - b.length;
-          return a < b ? -1 : a > b ? 1 : 0;
-        });
-        const shortestSibling = allKnownSiblings[0];
-        if (shortestSibling.length >= canonicalMURL.length) {
-          logger.debug(`${mURL} is the shortest known form for ${HOSTNAME} — skipping defensive-deny`);
-          return result;
-        }
-        result.ignore = true;
-        result.parent = shortestSibling;
-        const reason = `shorter sibling exists for ${HOSTNAME}: ${shortestSibling}`;
-        logger.warn(`${mURL} | Ignored because: ${reason}`);
-        if (ignoreListSyncInstance) {
-          ignoreListSyncInstance.addToIgnoreList(mURL, reason);
-        }
-        if (appConfig) {
-          await deleteRelayCheckEvent(mURL, reason, appConfig);
-        }
-        return result;
-      }
-      logger.debug(`No relatives or known siblings found for ${mURL}, returning without modification`);
-      return result;
-    }
-
-    // Create a reusable hash for this relay's NIP-11 info
-    const hasInfo = result?.info?.data && Object.keys(result.info.data).length > 0;
-    const infoHash = createInfoHash(result?.info?.data);
-    const hasValidInfoHash = infoHash !== "";
-    
-    // Map to store info hashes for all related relays
-    const relativeInfoHashes = new Map<string, string>();
-    
-    logger.debug(`Current URL: ${mURL} has NIP-11 info: ${hasInfo}, hash: ${infoHash || "none"}`);
-    if (hasInfo) {
-      logger.debug(`NIP-11 info keys: ${JSON.stringify(Object.keys(result.info.data))}`);
-    }
-
-    // Collect info hashes from related relays if available
-    for (const relayRelative of hostnameRelatives) {
-      // Skip relays without info data
-      if (!relayRelative.info || !relayRelative.info.data) {
-        logger.debug(`Relative ${relayRelative.url} has no info data`);
-        continue;
-      }
-      
-      const { url } = relayRelative;
-      const relativeHash = createInfoHash(relayRelative.info.data);
-      
-      if (relativeHash) {
-        relativeInfoHashes.set(url, relativeHash);
-        logger.debug(`Relative: ${url} with info hash: ${relativeHash}`);  
-        // Debug hash comparison
-        if (infoHash && infoHash === relativeHash) {
-          logger.debug(`MATCH FOUND: ${mURL} has same NIP-11 info as ${url}`);
-        }
-      }
-    }
-    
-    logger.debug(`Collected ${relativeInfoHashes.size} info hashes from relatives`);
-    relativeInfoHashes.forEach((hash, url) => {
-      logger.debug(`  ${url}: ${hash}`);
-    });
-    
-    const relativeInfoHashesArray = Array.from(relativeInfoHashes.values());
-
-    // Filter out empty strings for valid comparisons
-    const validInfoHashes = relativeInfoHashesArray.filter(hash => hash !== "");
-
-    logger.debug(`Valid info hashes for comparison: ${validInfoHashes.length}`);
-
-    // Order each relay in the hostname map by URL path depth.
-    const urlSegmentOrderedMap = relayArrToHostnameProtocolKeyedMap(
-      [...hostnameRelatives.map((r) => r.url), canonicalMURL]
-    );
-    const orderedFamily = (urlSegmentOrderedMap.get(`${PROTOCOL}//${HOSTNAME}`) || []).map((r) =>
-      normalizeURL(r)
-    );
-    
-    logger.debug(`Ordered family for ${PROTOCOL}//${HOSTNAME}:`);
-    orderedFamily.forEach((url, idx) => {
-      logger.debug(`  [${idx}] ${url}`);
-    });
-    
-    let orderedRelatives = orderedFamily.filter((r) => r !== canonicalMURL);
-    if (!orderedRelatives || orderedRelatives.length === 0) {
-      logger.error(`Ordered relatives not found for ${PROTOCOL}//${HOSTNAME}`);
-      return result;
-    }
-    const index = orderedFamily.indexOf(canonicalMURL);
-    
-    logger.debug(`Current URL index in ordered family: ${index}`);
-    logger.debug(`Ordered relatives: ${JSON.stringify(orderedRelatives)}`);
-
-    if (index === 0) {
-      logger.debug(`${mURL} has not been ignored and parent cleared, index: ${index}`);
+    // Within-hostname dedup (see function doc). The root is the canonical and
+    // is never ignored here.
+    if (isRootUrl(canonicalMURL)) {
       result.ignore = false;
       result.parent = "";
-    } else if (index > 0) {
-      result.parent = orderedRelatives[0];
-      logger.debug(`${mURL} is a child of ${orderedRelatives[0]}`);
-      
-      // Look up the info hash for the eldest (root) relative
-      const eldestRelativeHash = relativeInfoHashes.get(orderedRelatives[0]);
-      const foundAtIndex = validInfoHashes.indexOf(infoHash);
-      const eldestHasHash = Boolean(eldestRelativeHash);
-      const eldestIsRoot = isRootUrl(orderedRelatives[0]);
-      
-      // Fix the comparison logic - ensure we're comparing actual hashes, not undefined values
-      const isSameAsEldest = infoHash !== "" && eldestRelativeHash !== "" && infoHash === eldestRelativeHash;
-      
-      // Check if this relay has the same NIP-11 info as ANY of its relatives
-      const isSameAsAnyRelative = infoHash !== "" && validInfoHashes.includes(infoHash);
-      
-      const isSameAsOlderRelative = foundAtIndex < index;
-      const isSameAsYoungerRelative = foundAtIndex > index;
-      const pathnameIsPubkey = new URL(canonicalMURL).pathname.split("/").some((p) => isPubkey(p));
-      const pathnameContainsPubkey = containsPubkey(new URL(canonicalMURL).pathname);
-      const pathnameContainsHostname = new URL(canonicalMURL).pathname.includes(HOSTNAME);
-
-      logger.debug(`Detailed condition analysis for ${mURL}:`);
-      logger.debug(`  foundAtIndex: ${foundAtIndex}`);
-      logger.debug(`  eldestHasHash: ${eldestHasHash} (Eldest URL: ${orderedRelatives[0]})`);
-      logger.debug(`  eldestIsRoot: ${eldestIsRoot}`);
-      logger.debug(`  isSameAsEldest: ${isSameAsEldest}`);
-      logger.debug(`  isSameAsAnyRelative: ${isSameAsAnyRelative}`);
-      logger.debug(`  isSameAsOlderRelative: ${isSameAsOlderRelative}`);
-      logger.debug(`  isSameAsYoungerRelative: ${isSameAsYoungerRelative}`);
-      logger.debug(`  pathnameIsPubkey: ${pathnameIsPubkey}`);
-      logger.debug(`  pathnameContainsPubkey: ${pathnameContainsPubkey}`);
-      logger.debug(`  pathnameContainsHostname: ${pathnameContainsHostname}`);
-
-      const reason1 = "Eldest is root AND eldest has NIP11 data AND current segment NIP11 data is same as eldest relative";
-      const case1 = eldestIsRoot && eldestHasHash && isSameAsEldest;
-      const reason2 = "Eldest is root, current segment has NIP11 data AND NIP11 data is the same as any other relay in the hostname group";
-      const case2 = eldestIsRoot && infoHash !== "" && (isSameAsAnyRelative || isSameAsEldest);
-      const reason3 = "Eldest is not root AND eldest NIP11 is same as an older AND younger relative";
-      const case3 = !eldestIsRoot && isSameAsOlderRelative && isSameAsYoungerRelative;
-      const reason4 = "Eldest is root AND eldest has NIP11 data AND current segment has no NIP11 data";
-      const case4 = eldestIsRoot && eldestHasHash && !hasValidInfoHash;
-      const reason5 = "Eldest is not root AND eldest does not have NIP11 data AND current segment has no NIP11 data";
-      const case5 = !eldestIsRoot && !eldestHasHash && !hasValidInfoHash;
-      const reason6 = "Pubkey is in pathname";
-      const case6 = pathnameIsPubkey || pathnameContainsPubkey;
-      const reason7 = "Path includes hostname";
-      const case7 = pathnameContainsHostname;
-      
-      // New condition for URLs with paths that have the same NIP-11 info as any relative
-      const reason8 = "URL with path has identical NIP-11 info to another relay with same hostname";
-      const isPathUrl = (new URL(canonicalMURL).pathname !== "/" && new URL(canonicalMURL).pathname !== "");
-      const case8 = isPathUrl && infoHash !== "" && isSameAsAnyRelative;
-      
-      logger.debug(`Case evaluations: [1:${case1}] [2:${case2}] [3:${case3}] [4:${case4}] [5:${case5}] [6:${case6}] [7:${case7}] [8:${case8}]`);
-      
-      if (case1 || case2 || case3 || case4 || case5 || case6 || case7 || case8) {
-        if (case2) logger.warn(`${mURL} | Ignored because: ${reason2}`);
-        if (case1) logger.warn(`${mURL} | Ignored because: ${reason1}`);
-        if (case3) logger.warn(`${mURL} | Ignored because: ${reason3}`);
-        if (case4) logger.warn(`${mURL} | Ignored because: ${reason4}`);
-        if (case5) logger.warn(`${mURL} | Ignored because: ${reason5}`);
-        if (case6) logger.warn(`${mURL} | Ignored because: ${reason6}`);
-        if (case7) logger.warn(`${mURL} | Ignored because: ${reason7}`);
-        if (case8) logger.warn(`${mURL} | Ignored because: ${reason8}`);
-        logger.debug(`${mURL} has been ignored because of: case [1:${case1}] [2:${case2}] [3:${case3}] [4:${case4}] [5:${case5}] [6:${case6}] [7:${case7}] [8:${case8}]`);
-        result.ignore = true;
-
-        // Compute the reason for ignoring
-        let reason = "Duplicated relay with same hostname";
-        if (case1) reason = reason1;
-        if (case2) reason = reason2;
-        if (case3) reason = reason3;
-        if (case4) reason = reason4;
-        if (case5) reason = reason5;
-        if (case6) reason = reason6;
-        if (case7) reason = reason7;
-        if (case8) reason = reason8;
-
-        if (result.parent) {
-          reason += ` (parent: ${result.parent})`;
-        }
-
-        // Add to IgnoreListSync if it has a parent (i.e., is a deduplication ignore, not remote sync)
-        // Note: canonicalMURL (not raw mURL) — see the Phase 21 item 5 rationale
-        // comment at the same-NIP-11 early-return block above. Defensive-deny
-        // branch retains raw mURL (Phase 18 Fix 1, out of scope).
-        if (result.parent && ignoreListSyncInstance) {
-          ignoreListSyncInstance.addToIgnoreList(canonicalMURL, reason);
-        }
-
-        // Generate deletion event when a relay is ignored
-        if (appConfig) {
-          await deleteRelayCheckEvent(canonicalMURL, reason, appConfig);
-        }
-      } else {
-        result.ignore = false;
-        logger.debug(`${mURL} was NOT ignored as no conditions matched`);
-      }
-    } else {
-      result.ignore = true;
-      logger.error(`CRITICAL ERROR! relayHostnameDedup(): ${mURL} not found in hostnameGroup`);
+      logger.debug(`${mURL} is the root URL for ${HOSTNAME} — canonical, never ignored`);
+      return result;
     }
+
+    let siblings: string[];
+    try {
+      siblings = getRelaysByHostname(HOSTNAME, PROTOCOL);
+    } catch (e) {
+      logger.error(`getRelaysByHostname failed for ${HOSTNAME}: ${getErrorMessage(e)}`);
+      siblings = [];
+    }
+    const family = siblings.filter((u) => u !== canonicalMURL);
+
+    if (family.length === 0) {
+      // No known sibling on this hostname to dedupe against → keep.
+      result.ignore = false;
+      result.parent = "";
+      logger.debug(`No known siblings for ${mURL} on ${HOSTNAME} — keeping`);
+      return result;
+    }
+
+    // Root sibling wins, else shortest. Self is included so a shorter self is
+    // never ignored in favour of a longer sibling.
+    const ranked = [...family, canonicalMURL].sort((a, b) => {
+      if (a.length !== b.length) return a.length - b.length;
+      return a < b ? -1 : a > b ? 1 : 0;
+    });
+    const canonical = ranked.find((u) => isRootUrl(u)) ?? ranked[0];
+
+    if (canonical === canonicalMURL) {
+      // Self is the canonical (shortest known form, no root sibling) → keep.
+      result.ignore = false;
+      result.parent = "";
+      logger.debug(`${mURL} is the canonical (shortest) for ${HOSTNAME} — keeping`);
+      return result;
+    }
+
+    // Canonical reads NIP-11 from stored relay_info so an offline canonical
+    // still contributes its last-known fingerprint.
+    const selfInfo =
+      (result?.info?.data && Object.keys(result.info.data).length > 0)
+        ? result.info.data
+        : (getRelayInfo(canonicalMURL)?.info ?? null);
+    const selfHash = createInfoHash(selfInfo);
+    const canonicalHash = createInfoHash(getRelayInfo(canonical)?.info ?? null);
+
+    // Distinct only if the path has its own NIP-11 that differs from the
+    // canonical. Caveat: if the canonical has no fingerprint but the path does,
+    // we keep the path (cannot assert they are the same relay). No NIP-11 at
+    // all always loses to the canonical.
+    const provesDistinctFunctionality =
+      selfHash !== "" && (canonicalHash === "" || selfHash !== canonicalHash);
+
+    logger.debug(
+      `Dynamic dedup ${mURL}: canonical=${canonical} selfHash=${selfHash || "none"} canonicalHash=${canonicalHash || "none"} distinct=${provesDistinctFunctionality}`,
+    );
+
+    if (provesDistinctFunctionality) {
+      result.ignore = false;
+      result.parent = "";
+      logger.debug(`${mURL} has distinct NIP-11 from canonical ${canonical} — kept as a distinct relay`);
+      return result;
+    }
+
+    // Canonical wins.
+    result.ignore = true;
+    result.parent = canonical;
+    const reason = selfHash === ""
+      ? `No NIP-11 to prove distinct functionality from canonical ${canonical}`
+      : `Same NIP-11 functionality as canonical ${canonical}`;
+    logger.warn(`${mURL} | Ignored because: ${reason}`);
+    if (ignoreListSyncInstance) {
+      ignoreListSyncInstance.addToIgnoreList(canonicalMURL, reason);
+    }
+    if (appConfig) {
+      await deleteRelayCheckEvent(canonicalMURL, reason, appConfig);
+    }
+    return result;
   } catch (error) {
     logger.error(`Error in relayHostnameDedup: ${error}`);
   }

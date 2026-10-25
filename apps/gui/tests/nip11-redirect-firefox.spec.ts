@@ -52,18 +52,13 @@ test('hostile NIP-11 302 does not follow sentinel or navigate parent frame', asy
 		await page.waitForTimeout(500);
 		mainFrameNavigations.length = 0;
 		const initialFrameUrl = page.url();
-		const errorCode = await page.evaluate(async (relay) => {
-			const modulePath = '/src/lib/services/Nip11Service/fetch-relay-information.ts';
-			const { fetchRelayInformation } = await import(/* @vite-ignore */ modulePath);
-			try {
-				await fetchRelayInformation(relay, { timeoutMs: 2_000 });
-				return null;
-			} catch (error) {
-				return (error as { code?: string }).code ?? 'unknown';
-			}
+		const result = await page.evaluate(async (relay) => {
+			const modulePath = '/src/lib/services/Nip11Service/index.ts';
+			const { Nip11Service } = await import(/* @vite-ignore */ modulePath);
+			return (await new Nip11Service().check(relay, { timeoutMs: 2_000 }))?.json ?? null;
 		}, `ws://127.0.0.1:${address.port}`);
 
-		expect(errorCode).toBe('fetch-failed');
+		expect(result).toBeNull();
 		expect(nip11Hits).toBe(1);
 		expect(hits['/sentinel'] ?? 0).toBe(0);
 		expect(mainFrameNavigations).toEqual([]);

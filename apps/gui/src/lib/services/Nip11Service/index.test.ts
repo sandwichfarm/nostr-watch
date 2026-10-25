@@ -10,30 +10,24 @@ describe('Nip11Service', () => {
 		vi.unstubAllGlobals();
 	});
 
-	it('creates worker for arbitrary automatic relay probes', async () => {
-		const instances: Array<{ postMessage: ReturnType<typeof vi.fn> }> = [];
-
-		class WorkerStub {
-			onmessage: ((message: MessageEvent) => void) | null = null;
-			onerror: ((event: Event) => void) | null = null;
-			postMessage = vi.fn();
-
-			constructor() {
-				instances.push({ postMessage: this.postMessage });
-			}
-		}
-
-		vi.stubGlobal('Worker', WorkerStub);
-
-		const service = new Nip11Service();
-		const pending = service.check('wss://attacker.example/', { timeoutMs: 20 });
-
-		await vi.waitFor(() => {
-			expect(instances[0]?.postMessage).toHaveBeenCalledWith({
-				relay: 'wss://attacker.example/',
-				timeoutMs: 20
-			});
+	it('keeps automatic relay probes out of a tab-owned dedicated worker', async () => {
+		const fetchRelay = vi.fn().mockResolvedValue({
+			name: 'arbitrary relay',
+			description: 'loaded through the isolated remote-fetch boundary'
 		});
-		await expect(pending).resolves.toBeUndefined();
+		vi.stubGlobal(
+			'Worker',
+			class {
+				constructor() {
+					throw new Error('Dedicated workers retain the owning tab id.');
+				}
+			}
+		);
+
+		const service = new Nip11Service(fetchRelay as any);
+		const result = await service.check('wss://attacker.example/', { timeoutMs: 20 });
+
+		expect(fetchRelay).toHaveBeenCalledWith('wss://attacker.example/', { timeoutMs: 20 });
+		expect(result?.json).toMatchObject({ name: 'arbitrary relay' });
 	});
 });

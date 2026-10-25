@@ -16,7 +16,7 @@
     import Chart from 'chart.js/auto';
     import { decodeGeohash } from '$lib/utils/geohash';
     import { browser } from '$app/environment';
-    import { verifyNip05 } from '$lib/services/Nip05Service/verify-nip05';
+    import { verifyNip05Isolated } from '$lib/services/Nip05Service/verify-nip05';
     import 'leaflet/dist/leaflet.css';
 
     export const prerender = false;
@@ -60,7 +60,7 @@
     // Validate NIP-05 when monitor data is available
     $: if (browser && monitorData?.nip05 && pubkey) {
         nip05Status = 'pending';
-        verifyNip05(pubkey, monitorData.nip05).then(valid => {
+        verifyNip05Isolated(pubkey, monitorData.nip05).then(valid => {
             nip05Status = valid ? 'valid' : 'invalid';
         });
     }

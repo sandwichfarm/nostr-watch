@@ -1,3 +1,4 @@
+import { fetchRemote } from '$lib/utils/remote-fetch';
 import { readResponseBodyWithLimit } from '$lib/utils/response-body';
 
 export type VerifyNip05Options = {
@@ -57,3 +58,9 @@ export const verifyNip05 = async (
 		clearTimeout(timeout);
 	}
 };
+
+export const verifyNip05Isolated = (
+	pubkey: string,
+	identifier: string,
+	options: Omit<VerifyNip05Options, 'fetchImpl'> = {}
+): Promise<boolean> => verifyNip05(pubkey, identifier, { ...options, fetchImpl: fetchRemote });

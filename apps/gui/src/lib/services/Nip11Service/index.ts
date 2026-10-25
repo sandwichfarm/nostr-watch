@@ -1,154 +1,103 @@
-import { get, type Writable } from 'svelte/store';
+import { get } from 'svelte/store';
 
 import type { Route66 } from '@nostrwatch/route66';
 import { type Nip11 as Nip11Type, type RelayInformation } from '@nostrwatch/route66/models';
+import PQueue from 'p-queue';
 
 import { nip11sLocal } from '$lib/stores/nip11s-local.js';
 import { setRelayError } from '$lib/stores/relay-errors.js';
-import type { SerializedNip11FetchError } from './fetch-relay-information.js';
+import { fetchRemote } from '$lib/utils/remote-fetch.js';
+import { fetchRelayInformation } from './fetch-relay-information.js';
 
-// import { relaysErrors } from '$lib/stores/relay-errors';
-
-import PQueue from 'p-queue';
-const queue = new PQueue({concurrency: 10});
-
-export type Nip11ServiceMessage = {
-    relay: string,
-    nip11?: RelayInformation
-    error?: SerializedNip11FetchError | string
-}
+const queue = new PQueue({ concurrency: 10 });
 
 type Nip11Constructor = new (info: RelayInformation) => Nip11Type;
 
-type PendingRequest = {
-    promise: Promise<Nip11Type | undefined>;
-    resolve: (value: Nip11Type | undefined) => void;
-    timeoutId: ReturnType<typeof setTimeout>;
+type Nip11CheckOptions = {
+	timeoutMs?: number;
 };
 
-type Nip11CheckOptions = {
-    timeoutMs?: number;
-};
+export type Nip11Fetcher = (relay: string, options: Nip11CheckOptions) => Promise<RelayInformation>;
+
+const fetchRelayInformationIsolated: Nip11Fetcher = (relay, options) =>
+	fetchRelayInformation(relay, {
+		...options,
+		fetchImpl: fetchRemote
+	});
 
 export class Nip11Service {
-    private worker: Worker | null = null;
-    private pending = new Map<string, PendingRequest>();
-    private nip11Ctor: Nip11Constructor | null = null;
-    private nip11CtorPromise: Promise<Nip11Constructor> | null = null;
+	private pending = new Map<string, Promise<Nip11Type | undefined>>();
+	private nip11Ctor: Nip11Constructor | null = null;
+	private nip11CtorPromise: Promise<Nip11Constructor> | null = null;
 
-    constructor(){
-        // Worker is created lazily on first request to improve load speed.
-    }
+	constructor(private readonly fetchRelay: Nip11Fetcher = fetchRelayInformationIsolated) {}
 
-    find(relay: string): Nip11Type | undefined {
-        let $nip11sLocal: Map<string, Nip11Type> = get(nip11sLocal)
-        return $nip11sLocal.get(relay)
-    }
+	find(relay: string): Nip11Type | undefined {
+		return get(nip11sLocal).get(relay);
+	}
 
-    async check(relay: string, options: Nip11CheckOptions = {}): Promise<Nip11Type | undefined> {
-        const timeoutMs = options.timeoutMs ?? 5_000;
+	async check(relay: string, options: Nip11CheckOptions = {}): Promise<Nip11Type | undefined> {
+		const existing = this.find(relay);
+		if (existing) return existing;
 
-        const existing = this.find(relay);
-        if (existing) return existing;
+		const inFlight = this.pending.get(relay);
+		if (inFlight) return inFlight;
 
-        const inFlight = this.pending.get(relay);
-        if (inFlight) return inFlight.promise;
+		const timeoutMs = options.timeoutMs ?? 5_000;
+		const pending = queue
+			.add(() => this.load(relay, { timeoutMs }))
+			.then((result) => result ?? undefined)
+			.catch((error: unknown) => {
+				setRelayError(
+					relay,
+					'schema',
+					'nip11',
+					error instanceof Error ? error.message : String(error)
+				);
+				return undefined;
+			})
+			.finally(() => this.pending.delete(relay));
 
-        return (await queue.add(() => this.request(relay, timeoutMs))) ?? undefined;
-    }
+		this.pending.set(relay, pending);
+		return pending;
+	}
 
-    private async request(relay: string, timeoutMs: number): Promise<Nip11Type | undefined> {
-        const existing = this.find(relay);
-        if (existing) return existing;
+	private async load(relay: string, options: Nip11CheckOptions): Promise<Nip11Type | undefined> {
+		const existing = this.find(relay);
+		if (existing) return existing;
 
-        const inFlight = this.pending.get(relay);
-        if (inFlight) return inFlight.promise;
+		const relayInformation = await this.fetchRelay(relay, options);
+		const Nip11Ctor = await this.getNip11Ctor();
+		const nip11 = new Nip11Ctor(relayInformation);
 
-        const worker = this.ensureWorker();
+		nip11sLocal.update((map: Map<string, Nip11Type>) => {
+			map.set(relay, nip11);
+			return map;
+		});
 
-        let resolveFn: (value: Nip11Type | undefined) => void = () => {};
-        const promise = new Promise<Nip11Type | undefined>((resolve) => {
-            resolveFn = resolve;
-        });
+		void import('$lib/utils/lifecycle')
+			.then(({ instance }) => instance())
+			.then(($route66: Route66) =>
+				$route66?.adapters?.cacheAdapter?.upsertNip11?.(relay, nip11.json)
+			)
+			.catch(() => {});
 
-        const timeoutId = setTimeout(() => {
-            this.pending.delete(relay);
-            resolveFn(undefined);
-        }, timeoutMs + 250);
+		return nip11;
+	}
 
-        this.pending.set(relay, { promise, resolve: resolveFn, timeoutId });
-
-        worker.postMessage({ relay, timeoutMs });
-
-        return promise;
-    }
-
-    private ensureWorker(): Worker {
-        if (this.worker) return this.worker;
-        this.worker = new Worker(new URL('./nip11.worker.ts', import.meta.url), { type: 'module' });
-        this.worker.onmessage = (message) => void this.onmessage(message as MessageEvent<Nip11ServiceMessage>);
-        this.worker.onerror = () => {
-            // Best-effort: resolve pending requests as undefined (errors already surfaced in UI stores).
-            for (const [relay, pending] of this.pending.entries()) {
-                clearTimeout(pending.timeoutId);
-                pending.resolve(undefined);
-                this.pending.delete(relay);
-            }
-        };
-        return this.worker;
-    }
-
-    private async getNip11Ctor(): Promise<Nip11Constructor> {
-        if (this.nip11Ctor) return this.nip11Ctor;
-        if (!this.nip11CtorPromise) {
-            this.nip11CtorPromise = import('@nostrwatch/route66/models')
-                .then(({ Nip11 }) => {
-                    this.nip11Ctor = Nip11 as unknown as Nip11Constructor;
-                    return this.nip11Ctor;
-                })
-                .catch((e) => {
-                    console.error('Error importing Nip11:', e);
-                    throw e;
-                });
-        }
-        return this.nip11CtorPromise;
-    }
-
-    private async onmessage(message: MessageEvent<Nip11ServiceMessage>){
-        ////console.log('N11S recieved nip11 service message', message)
-        const { relay, nip11:_nip11, error } = message.data;
-
-        const pending = this.pending.get(relay);
-        if (pending) {
-            clearTimeout(pending.timeoutId);
-            this.pending.delete(relay);
-        }
-
-        if (error) {
-            setRelayError(relay, 'schema', 'nip11', typeof error === 'string' ? error : error.message);
-            pending?.resolve(undefined);
-            return;
-        }
-        if (!_nip11) {
-            pending?.resolve(undefined);
-            return;
-        }
-
-        const Nip11Ctor = await this.getNip11Ctor();
-        const nip11 = new Nip11Ctor(_nip11 as RelayInformation);
-
-        nip11sLocal.update((map: Map<string, Nip11Type>) => {
-            map.set(relay, nip11);
-            return map;
-        });
-
-        import('$lib/utils/lifecycle')
-            .then(({ instance }) => instance())
-            .then(($route66: Route66) => {
-                void $route66?.adapters?.cacheAdapter?.upsertNip11?.(relay, nip11.json);
-            })
-            .catch(() => {});
-
-        pending?.resolve(nip11);
-    }
+	private async getNip11Ctor(): Promise<Nip11Constructor> {
+		if (this.nip11Ctor) return this.nip11Ctor;
+		if (!this.nip11CtorPromise) {
+			this.nip11CtorPromise = import('@nostrwatch/route66/models')
+				.then(({ Nip11 }) => {
+					this.nip11Ctor = Nip11 as unknown as Nip11Constructor;
+					return this.nip11Ctor;
+				})
+				.catch((error) => {
+					console.error('Error importing Nip11:', error);
+					throw error;
+				});
+		}
+		return this.nip11CtorPromise;
+	}
 }

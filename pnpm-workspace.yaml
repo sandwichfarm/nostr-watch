@@ -73,7 +73,9 @@ overrides:
   fast-uri: '>=3.1.2'
   follow-redirects: '>=1.15.12'
   immutable: '>=5.1.5'
-  js-yaml: '>=4.1.2'
+  # Preserve safeLoad for v3 consumers while applying compatible security updates.
+  js-yaml@3: ^3.15.2
+  js-yaml@4: ^4.1.2
   read-yaml-file: 2.1.0
   '@babel/core': '>=7.29.1'
   protocol-buffers-schema: '>=3.6.1'

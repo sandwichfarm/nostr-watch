@@ -133,6 +133,15 @@ export class UniversalWebSocket {
     }
   }
 
+  /** Create an independent connection with the same transport and proxy settings. */
+  fork(relay: string = this.relay): UniversalWebSocket {
+    return new UniversalWebSocket(relay, this.protocols, {
+      ...this.options,
+      wsOptions: this.options.wsOptions ? { ...this.options.wsOptions } : undefined,
+      autoConnect: false,
+    });
+  }
+
   static async create(
     relay: string,
     protocols?: string | string[],

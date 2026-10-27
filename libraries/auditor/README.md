@@ -151,9 +151,90 @@ export class FilterLimit extends SuiteTest implements ISuiteTest {
 }
 ```
 
+### NIP-01 conversation checks
+
+The NIP-01 suite also includes independent, multi-step checks:
+
+| Checks | Behavior exercised |
+|--------|--------------------|
+| `FilterIds`, `FilterEmptyLists` | Exact IDs, list alternatives, and empty lists matching nothing |
+| `FilterSemantics` | AND within a filter, OR across filters, uppercase tags, first tag value indexing |
+| `FilterInclusiveRange` | Inclusive `since` and `until`, including equal bounds |
+| `FilterUnknownKeys` | Unknown fields preserve the meaning of recognized filter fields |
+| `FilterLimitOrder`, `LimitLive` | Newest-first historical limits, lexical ID ties, zero historical limit, continuing live delivery |
+| `SubscriptionLifecycle`, `SubscriptionIsolation` | REQ replacement, CLOSE, and subscription IDs scoped to each connection |
+| `EventValidation`, `EventPersistence` | Invalid signature/ID rejection, correlated OK messages, regular event storage, duplicate publication |
+| `ReplaceableEvents`, `AddressableEvents`, `EphemeralEvents` | Replacement and timestamp ties, independent `d` addresses, live-only ephemeral events |
+| `ChildPath` | Differential queries at a random child of the configured relay path |
+
+Checks use fresh signed events and isolated authors/IDs to establish positive
+prerequisites before testing exclusions or live behavior. They are classified
+`low-write`/`normal`, except the read-only `ChildPath` check. Regular test events
+may remain on the relay; events use an `auditor-nip01-` content marker and test
+keys. A write-policy rejection or unavailable baseline is recorded as skipped,
+not as successful conformance. An incomplete conversation has `pass: false`,
+including when an earlier assertion succeeded. Timeouts, malformed responses,
+and premature connection closure are failures.
+
+Suite aggregation excludes explicitly skipped checks from its pass decision and
+sets `incomplete: true` whenever any check was skipped. A suite with no evaluated
+checks has `skipped: true` and `pass: false`. Inspect each test's skipped assertions
+and the suite's `incomplete` flag before treating an audit as complete coverage.
+
+[NIP-01](https://github.com/nostr-protocol/nips/blob/master/01.md) includes
+mandatory requirements, recommendations, and event-kind conventions. These
+checks report the observed behavior; their results should be interpreted with
+the corresponding requirement strength. In particular, the current spec allows
+`CLOSED` for unsupported filter elements. `FilterUnknownKeys` reports an explicit
+rejection as unsupported interoperability, while silently changing the results
+fails the check.
+
+`ChildPath` compares a stable parent result with a randomly generated child path,
+then confirms matching results with an exact-ID query. A child returning different
+events or a different subscription policy demonstrates changed behavior. Identical
+nonempty results produce a **possible alias** diagnostic with `pass: false` and a
+skipped assertion: replicated independent relays and differences outside these
+queries cannot be ruled out. Empty responses, changing parent data, opaque
+connection failures, and silent children are also inconclusive. This check does
+not claim that opening a child connection alone violates NIP-01. Observations are
+retained in `result.suites.Nip01.data.ChildPath` alongside other tests' data.
+
+### Extending multi-step tests
+
+Use `ConversationTest` for exchanges spanning several requests, live events, or
+independent connections. Implement `execute()` and obtain owned connections with
+`await this.openSession(url?)`. `MessageSession.send()` sends JSON arrays;
+`waitFor(predicate, {after, timeoutMs})` searches ordered history and future
+messages, so immediate replies are not lost. Use a history offset to distinguish
+reused subscription IDs. The runner bounds the entire conversation and releases
+all its sessions on success, failure, timeout, or abort. Connection forks preserve
+the configured transport, proxy agent, and protocols.
+
+Transport handling lives in `MessageSession`; NIP-01 request/publish correlation
+and event validation live in `Nip01/utils/RelayConversation.ts`; each behavior
+remains a separate registered test module. Sample-dependent `SuiteTest` checks
+still use ingestors. Missing samples do not suppress independent conversation
+checks.
+
+Run deterministic tests without a public relay:
+
+```sh
+pnpm --filter @nostrwatch/websocket build
+pnpm --filter @nostrwatch/auditor test
+pnpm --filter @nostrwatch/auditor build
+pnpm --filter @nostrwatch/auditor test:built
+```
+
+The local WebSocket fixture has separate behavior faults for filters, limits,
+subscriptions, event storage, and signatures. Tests exercise both conforming
+behavior and each faulty variant, plus the public `Auditor` manifest path and
+transport cleanup. The schema-validation fixture is self-contained and requires
+no sibling package's generated artifacts.
+
 ## Known Limitations
 
-- **Incomplete filter range testing:** Ambiguity handling in filter range selection is unimplemented (TODO in `FilterRange.ts`). Filter range selection for timestamp-based queries may produce incorrect ranges in edge cases. No workaround is available at this time. See [CONCERNS.md — Incomplete Filter Range Testing](../../.planning/codebase/CONCERNS.md#incomplete-filter-range-testing).
+- **Sample-dependent checks:** Legacy filter checks depend on available relay history. The independent `FilterInclusiveRange` and other conversation checks use their own accepted events, subject to the relay's write policy.
+- **Child-path identity:** Finite read probes cannot establish that two endpoints are the same relay. Possible aliases remain inconclusive and include the observed evidence.
 
 ## Agent Skills
 

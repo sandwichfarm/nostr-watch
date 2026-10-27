@@ -224,6 +224,8 @@ const serverConfig = {
     outdir: 'dist/server',
     platform: 'node',
     format: 'esm',
+    // Bundled CommonJS dependencies still require Node builtins at runtime.
+    banner: { js: 'import { createRequire } from "node:module"; const require = createRequire(import.meta.url);' },
     allowOverwrite: true,
     plugins: [
         babelPlugin,

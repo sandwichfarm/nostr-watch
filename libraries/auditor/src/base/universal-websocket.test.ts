@@ -107,5 +107,34 @@ describe("UniversalWebSocket", () => {
     MockWebSocket.instances[0]?.emitMessage("world");
     expect(onMessage).toHaveBeenCalledTimes(1);
   });
+
+  it("forks a separate lazy connection without sharing listeners", async () => {
+    const parent = new UniversalWebSocket("wss://example.com/relay", ["nostr"], { autoConnect: false, connectTimeout: 50 });
+    const listener = vi.fn();
+    parent.on("message", listener);
+    const child = parent.fork("wss://example.com/relay/child");
+    expect(MockWebSocket.instances).toHaveLength(0);
+    expect(child.url).toBe("wss://example.com/relay/child");
+    await parent.connect();
+    await child.connect();
+    MockWebSocket.instances[1].emitMessage("child only");
+    expect(listener).not.toHaveBeenCalled();
+    expect(parent.CONNECTED).toBe(true);
+    child.terminate();
+    expect(parent.CONNECTED).toBe(true);
+    expect(parent.fork().url).toBe("wss://example.com/relay");
+    parent.terminate();
+  });
+
+  it("preserves proxy and transport configuration when forking", () => {
+    const agent = { proxy: "tor" };
+    const wsOptions = { headers: { "x-test": "auditor" }, handshakeTimeout: 30 };
+    const parent = new UniversalWebSocket("wss://example.com", ["nostr"], { agent, wsOptions, connectTimeout: 75, autoConnect: false });
+    const child = parent.fork();
+    expect((child as any).protocols).toEqual(["nostr"]);
+    expect((child as any).options).toEqual({ agent, wsOptions, connectTimeout: 75, autoConnect: false });
+    expect((child as any).options.wsOptions).not.toBe(wsOptions);
+    expect((child as any).options.agent).toBe(agent);
+  });
 });
 

@@ -38,6 +38,7 @@ export interface ISuiteResult {
   data: Record<string, any> | null; 
   messages: MessagesMapType;
   skipped?: boolean;
+  incomplete?: boolean;
 }
 
 export const defaultSuiteResult: ISuiteResult = {
@@ -213,46 +214,6 @@ export abstract class Suite implements ISuite {
     Emitter.emit('auditor.suite:samples', this.slug, poops);
   }
 
-  private countSampleItems(samples: ISuiteSampleData | undefined): number {
-    if (!samples) return 0;
-    let total = 0;
-    for (const value of Object.values(samples)) {
-      if (Array.isArray(value)) {
-        total += value.length;
-        continue;
-      }
-      if (value instanceof Set) {
-        total += value.size;
-        continue;
-      }
-      if (value && typeof value === 'object') {
-        total += Object.keys(value).length > 0 ? 1 : 0;
-        continue;
-      }
-      if (value !== undefined && value !== null && value !== '') {
-        total += 1;
-      }
-    }
-    return total;
-  }
-
-  private skippedTestResult(testKey: string, message: string): ISuiteTestResult {
-    return {
-      testKey,
-      pass: false,
-      passrate: 0,
-      passed: [],
-      failed: [],
-      skipped: [
-        { type: 'behavior', code: 'SKIPPED', message, pass: false, skipped: true } as any,
-      ],
-      notices: [],
-      filters: [],
-      errors: [],
-      events: [],
-    } satisfies ISuiteTestResult;
-  }
-
   public async test(): Promise<ISuiteResult> {
     this.logger.info(`BEGIN: ${this.slug} Suite`, 1);
     
@@ -261,24 +222,7 @@ export abstract class Suite implements ISuite {
       await this.sampler.sample();
       this.toilet();
 
-      const samples = this.state.get<ISuiteSampleData>('samples');
-      const totalSamples = this.countSampleItems(samples);
-      if (totalSamples === 0) {
-        const reason = 'Skipped: failed to obtain samples';
-        for (const test of Object.entries(this.testers)) {
-          const [testName] = test;
-          Emitter.emit('auditor.suite.test:start', this.slug, testName);
-          const result = this.skippedTestResult(testName, reason);
-          Emitter.emit('auditor.suite.test:finish', this.slug, result);
-          this.resulter.set('tests', testName, result);
-        }
-        this.resulter.set('pass', false);
-        this.resulter.set('reason', reason);
-        this.resulter.set('skipped', true);
-        this.resulter.set('messages', this.messages);
-        this.beforeResults();
-        return this.resulter.result
-      }
+      // Sample-dependent tests decide whether their own prerequisites are available.
     }
 
     for(const test of Object.entries(this.testers)) {
@@ -289,7 +233,7 @@ export abstract class Suite implements ISuite {
       Emitter.emit('auditor.suite.test:finish', this.slug, results);
       this.resulter.set('tests', testName, results);
       if(suiteTest?.data !== null) {
-        this.resulter.set('data', { [testName]: suiteTest.data });
+        this.resulter.set('data', { ...this.resulter.result.data, [testName]: suiteTest.data });
       }
       await new Promise(resolve => setTimeout(resolve, 500));
     }
@@ -302,9 +246,13 @@ export abstract class Suite implements ISuite {
   protected beforeResults() {}
 
   evaluate() {
-    const tests = this.resulter.get('tests');
-    const failed = Object.values(tests).filter( test => test.pass === false );
-    return failed.length === 0;
+    const tests = Object.values(this.resulter.result.tests);
+    const evaluated = tests.filter(test => !(test.skipped.length > 0 && test.failed.length === 0));
+    const skipped = tests.length > 0 && evaluated.length === 0;
+    this.resulter.set('skipped', skipped);
+    this.resulter.set('incomplete', tests.some(test => test.skipped.length > 0));
+    this.resulter.set('reason', skipped ? 'Skipped: no checks could be evaluated' : '');
+    return evaluated.length > 0 && evaluated.every(test => test.pass);
   }
 
   setupHandlers(): void {

@@ -25,7 +25,9 @@ if (Deno.args[0] === 'ingress') {
   Deno.exit(0);
 }
 
-const url = 'ws://relay.fips:7777';
+const npub = Deno.env.get('FIPS_RELAY_NPUB');
+assert(npub, 'Missing fixture relay identity');
+const url = `ws://${npub}.fips:7777`;
 assert(parseRelayNetwork(url) === 'fips', 'Seeder classifier lost FIPS');
 const nocap = new Nocap(url, { timeout: 8000, logLevel: 'error' });
 await nocap.useAdapters([WebsocketAdapterDefault, InfoAdapterDefault, DnsAdapterDefault]);

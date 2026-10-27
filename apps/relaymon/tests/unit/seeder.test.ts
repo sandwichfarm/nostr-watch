@@ -2,6 +2,7 @@ import { assertEquals, assertExists, assert } from "https://deno.land/std@0.218.
 import { RelaySeeder, SeederOptions } from "../../src/core/seeder.ts";
 import { DB } from "https://deno.land/x/sqlite/mod.ts";
 import * as nostrwatchDB from "npm:@nostrwatch/db";
+import { getPublicKey, nip19 } from "nostr-tools";
 
 // Initialize a global test database once
 const GLOBAL_TEST_DB_PATH = `/tmp/test-seeder-global-${Date.now()}.db`;
@@ -94,6 +95,19 @@ function cleanupTestDB(dbPath: string) {
 }
 
 // Test suite
+seederTest("RelaySeeder - FIPS identity hostname passes but npub paths stay blocked", async () => {
+  const npub = nip19.npubEncode(getPublicKey(new Uint8Array(32).fill(1)));
+  const url = `ws://${npub}.fips:7777/inbox`;
+  const options = createMockSeederOptions(['config'], [url, `${url}/${npub}`]);
+  options.options.allowedNetworks = ['fips'];
+  await new RelaySeeder(options).seed();
+  assertEquals(nostrwatchDB.db.query('SELECT url, network FROM relay_status WHERE url LIKE ?', [`%${npub}%`]), [[url, 'fips']]);
+  nostrwatchDB.db.query('DELETE FROM relay_status WHERE url = ?', [url]);
+  options.options.allowedNetworks = ['clearnet'];
+  await new RelaySeeder(options).seed();
+  assertEquals(nostrwatchDB.db.query('SELECT url FROM relay_status WHERE url LIKE ?', [`%${npub}%`]), []);
+});
+
 seederTest("RelaySeeder - constructor initializes with config source", () => {
   const options = createMockSeederOptions(["config"], ["wss://relay1.example.com", "wss://relay2.example.com"]);
   const seeder = new RelaySeeder(options);

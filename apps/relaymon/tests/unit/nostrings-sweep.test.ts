@@ -37,6 +37,7 @@
 
 import { assertEquals, assert } from "https://deno.land/std@0.218.2/assert/mod.ts";
 import { VERSION } from "@nostrwatch/nostrings";
+import { getPublicKey, nip19 } from "nostr-tools";
 import { initializeDB, db, storeRelayInfo, storeDeltaState, storePeriodSnapshot } from "../../src/db/db.ts";
 import { rerunNostringsSweepMigration } from "../../src/utils/remediation.ts";
 import { setConfig } from "../../src/utils/hostnames.ts";
@@ -137,6 +138,21 @@ function queueEntriesFor(url: string): number {
     [url],
   )[0][0] as number;
 }
+
+sweepTest("FIPS identity survives sweep; npub paths and suffix lookalikes are ignored", async () => {
+  resetSweepState();
+  const npub = nip19.npubEncode(getPublicKey(new Uint8Array(32).fill(1)));
+  const valid = `ws://${npub}.fips:7777/`;
+  const rejected = [`${valid}${npub}`, `ws://${npub}.fips.example.com/`];
+  for (const url of [valid, ...rejected]) seedRow({ url });
+  await rerunNostringsSweepMigration();
+  assertEquals(db.query('SELECT ignore FROM relay_status WHERE url = ?', [valid])[0][0], 0);
+  assertEquals(queueEntriesFor(valid), 0);
+  for (const url of rejected) {
+    assertEquals(db.query('SELECT ignore FROM relay_status WHERE url = ?', [url])[0][0], 1);
+    assertEquals(queueEntriesFor(url), 1);
+  }
+});
 
 // ============================================================================
 // Case 1: Unparseable URL → hard-deleted + all satellite tables cleared

@@ -156,13 +156,21 @@ export const sanitizeRelayUrl = (relay: string): string => {
 };
 
 /**
- * qualifyRelayUrl
- * 
- * qualify relay URLs with pessimistic invalidation pattern as opposed to validation pattern
- * 
- * @param {string} relay - Relay URL
- * @returns {boolean} Whether the relay URL qualifies based on various criteria
+ * Preserve npub rejection everywhere except a parsed .fips hostname.
+ * Callers normalize case and URI escapes before qualification as usual.
  */
+export const hasDisallowedNpub = (relay: string, url: URL = new URL(relay)): boolean => {
+  const npub = /(npub)[A-z0-9]{0,60}/;
+  if (!url.hostname.toLowerCase().replace(/\.$/, '').endsWith('.fips')) {
+    return npub.test(relay);
+  }
+  // Only the FIPS hostname is exempt. Keep credentials, query, fragment, and
+  // the raw path (including dot segments erased by URL parsing) protected.
+  const outsideAuthority = relay.replace(/^[a-z][a-z0-9+.-]*:\/\/[^/?#\\]*/i, '');
+  return [url.username, url.password, url.pathname, outsideAuthority].some(part => npub.test(part));
+};
+
+/** Qualify relay URLs using the shared rejection rules. */
 export const qualifyRelayUrl = (maybeRelay: string): boolean => {
 
   let url: URL;
@@ -210,7 +218,7 @@ export const qualifyRelayUrl = (maybeRelay: string): boolean => {
 
   if ( maybeRelay.match(/(127\.)\d{0,3}(\.)\d{0,3}(\.)\d{0,3}|(192\.168|10\.)\d{1,3}(\.)\d{1,3}/) ) return false;
 
-  if ( /(npub)[A-z0-9]{0,60}/.test(maybeRelay) ) return false;
+  if ( hasDisallowedNpub(maybeRelay, url) ) return false;
 
   // Reject NATO phonetic spam URLs (1-3 hyphen-separated codes as URL suffix)
   if ( isNatoPhoneticSpam(url) ) return false;

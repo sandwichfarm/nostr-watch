@@ -1,5 +1,17 @@
 # @nostrwatch/nocap-every-adapter-default
 
+## 1.6.5
+
+### Patch Changes
+
+- Updated dependencies [[`0b9b77a`](https://github.com/sandwichfarm/nostr-watch/commit/0b9b77ad6af0a7c50030c3d9c907620f1131426a)]:
+  - @nostrwatch/nocap@0.10.0
+  - @nostrwatch/nocap-websocket-adapter-default@1.5.0
+  - @nostrwatch/nocap-dns-adapter-default@1.1.7
+  - @nostrwatch/nocap-ssl-adapter-default@1.4.7
+  - @nostrwatch/nocap-geo-adapter-default@1.2.2
+  - @nostrwatch/nocap-info-adapter-default@1.2.2
+
 ## 1.6.4
 
 ### Patch Changes

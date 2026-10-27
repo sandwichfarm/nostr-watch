@@ -1,6 +1,6 @@
 {
   "name": "@nostrwatch/nocap-ssl-adapter-default",
-  "version": "1.4.6",
+  "version": "1.4.7",
   "type": "module",
   "license": "MIT",
   "main": "dist/server/cjs/index.cjs.js",

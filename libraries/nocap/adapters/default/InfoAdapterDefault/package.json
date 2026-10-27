@@ -1,6 +1,6 @@
 {
   "name": "@nostrwatch/nocap-info-adapter-default",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "type": "module",
   "license": "MIT",
   "main": "dist/server/cjs/index.cjs.js",

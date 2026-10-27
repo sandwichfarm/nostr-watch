@@ -160,7 +160,7 @@ export const sanitizeRelayUrl = (relay: string): string => {
  * Callers normalize case and URI escapes before qualification as usual.
  */
 export const hasDisallowedNpub = (relay: string, url: URL = new URL(relay)): boolean => {
-  const npub = /(npub)[A-z0-9]{0,60}/;
+  const npub = /(npub)[A-Za-z0-9]{0,60}/;
   if (!url.hostname.toLowerCase().replace(/\.$/, '').endsWith('.fips')) {
     return npub.test(relay);
   }

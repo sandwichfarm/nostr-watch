@@ -43,6 +43,15 @@ const config: TrustedRelayAssertionsConfig = {
   },
 };
 
+traTest("Kind30385 - FIPS keeps its network without claiming anonymity", () => {
+  const assertion = buildTrustedRelayAssertion(result({
+    url: "ws://relay.fips:7777", hostname: "relay.fips", network: "fips",
+    geo: undefined, info: { duration: 1, data: {} },
+  }), history(), config);
+  assertEquals(assertion.network, "fips");
+  assertEquals(assertion.countryCode, undefined);
+});
+
 function history(
   overrides: Partial<TrustedRelayObservationState> = {},
 ): TrustedRelayObservationState {

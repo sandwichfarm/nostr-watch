@@ -37,7 +37,7 @@ A monitor publishes kind 10166 to announce itself on the Nostr network. It decla
 | Tag | Value Example | Meaning |
 |-----|---------------|---------|
 | `frequency` | `3600` | Check interval in seconds |
-| `n` | `clearnet` | Network monitored (`clearnet`, `tor`, `i2p`) |
+| `n` | `clearnet` | Network monitored (`clearnet`, `tor`, `i2p`, `fips`) |
 | `c` | `open` | Check type performed (`open`, `read`, `write`, `ssl`, `dns`, `geo`, `info`) |
 | `timeout` | `open`, `5000` | Timeout in ms for the named check (multi-value tag) |
 | `k` | `30166` | Event kinds published by this monitor |
@@ -87,7 +87,7 @@ The `content` field contains the relay's NIP-11 info document (if available) as 
 |-----|---------------|---------|
 | `d` | `wss://relay.damus.io` | Relay URL -- addressable identifier |
 | `r` | `wss://relay.damus.io` | Relay URL (queryable) |
-| `n` | `clearnet` | Network type (`clearnet`, `tor`, `i2p`) |
+| `n` | `clearnet` | Network type (`clearnet`, `tor`, `i2p`, `fips`) |
 | `R` | `!auth` | Relay requirement flags (see [R tag convention](#the-r-tag-convention)) |
 | `rtt-open` | `120` | Round-trip time in ms for WebSocket open |
 | `rtt-read` | `85` | Round-trip time in ms for read check |

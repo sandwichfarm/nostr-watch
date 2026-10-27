@@ -147,7 +147,7 @@ export function initializeNetworkFilters(): void {
   const networkFilters: {[key: string]: boolean} = {};
   
   // Always include these standard networks
-  ["clearnet", "tor", "i2p", "loki"].forEach(network => {
+  ["clearnet", "tor", "i2p", "loki", "fips"].forEach(network => {
     networkFilters[network] = true;
   });
   
@@ -158,4 +158,4 @@ export function initializeNetworkFilters(): void {
   
   // Set the state
   state.networkFilters = networkFilters;
-} 
+}

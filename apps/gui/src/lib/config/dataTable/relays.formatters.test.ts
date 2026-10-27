@@ -230,3 +230,12 @@ describe('XSS regression: relay filter formatters', () => {
         expect(out).toBe('-');
     });
 });
+
+describe('FIPS network display', () => {
+    it('renders accessible FIPS network icons', () => {
+        const out = relayFormatters.networks(['fips'], undefined);
+        expect(out).toContain('/icon/network/fips-dark.svg');
+        expect(out).toContain('aria-label="FIPS"');
+        expect(out).toContain('title="FIPS"');
+    });
+});

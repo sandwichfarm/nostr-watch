@@ -177,8 +177,8 @@ export function validateNIP(nip: number): number {
 /**
  * Validate network type
  */
-export function validateNetwork(network: string): 'clearnet' | 'tor' | 'i2p' | 'hybrid' {
-  const valid = ['clearnet', 'tor', 'i2p', 'hybrid']
+export function validateNetwork(network: string): 'clearnet' | 'tor' | 'i2p' | 'fips' | 'hybrid' {
+  const valid = ['clearnet', 'tor', 'i2p', 'fips', 'hybrid']
 
   if (!valid.includes(network)) {
     throw new Error(`Network must be one of: ${valid.join(', ')}`)

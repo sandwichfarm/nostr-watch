@@ -21,6 +21,16 @@ networks.i2p = (url: string): boolean => {
   }
 };
 
+// FIPS uses the host's resolver and IPv6 routing. ULA addresses alone do not
+// identify FIPS: other private networks use the same address range.
+networks.fips = (url: string): boolean => {
+  try {
+    return new URL(url).hostname.toLowerCase().replace(/\.$/, '').endsWith('.fips');
+  } catch {
+    return false;
+  }
+};
+
 networks.cjdns = (url: string): boolean => {
   try {
     const hostname = new URL(url).hostname;

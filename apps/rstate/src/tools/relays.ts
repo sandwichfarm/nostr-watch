@@ -75,7 +75,7 @@ const paginationInputProps = {
 }
 
 const searchInputProps = {
-  network: { type: 'string', enum: ['clearnet', 'tor', 'i2p', 'hybrid'] },
+  network: { type: 'string', enum: ['clearnet', 'tor', 'i2p', 'fips', 'hybrid'] },
   nips: { type: 'array', items: { type: 'number' } },
   software: {
     type: 'object',

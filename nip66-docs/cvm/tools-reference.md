@@ -42,7 +42,7 @@ Search relays with filters.
 **Input:**
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `network` | string | -- | Filter: `clearnet`, `tor`, `i2p`, `hybrid` |
+| `network` | string | -- | Filter: `clearnet`, `tor`, `i2p`, `fips`, `hybrid` |
 | `nips` | number[] | -- | Filter by supported NIPs |
 | `software` | object | -- | Filter by `{ family, version }` |
 | `labels` | object[] | -- | Filter by `[{ namespace, value }]` |

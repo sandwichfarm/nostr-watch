@@ -1,0 +1,77 @@
+{
+  "monitor": {
+    "url": "ws://relay.fips:7777",
+    "network": "fips",
+    "open": true,
+    "read": true,
+    "write": true,
+    "nip11": "Isolated FIPS relay fixture",
+    "publicDnsSkipped": true,
+    "signedEvent": {
+      "pubkey": "a67db2a8ac442c586bf9d6cfea9eda002b3db604abd5f4fa73d8b811401522d6",
+      "kind": 30166,
+      "created_at": 1793101989,
+      "tags": [
+        [
+          "d",
+          "ws://relay.fips:7777/"
+        ],
+        [
+          "rtt-open",
+          "8"
+        ],
+        [
+          "rtt-read",
+          "1"
+        ],
+        [
+          "rtt-write",
+          "42"
+        ],
+        [
+          "n",
+          "fips"
+        ],
+        [
+          "N",
+          "1"
+        ],
+        [
+          "N",
+          "11"
+        ],
+        [
+          "R",
+          "!auth"
+        ],
+        [
+          "R",
+          "!payment"
+        ],
+        [
+          "R",
+          "!pow"
+        ],
+        [
+          "l",
+          "draft7",
+          "nip66.draft"
+        ]
+      ],
+      "content": "{\"name\":\"Isolated FIPS relay fixture\",\"supported_nips\":[1,11]}",
+      "id": "c81242a3c4a97596c1abe089b5827f803f6ffe4ec1b4e3ade0c4a02044d27724",
+      "sig": "e0f3516af40e95f0ca5c6d1e4416cebce8b5097a42b5e13d3ba44de79503892280021c0294c5c77c96bfffdf3c910d38dd583003730ee50a2e10eadc59bee9dc"
+    }
+  },
+  "ingress": {
+    "monitorSentinelReachable": false,
+    "monitorDroppedPackets": 2
+  },
+  "isolation": {
+    "internalDockerNetwork": true,
+    "publishedPorts": [],
+    "hostNetworking": false,
+    "publicDiscovery": false
+  },
+  "fipsVersion": "fips 0.5.3 (rev f4a5b4a8e6)\ntarget: aarch64-unknown-linux-gnu"
+}

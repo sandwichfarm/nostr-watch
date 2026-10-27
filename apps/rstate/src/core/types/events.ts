@@ -58,7 +58,7 @@ export interface RelayObservation {
   relayUrl: string      // from d tag (normalized)
 
   // Network tags
-  network?: 'clearnet' | 'tor' | 'i2p' | 'hybrid'
+  network?: 'clearnet' | 'tor' | 'i2p' | 'fips' | 'hybrid'
 
   // Software identification
   software?: {

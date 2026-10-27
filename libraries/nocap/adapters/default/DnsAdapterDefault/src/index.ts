@@ -56,6 +56,7 @@ export class DnsAdapterDefault extends AbstractAdapter implements IAdapter {
         this.base.logger?.debug('DNS check skipped for URL not accessible over clearnet');
         const result = { ...resultTpl, status: "error", message: "Relay is not clearnet, cannot check DNS." };
         this.base.finish('dns', result);
+        return;
       }
 
       if(IPV4.test(host)) {

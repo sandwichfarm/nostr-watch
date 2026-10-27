@@ -38,3 +38,29 @@ describe('DnsAdapterDefault remote fetch policy', () => {
 		);
 	});
 });
+
+describe('overlay DNS privacy', () => {
+  it.each(['fips', 'tor', 'i2p', 'loki'])('never sends %s hostnames to public DoH', async (network) => {
+    fetchMock.mockClear();
+    const finish = vi.fn();
+    const base = {
+      url: `ws://relay.${network}:7777`,
+      results: new Map([['network', network]]),
+      logger: { debug: vi.fn() }, finish,
+    } as unknown as Base;
+    await new DnsAdapterDefault(base).check_dns();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(finish).toHaveBeenCalledExactlyOnceWith('dns', expect.objectContaining({ status: 'error' }));
+  });
+
+  it('retains public DNS checks for clearnet', async () => {
+    fetchMock.mockClear();
+    fetchMock.mockResolvedValueOnce({ json: async () => ({ Answer: [{ data: '192.0.2.1' }] }) } as Response);
+    const finish = vi.fn();
+    await new DnsAdapterDefault({
+      url: 'wss://relay.example.org', results: new Map([['network', 'clearnet']]), finish,
+    } as unknown as Base).check_dns();
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(finish).toHaveBeenCalledWith('dns', expect.objectContaining({ status: 'success' }));
+  });
+});

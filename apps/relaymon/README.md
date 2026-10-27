@@ -9,7 +9,7 @@ Deno-based relay health monitor with NIP-66 event publishing.
 
 ## Overview
 
-`@nostrwatch/relaymon` monitors Nostr relay (WebSocket server) health through automated check cycles. It runs configurable check suites — DNS, connectivity, SSL, info document retrieval, and geo-location — against a seeded relay list, then publishes results as [NIP-66](https://github.com/nostr-protocol/nips/blob/master/66.md) relay status events to the Nostr network. It can also publish opt-in Trusted Relay Assertions (kind `30385`) using the draft TRA NIP shape from [`Letdown2491/trustedrelays`](https://github.com/Letdown2491/trustedrelays). RelayMon TRA events are monitor-local assertions derived only from that monitor's own observation history and are signed by the same monitor key used for NIP-66 publishing. RelayMon does not ingest report/appeal events or manage trusted-provider declarations for this feature. Relays are discovered from multiple seed sources including static configuration, API endpoints, and existing NIP-66 events. Supports clearnet, Tor (`.onion`), and I2P (`.i2p`) relay monitoring via configurable network routing.
+`@nostrwatch/relaymon` monitors Nostr relay (WebSocket server) health through automated check cycles. It runs configurable check suites — DNS, connectivity, SSL, info document retrieval, and geo-location — against a seeded relay list, then publishes results as [NIP-66](https://github.com/nostr-protocol/nips/blob/master/66.md) relay status events to the Nostr network. It can also publish opt-in Trusted Relay Assertions (kind `30385`) using the draft TRA NIP shape from [`Letdown2491/trustedrelays`](https://github.com/Letdown2491/trustedrelays). RelayMon TRA events are monitor-local assertions derived only from that monitor's own observation history and are signed by the same monitor key used for NIP-66 publishing. RelayMon does not ingest report/appeal events or manage trusted-provider declarations for this feature. Relays are discovered from multiple seed sources including static configuration, API endpoints, and existing NIP-66 events. Supports clearnet, Tor (`.onion`), I2P (`.i2p`), and FIPS (`.fips`) relay monitoring via configurable network routing. FIPS uses host-provided DNS and IPv6 routing; see [FIPS support](../../docs/fips-support.md).
 
 ## Prerequisites
 
@@ -169,7 +169,7 @@ queue:
 |-----|-------------|
 | `monitor.slug` | Unique identifier for this monitor instance |
 | `publisher.relays` | Array of relay URLs for publishing NIP-66 events |
-| `relaymon.networks` | Network types to monitor: `clearnet`, `tor`, `i2p` |
+| `relaymon.networks` | Network types to monitor: `clearnet`, `tor`, `i2p`, `fips` |
 | `relaymon.retry.expiry` | Stepped retry backoff rules (max retries + delay per step) |
 | `relaymon.seed.sources` | Where to discover relays: `config`, `static`, `api`, `events`, `db` |
 | `relaymon.checks.enabled` | Which check types to run (e.g., `open`, `read`) |

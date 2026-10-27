@@ -32,7 +32,7 @@ export interface CompactRelayState {
   lastSeenAt?: number
   lastOpenAt?: number
 
-  network?: CompactAggregatedValue<'clearnet' | 'tor' | 'i2p' | 'hybrid'>
+  network?: CompactAggregatedValue<'clearnet' | 'tor' | 'i2p' | 'fips' | 'hybrid'>
   software?: {
     family?: CompactAggregatedValue<string>
     version?: CompactAggregatedValue<string>

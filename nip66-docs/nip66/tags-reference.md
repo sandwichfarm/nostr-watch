@@ -7,7 +7,7 @@ Complete reference for all tags used in NIP-66 events.
 | Tag | Values | Required | Description |
 |-----|--------|----------|-------------|
 | `frequency` | seconds (e.g. `3600`) | Yes | How often this monitor checks relays |
-| `n` | `clearnet`, `tor`, `i2p` | Yes | Networks this monitor covers (one tag per network) |
+| `n` | `clearnet`, `tor`, `i2p`, `fips` | Yes | Networks this monitor covers (one tag per network) |
 | `c` | `open`, `read`, `write`, `ssl`, `dns`, `geo`, `info` | Yes | Check types performed (one tag per check) |
 | `timeout` | check name, ms (e.g. `open`, `5000`) | No | Timeout for the named check (multi-value tag) |
 | `k` | kind number (e.g. `30166`) | No | Event kinds this monitor publishes |
@@ -19,7 +19,7 @@ Complete reference for all tags used in NIP-66 events.
 |-----|--------|----------|-------------|
 | `d` | relay URL | Yes | Addressable identifier (parameterized replaceable) |
 | `r` | relay URL | Yes | Queryable relay URL tag |
-| `n` | `clearnet`, `tor`, `i2p` | Yes | Network type |
+| `n` | `clearnet`, `tor`, `i2p`, `fips` | Yes | Network type |
 | `R` | see [R tag convention](./event-kinds#the-r-tag-convention) | No | Relay requirement/capability flags |
 | `rtt-open` | milliseconds | No | Round-trip time for WebSocket open |
 | `rtt-read` | milliseconds | No | Round-trip time for read check |

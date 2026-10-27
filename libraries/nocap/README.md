@@ -118,7 +118,7 @@ The object returned by `check()` has this shape:
 ```ts
 interface IResult {
   url: string
-  network?: string        // 'clearnet' | 'tor' | 'i2p'
+  network?: string        // 'clearnet' | 'tor' | 'i2p' | 'fips'
   hostname?: string
   protocol?: string
   adapters?: string[]     // slugs of adapters used

@@ -17,7 +17,7 @@ Each monitor:
 A monitor's announcement event tells you:
 
 - **Frequency** -- how often it checks relays (e.g., every 3600 seconds)
-- **Networks** -- which networks it monitors (clearnet, tor, i2p)
+- **Networks** -- which networks it monitors (clearnet, tor, i2p, fips)
 - **Checks** -- which check types it performs (open, read, write, ssl, dns, geo, info)
 - **Timeouts** -- how long it waits before considering a check failed
 - **Location** -- optionally, the monitor's geographic location (geohash)

@@ -82,7 +82,7 @@ Inserts a relay into `relay_status` with `online = 0`, `checked_at = -1`, and `r
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `url` | `string` | WebSocket URL of the relay (e.g. `wss://relay.damus.io`) |
-| `network` | `string` | Network type: `'clearnet'`, `'tor'`, `'i2p'` |
+| `network` | `string` | Network type: `'clearnet'`, `'tor'`, `'i2p'`, `'fips'` |
 
 ---
 
@@ -197,7 +197,7 @@ interface RelayStatus {
   parent: string
   checked_at: number   // Unix timestamp of last check
   rtt: number          // Round-trip time in ms (-1 = not yet checked)
-  network: string      // 'clearnet' | 'tor' | 'i2p'
+  network: string      // 'clearnet' | 'tor' | 'i2p' | 'fips'
   retries: number
 }
 ```

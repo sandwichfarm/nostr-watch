@@ -1,5 +1,11 @@
 # @nostrwatch/nostrings
 
+## 0.6.2
+
+### Patch Changes
+
+- [#964](https://github.com/sandwichfarm/nostr-watch/pull/964) [`8c3ec0e`](https://github.com/sandwichfarm/nostr-watch/commit/8c3ec0ec07954df72336b3bedde981392f947858) Thanks [@dskvr](https://github.com/dskvr)! - Allow npub hostnames under .fips while retaining npub rejection in paths and other URL components. This restores FIPS identity relay discovery and seeding.
+
 ## 0.4.0
 
 ### Minor Changes

@@ -89,7 +89,8 @@ peers:
                 '--memory', '512m', '--read-only', '--tmpfs', '/tmp', '--tmpfs', '/run',
                 '--mount', f'type=bind,source={config},target=/fixture/node.yaml,readonly',
                 '--mount', f'type=bind,source={resolver},target=/etc/resolv.conf,readonly',
-                '-e', f'ROLE={role}', '-e', f'PEER_IP=10.254.239.{peer + 2}', args.image)
+                '-e', f'ROLE={role}', '-e', f'PEER_IP=10.254.239.{peer + 2}',
+                '-e', f"FIPS_RELAY_NPUB={identities[1]['npub']}", args.image)
             containers.append(name)
 
         command = ['deno', 'run', '--cached-only', '--no-lock', '--no-check',
@@ -109,6 +110,16 @@ peers:
                 if time.monotonic() >= deadline:
                     raise
                 time.sleep(1)
+
+        # Run the actual Trawler entrypoint with only an alias seed. The
+        # npub-based address must arrive over a relay-list subscription, be
+        # persisted as FIPS, and be crawled on a subsequent queue cycle.
+        output = run('docker', 'exec', '-w', '/workspace/apps/trawler', containers[0],
+                     'deno', 'run', '--cached-only', '--no-lock', '--no-check',
+                     '--unstable-sloppy-imports', '--allow-all',
+                     'tests/fixtures/fips-discovery.ts', timeout=180)
+        line = next(line for line in output.splitlines() if line.startswith('FIPS_DISCOVERY_PROOF '))
+        proof['discovery'] = json.loads(line.split(' ', 1)[1])
 
         output = run('docker', 'exec', containers[1], *command, 'ingress', timeout=10)
         line = next(line for line in output.splitlines() if line.startswith('FIPS_INGRESS_PROOF '))
@@ -132,7 +143,10 @@ peers:
             args.output.parent.mkdir(parents=True, exist_ok=True)
             args.output.write_text(json.dumps(proof, indent=2) + '\n')
         print(json.dumps(proof, indent=2))
-except Exception:
+except Exception as error:
+    if isinstance(error, subprocess.CalledProcessError):
+        print(error.stdout[-6000:])
+        print(error.stderr[-6000:])
     for name in containers:
         subprocess.run(['docker', 'logs', '--tail', '15', name], check=False)
         subprocess.run(['docker', 'exec', name, 'tail', '-15', '/tmp/fips.log'], check=False)

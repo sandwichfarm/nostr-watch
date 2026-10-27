@@ -33,7 +33,7 @@
       "applesauce-core": "npm:applesauce-core@5.1.0",
       "rxjs": "npm:rxjs@7.8.1",
       "npm:murmurhash": "https://esm.sh/murmurhash@latest",
-      "npm:p-queue": "https://esm.sh/p-queue@latest",
+      "npm:p-queue": "https://esm.sh/p-queue@8.1.0",
       "npm:chalk": "https://esm.sh/chalk@latest",
       "npm:cross-fetch": "https://esm.sh/cross-fetch@latest",
       "@noble/hashes/utils": "https://esm.sh/@noble/hashes@1.3.2/utils",
@@ -57,7 +57,7 @@
       "javascript-time-ago/locale/en": "https://esm.sh/javascript-time-ago@latest/locale/en",
       "bullmq": "https://esm.sh/bullmq@latest",
       "tseep": "https://esm.sh/tseep@latest",
-      "p-queue": "https://esm.sh/p-queue@latest",
+      "p-queue": "https://esm.sh/p-queue@8.1.0",
 
 
       "npm:@nostrwatch/nostrawl": "../../libraries/nostrawl/src/index.ts",

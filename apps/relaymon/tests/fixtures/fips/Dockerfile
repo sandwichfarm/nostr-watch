@@ -7,4 +7,7 @@ COPY --from=mesh /usr/local/bin/fips /usr/local/bin/fips
 WORKDIR /workspace/apps/relaymon
 COPY . /workspace
 RUN deno cache --no-lock --no-check --unstable-sloppy-imports tests/fixtures/fips/probe.ts tests/fixtures/fips/relay.ts
+WORKDIR /workspace/apps/trawler
+RUN deno cache --no-lock --no-check --unstable-sloppy-imports src/main.ts tests/fixtures/fips-discovery.ts
+WORKDIR /workspace/apps/relaymon
 ENTRYPOINT ["/bin/sh", "tests/fixtures/fips/start.sh"]

@@ -1,6 +1,7 @@
 /// <reference lib="deno.ns" />
 
 import { getLogger } from './logger.ts';
+import { hasDisallowedNpub } from '@nostrwatch/nostrings';
 
 const logger = getLogger('sanitizers');
 
@@ -63,8 +64,11 @@ export const qualifyRelayUrl = (relay: string): boolean => {
   if (relay.match(/(127\.)\d{0,3}(\.)\d{0,3}(\.)\d{0,3}|(192\.168|10\.)\d{1,3}(\.)\d{1,3}/))
     return false;
 
-  if (/(npub)[A-z0-9]{0,60}/.test(relay))
+  try {
+    if (hasDisallowedNpub(relay)) return false;
+  } catch {
     return false;
+  }
 
   return true;
 };

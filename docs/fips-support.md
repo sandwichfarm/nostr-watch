@@ -53,6 +53,11 @@ this repository's changes.
 
 ## Consumer behavior
 
+- Trawler accepts npub-based `.fips` hostnames in relay-list events and records
+  them as `network=fips`. Only the hostname is exempt from npub rejection;
+  npub paths, other URL components, and non-FIPS hostnames remain blocked.
+  Initial FIPS seeds require `trawler.seed.options.allowedNetworks` to include
+  `fips`. See [Trawler configuration](../apps/trawler/README.md#fips-discovery).
 - Kind 10166 advertises `['n', 'fips']`; kind 30166 preserves the same network
   tag and the `.fips` relay URL. Kind 1066 continues to identify the relay with
   its `r` tag. Kind 30385 preserves FIPS as its network.
@@ -90,6 +95,12 @@ dependencies and cannot reach the public Internet. The runner requires Docker,
 Python 3, Node, and installed repository dependencies. It removes its containers,
 network, and private temporary configuration on exit. The proof JSON includes a
 signed observation and public results; no private identities are retained.
+
+The fixture now monitors a full npub-based hostname and runs Trawler's actual
+entrypoint. Starting from an alias seed, Trawler receives a signed kind-10002
+advertisement, persists the npub URL as FIPS, and crawls that address on a
+subsequent queue cycle. Invalid npub paths and suffix lookalikes must not enter
+the database. The [discovery report](proofs/fips/discovery.md) records this proof.
 
 ## Verification
 

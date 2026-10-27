@@ -1,0 +1,88 @@
+{
+  "monitor": {
+    "url": "ws://npub1wcpqh7djwgjdnft8r3zg94r4l8m5gkc3axssm6j3zt9wnffak8qsn445pt.fips:7777",
+    "network": "fips",
+    "open": true,
+    "read": true,
+    "write": true,
+    "nip11": "Isolated FIPS relay fixture",
+    "publicDnsSkipped": true,
+    "signedEvent": {
+      "pubkey": "3e39dbf647144a4bb69c8f79231345c44943ff5239c5e75e7b6dc656cde72c09",
+      "kind": 30166,
+      "created_at": 1793106581,
+      "tags": [
+        [
+          "d",
+          "ws://npub1wcpqh7djwgjdnft8r3zg94r4l8m5gkc3axssm6j3zt9wnffak8qsn445pt.fips:7777/"
+        ],
+        [
+          "rtt-open",
+          "7"
+        ],
+        [
+          "rtt-read",
+          "1"
+        ],
+        [
+          "rtt-write",
+          "41"
+        ],
+        [
+          "n",
+          "fips"
+        ],
+        [
+          "N",
+          "1"
+        ],
+        [
+          "N",
+          "11"
+        ],
+        [
+          "R",
+          "!auth"
+        ],
+        [
+          "R",
+          "!payment"
+        ],
+        [
+          "R",
+          "!pow"
+        ],
+        [
+          "l",
+          "draft7",
+          "nip66.draft"
+        ]
+      ],
+      "content": "{\"name\":\"Isolated FIPS relay fixture\",\"supported_nips\":[1,11]}",
+      "id": "73404ec71bcb8da5344500cf2da264245f6bee46f9dc4ce568d48cfaef0d008f",
+      "sig": "ae3e5acd728374bf6f578684364e2f462d679247aa01b02535c3fa4d52671ae811015be396d85ed3aef5f912d862879ec4a8a22e9fd54cebcd44b6a3074f3253"
+    }
+  },
+  "discovery": {
+    "entrypoint": "apps/trawler/src/main.ts",
+    "seed": "ws://relay.fips:7777/bootstrap",
+    "eventKind": 10002,
+    "url": "ws://npub1wcpqh7djwgjdnft8r3zg94r4l8m5gkc3axssm6j3zt9wnffak8qsn445pt.fips:7777/",
+    "network": "fips",
+    "persisted": true,
+    "crawled": true,
+    "npubPathRejected": true,
+    "suffixLookalikeRejected": true
+  },
+  "ingress": {
+    "monitorSentinelReachable": false,
+    "monitorDroppedPackets": 2
+  },
+  "isolation": {
+    "internalDockerNetwork": true,
+    "publishedPorts": [],
+    "hostNetworking": false,
+    "publicDiscovery": false
+  },
+  "fipsVersion": "fips 0.5.3 (rev f4a5b4a8e6)\ntarget: aarch64-unknown-linux-gnu"
+}

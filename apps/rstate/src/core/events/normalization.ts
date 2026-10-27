@@ -91,7 +91,7 @@ export function parseRelayObservation(event: NostrEvent): RelayObservation | nul
     // Network
     if (parsed.network) {
       const network = parsed.network.toLowerCase()
-      if (['clearnet', 'tor', 'i2p', 'hybrid'].includes(network)) {
+      if (['clearnet', 'tor', 'i2p', 'fips', 'hybrid'].includes(network)) {
         observation.network = network as any
       }
     }

@@ -360,7 +360,7 @@ export const tableFormatters: Formatters = {
             const safeNetwork = escapeHtml(network);
             const iconPath = '/icon/network/'
             const iconClass = `background-image: url('${iconPath}${safeNetwork}-dark.svg'); background-size: contain; background-position: center; background-repeat: no-repeat; width: 24px; height: 24px; display: inline-block;`
-            return `<span style="${iconClass}"></span>`
+            return `<span role="img" aria-label="${network === 'fips' ? 'FIPS' : safeNetwork}" title="${network === 'fips' ? 'FIPS' : safeNetwork}" style="${iconClass}"></span>`
         }).join('');
     },
     dd: (dd: DD ) => {

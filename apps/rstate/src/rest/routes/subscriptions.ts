@@ -52,7 +52,7 @@ export function registerSubscriptionRoutes(app: FastifyInstance, context: RestCo
               },
               network: {
                 type: 'string',
-                enum: ['clearnet', 'tor', 'i2p', 'hybrid'],
+                enum: ['clearnet', 'tor', 'i2p', 'fips', 'hybrid'],
                 description: 'Filter by network type',
               },
               nips: {

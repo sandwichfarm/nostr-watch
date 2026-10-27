@@ -72,7 +72,7 @@
     "nostr-tools/nip19": "https://esm.sh/nostr-tools@2.23.3/nip19",
 
     "npm:murmurhash": "npm:murmurhash@2.0.1",
-    "npm:p-queue": "https://esm.sh/p-queue@latest",
+    "npm:p-queue": "https://esm.sh/p-queue@9.1.2",
     "npm:chalk": "https://esm.sh/chalk@latest",
     "npm:cross-fetch": "https://esm.sh/cross-fetch@latest",
 

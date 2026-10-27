@@ -17,7 +17,7 @@ describe('AnnounceMonitor', () => {
     const options = {
       geo: {},
       timeouts: { websocket: 1000 },
-      networks: ['clearnet'],
+      networks: ['clearnet', 'fips'],
       checks: ['websocket'],
       owner: 'testOwner',
       frequency: 'testFrequency',
@@ -37,7 +37,7 @@ describe('AnnounceMonitor', () => {
     const options = {
       geo: { lat: 10, lon: 20 },
       timeouts: { websocket: 1000 },
-      networks: ['clearnet'],
+      networks: ['clearnet', 'fips'],
       checks: ['websocket'],
       owner: 'testOwner',
       frequency: 'testFrequency',
@@ -49,6 +49,7 @@ describe('AnnounceMonitor', () => {
     expect(events).toHaveProperty('10002');
     expect(events["10166"].event.tags).toContainEqual(['frequency', 'testFrequency']);
     expect(events["10166"].event.tags).toContainEqual(['n', 'clearnet']);
+    expect(events["10166"].event.tags).toContainEqual(['n', 'fips']);
     expect(events["10166"].event.tags).toContainEqual(['c', 'websocket']);
     expect(events["10166"].event.tags).toContainEqual(['timeout', 'websocket', '1000']);
   });

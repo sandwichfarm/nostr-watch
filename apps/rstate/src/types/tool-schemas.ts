@@ -98,7 +98,7 @@ export interface RelaysTrustListOutput {
  * Search relays tool
  */
 export interface RelaysSearchInput {
-  network?: 'clearnet' | 'tor' | 'i2p' | 'hybrid'
+  network?: 'clearnet' | 'tor' | 'i2p' | 'fips' | 'hybrid'
   nips?: number[]  // must support ALL of these NIPs
   software?: {
     family?: string
@@ -227,7 +227,7 @@ export interface RelaysByNetworkInput {
 
 export interface RelaysByNetworkOutput {
   groups: Array<{
-    network: 'clearnet' | 'tor' | 'i2p' | 'hybrid'
+    network: 'clearnet' | 'tor' | 'i2p' | 'fips' | 'hybrid'
     count: number
     relays?: string[]
   }>
@@ -252,7 +252,7 @@ export interface RelaysByNipOutput {
 
 /** Availability tools **/
 export interface RelaysAvailabilityFilters {
-  network?: 'clearnet' | 'tor' | 'i2p' | 'hybrid'
+  network?: 'clearnet' | 'tor' | 'i2p' | 'fips' | 'hybrid'
   labels?: { namespace: string; value: string }[]
 }
 
@@ -379,7 +379,7 @@ export interface RelaysCompareOutput {
 export interface RelaysSubscribeStateInput {
   // Filter criteria (all optional)
   relayUrls?: string[]
-  network?: 'clearnet' | 'tor' | 'i2p' | 'hybrid'
+  network?: 'clearnet' | 'tor' | 'i2p' | 'fips' | 'hybrid'
   nips?: number[]
   software?: {
     family?: string

@@ -266,7 +266,7 @@ export function validateStateIntegrity(core: StateCore): { valid: boolean; error
 
     // Network validation (now wrapped in AggregatedValue)
     const networkValue = relay.network?.value
-    if (networkValue && !['clearnet', 'tor', 'i2p', 'hybrid'].includes(networkValue)) {
+    if (networkValue && !['clearnet', 'tor', 'i2p', 'fips', 'hybrid'].includes(networkValue)) {
       errors.push(`Relay ${i} (${relay.relayUrl}): Invalid network: ${networkValue}`)
     }
 

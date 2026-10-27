@@ -46,6 +46,7 @@ relaymon:
     #- tor #presently requires a transparent proxy for tor.
     #- i2pd #presently requires a transparent proxy for i2pd.
     #- lokinet #presently requires a transparent proxy for lokinet.
+    #- fips #host must provide .fips DNS resolution and IPv6 mesh routing.
 
   # backoff strategy for failed connections
   retry:

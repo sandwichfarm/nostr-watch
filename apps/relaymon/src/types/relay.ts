@@ -180,7 +180,7 @@ export function isRelayCheckResult(result: unknown): result is RelayCheckResult 
   if (typeof r.network !== "string") return false;
 
   // network must be a valid NetworkType
-  const validNetworks = ["clearnet", "tor", "i2p", "lokinet"];
+  const validNetworks = ["clearnet", "tor", "i2p", "lokinet", "fips"];
   if (!validNetworks.includes(r.network as string)) return false;
 
   return true;

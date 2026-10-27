@@ -7,7 +7,7 @@
 /**
  * Network types supported by RelayMon
  */
-export type NetworkType = "clearnet" | "tor" | "i2p" | "lokinet";
+export type NetworkType = "clearnet" | "tor" | "i2p" | "lokinet" | "fips";
 
 /**
  * Log levels
@@ -303,7 +303,7 @@ export interface Config {
 /**
  * Valid network types for validation
  */
-const VALID_NETWORKS: NetworkType[] = ["clearnet", "tor", "i2p", "lokinet"];
+const VALID_NETWORKS: NetworkType[] = ["clearnet", "tor", "i2p", "lokinet", "fips"];
 
 /**
  * Validate that a value is a valid network type

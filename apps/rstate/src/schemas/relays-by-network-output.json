@@ -7,7 +7,7 @@
       "items": {
         "type": "object",
         "properties": {
-          "network": { "type": "string", "enum": ["clearnet", "tor", "i2p", "hybrid"] },
+          "network": { "type": "string", "enum": ["clearnet", "tor", "i2p", "fips", "hybrid"] },
           "count": { "type": "number" },
           "relays": { "type": "array", "items": { "type": "string" } }
         },

@@ -77,7 +77,7 @@ export interface RelayState {
   relayUrl: string
 
   // Network
-  network?: AggregatedValue<'clearnet' | 'tor' | 'i2p' | 'hybrid'>
+  network?: AggregatedValue<'clearnet' | 'tor' | 'i2p' | 'fips' | 'hybrid'>
 
   // Software
   software?: {

@@ -96,6 +96,19 @@ Deno.test("composeState: Initial relay detection", async () => {
   assertEquals(result.state.geo.city, "Berlin");
 });
 
+Deno.test("composeState: FIPS history stays separate from clearnet", async () => {
+  const relay = "ws://relay.fips:7777";
+  const storage = new MockStorage([
+    createMockEvent(1000, [["r", relay], ["O", "init"], ["rtt-open", "42"], ["+name", "FIPS fixture"]]),
+    createMockEvent(1100, [["r", "wss://relay.example.com"], ["O", "up"], ["+name", "Clearnet fixture"]]),
+    createMockEvent(1200, [["r", relay], ["O", "down"], ["retry", "1"]]),
+  ]);
+  const result = await composeState({ storage, relay });
+  assert("state" in result);
+  assertEquals(result.state.online, false);
+  assertEquals(result.state.info.name, "FIPS fixture");
+});
+
 Deno.test("composeState: Relay goes offline", async () => {
   const events: DeltaEvent[] = [
     // First detection - online

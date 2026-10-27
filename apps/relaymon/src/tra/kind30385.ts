@@ -36,7 +36,7 @@ export interface TrustedRelayAssertion {
   countryCode?: string;
   region?: string;
   isHosting?: boolean;
-  network?: "clearnet" | "tor" | "i2p";
+  network?: "clearnet" | "tor" | "i2p" | "fips";
 }
 
 export interface TrustedRelayMaterialChange {
@@ -568,6 +568,7 @@ function inferNetwork(
   relayUrl: string,
 ): TrustedRelayAssertion["network"] {
   const host = new URL(relayUrl).hostname;
+  if (result.network === "fips" || host.toLowerCase().replace(/\.$/, '').endsWith(".fips")) return "fips";
   if (result.network === "tor" || host.endsWith(".onion")) return "tor";
   if (result.network === "i2p" || host.endsWith(".i2p")) return "i2p";
   if (result.network === "clearnet") return "clearnet";

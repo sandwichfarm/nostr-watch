@@ -1,0 +1,28 @@
+import { describe, expect, it } from 'vitest';
+import * as shared from './network';
+
+for (const [name, implementation] of Object.entries({ shared })) {
+  describe(`${name} network contract`, () => {
+    it.each([
+      ['ws://relay.fips:7777/nostr', 'fips'],
+      ['wss://npub1example.fips', 'fips'],
+      ['ws://RELAY.FIPS./', 'fips'],
+      ['wss://relay.fips.example.org', 'clearnet'],
+      ['wss://relay.example.org/path.fips', 'clearnet'],
+      ['wss://relay.fips@public.example.org', 'clearnet'],
+      ['ws://[fd12:3456::1]:7777', 'clearnet'],
+      ['wss://relay.onion', 'tor'],
+      ['ws://relay.i2p', 'i2p'],
+      ['not a URL', 'clearnet'],
+    ])('classifies %s as %s', (url, network) => {
+      expect(implementation.parseRelayNetwork(url)).toBe(network);
+    });
+
+    it('partitions FIPS separately from other networks', () => {
+      const urls = ['ws://relay.fips', 'ws://relay.i2p', 'wss://relay.example.org'];
+      expect(implementation.relaysSerializedByNetwork(urls)).toEqual({
+        fips: [urls[0]], i2p: [urls[1]], clearnet: [urls[2]],
+      });
+    });
+  });
+}

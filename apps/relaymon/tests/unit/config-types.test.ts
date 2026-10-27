@@ -78,6 +78,12 @@ Deno.test("Config validation - mockConfig from fixtures passes", () => {
   assertEquals(result.monitor.slug, "test-monitor");
 });
 
+Deno.test("Config validation - host-routed FIPS network passes", () => {
+  const config = structuredClone(mockConfig);
+  config.relaymon.networks = ["fips", "tor", "i2p"];
+  assertEquals(validateConfig(config).relaymon.networks, ["fips", "tor", "i2p"]);
+});
+
 Deno.test("Config validation - missing monitor.slug throws", () => {
   const invalidConfig = {
     monitor: {

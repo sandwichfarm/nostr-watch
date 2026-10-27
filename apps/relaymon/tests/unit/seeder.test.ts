@@ -134,6 +134,30 @@ seederTest("RelaySeeder - seedFromConfig returns relays from config", async () =
   }
 });
 
+seederTest("RelaySeeder - FIPS allowlist excludes clearnet and I2P seeds", async () => {
+  const seeds = ["ws://relay.fips:7777", "wss://public.example.com", "ws://relay.i2p"];
+  const options = createMockSeederOptions(["config"], seeds);
+  options.options.allowedNetworks = ["fips"];
+  const seeder = new RelaySeeder(options);
+  await seeder.seed();
+  const persisted = nostrwatchDB.db.query<[string, string]>(
+    "SELECT url, network FROM relay_status WHERE url LIKE '%relay.fips%'",
+  );
+  assertEquals(persisted.length, 1);
+  assertEquals(persisted[0][1], "fips");
+  assertEquals(nostrwatchDB.db.query("SELECT url FROM relay_status WHERE url LIKE '%public.example.com%' OR url LIKE '%relay.i2p%'").length, 0);
+});
+
+seederTest("RelaySeeder - clearnet allowlist excludes FIPS seeds", async () => {
+  const seeder = new RelaySeeder(createMockSeederOptions(["config"], [
+    "ws://excluded.fips:7777", "wss://included.example.com",
+  ]));
+  await seeder.seed();
+  assertEquals(nostrwatchDB.db.query("SELECT url FROM relay_status WHERE url LIKE '%excluded.fips%'").length, 0);
+  const persisted = nostrwatchDB.db.query<[string]>("SELECT network FROM relay_status WHERE url LIKE '%included.example.com%'");
+  assertEquals(persisted, [["clearnet"]]);
+});
+
 seederTest("RelaySeeder - seedFromStatic reads YAML file", async () => {
   // Create a temporary YAML file
   const yamlPath = `/tmp/test-static-${Date.now()}.yaml`;

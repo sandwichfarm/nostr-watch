@@ -14,7 +14,7 @@ export interface SubscriptionFilter {
   relayUrls?: string[]
 
   // Filter by network
-  network?: 'clearnet' | 'tor' | 'i2p' | 'hybrid'
+  network?: 'clearnet' | 'tor' | 'i2p' | 'fips' | 'hybrid'
 
   // Filter by NIPs
   nips?: number[]

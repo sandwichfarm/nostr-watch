@@ -1,0 +1,41 @@
+name: Changesets
+
+on:
+  pull_request:
+    paths:
+      - '.changeset/**'
+      - '**/package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'scripts/ci/check-changesets.sh'
+      - '.github/workflows/changesets.yml'
+  push:
+    branches: [next]
+    paths:
+      - '.changeset/**'
+      - '**/package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'scripts/ci/check-changesets.sh'
+      - '.github/workflows/changesets.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate release plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.15.0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - name: Install release tooling
+        run: pnpm install --frozen-lockfile --ignore-scripts --filter @nostrwatch/monorepo
+      - name: Validate changesets and parser compatibility
+        run: bash scripts/ci/check-changesets.sh

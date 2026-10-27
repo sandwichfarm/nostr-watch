@@ -29,6 +29,11 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Make Changesets base branch available
+        if: github.event_name == 'pull_request'
+        run: git branch --force next origin/next
       - uses: actions/setup-node@v4
         with:
           node-version: 22.15.0

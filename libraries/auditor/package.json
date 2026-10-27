@@ -71,7 +71,8 @@
     "nip01": "node --no-warnings ./example/nip01.js",
     "nip50": "node --no-warnings ./example/nip50.js",
     "test": "vitest run",
-    "build": "tsc && tsc-alias && node build.js",
+    "test:built": "node scripts/testBuilt.mjs",
+    "build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json && node build.js",
     "dev": "tsc --watch & tsc-alias -w & node build.js --watch",
     "prepare": "node ./scripts/generateIndices.js && node ./scripts/generateSuiteManifest.js && node ./scripts/generateSuiteTestManifests.js && node ./scripts/validateManifestConsistency.js"
   }

@@ -46,9 +46,9 @@ export class FilterRange extends SuiteTest implements ISuiteTest {
 
 
   test({behavior}){
-    behavior.toEqual(this.timestampsReturned.length, this.limit, `returned number of events requested`);
+    behavior.toBeOk(this.timestampsReturned.length <= this.limit, 'returned no more events than requested');
     behavior.toBeOk(this.timestampsReturned.length > 0, 'returned at least one event');
-    behavior.toBeOk(() => this.withinRange(), 'return only events within range')
+    behavior.toBeOk(this.withinRange(), 'return only events within range')
   }
 
   private withinRange(): boolean {

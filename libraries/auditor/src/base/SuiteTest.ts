@@ -75,6 +75,12 @@ export abstract class SuiteTest implements ISuiteTest {
   private _expect: Expect = new Expect();
   private _events: Note[] = [];
   private timeout: ReturnType<typeof setTimeout> = null;
+  private readonly abortHandler = () => this.abort();
+  private abortListenerRegistered = false;
+  private completion?: Promise<void>;
+  private resolveCompletion?: () => void;
+  private running = false;
+  private concluded = false;
 
   protected suite: ISuite;
   protected result?: ISuiteTestResult;
@@ -98,7 +104,6 @@ export abstract class SuiteTest implements ISuiteTest {
     this.logger.registerLogger('pass', 'info', chalk.green.bold);
     this.logger.registerLogger('fail', 'info', chalk.redBright.bold);
     this.logger.registerLogger('skipped', 'info', chalk.bgGray.yellow.bold);
-    Emitter.on('all:abort', this.abort.bind(this))
   }
 
   get filters(): INip01Filter[] {
@@ -170,21 +175,22 @@ export abstract class SuiteTest implements ISuiteTest {
   }
 
   EVENT(event: Note) {
+    if (!this.running || this.concluded) return;
     this.socket.send(Nip01ClientMessageGenerator.EVENT(event));
   }
 
   REQ(filters: INip01Filter[]) {
+    if (!this.running || this.concluded) return;
     this.socket.send(Nip01ClientMessageGenerator.REQ(this.subId, filters));
   }
 
   CLOSE(){
+    if (!this.running || this.concluded) return;
     this.socket.send(Nip01ClientMessageGenerator.CLOSE(this.subId));
   }
 
-  async testable(){
-    while(this.socket.CONNECTED){
-      await new Promise(resolve => setTimeout(resolve, 100));
-    };
+  async testable(): Promise<void> {
+    await this.completion;
   }
 
   async prepare() {
@@ -194,47 +200,108 @@ export abstract class SuiteTest implements ISuiteTest {
 
   async run() {
     if(this.slug === 'unset') throw new Error('slug of SuiteTest must be set');
-  
     this.logger.info(`BEGIN: ${this.slug}`, 2);
-  
-    if(this?.sampler?.samplable) {
-      await this.sampler.sample();
-    }
+    this.resetResults();
+    this.running = true;
+    this.concluded = false;
+    this.setAbortListener(true);
+    this.completion = new Promise<void>(resolve => { this.resolveCompletion = resolve; });
+    this.suite.reset();
+    this.suite.testKey = this.slug;
 
-    this.suite.reset()
-    this.suite.testKey = this.slug
+    try {
+      if(this?.sampler?.samplable) await this.sampler.sample();
+      if (this.concluded) return;
 
-    if (this.requiresSuiteSamples) {
-      const samples = this.getSamples<unknown>();
-      const hasSamples =
-        samples !== undefined &&
-        samples !== null &&
-        (Array.isArray(samples)
-          ? samples.length > 0
-          : typeof samples === 'object'
-            ? Object.keys(samples as Record<string, unknown>).length > 0
-            : true);
+      if (this.requiresSuiteSamples) {
+        const samples = this.getSamples<unknown>();
+        const hasSamples =
+          samples !== undefined &&
+          samples !== null &&
+          (Array.isArray(samples)
+            ? samples.length > 0
+            : typeof samples === 'object'
+              ? Object.keys(samples as Record<string, unknown>).length > 0
+              : true);
 
-      if (!hasSamples) {
-        this.expect.behavior.skip = true;
-        this.expect.behavior.toBeOk(true, 'Skipped: requires samples but none were obtained');
-        this.finish();
-        return;
+        if (!hasSamples) {
+          this.expect.behavior.skip = true;
+          this.expect.behavior.toBeOk(true, 'Skipped: requires samples but none were obtained');
+          return;
+        }
       }
-    }
 
-    if(this.suite.requires.includes('websocket')) {
-      this.suite.setupHandlers();
-      await this.socket.connect();
-      this.newSubId();  
+      const requiresSocket = this.suite.requires.includes('websocket');
+      if (requiresSocket) {
+        this.suite.setupHandlers();
+        this.socket.on('close', () => this.failAndConclude('Connection closed before test completion'));
+        this.socket.on('error', () => this.failAndConclude('Connection error before test completion'));
+        const connected = await this.socket.connect();
+        if (this.concluded) {
+          // Transport setup may finish after abort already performed cleanup.
+          this.socket.off();
+          this.socket.terminate();
+          return;
+        }
+        if (!connected || !this.socket.CONNECTED) throw new Error('Could not connect to relay');
+        this.newSubId();
+      }
+
+      this.timeoutBegin();
+      this.digest();
+      this.precheck(this.expect.conditions);
+      this.expect.evaluateConditions(true);
+      // Custom prepare methods may only send the first message. Completion is
+      // signalled by a response handler, abort, or timeout, rather than return.
+      await Promise.race([
+        this.prepare().then(() => requiresSocket ? this.completion : undefined),
+        this.completion,
+      ]);
+      if (this.expect.results.length === 0 && this.expect.skipped.length === 0) {
+        if (this.expect.behavior.skip) {
+          this.expect.behavior.toBeOk(true, 'Skipped: test prerequisites unavailable');
+        } else {
+          this.recordFailure('Test completed without assertions');
+        }
+      }
+    } catch (error) {
+      this.recordFailure(`Test failed: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      this.conclude();
+      this.running = false;
+      this.setAbortListener(false);
+      this.finish();
+      this.resolveCompletion = undefined;
+      this.completion = undefined;
     }
-    
-    this.timeoutBegin();
-    this.digest();
-    this.precheck(this.expect.conditions);
-    this.expect.evaluateConditions(true);
-    await this.prepare();
-    this.finish();
+  }
+
+  private recordFailure(message: string): void {
+    const previousSkip = this.expect.behavior.skip;
+    this.expect.behavior.skip = false;
+    this.expect.behavior.toBeOk(false, message);
+    this.expect.behavior.skip = previousSkip;
+  }
+
+  private failAndConclude(message: string): void {
+    if (!this.running || this.concluded) return;
+    this.recordFailure(message);
+    this.conclude();
+  }
+
+  protected setAbortListener(enabled: boolean): void {
+    if (enabled === this.abortListenerRegistered) return;
+    this.abortListenerRegistered = enabled;
+    if (enabled) Emitter.on('all:abort', this.abortHandler);
+    else Emitter.off('all:abort', this.abortHandler);
+  }
+
+  protected resetResults(): void {
+    this._expect = new Expect();
+    this._events = [];
+    this.notices = [];
+    this.totalEvents = 0;
+    this.data = {};
   }
 
   protected newSubId() {
@@ -242,29 +309,40 @@ export abstract class SuiteTest implements ISuiteTest {
   }
 
   protected conclude() {
+    if (!this.running || this.concluded) return;
+    this.concluded = true;
     this.timeoutFinish();
-    this.socket.off();
-    this.socket.terminate();
+    if (this.suite.requires.includes('websocket')) {
+      this.socket.off();
+      this.socket.terminate();
+    }
+    this.resolveCompletion?.();
   }
 
-  timeoutBegin() {  
+  timeoutBegin() {
     this.timeout = setTimeout(() => {
-      this.abort();
-      this.test(this.expect);
+      if (!this.running || this.concluded) return;
+      this.recordFailure(`Test timed out after ${this.timeoutMs}ms`);
+      try {
+        this.test(this.expect);
+      } catch (error) {
+        this.recordFailure(`Test failed: ${error instanceof Error ? error.message : String(error)}`);
+      } finally {
+        this.conclude();
+      }
     }, this.timeoutMs);
   }
 
   timeoutFinish() {
-    this.logger.debug(`${this.slug} timed out`, 2);
     clearTimeout(this.timeout);
   }
 
-  private finish(): void {
+  protected finish(): void {
     this.logger.debug(`testKey: ${this.suite.testKey}`, 2);
     const { passing, passed, failed, skipped, errors } = this.expect;
     const denom = passed.length + failed.length;
     const passrate = denom > 0 ? passed.length / denom : 0;
-    const pass = passing
+    const pass = passing && passed.length > 0
     const { filters, notices, events } = this;
     const result = {
       testKey: this.suite.testKey,
@@ -279,18 +357,18 @@ export abstract class SuiteTest implements ISuiteTest {
       events
     } as ISuiteTestResult;
 
-    if(skipped.length) {
+    if(skipped.length && !failed.length) {
       this.logger.custom('skipped', `${this.slug}`, 2);
     }
     else {
-      this.logger.custom(passed? 'pass': 'fail', `${this.slug}`, 2);
+      this.logger.custom(pass? 'pass': 'fail', `${this.slug}`, 2);
     }
     
     this.resulter.set(result as ISuiteTestResult);
   }
 
   abort() {
-    this.socket.terminate();
+    this.failAndConclude('Test aborted');
   }
 
   onMessageNotice(notice: RelayNoticeMessage) {

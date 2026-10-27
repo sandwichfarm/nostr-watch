@@ -1,5 +1,13 @@
 # @nostrwatch/route66-cacheadapter-nostrsqlite
 
+## 0.0.3
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @nostrwatch/route66@0.0.3
+  - @nostrwatch/worker-relay@1.3.2
+
 ## 0.0.2
 
 ### Patch Changes

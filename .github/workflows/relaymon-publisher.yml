@@ -1,0 +1,45 @@
+name: Relaymon publisher regressions
+
+on:
+  pull_request:
+    paths:
+      - internal/publisher/**
+      - internal/logger/**
+      - apps/relaymon/src/**
+      - apps/relaymon/tests/unit/deletion*.test.ts
+      - apps/relaymon/deno.json
+      - .github/workflows/relaymon-publisher.yml
+  push:
+    branches: [next]
+    paths:
+      - internal/publisher/**
+      - internal/logger/**
+      - apps/relaymon/src/**
+      - apps/relaymon/tests/unit/deletion*.test.ts
+      - apps/relaymon/deno.json
+      - .github/workflows/relaymon-publisher.yml
+
+permissions:
+  contents: read
+
+jobs:
+  publisher:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: apps/relaymon
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
+        with:
+          deno-version: v2.9.8
+      - name: Check Publisher types
+        run: deno check --no-lock --unstable-sloppy-imports ../../internal/publisher/src/Publisher.ts
+      - name: Verify ACK durability and connection cleanup
+        run: >-
+          deno test --no-lock --no-check --unstable-sloppy-imports -A
+          tests/unit/deletion-publisher-lifecycle.test.ts
+          tests/unit/deletion-publish-once.test.ts

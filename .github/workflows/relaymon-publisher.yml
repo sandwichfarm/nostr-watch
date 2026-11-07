@@ -7,6 +7,7 @@ on:
       - internal/logger/**
       - apps/relaymon/src/**
       - apps/relaymon/tests/unit/deletion*.test.ts
+      - apps/relaymon/tests/unit/remediation-startup.test.ts
       - apps/relaymon/deno.json
       - .github/workflows/relaymon-publisher.yml
   push:
@@ -16,6 +17,7 @@ on:
       - internal/logger/**
       - apps/relaymon/src/**
       - apps/relaymon/tests/unit/deletion*.test.ts
+      - apps/relaymon/tests/unit/remediation-startup.test.ts
       - apps/relaymon/deno.json
       - .github/workflows/relaymon-publisher.yml
 
@@ -38,8 +40,9 @@ jobs:
           deno-version: v2.9.8
       - name: Check Publisher types
         run: deno check --no-lock --unstable-sloppy-imports ../../internal/publisher/src/Publisher.ts
-      - name: Verify ACK durability and connection cleanup
+      - name: Verify startup scheduling, ACK durability and connection cleanup
         run: >-
           deno test --no-lock --no-check --unstable-sloppy-imports -A
           tests/unit/deletion-publisher-lifecycle.test.ts
           tests/unit/deletion-publish-once.test.ts
+          tests/unit/remediation-startup.test.ts

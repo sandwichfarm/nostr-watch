@@ -31,7 +31,7 @@
  * the stable, normalizeNip11-scrubbed hashes. See db.ts `initializeDB`.
  */
 
-import { db, getOnlineRelays, getRelayInfo, clearDeltaState, clearPeriodSnapshots } from "../db/db.ts";
+import { db, getOnlineRelays, getRelayInfo, clearDeltaState, clearPeriodSnapshots, isDeletionPublished } from "../db/db.ts";
 import { VERSION, qualifyRelayUrl } from "@nostrwatch/nostrings";
 import { relayHostnameDedup } from "./hostnames.ts";
 import { getLogger } from "./logger.ts";
@@ -290,7 +290,23 @@ export function enqueueRemediationDeletion(url: string, reason: string): void {
  * next startup. Never throws — reports counts via a structured log
  * line and returns.
  */
-export async function drainRemediationDeletionQueue(config: Config): Promise<void> {
+let remediationDrain: Promise<void> | undefined;
+
+export function drainRemediationDeletionQueue(config: Config): Promise<void> {
+  // The daemon and any overlapping retry caller share one pass over the
+  // process-wide DB. A second snapshot could otherwise publish the same rows
+  // while the first pass is still awaiting its ACKs.
+  // This only coalesces drains: callers must retain ownership ordering with
+  // other deletion paths (the daemon defers ignore-list loops until it ends).
+  if (!remediationDrain) {
+    remediationDrain = drainRemediationDeletionQueueOnce(config).finally(() => {
+      remediationDrain = undefined;
+    });
+  }
+  return remediationDrain;
+}
+
+async function drainRemediationDeletionQueueOnce(config: Config): Promise<void> {
   try {
     const rows = db.query(
       `SELECT url, reason, attempts FROM remediation_deletion_queue
@@ -323,7 +339,9 @@ export async function drainRemediationDeletionQueue(config: Config): Promise<voi
       const attempts = (attemptsRaw as number) || 0;
 
       try {
-        const ok = await deleteRelayCheckEvent(url, reason, config);
+        // A previous pass may have recorded its ACK before exiting, or another
+        // deletion path may already have completed this durable obligation.
+        const ok = isDeletionPublished(url) || await deleteRelayCheckEvent(url, reason, config);
         if (ok) {
           db.query(
             `DELETE FROM remediation_deletion_queue WHERE url = ?`,

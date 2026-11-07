@@ -408,15 +408,15 @@ export async function runDaemon(config: Config): Promise<void> {
     // Run warmup before starting normal loops
     await runWarmup();
 
-    // Drain remediation deletion queue after warmup re-enables deletion
-    // publishing. Draining earlier makes deletion.ts return false before
-    // sending any kind:5 event, which leaves valid removals in the queue.
-    try {
-      const { drainRemediationDeletionQueue } = await import("../utils/remediation.ts");
-      await drainRemediationDeletionQueue(config);
-    } catch (e) {
-      logger.error(`drainRemediationDeletionQueue failed: ${e}`);
-    }
+    // Start the drain after warmup re-enables deletion publishing, but do not
+    // gate check scheduling on a potentially hours-long remediation backlog.
+    // Keep it supervised with the daemon tasks; pending rows survive exit.
+    const remediationDrain = import("../utils/remediation.ts")
+      .then(({ drainRemediationDeletionQueue }) => drainRemediationDeletionQueue(config))
+      .catch((e) => {
+        logger.error(`drainRemediationDeletionQueue failed: ${e}`);
+      });
+    const tasks: Promise<void>[] = [remediationDrain];
 
     // Auto-recover from retry poisoning (e.g. after prolonged proxy outage)
     // Only checks relays whose last known state was online=1 — dead relays
@@ -444,7 +444,10 @@ export async function runDaemon(config: Config): Promise<void> {
       try {
         const networks: string[] = Array.isArray(config.relaymon.networks) ? config.relaymon.networks : ["clearnet"];
         const placeholders = networks.map(() => '?').join(',');
-        const query = `SELECT url FROM relay_status WHERE network IN (${placeholders})`;
+        // Pending remediation owns these deletions. Checking ignored rows here
+        // would ask the worker to publish the same deletion concurrently.
+        const query = `SELECT url FROM relay_status WHERE network IN (${placeholders})
+          AND url NOT IN (SELECT url FROM remediation_deletion_queue)`;
         const rows = db.query(query, networks);
         const allUrls: string[] = rows.map(([url]) => url as string).filter(u => typeof u === 'string' && !u.includes('|'));
 
@@ -495,6 +498,9 @@ export async function runDaemon(config: Config): Promise<void> {
         return;
       }
 
+      // Retain the old ordering for ignore mutations/deletions. Only checks
+      // and seeding may run alongside the startup remediation drain.
+      await remediationDrain;
       const interval = config.relaymon.ignorelist.interval || "24h";
       const intervalMs = parseInterval(interval);
       logger.info(`Scheduling ignore list sync every ${interval}`);
@@ -519,6 +525,7 @@ export async function runDaemon(config: Config): Promise<void> {
         return;
       }
 
+      await remediationDrain;
       const interval = config.relaymon.ignorelist.deletion_interval || "24h";
       const intervalMs = parseInterval(interval);
       logger.info(`Scheduling ignore list deletions every ${interval}`);
@@ -573,6 +580,7 @@ export async function runDaemon(config: Config): Promise<void> {
         return;
       }
 
+      await remediationDrain;
       const interval = config.relaymon.ignorelist.reevaluation_interval || "24h";
       const intervalMs = parseInterval(interval);
       logger.info(`Scheduling ignored relay re-evaluation every ${interval}`);
@@ -612,8 +620,6 @@ export async function runDaemon(config: Config): Promise<void> {
         }
       }
     }
-
-    const tasks: Promise<void>[] = []
 
     if(seeder) {
       tasks.push(

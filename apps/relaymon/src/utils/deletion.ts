@@ -129,9 +129,9 @@ export async function deleteRelayCheckEvent(
     // If a queue manager is provided, use it to publish the event
     if (queueManager) {
       queueManager.addPublishJob(async () => {
+        // This job owns its publisher and must release it on both outcomes.
+        const publisher = new Publisher(pubkey, config.publisher.relays);
         try {
-          // Create a publisher instance for this job
-          const publisher = new Publisher(pubkey, config.publisher.relays);
           await publisher.publishEvent(signedEvent);
           logger.info(`Queued deletion event for relay ${relayUrl} using a-tag`);
 
@@ -146,6 +146,8 @@ export async function deleteRelayCheckEvent(
         } catch (error) {
           logger.error(`Error publishing deletion event for ${relayUrl}: ${error}`);
           throw error; // Rethrow to trigger retry mechanism
+        } finally {
+          await publisher.close();
         }
       }, { category: 'deletion' });
       // Consider successful queuing as success
@@ -153,18 +155,22 @@ export async function deleteRelayCheckEvent(
     } else {
       // Fallback to direct publishing if no queue manager is available
       const publisher = new Publisher(pubkey, config.publisher.relays);
-      await publisher.publishEvent(signedEvent);
+      try {
+        await publisher.publishEvent(signedEvent);
 
-      // Record on successful publish (in-memory + durable).
-      deletedRelays.add(relayUrl);
-      markDeletionPublished(relayUrl);
+        // Record on successful publish (in-memory + durable).
+        deletedRelays.add(relayUrl);
+        markDeletionPublished(relayUrl);
 
-      // Clear delta state and period snapshots for this relay
-      clearDeltaState(relayUrl);
-      clearPeriodSnapshots(relayUrl);
+        // Clear delta state and period snapshots for this relay
+        clearDeltaState(relayUrl);
+        clearPeriodSnapshots(relayUrl);
 
-      logger.info(`Published deletion event for relay ${relayUrl} using a-tag`);
-      return true;
+        logger.info(`Published deletion event for relay ${relayUrl} using a-tag`);
+        return true;
+      } finally {
+        await publisher.close();
+      }
     }
   } catch (error) {
     logger.error(`Error creating deletion event for ${relayUrl}: ${error}`);

@@ -10,6 +10,7 @@ import { publishEventsToMemoryRelay } from "./events-helpers.js";
 import { doAggregateCache, statsAsOf, tabState } from "./app.js";
 import timestring from "timestring";
 import { getLeaderTabRpcClient } from "$lib/runtime/leader-tab-client";
+import { latestByMonitorRelay } from "$lib/utils/latest-by-monitor-relay";
 
 let $route66: Route66 | null;
 
@@ -326,22 +327,12 @@ async function computeRelayLivenessFromCache(
 
   if (!Array.isArray(events) || events.length === 0) return result;
 
-  // Group events by (monitor pubkey, relay d-tag) and keep only the latest
-  // Key format: "pubkey:relay"
-  const latestByMonitorRelay = new Map<string, IEvent>();
-  for (const event of events) {
-    const relay = event.tags?.find(t => t[0] === 'd')?.[1];
-    if (!relay) continue;
-    const key = `${event.pubkey}:${relay}`;
-    const existing = latestByMonitorRelay.get(key);
-    if (!existing || (event.created_at as number) > (existing.created_at as number)) {
-      latestByMonitorRelay.set(key, event);
-    }
-  }
+  // Group events by (monitor pubkey, normalised relay d-tag) and keep only the latest
+  const latestEvents = latestByMonitorRelay(events);
 
   // Classify each relay by its latest event timestamp for each monitor
   // Use store-based thresholds instead of Monitor's internal values
-  for (const event of latestByMonitorRelay.values()) {
+  for (const event of latestEvents.values()) {
     const monitor = monitorMap.get(event.pubkey);
     if (!monitor) continue;
 

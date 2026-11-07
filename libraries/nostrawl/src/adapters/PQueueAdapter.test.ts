@@ -148,5 +148,31 @@ describe('PQueueAdapter', () => {
     
     // Verify emit was called with the correct arguments instead of _on
     expect(emitSpy).toHaveBeenCalledWith('progress', progress);
+    expect(adapter['logger'].info).toHaveBeenCalledWith(
+      expect.stringContaining('last event: 2009-02-13T23:31:30.000Z')
+    );
   });
+
+  it.each([NaN, Infinity, -Infinity, Number.MAX_VALUE, 8_640_000_000_001, -1, 0])(
+    'emits unchanged progress when timestamp %s cannot be displayed',
+    async (timestamp) => {
+      const emitSpy = vi.spyOn(adapter, 'emit').mockReturnValue(true);
+      const progress = Object.freeze({
+        found: 5,
+        rejected: 2,
+        relay: 'wss://relay1.com',
+        last_timestamp: timestamp,
+        highest_timestamp: timestamp,
+        lowest_timestamp: timestamp,
+        total: 10
+      });
+
+      await expect(adapter.updateProgress(progress, { id: 1 })).resolves.toBeUndefined();
+
+      expect(emitSpy).toHaveBeenCalledExactlyOnceWith('progress', progress);
+      expect(adapter['logger'].info).toHaveBeenCalledWith(
+        'Progress update for job #1 - wss://relay1.com: 5 found, 2 rejected (50.0%)'
+      );
+    }
+  );
 });

@@ -1,6 +1,6 @@
 import Logger from '@nostrwatch/logger';
 import { verifyEvent } from 'nostr-tools/pure';
-import { SimplePool } from 'nostr-tools';
+import { SimplePool, utils } from 'nostr-tools';
 
 interface Config {
   wsAdapter?: any;
@@ -25,13 +25,23 @@ export class Publisher {
 
   async publishEvent(signedEvent: any): Promise<any> {
     if (this.closePromise) throw new Error("Publisher is closed");
+    // SimplePool.publish in nostr-tools 2.23.3 fulfills connection failures with
+    // a string. Only Relay.publish's positive OK may count as an ACK here.
+    // New SDKs require an explicit connection timeout; older ones own their
+    // default on the relay instead.
+    const connectionTimeout = 'maxWaitForConnection' in this.pool
+      ? this.pool.maxWaitForConnection as number
+      : undefined;
+    const relays = [...new Set(this.relays.map(utils.normalizeURL))];
     // Attach .catch() to each individual relay promise so that rejections from
     // closed connections (e.g. SendingOnClosedConnection) don't leak as unhandled.
-    const promises = this.pool.publish(this.relays, signedEvent).map(p =>
-      p.catch((err: any) => {
-        this.logger.warn(`Publish to relay failed: ${err?.message || err}`);
-        throw err; // re-throw so Promise.any still sees it as rejected
-      })
+    const promises = relays.map(url =>
+      this.pool.ensureRelay(url, { connectionTimeout })
+        .then(relay => relay.publish(signedEvent))
+        .catch((err: any) => {
+          this.logger.warn(`Publish to relay failed: ${err?.message || err}`);
+          throw err; // re-throw so Promise.any still sees it as rejected
+        })
     );
     for (const promise of promises) {
       this.pendingPublishes.add(promise);

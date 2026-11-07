@@ -1,0 +1,42 @@
+name: Nostrawl cache regressions
+
+on:
+  pull_request:
+    paths:
+      - libraries/nostrawl/**
+      - package.json
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+      - .github/workflows/nostrawl-cache.yml
+  push:
+    branches: [next]
+    paths:
+      - libraries/nostrawl/**
+      - package.json
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+      - .github/workflows/nostrawl-cache.yml
+
+permissions:
+  contents: read
+
+jobs:
+  cache:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
+        with:
+          version: 11.28.11
+      - name: Install existing library dependencies without lifecycle scripts
+        run: pnpm --filter @nostrwatch/nostrawl... install --frozen-lockfile --ignore-scripts
+      - name: Check types including regression tests
+        run: pnpm --filter @nostrwatch/nostrawl exec tsc --noEmit -p tsconfig.json
+      - name: Verify cache counts, record preservation and crawl lifecycle
+        run: pnpm --filter @nostrwatch/nostrawl test

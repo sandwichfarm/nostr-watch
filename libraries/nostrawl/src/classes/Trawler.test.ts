@@ -1,16 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Subject } from 'rxjs';
 
-// Mock modules first (these are hoisted to the top)
-vi.mock('lmdb', () => {
-  return {
-    open: vi.fn().mockReturnValue({
-      get: vi.fn(),
-      put: vi.fn(),
-      getRange: vi.fn()
-    })
-  };
-});
+const mockDb = vi.hoisted(() => ({
+  get: vi.fn(),
+  put: vi.fn(),
+  getKeysCount: vi.fn(),
+  getRange: vi.fn(),
+}));
+
+vi.mock('lmdb', () => ({ open: vi.fn(() => mockDb) }));
 
 // Mock applesauce-relay
 const mockSubscribe = vi.fn();
@@ -25,7 +23,6 @@ vi.mock('applesauce-relay', () => ({
 
 import NTTrawler from './Trawler';
 import { TrawlerOptions } from '../types';
-import * as lmdb from 'lmdb';
 
 describe('NTTrawler', () => {
   let trawler: NTTrawler;
@@ -42,9 +39,9 @@ describe('NTTrawler', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    const mockDb = vi.mocked(lmdb.open)();
     mockDb.get.mockReturnValue(1234567890);
     mockDb.put.mockResolvedValue(undefined);
+    mockDb.getKeysCount.mockReturnValue(2);
     mockDb.getRange.mockReturnValue([
       { key: 'has:event1', value: true },
       { key: 'has:event2', value: true }
@@ -87,7 +84,6 @@ describe('NTTrawler', () => {
   it('should get since timestamp correctly', async () => {
     await trawler.openCache();
     const timestamp = await trawler['getSince']('wss://relay1.com');
-    const mockDb = vi.mocked(lmdb.open)();
     expect(mockDb.get).toHaveBeenCalledWith('lastUpdate:wss://relay1.com');
     expect(timestamp).toBe(1234567890);
   });
@@ -95,30 +91,49 @@ describe('NTTrawler', () => {
   it('should update since timestamp correctly', async () => {
     await trawler.openCache();
     await trawler['updateSince']('wss://relay1.com', 1234567890);
-    const mockDb = vi.mocked(lmdb.open)();
     expect(mockDb.put).toHaveBeenCalledWith('lastUpdate:wss://relay1.com', 1234567890);
   });
 
   it('should count events correctly', async () => {
     await trawler.openCache();
     const count = await trawler.countEvents('wss://relay1.com');
-    const mockDb = vi.mocked(lmdb.open)();
-    expect(mockDb.getRange).toHaveBeenCalled();
+    expect(mockDb.getKeysCount).toHaveBeenCalledWith({ start: 'has:', end: 'has;' });
     expect(count).toBe(2);
   });
 
   it('should count timestamps correctly', async () => {
     await trawler.openCache();
     const count = await trawler.countTimestamps('wss://relay1.com');
-    const mockDb = vi.mocked(lmdb.open)();
-    expect(mockDb.getRange).toHaveBeenCalled();
+    expect(mockDb.getKeysCount).toHaveBeenCalledWith({ start: 'has:', end: 'has;' });
     expect(count).toBe(2);
   });
+
+  it.each(['countEvents', 'countTimestamps'] as const)(
+    '%s counts the complete cache without loading cached values',
+    async (method) => {
+      await trawler.openCache();
+      mockDb.getKeysCount.mockReturnValue(250_001);
+      mockDb.getRange.mockImplementation(() => {
+        throw new Error('Counting must not decode cached event payloads');
+      });
+
+      expect(await trawler[method]('wss://relay1.com')).toBe(250_001);
+      expect(mockDb.getRange).not.toHaveBeenCalled();
+      expect(mockDb.get).not.toHaveBeenCalled();
+      expect(mockDb.put).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(['countEvents', 'countTimestamps'] as const)(
+    '%s returns zero while the cache is closed',
+    async (method) => {
+      expect(await trawler[method]('wss://relay1.com')).toBe(0);
+    },
+  );
 
   it('should trawl relays correctly', async () => {
     await trawler.openCache();
     await trawler.trawl(relays, { id: 1 });
-    const mockDb = vi.mocked(lmdb.open)();
     // With negentropy enabled (default), it attempts sync which calls subscribe
     expect(mockSubscribe).toHaveBeenCalled();
   });

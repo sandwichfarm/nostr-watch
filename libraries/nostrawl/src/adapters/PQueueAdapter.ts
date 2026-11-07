@@ -241,7 +241,10 @@ export default class PQueueAdapter extends NTQueue {
     let timeInfo = '';
     if (progress.last_timestamp > 0) {
       const date = new Date(progress.last_timestamp * 1000);
-      timeInfo = `, last event: ${date.toISOString()}`;
+      // Peer timestamps can exceed Date's range; logging must not reject progress.
+      if (Number.isFinite(date.getTime())) {
+        timeInfo = `, last event: ${date.toISOString()}`;
+      }
     }
     
     this.logger.info(`Progress update for ${jobInfo} - ${relayInfo}: ${countInfo}${percentageInfo}${timeInfo}`);

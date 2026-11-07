@@ -79,6 +79,31 @@ The multinet variant includes supplementary containers for network routing:
 
 Traffic is routed transparently based on domain type with no application code changes needed.
 
+### Container startup checks
+
+In multinet mode, `VERIFY_CONNECTIVITY=false` skips optional external connectivity
+probes, including the Tor WebSocket probe. Local Tor port and I2P SAM readiness
+checks still run. `TOR_BOOTSTRAP_TIMEOUT` (180 seconds) and
+`I2P_BOOTSTRAP_TIMEOUT` (300 seconds) bound each proxy's combined port/protocol
+wait; these settings require positive whole seconds.
+
+Enabled external probes have total deadlines: `NETWORK_PROBE_TIMEOUT` defaults
+to 20 seconds per probe, and `TOR_WEBSOCKET_TIMEOUT` to 30 seconds per relay.
+Both accept positive fractional seconds. Unresponsive probes receive SIGKILL
+after one additional second. Retries and tested destinations remain finite.
+
+`REQUIRE_NETWORK_CONNECTIVITY=true` prevents application startup when bootstrap
+or enabled checks fail. Otherwise startup continues after a failed check.
+`--verify-network` forces the optional checks even when verification is disabled,
+returns failure if any required check fails, and never launches the application.
+It is supported only in multinet mode. Normal startup retains proxychains routing.
+
+Run the offline launcher regression tests from the repository root:
+
+```sh
+python3 -B -m unittest discover -s apps/relaymon/tests -p test_entrypoint.py -v
+```
+
 ## Configuration
 
 Relaymon is configured via `config.yaml`. Copy `config.sample.yaml` as a starting point.

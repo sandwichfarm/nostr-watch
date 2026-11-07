@@ -171,7 +171,7 @@ if [ "$VERIFY_ONLY" = "false" ]; then
   unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY all_proxy ALL_PROXY
 
   # Cache dependencies
-  deno cache --no-lock index.ts || echo "Some dependency caching failed, continuing anyway"
+  deno cache --no-lock --unstable-sloppy-imports index.ts || echo "Some dependency caching failed, continuing anyway"
 fi
 
 # --- Start hedproxy ---

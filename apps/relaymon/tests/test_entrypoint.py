@@ -129,6 +129,15 @@ else:
         self.assertTrue(any(tool == "websocat" for tool, _ in calls), calls)
         self.assertFalse(alive.get("hedproxy", False), output)
 
+    def test_dependency_cache_uses_application_import_resolution(self):
+        code, timed_out, calls, started, _, output = self.run_entrypoint()
+        self.assertFalse(timed_out, output)
+        self.assertEqual(code, 0, output)
+        cache = [args for tool, args in calls if tool == "deno" and args[0] == "cache"]
+        self.assertEqual(len(cache), 1, calls)
+        self.assertIn("--unstable-sloppy-imports", started)
+        self.assertIn("--unstable-sloppy-imports", cache[0])
+
     def test_failed_websocket_verification_fails_and_cleans_up(self):
         code, timed_out, _, started, alive, output = self.run_entrypoint("failed-websocket", args=("--verify-network",))
         self.assertFalse(timed_out, output)

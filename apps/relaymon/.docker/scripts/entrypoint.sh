@@ -14,6 +14,18 @@ for arg in "$@"; do
   fi
 done
 
+# --- Module cache policy ---
+RELAYMON_CACHE_ONLY="${RELAYMON_CACHE_ONLY-false}"
+DENO_MODULE_ARGS=()
+case "$RELAYMON_CACHE_ONLY" in
+  true) DENO_MODULE_ARGS+=(--cached-only) ;;
+  false) ;;
+  *)
+    echo "RELAYMON_CACHE_ONLY must be true or false" >&2
+    exit 1
+    ;;
+esac
+
 # --- Mode Selection ---
 RELAYMON_MODE="${RELAYMON_MODE:-clearnet}"
 
@@ -25,7 +37,7 @@ if [ "$RELAYMON_MODE" = "clearnet" ]; then
   echo "Starting RelayMon in clearnet mode..."
   export RELAYMON_SKIP_PID_CHECK=true
   cd /app/nostr-watch/apps/relaymon
-  exec deno run --no-lock --env-file=/app/.env --allow-all --unstable-sloppy-imports index.ts -c /opt/config.yaml "${APP_ARGS[@]}"
+  exec deno run "${DENO_MODULE_ARGS[@]}" --no-lock --env-file=/app/.env --allow-all --unstable-sloppy-imports index.ts -c /opt/config.yaml "${APP_ARGS[@]}"
 fi
 
 echo "Starting RelayMon in multinet mode with hedproxy..."
@@ -166,12 +178,14 @@ fi
 if [ "$VERIFY_ONLY" = "false" ]; then
   cd /app/nostr-watch/apps/relaymon
 
-  echo "Pre-caching dependencies in direct mode (no proxy)..."
   # Make sure no proxy settings are active for this step
   unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY all_proxy ALL_PROXY
 
-  # Cache dependencies
-  deno cache --no-lock --unstable-sloppy-imports index.ts || echo "Some dependency caching failed, continuing anyway"
+  if [ "$RELAYMON_CACHE_ONLY" = "false" ]; then
+    echo "Pre-caching dependencies in direct mode (no proxy)..."
+    # Cache dependencies
+    deno cache --no-lock --unstable-sloppy-imports index.ts || echo "Some dependency caching failed, continuing anyway"
+  fi
 fi
 
 # --- Start hedproxy ---
@@ -570,4 +584,4 @@ hedproxy_supervisor &
 echo "Starting RelayMon application..."
 echo "Executing with proxychains4: proxychains4 -f /etc/proxychains.conf deno run ... index.ts ${APP_ARGS[*]}"
 cd /app/nostr-watch/apps/relaymon
-exec proxychains4 -f /etc/proxychains.conf deno run --no-lock --env-file=/app/.env --unstable-sloppy-imports --allow-all index.ts -c /opt/config.yaml "${APP_ARGS[@]}"
+exec proxychains4 -f /etc/proxychains.conf deno run "${DENO_MODULE_ARGS[@]}" --no-lock --env-file=/app/.env --unstable-sloppy-imports --allow-all index.ts -c /opt/config.yaml "${APP_ARGS[@]}"

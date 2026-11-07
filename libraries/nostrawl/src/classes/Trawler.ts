@@ -90,16 +90,14 @@ export default class NTTrawler extends EventEmitter {
 
   async countEvents(relay: string): Promise<number> {
     if (!this.cache) return 0;
-    let results = [...this.cache.getRange()];
-    results = results.filter(({ key }) => typeof key === 'string' && key.startsWith(`has:`));
-    return results.length;
+    // Count legacy markers natively: scanning getRange() also decodes every
+    // cached event payload and can exhaust the heap before a relay connects.
+    return this.cache.getKeysCount({ start: 'has:', end: 'has;' });
   }
 
   async countTimestamps(relay: string): Promise<number> {
     if (!this.cache) return 0;
-    let events = [...this.cache.getRange()];
-    events = events.filter(({ key }) => typeof key === 'string' && key?.startsWith(`has:`));
-    return events.length;
+    return this.cache.getKeysCount({ start: 'has:', end: 'has;' });
   }
 
   async openCache(): Promise<void> {

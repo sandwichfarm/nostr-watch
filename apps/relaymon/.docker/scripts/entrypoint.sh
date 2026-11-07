@@ -18,6 +18,10 @@ done
 RELAYMON_MODE="${RELAYMON_MODE:-clearnet}"
 
 if [ "$RELAYMON_MODE" = "clearnet" ]; then
+  if [ "$VERIFY_ONLY" = "true" ]; then
+    echo "--verify-network requires multinet mode" >&2
+    exit 1
+  fi
   echo "Starting RelayMon in clearnet mode..."
   export RELAYMON_SKIP_PID_CHECK=true
   cd /app/nostr-watch/apps/relaymon
@@ -45,93 +49,115 @@ export RELAYMON_SKIP_PID_CHECK=true
 # --- Wait for Proxies (bootstrap-aware) ---
 TOR_BOOTSTRAP_TIMEOUT="${TOR_BOOTSTRAP_TIMEOUT:-180}"
 I2P_BOOTSTRAP_TIMEOUT="${I2P_BOOTSTRAP_TIMEOUT:-300}"
+NETWORK_PROBE_TIMEOUT="${NETWORK_PROBE_TIMEOUT:-20}"
+TOR_WEBSOCKET_TIMEOUT="${TOR_WEBSOCKET_TIMEOUT:-30}"
+for setting in TOR_BOOTSTRAP_TIMEOUT I2P_BOOTSTRAP_TIMEOUT; do
+  if [[ ! "${!setting}" =~ ^[1-9][0-9]*$ ]]; then
+    echo "$setting must be a positive whole number of seconds" >&2
+    exit 1
+  fi
+done
+for setting in NETWORK_PROBE_TIMEOUT TOR_WEBSOCKET_TIMEOUT; do
+  if [[ ! "${!setting}" =~ ^([1-9][0-9]*([.][0-9]+)?|0[.][0-9]*[1-9][0-9]*)$ ]]; then
+    echo "$setting must be a positive number of seconds" >&2
+    exit 1
+  fi
+done
+CHECK_CONNECTIVITY=false
+if [ "${VERIFY_CONNECTIVITY}" != "false" ] || [ "$VERIFY_ONLY" = "true" ]; then
+  CHECK_CONNECTIVITY=true
+fi
+
+# Port and protocol checks share each proxy's wall-clock bootstrap deadline.
+wait_for_proxy_port() {
+  local host=$1 port=$2 deadline=$3 remaining
+  while (( SECONDS < deadline )); do
+    remaining=$((deadline - SECONDS))
+    if timeout --kill-after=1 "$remaining" nc -z -w "$remaining" "$host" "$port" 2>/dev/null; then
+      return 0
+    fi
+    remaining=$((deadline - SECONDS))
+    (( remaining > 0 )) && sleep "$((remaining < 2 ? remaining : 2))"
+  done
+  return 1
+}
 
 wait_for_tor_ready() {
   local host=$1
   local port=$2
+  local deadline=$((SECONDS + TOR_BOOTSTRAP_TIMEOUT)) remaining limit
 
   # Phase 1: Wait for port to open
   echo "Waiting for Tor to bootstrap..."
   echo "  Phase 1: Waiting for SOCKS port $host:$port..."
-  until nc -z $host $port 2>/dev/null; do
-    sleep 2
-  done
+  if ! wait_for_proxy_port "$host" "$port" "$deadline"; then
+    echo "  WARNING: Tor SOCKS port did not become ready within ${TOR_BOOTSTRAP_TIMEOUT}s"
+    return 1
+  fi
   echo "  Tor SOCKS port is open."
+  [ "$CHECK_CONNECTIVITY" = "true" ] || return 0
 
   # Phase 2: Verify actual Tor connectivity
   echo "  Phase 2: Verifying Tor circuit readiness (timeout: ${TOR_BOOTSTRAP_TIMEOUT}s)..."
   local test_domain="duckduckgogg42xjoc72x3sjasowoarfbgcmvfimaftt6twagswzczad.onion"
-  local elapsed=0
-  local wait_interval=10
-
-  while [ $elapsed -lt $TOR_BOOTSTRAP_TIMEOUT ]; do
-    if curl --socks5-hostname "$host:$port" -s --head --connect-timeout 15 "http://$test_domain" > /dev/null 2>&1; then
-      echo "  Tor circuits are ready (took ${elapsed}s)."
+  while (( SECONDS < deadline )); do
+    remaining=$((deadline - SECONDS))
+    limit=$((remaining < 15 ? remaining : 15))
+    if timeout --kill-after=1 "$limit" curl --socks5-hostname "$host:$port" -s --head --connect-timeout "$limit" --max-time "$limit" "http://$test_domain" > /dev/null 2>&1; then
+      echo "  Tor circuits are ready."
       return 0
     fi
-    echo "  Tor not ready yet (${elapsed}s/${TOR_BOOTSTRAP_TIMEOUT}s), retrying in ${wait_interval}s..."
-    sleep $wait_interval
-    elapsed=$((elapsed + wait_interval))
-    # Increase backoff after first minute
-    if [ $elapsed -ge 60 ] && [ $wait_interval -lt 20 ]; then
-      wait_interval=20
-    fi
+    remaining=$((deadline - SECONDS))
+    (( remaining > 0 )) && sleep "$((remaining < 10 ? remaining : 10))"
   done
 
   echo "  WARNING: Tor bootstrap timeout after ${TOR_BOOTSTRAP_TIMEOUT}s - circuits may not be ready."
-  if [ "${REQUIRE_NETWORK_CONNECTIVITY}" = "true" ]; then
-    echo "  REQUIRE_NETWORK_CONNECTIVITY is set, aborting."
-    exit 1
-  fi
-  echo "  Continuing anyway..."
   return 1
 }
 
 wait_for_i2p_ready() {
   local host=$1
   local port=$2
+  local deadline=$((SECONDS + I2P_BOOTSTRAP_TIMEOUT)) remaining limit
 
   # Phase 1: Wait for SAM port to open
   echo "Waiting for I2P to bootstrap..."
   echo "  Phase 1: Waiting for SAM port $host:$port..."
-  until nc -z $host $port 2>/dev/null; do
-    sleep 2
-  done
+  if ! wait_for_proxy_port "$host" "$port" "$deadline"; then
+    echo "  WARNING: I2P SAM port did not become ready within ${I2P_BOOTSTRAP_TIMEOUT}s"
+    return 1
+  fi
   echo "  I2P SAM port is open."
 
   # Phase 2: Verify SAM bridge readiness with HELLO handshake
   echo "  Phase 2: Verifying I2P SAM readiness (timeout: ${I2P_BOOTSTRAP_TIMEOUT}s)..."
-  local elapsed=0
-  local wait_interval=15
-
-  while [ $elapsed -lt $I2P_BOOTSTRAP_TIMEOUT ]; do
+  while (( SECONDS < deadline )); do
+    remaining=$((deadline - SECONDS))
+    limit=$((remaining < 5 ? remaining : 5))
     local sam_response
-    sam_response=$(echo "HELLO VERSION" | nc -w 5 "$host" "$port" 2>/dev/null || true)
+    sam_response=$(echo "HELLO VERSION" | timeout --kill-after=1 "$limit" nc -w "$limit" "$host" "$port" 2>/dev/null || true)
     if echo "$sam_response" | grep -q "HELLO REPLY RESULT=OK"; then
-      echo "  I2P SAM bridge is ready (took ${elapsed}s)."
+      echo "  I2P SAM bridge is ready."
       return 0
     fi
-    echo "  I2P SAM not ready yet (${elapsed}s/${I2P_BOOTSTRAP_TIMEOUT}s), retrying in ${wait_interval}s..."
-    sleep $wait_interval
-    elapsed=$((elapsed + wait_interval))
-    # Increase backoff after two minutes
-    if [ $elapsed -ge 120 ] && [ $wait_interval -lt 30 ]; then
-      wait_interval=30
-    fi
+    remaining=$((deadline - SECONDS))
+    (( remaining > 0 )) && sleep "$((remaining < 15 ? remaining : 15))"
   done
 
   echo "  WARNING: I2P bootstrap timeout after ${I2P_BOOTSTRAP_TIMEOUT}s - tunnels may not be ready."
-  if [ "${REQUIRE_NETWORK_CONNECTIVITY}" = "true" ]; then
-    echo "  REQUIRE_NETWORK_CONNECTIVITY is set, aborting."
-    exit 1
-  fi
-  echo "  Continuing anyway..."
   return 1
 }
 
 echo "Waiting for proxy services..."
-wait_for_tor_ready $TOR_PROXY_HOST $TOR_SOCKS_PORT
-wait_for_i2p_ready $I2P_PROXY_HOST $I2P_SAM_PORT
+bootstrap_status=0
+wait_for_tor_ready "$TOR_PROXY_HOST" "$TOR_SOCKS_PORT" || bootstrap_status=1
+wait_for_i2p_ready "$I2P_PROXY_HOST" "$I2P_SAM_PORT" || bootstrap_status=1
+if [ "$bootstrap_status" -ne 0 ]; then
+  if [ "${REQUIRE_NETWORK_CONNECTIVITY}" = "true" ] || [ "$VERIFY_ONLY" = "true" ]; then
+    exit "$bootstrap_status"
+  fi
+  echo "Continuing despite proxy bootstrap timeout."
+fi
 
 # Uncomment if lokinet is enabled in docker-compose
 # wait_for_service $LOKINET_PROXY_HOST $LOKINET_SOCKS_PORT "Lokinet Proxy"
@@ -156,6 +182,12 @@ echo "Starting hedproxy for network operations..."
 hedproxy -proto socks -bind "0.0.0.0:$HEDPROXY_PORT" -tor "$TOR_PROXY_HOST:$TOR_SOCKS_PORT" -i2p "$I2P_PROXY_HOST:$I2P_SOCKS_PORT" -passthrough clearnet &
 # hedproxy socks "0.0.0.0:$HEDPROXY_PORT" -tor "$TOR_PROXY_HOST:$TOR_SOCKS_PORT" -i2p "$I2P_PROXY_HOST:$I2P_SOCKS_PORT" -passthrough clearnet -logLevel SILENT &
 HEDPROXY_PID=$!
+cleanup_verification() {
+  kill "$HEDPROXY_PID" 2>/dev/null || true
+  wait "$HEDPROXY_PID" 2>/dev/null || true
+}
+# A successful exec keeps hedproxy for the app; early exits reap our own proxy.
+trap cleanup_verification EXIT
 
 # Verify hedproxy is listening (poll up to 10s instead of fixed sleep)
 echo "Waiting for hedproxy to bind to port $HEDPROXY_PORT..."
@@ -187,7 +219,7 @@ test_tor_ws_with_websocat() {
 
   # Resolve Tor proxy hostname to IP address
   echo "Resolving $TOR_PROXY_HOST..."
-  TOR_PROXY_IP=$(getent hosts $TOR_PROXY_HOST | awk '{ print $1 }')
+  TOR_PROXY_IP=$(timeout --kill-after=1 "$NETWORK_PROBE_TIMEOUT" getent hosts "$TOR_PROXY_HOST" | awk 'NR == 1 { print $1 }')
 
   if [ -z "$TOR_PROXY_IP" ]; then
     echo "❌ ERROR: Could not resolve IP address for $TOR_PROXY_HOST"
@@ -196,7 +228,6 @@ test_tor_ws_with_websocat() {
   echo "Resolved $TOR_PROXY_HOST to $TOR_PROXY_IP"
 
   # Set up test parameters
-  local timeout=30 # Keep the increased timeout
   local success=false
 
   # List of Tor onion relays to test
@@ -213,7 +244,7 @@ test_tor_ws_with_websocat() {
     echo "DEBUG: Using SOCKS Proxy='${TOR_PROXY_IP}:${TOR_SOCKS_PORT}'" # Updated DEBUG line
 
     # Use the resolved IP address instead of the hostname
-    if websocat -v --socks5 "${TOR_PROXY_IP}:${TOR_SOCKS_PORT}" "$relay" -1 </dev/null > /dev/null; then
+    if timeout --kill-after=1 "$TOR_WEBSOCKET_TIMEOUT" websocat -v --socks5 "${TOR_PROXY_IP}:${TOR_SOCKS_PORT}" "$relay" -1 </dev/null > /dev/null; then
       echo "✅ Successfully connected to WebSocket relay: $relay"
       success=true
       break
@@ -231,6 +262,7 @@ test_tor_ws_with_websocat() {
     echo "Check Tor configuration and connectivity."
   fi
   echo "═════════════════════════════════════════════"
+  [ "$success" = "true" ]
 }
 
 # --- Verify hedproxy connectivity to different networks ---
@@ -266,7 +298,7 @@ verify_hedproxy_connectivity() {
     "oxen.io.loki"
   )
 
-  local timeout=20
+  local timeout="$NETWORK_PROBE_TIMEOUT"
   local max_retries=3
   local retry_delay=5
   local exit_code=0
@@ -288,13 +320,13 @@ verify_hedproxy_connectivity() {
 
       local result=1
       if [ "$proxy_type" = "socks5" ]; then
-        curl --socks5-hostname $proxy_addr -s --head --connect-timeout $timeout http://$domain > /dev/null 2>&1
+        timeout --kill-after=1 "$timeout" curl --socks5-hostname "$proxy_addr" -s --head --connect-timeout "$timeout" --max-time "$timeout" "http://$domain" > /dev/null 2>&1
         result=$?
       elif [ "$proxy_type" = "http" ]; then
-        curl -x $proxy_addr -s --head --connect-timeout $timeout http://$domain > /dev/null 2>&1
+        timeout --kill-after=1 "$timeout" curl -x "$proxy_addr" -s --head --connect-timeout "$timeout" --max-time "$timeout" "http://$domain" > /dev/null 2>&1
         result=$?
       else
-        curl -s --head --connect-timeout $timeout http://$domain > /dev/null 2>&1
+        timeout --kill-after=1 "$timeout" curl -s --head --connect-timeout "$timeout" --max-time "$timeout" "http://$domain" > /dev/null 2>&1
         result=$?
       fi
 
@@ -380,7 +412,7 @@ verify_hedproxy_connectivity() {
     echo "Diagnostic information:"
     local direct_i2p_works=false
     # Check if I2P HTTP proxy is available for diagnostics
-    if nc -z $I2P_PROXY_HOST 4444 2>/dev/null; then
+    if timeout --kill-after=1 "$NETWORK_PROBE_TIMEOUT" nc -z "$I2P_PROXY_HOST" 4444 2>/dev/null; then
       echo "  • I2P HTTP proxy available at $I2P_PROXY_HOST:4444"
       echo "  • Checking direct I2P HTTP proxy connection (note: extra time may allow tunnels to build)..."
       for domain in "${i2p_domains[@]}"; do
@@ -419,7 +451,7 @@ verify_hedproxy_connectivity() {
   fi
   
   # Check Lokinet connectivity if enabled
-  if nc -z $LOKINET_PROXY_HOST $LOKINET_SOCKS_PORT 2>/dev/null; then
+  if timeout --kill-after=1 "$NETWORK_PROBE_TIMEOUT" nc -z "$LOKINET_PROXY_HOST" "$LOKINET_SOCKS_PORT" 2>/dev/null; then
     echo "─────────────────────────────────────────────"
     echo "Testing Lokinet connectivity via hedproxy..."
     echo "─────────────────────────────────────────────"
@@ -459,15 +491,6 @@ verify_hedproxy_connectivity() {
     echo "✅ All available network tests PASSED"
   else
     echo "⚠️ Some network tests FAILED"
-    if [ "${REQUIRE_NETWORK_CONNECTIVITY}" = "true" ] || [ "$VERIFY_ONLY" = "true" ]; then
-      echo "Exiting with failure status..."
-      exit $exit_code
-    else
-    
-      echo "Continuing despite connectivity issues..."
-      echo "TIP: If you're setting up this environment, these failures are expected"
-      echo "     until all services are properly configured."
-    fi
   fi
   echo "═════════════════════════════════════════════"
 
@@ -475,22 +498,19 @@ verify_hedproxy_connectivity() {
 }
 
 # Run connectivity verification
-if [ "${VERIFY_CONNECTIVITY}" != "false" ] || [ "$VERIFY_ONLY" = "true" ]; then
-  verify_hedproxy_connectivity
-  sleep 5
+verification_status=0
+if [ "$CHECK_CONNECTIVITY" = "true" ]; then
+  verify_hedproxy_connectivity || verification_status=1
+  test_tor_ws_with_websocat || verification_status=1
 fi
-
-test_tor_ws_with_websocat
-sleep 5
 
 # If only verification was requested, exit now
 if [ "$VERIFY_ONLY" = "true" ]; then
   echo "Network verification complete, exiting as requested."
-  # Kill hedproxy before exiting
-  if [ -n "$HEDPROXY_PID" ]; then
-    kill $HEDPROXY_PID 2>/dev/null || true
-  fi
-  exit 0
+  exit "$verification_status"
+fi
+if [ "$verification_status" -ne 0 ] && [ "${REQUIRE_NETWORK_CONNECTIVITY}" = "true" ]; then
+  exit "$verification_status"
 fi
 
 # --- Hedproxy supervisor (background) ---

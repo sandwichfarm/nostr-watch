@@ -42,10 +42,25 @@ describe('latestByMonitorRelay', () => {
 		expect(map.has(`${MON_A}:${HEX_D}`)).toBe(true);
 	});
 
+	it.each([
+		['wss://a.example/relay', 'wss://a.example/relay/'],
+		['wss://a.example/a/b', 'wss://a.example/a//b'],
+		['wss://a.example/?a=1&b=2', 'wss://a.example/?b=2&a=1'],
+		['wss://a.example/?q=a%20b', 'wss://a.example/?q=a+b']
+	])('keeps distinct endpoints %s and %s separate', (first, second) => {
+		const older = ev(MON_A, first, 100);
+		const newer = ev(MON_A, second, 200);
+		const map = latestByMonitorRelay([older, newer]);
+		expect(map.size).toBe(2);
+		expect(map.get(`${MON_A}:${first}`)).toBe(older);
+		expect(map.get(`${MON_A}:${second}`)).toBe(newer);
+	});
+
 	it('skips events with a missing or non-ws d tag', () => {
 		const map = latestByMonitorRelay([
 			ev(MON_A, undefined, 100),
 			ev(MON_A, 'not a url', 100),
+			ev(MON_A, 'wss://', 100),
 			ev(MON_A, 'https://a.example', 100)
 		]);
 		expect(map.size).toBe(0);

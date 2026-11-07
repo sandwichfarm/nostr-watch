@@ -1,20 +1,22 @@
-import { normalizeURL } from 'nostr-tools/utils';
 import type { IEvent } from '@nostrwatch/route66/models';
 
 const HEX_PUBKEY = /^[0-9a-f]{64}$/;
 
 /**
- * Normalise a 30166 `d` tag so URL variants (trailing slash, case, default port)
+ * Normalise a 30166 `d` tag so URL variants (root slash, host case, default port)
  * count as one relay. NIP-66 also allows a hex pubkey as `d`; those are kept as is.
+ * Preserve distinct paths and query strings, which can identify different relays.
  * Returns undefined when `d` is neither a hex pubkey nor a ws/wss URL.
  */
 export function normalizeDTag(d: string | undefined): string | undefined {
 	if (!d) return undefined;
 	if (HEX_PUBKEY.test(d)) return d;
-	// normalizeURL rewrites http(s) to ws(s), so check the scheme as published
+	// Only accept WebSocket schemes as published.
 	if (!/^wss?:\/\//i.test(d)) return undefined;
 	try {
-		return normalizeURL(d);
+		const url = new URL(d);
+		url.hash = '';
+		return url.href;
 	} catch {
 		return undefined;
 	}

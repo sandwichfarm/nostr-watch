@@ -36,6 +36,11 @@ scenario = os.environ['ENTRYPOINT_TEST_SCENARIO']
 args = sys.argv[1:]
 with (root / 'calls').open('a') as log:
     log.write(json.dumps([tool, args]) + '\\n')
+if scenario == 'runtime-env' and tool in ('hedproxy', 'proxychains4', 'deno'):
+    assert pathlib.Path.cwd() == root / 'app', pathlib.Path.cwd()
+    for name in ('http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY', 'all_proxy', 'ALL_PROXY'):
+        expected = None if os.environ['RELAYMON_MODE'] == 'multinet' else 'http://inherited-proxy.invalid:1234'
+        assert os.environ.get(name) == expected, (tool, name, os.environ.get(name))
 if tool == 'sleep':
     time.sleep(0.02)
 elif tool in ('netstat', 'ss'):
@@ -69,6 +74,8 @@ elif tool == 'proxychains4':
     assert args[:3] == ['-f', '/etc/proxychains.conf', 'deno'], args
     os.execvp('deno', ['deno', *args[3:]])
 elif tool == 'deno':
+    if scenario == 'missing-module' and args[0] == 'run' and '--cached-only' in args:
+        sys.exit(42)
     if args[0] == 'run': (root / 'app-started').write_text(json.dumps(args))
 else:
     raise AssertionError(tool)
@@ -83,6 +90,7 @@ else:
                        VERIFY_CONNECTIVITY=verify, REQUIRE_NETWORK_CONNECTIVITY=require,
                        TOR_BOOTSTRAP_TIMEOUT="1", I2P_BOOTSTRAP_TIMEOUT="1",
                        NETWORK_PROBE_TIMEOUT="1", TOR_WEBSOCKET_TIMEOUT="0.5")
+            env.pop("RELAYMON_CACHE_ONLY", None)
             env.update(overrides or {})
             timed_out = False
             with (root / "output").open("w") as output:
@@ -137,6 +145,89 @@ else:
         self.assertEqual(len(cache), 1, calls)
         self.assertIn("--unstable-sloppy-imports", started)
         self.assertIn("--unstable-sloppy-imports", cache[0])
+
+    def test_cache_only_starts_both_modes_without_precaching(self):
+        for mode in ("clearnet", "multinet"):
+            with self.subTest(mode=mode):
+                code, timed_out, calls, started, _, output = self.run_entrypoint(
+                    mode=mode, args=("--label", "two words"), overrides={"RELAYMON_CACHE_ONLY": "true"})
+                self.assertFalse(timed_out, output)
+                self.assertEqual(code, 0, output)
+                flags = (["--allow-all", "--unstable-sloppy-imports"] if mode == "clearnet"
+                         else ["--unstable-sloppy-imports", "--allow-all"])
+                self.assertEqual(started, ["run", "--cached-only", "--no-lock", "--env-file=/app/.env",
+                                           *flags, "index.ts", "-c", "/opt/config.yaml", "--label", "two words"])
+                self.assertFalse(any(tool == "deno" and args[0] == "cache" for tool, args in calls), calls)
+                self.assertEqual(any(tool == "proxychains4" for tool, _ in calls), mode == "multinet")
+
+    def test_cache_only_unset_or_false_preserves_launch_and_cache_arguments(self):
+        for mode in ("clearnet", "multinet"):
+            for value in (None, "false"):
+                with self.subTest(mode=mode, value=value):
+                    overrides = {} if value is None else {"RELAYMON_CACHE_ONLY": value}
+                    code, timed_out, calls, started, _, output = self.run_entrypoint(mode=mode, overrides=overrides)
+                    self.assertFalse(timed_out, output)
+                    self.assertEqual(code, 0, output)
+                    flags = (["--allow-all", "--unstable-sloppy-imports"] if mode == "clearnet"
+                             else ["--unstable-sloppy-imports", "--allow-all"])
+                    self.assertEqual(started, ["run", "--no-lock", "--env-file=/app/.env", *flags,
+                                               "index.ts", "-c", "/opt/config.yaml"])
+                    cache = [args for tool, args in calls if tool == "deno" and args[0] == "cache"]
+                    self.assertEqual(cache, [["cache", "--no-lock", "--unstable-sloppy-imports", "index.ts"]]
+                                     if mode == "multinet" else [])
+
+    def test_invalid_cache_only_fails_before_external_commands(self):
+        for mode in ("clearnet", "multinet"):
+            for value in ("", "TRUE", "1", "true --reload"):
+                with self.subTest(mode=mode, value=value):
+                    code, timed_out, calls, started, _, output = self.run_entrypoint(
+                        mode=mode, overrides={"RELAYMON_CACHE_ONLY": value})
+                    self.assertFalse(timed_out, output)
+                    self.assertNotEqual(code, 0, output)
+                    self.assertIsNone(started)
+                    self.assertEqual(calls, [])
+                    self.assertIn("RELAYMON_CACHE_ONLY must be true or false", output)
+
+    def test_cache_policy_preserves_runtime_directory_and_proxy_environment(self):
+        for mode in ("clearnet", "multinet"):
+            for value in (None, "false", "true"):
+                with self.subTest(mode=mode, value=value):
+                    overrides = {name: "http://inherited-proxy.invalid:1234" for name in
+                                 ("http_proxy", "https_proxy", "HTTP_PROXY", "HTTPS_PROXY", "all_proxy", "ALL_PROXY")}
+                    if value is not None:
+                        overrides["RELAYMON_CACHE_ONLY"] = value
+                    code, timed_out, calls, started, _, output = self.run_entrypoint(
+                        "runtime-env", mode=mode, overrides=overrides)
+                    self.assertFalse(timed_out, output)
+                    self.assertEqual(code, 0, output)
+                    self.assertIsNotNone(started, output)
+                    cache = [args for tool, args in calls if tool == "deno" and args[0] == "cache"]
+                    self.assertEqual(len(cache), int(mode == "multinet" and value != "true"), calls)
+
+    def test_verification_never_invokes_deno_with_any_cache_policy(self):
+        for value in (None, "false", "true"):
+            with self.subTest(value=value):
+                overrides = {} if value is None else {"RELAYMON_CACHE_ONLY": value}
+                code, timed_out, calls, started, alive, output = self.run_entrypoint(
+                    args=("--verify-network",), overrides=overrides)
+                self.assertFalse(timed_out, output)
+                self.assertEqual(code, 0, output)
+                self.assertIsNone(started)
+                self.assertFalse(any(tool == "deno" for tool, _ in calls), calls)
+                self.assertTrue(any(tool == "websocat" for tool, _ in calls), calls)
+                self.assertFalse(alive.get("hedproxy", False), output)
+
+    def test_cache_only_propagates_module_resolution_failure_without_retry(self):
+        for mode in ("clearnet", "multinet"):
+            with self.subTest(mode=mode):
+                code, timed_out, calls, started, _, output = self.run_entrypoint(
+                    "missing-module", mode=mode, overrides={"RELAYMON_CACHE_ONLY": "true"})
+                self.assertFalse(timed_out, output)
+                self.assertEqual(code, 42, output)
+                self.assertIsNone(started)
+                deno_calls = [args for tool, args in calls if tool == "deno"]
+                self.assertEqual(len(deno_calls), 1, calls)
+                self.assertEqual(deno_calls[0][:2], ["run", "--cached-only"])
 
     def test_failed_websocket_verification_fails_and_cleans_up(self):
         code, timed_out, _, started, alive, output = self.run_entrypoint("failed-websocket", args=("--verify-network",))

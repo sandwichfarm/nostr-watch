@@ -81,6 +81,13 @@ Traffic is routed transparently based on domain type with no application code ch
 
 ### Container startup checks
 
+`RELAYMON_CACHE_ONLY=true` adds Deno's `--cached-only` flag in either container
+mode and skips multinet dependency pre-caching. Prepare the complete module cache
+in the image first: a missing dependency causes startup to fail. This setting
+restricts dependency downloads; runtime network access and startup connectivity
+checks retain their existing behavior. It defaults to `false` when unset and
+accepts only the literal values `true` or `false`.
+
 In multinet mode, `VERIFY_CONNECTIVITY=false` skips optional external connectivity
 probes, including the Tor WebSocket probe. Local Tor port and I2P SAM readiness
 checks still run. `TOR_BOOTSTRAP_TIMEOUT` (180 seconds) and

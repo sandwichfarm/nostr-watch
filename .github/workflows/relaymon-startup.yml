@@ -1,0 +1,30 @@
+name: Relaymon startup regressions
+
+on:
+  pull_request:
+    paths:
+      - apps/relaymon/.docker/scripts/entrypoint.sh
+      - apps/relaymon/tests/test_entrypoint.py
+      - .github/workflows/relaymon-startup.yml
+  push:
+    branches: [next]
+    paths:
+      - apps/relaymon/.docker/scripts/entrypoint.sh
+      - apps/relaymon/tests/test_entrypoint.py
+      - .github/workflows/relaymon-startup.yml
+
+permissions:
+  contents: read
+
+jobs:
+  startup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Check shell syntax and bounded startup behavior
+        run: |
+          bash -n apps/relaymon/.docker/scripts/entrypoint.sh
+          python3 -B apps/relaymon/tests/test_entrypoint.py

@@ -1,5 +1,9 @@
 // deno-lint-ignore-file no-import-prefix -- Reuse the existing versioned offline assertion fixture.
-import { assertEquals } from "https://deno.land/std@0.218.2/assert/mod.ts";
+import {
+  assert,
+  assertEquals,
+  assertRejects,
+} from "https://deno.land/std@0.218.2/assert/mod.ts";
 import { Nocap } from "@nostrwatch/nocap";
 import Every from "@nostrwatch/nocap-every-adapter-default";
 import WebsocketAdapter from "@nostrwatch/nocap-websocket-adapter-default";
@@ -7,8 +11,13 @@ import InfoAdapter from "@nostrwatch/nocap-info-adapter-default";
 import {
   effectiveCheckDeadline,
   performNetworkCheck,
+  runCheckChild,
 } from "../../src/utils/checkTransportChild.ts";
-import type { CheckRequest } from "../../src/utils/checkTransportProtocol.ts";
+import {
+  checkDeadline,
+  type CheckRequest,
+  encodeCheckFrame,
+} from "../../src/utils/checkTransportProtocol.ts";
 
 const input: CheckRequest = {
   url: "ws://owned.invalid/",
@@ -120,4 +129,166 @@ Deno.test("real NoCap/adapters network-transport spies retain result parity with
     WebsocketAdapter.prototype.check_read = original.read;
     InfoAdapter.prototype.check_info = original.info;
   }
+});
+
+Deno.test("child owns pending numeric check through stdin and rejects premature parent EOF", async () => {
+  const base = { v: 1, generation: "owned", request: "one", url: input.url };
+  const periodic: CheckRequest = {
+    ...input,
+    checks: ["info"],
+    options: { timeout: 10000 },
+    profile: "info-only",
+  };
+  let stream!: ReadableStreamDefaultController<Uint8Array>;
+  let reads = 0, accepted = false, settled = false;
+  const saved = {
+    log: console.log,
+    info: console.info,
+    debug: console.debug,
+    warn: console.warn,
+    error: console.error,
+  };
+  const work = runCheckChild("owned", "one", input.url, 65536, {
+    input: new ReadableStream({
+      start(c) {
+        stream = c;
+      },
+      pull() {
+        reads++;
+      },
+    }),
+    output: new WritableStream({
+      write(bytes) {
+        const frame = JSON.parse(new TextDecoder().decode(bytes));
+        if (frame.type === "ready") {
+          stream.enqueue(
+            encodeCheckFrame(
+              { ...base, type: "check", input: periodic },
+              65536,
+            ),
+          );
+        }
+        if (frame.type === "accepted") accepted = true;
+      },
+    }),
+    perform: async (_input, accept) => {
+      await accept!(checkDeadline(periodic));
+      return await new Promise<never>(() => {});
+    },
+  });
+  const rejection = assertRejects(
+    () => work,
+    Error,
+    "Parent closed before check completion",
+  );
+  void work.finally(() => {
+    settled = true;
+  }).catch(() => {});
+  try {
+    for (let i = 0; i < 30; i++) await Promise.resolve();
+    assert(accepted);
+    assert(reads >= 2);
+    assertEquals(settled, false);
+    stream.close();
+    await rejection;
+  } finally {
+    Object.assign(console, saved);
+  }
+});
+
+for (const error of [false, true]) {
+  Deno.test(`child terminal ${error ? "error" : "result"} permits parent EOF before write continuation`, async () => {
+    const base = { v: 1, generation: "owned", request: "one", url: input.url };
+    let stream!: ReadableStreamDefaultController<Uint8Array>;
+    const emitted: string[] = [];
+    const saved = {
+      log: console.log,
+      info: console.info,
+      debug: console.debug,
+      warn: console.warn,
+      error: console.error,
+    };
+    try {
+      await runCheckChild("owned", "one", input.url, 65536, {
+        input: new ReadableStream({
+          start(c) {
+            stream = c;
+          },
+        }),
+        output: new WritableStream({
+          write(bytes) {
+            const frame = JSON.parse(new TextDecoder().decode(bytes));
+            emitted.push(frame.type);
+            if (frame.type === "ready") {
+              stream.enqueue(
+                encodeCheckFrame({ ...base, type: "check", input }, 65536),
+              );
+            }
+            if (frame.type === "result" || frame.type === "error") {
+              stream.close();
+            }
+          },
+        }),
+        perform: async (_input, accept) => {
+          await accept!(checkDeadline(input));
+          if (error) throw new Error("operation failed");
+          return { url: input.url } as never;
+        },
+      });
+      assertEquals(emitted, ["ready", "accepted", error ? "error" : "result"]);
+    } finally {
+      Object.assign(console, saved);
+    }
+  });
+}
+
+Deno.test("child rejects a duplicate while its numeric operation is pending", async () => {
+  const base = { v: 1, generation: "owned", request: "one", url: input.url };
+  const bytes = encodeCheckFrame({ ...base, type: "check", input }, 65536);
+  let stream!: ReadableStreamDefaultController<Uint8Array>;
+  const saved = {
+    log: console.log,
+    info: console.info,
+    debug: console.debug,
+    warn: console.warn,
+    error: console.error,
+  };
+  try {
+    await assertRejects(
+      () =>
+        runCheckChild("owned", "one", input.url, 65536, {
+          input: new ReadableStream({
+            start(c) {
+              stream = c;
+            },
+          }),
+          output: new WritableStream({
+            write(raw) {
+              const frame = JSON.parse(new TextDecoder().decode(raw));
+              if (frame.type === "ready") stream.enqueue(bytes);
+              if (frame.type === "accepted") stream.enqueue(bytes);
+            },
+          }),
+          perform: async (_input, accept) => {
+            await accept!(checkDeadline(input));
+            return await new Promise<never>(() => {});
+          },
+        }),
+      Error,
+      "Invalid check request identity",
+    );
+  } finally {
+    Object.assign(console, saved);
+  }
+});
+
+Deno.test("fatal child CLI exits after channel cleanup instead of retaining SDK handles", async () => {
+  const source = await Deno.readTextFile(
+    new URL("../../src/utils/checkTransportChild.ts", import.meta.url),
+  );
+  const main = source.slice(source.indexOf("if (import.meta.main)"));
+  assert(main.includes("await runCheckChild("));
+  assert(main.includes("Deno.exit(0)"));
+  assert(main.includes("Deno.exit(1)"));
+  assert(!main.includes("Deno.exitCode"));
 });

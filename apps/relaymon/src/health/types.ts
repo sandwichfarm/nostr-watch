@@ -60,6 +60,7 @@ export interface HealthSnapshot {
     publishQueue: {
       pending: number;
       published: number;
+      publishedAnnouncements?: number;
       failed: number;
       retrying: number;
       successRate: number;

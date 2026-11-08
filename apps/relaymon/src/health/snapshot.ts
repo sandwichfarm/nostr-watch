@@ -144,6 +144,7 @@ export async function buildHealthSnapshot(options: {
     publishQueue: {
       pending: publishQueue.pending,
       published: publishStats.published,
+      publishedAnnouncements: publishStats.publishedAnnouncements,
       failed: publishStats.failed,
       retrying: publishStats.retrying,
       successRate: publishStats.successRate,

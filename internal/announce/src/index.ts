@@ -34,6 +34,7 @@ export class AnnounceMonitor {
   private userMetaPublisher: Publisher;
   private pubkey: string | null = null;
   private clientTag?: string;
+  private acknowledgedEventIds = new Set<string>();
 
   constructor(pubkey: string, options: AnnounceMonitorOptions) {
     log.debug(`announce::constructor(): ${pubkey}`)
@@ -97,6 +98,8 @@ export class AnnounceMonitor {
 
   generate(): any {
     log.debug(`announce::generate(): ${this.pubkey}`)
+    this.events = {};
+    this.acknowledgedEventIds.clear();
 
     const $monReg = new Kind10166(this.pubkey)
     $monReg.generateEvent({...this.monReg})
@@ -137,32 +140,34 @@ export class AnnounceMonitor {
     if(!this.events) throw new Error("Event has not yet been generated") 
     console.log(this.events)
     const pubbedIds: string[] = []
+    const failures: unknown[] = [];
     const kinds = Object.keys(this.events)
     for(let i = 0; i < kinds.length; i++) {
       const kind = kinds[i]    
       const kindNum = Number(kind)
+      const metadata = kindNum === 0 || kindNum === 10002;
+      const activeRelays = metadata ? this.userDataRelays : this.monRelays;
+      if ((!metadata && kindNum !== 10166) || activeRelays.length === 0) continue;
+      const event = this.events[kind];
+      if (this.acknowledgedEventIds.has(event.id)) {
+        pubbedIds.push(event.id);
+        continue;
+      }
       try {
-        let activeRelays: string[] = []
-        if(kindNum === 0 || kindNum === 10002) {
-          log.info(`publishing ${kind} to ${this.userDataRelays.join(',')}`)
-          activeRelays = this.userDataRelays
-          await this.userMetaPublisher.publishEvent(this.events[kind])
-        }
-        else if (kindNum === 10166) {
-          log.info(`publishing ${kind} to ${this.monRelays.join(',')}`)
-          activeRelays = this.monRelays
-          // console.log(this.events[kind])
-          await this.nip66Publisher.publishEvent(this.events[kind])
-        }
+        if (typeof event.id !== 'string' || !event.id) throw new Error(`Announcement ${kind} is not signed`);
+        log.info(`publishing ${kind} to ${activeRelays.join(',')}`)
+        await (metadata ? this.userMetaPublisher : this.nip66Publisher).publishEvent(event);
+        this.acknowledgedEventIds.add(event.id);
+        pubbedIds.push(event.id);
         log.info(`${chalk.green.bold(kind)} ${chalk.gray.italic('published to')} ${chalk.white.bold(activeRelays.join(','))}`)  
       }
       catch(e){
+        failures.push(e);
         console.log(e)
-        log.error(`${chalk.red.bold(kind)} ${chalk.gray.italic('failed to publish to')} ${chalk.white.bold(this.monRelays.join(','))}`)
+        log.error(`${chalk.red.bold(kind)} ${chalk.gray.italic('failed to publish to')} ${chalk.white.bold(activeRelays.join(','))}`)
       }   
-      
-      pubbedIds.push(this.events[kind].id)
     }    
+    if (failures.length) throw new AggregateError(failures, 'Monitor announcement publication failed');
     return pubbedIds
   }
 

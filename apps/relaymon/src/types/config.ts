@@ -52,7 +52,30 @@ export interface MonitorConfig {
 /**
  * Publisher configuration
  */
+export interface PublicationProcessConfig {
+  mode: "per-relay-process";
+  /** Exact normalized destination set qualified for this deployment. */
+  expectedRelays: string[];
+  maxChildren: number;
+  maxPendingPerRelay: number;
+  maxFrameBytes: number;
+  maxRestarts: number;
+  /** Lifecycle bound only; does not change SDK connection or ACK deadlines. */
+  shutdownMs: number;
+  launch: {
+    mode: "direct" | "proxychains";
+    proxychainsBinary?: string;
+    proxychainsConfig?: string;
+    cacheDir?: string;
+    certFile?: string;
+    caStores?: string;
+    oldSpaceMb: number;
+    semiSpaceMb: number;
+  };
+}
+
 export interface PublisherConfig {
+  transport?: PublicationProcessConfig;
   relays: string[];
   retry?: {
     maxRetries?: number;
@@ -362,6 +385,11 @@ export function validateConfig(config: unknown): Config {
 
   if (!Array.isArray(c.publisher.relays)) {
     throw new Error("Missing required field: publisher.relays (must be array)");
+  }
+
+  if (c.publisher.transport !== undefined) {
+    if (c.publisher.transport?.mode !== 'per-relay-process') throw new Error('Unsupported publication transport mode');
+    validatePublicationProcessConfig(c.publisher.transport);
   }
 
   // Validate relaymon section
@@ -735,4 +763,21 @@ export function validateConfig(config: unknown): Config {
 
   // All required validations passed, return typed config
   return c as Config;
+}
+
+export function validatePublicationProcessConfig(options: PublicationProcessConfig): void {
+  const allowed = ['mode', 'expectedRelays', 'maxChildren', 'maxPendingPerRelay', 'maxFrameBytes', 'maxRestarts', 'shutdownMs', 'launch'];
+  if (Object.keys(options).some((key) => !allowed.includes(key))) throw new Error('Unsupported publication process option');
+  if (options.launch && Object.keys(options.launch).some((key) => !['mode', 'proxychainsBinary', 'proxychainsConfig', 'cacheDir', 'certFile', 'caStores', 'oldSpaceMb', 'semiSpaceMb'].includes(key))) throw new Error('Unsupported publication launch option');
+  const bounds = { maxChildren: [1, 32], maxPendingPerRelay: [1, 128], maxFrameBytes: [1024, 1048576],
+    maxRestarts: [0, 10], shutdownMs: [100, 60000] } as const;
+  for (const [name, [min, max]] of Object.entries(bounds)) {
+    const value = options[name as keyof typeof bounds];
+    if (!Number.isInteger(value) || value < min || value > max) throw new Error(`Invalid publication bound: ${name}`);
+  }
+  if (!Array.isArray(options.expectedRelays) || !options.launch || !['direct', 'proxychains'].includes(options.launch.mode)) throw new Error('Publication process mode requires explicit expectedRelays and launch policy');
+  for (const [name, min, max] of [['oldSpaceMb', 16, 128], ['semiSpaceMb', 1, 8]] as const) {
+    const value = options.launch[name];
+    if (!Number.isInteger(value) || value < min || value > max) throw new Error(`Invalid child heap profile: ${name}`);
+  }
 }

@@ -1,5 +1,6 @@
 // src/index.ts
 export { Publisher } from './Publisher.js';
+export type { PublishTransport, PublisherFactory } from './transport.js';
 export { Event } from './Event.js';
 export { Kind0 } from './kinds/Kind0.js';
 export { Kind10002 } from './kinds/Kind10002.js';

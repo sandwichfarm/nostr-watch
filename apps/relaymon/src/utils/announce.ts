@@ -1,3 +1,4 @@
+import { publisherFactory, type PublicationContext } from "./publishTransport.ts";
 import { getLogger, LogLevel } from "./logger.ts";
 import { AnnounceMonitor } from "npm:@nostrwatch/announce";
 import { getPublicKey } from "npm:nostr-tools";
@@ -9,7 +10,8 @@ import { getPrivateKey } from "../core/daemon.ts";
 
 const logger = getLogger("Announce");
 
-export async function maybeAnnounce(config: Config, queueManager?: QueueManager): Promise<void> {
+export async function maybeAnnounce(config: Config, queueManager?: QueueManager, publication?: PublicationContext): Promise<void> {
+  const createPublisher = publisherFactory(config, publication);
   let relaySet: Set<string>= new Set
 
   if (!config.monitor || !config.monitor.info) {
@@ -56,6 +58,7 @@ export async function maybeAnnounce(config: Config, queueManager?: QueueManager)
   const announcer = new AnnounceMonitor(
     pk,
     {
+      publisherFactory: createPublisher,
       profile,
       owner,
       geo,
@@ -76,6 +79,7 @@ export async function maybeAnnounce(config: Config, queueManager?: QueueManager)
     await announcer.sign(sk);
   } catch (error: unknown) {
     logger.error("Error signing announcement: " + getErrorMessage(error));
+    if (publication) await announcer.close();
     return;
   }
 
@@ -89,19 +93,23 @@ export async function maybeAnnounce(config: Config, queueManager?: QueueManager)
         try {
           await announcer.publish();
           logger.info("Monitor announcement published successfully via queue.");
+          if (publication) await announcer.close();
         } catch (error: unknown) {
           logger.error("Failed to publish monitor announcement via queue: " + getErrorMessage(error));
-          if (retryCount < maxRetries) {
+          if (!publication?.stopping && retryCount < maxRetries) {
             const nextRetryCount = retryCount + 1;
             const nextBackoffMs = backoffMs * 2;
             logger.info(`Scheduling announcement retry ${nextRetryCount}/${maxRetries} in ${(nextBackoffMs / 1000).toFixed(1)}s`);
-            setTimeout(() => {
+            const timer = setTimeout(() => {
+              if (publication?.stopping) return;
               queue.addPublishJob(() => publishJob(nextRetryCount, nextBackoffMs), {
                 isRetry: true,
                 category: 'announce',
               });
             }, nextBackoffMs);
+            publication?.onStop(() => clearTimeout(timer));
           } else {
+            if (publication) await announcer.close();
             logger.error(`Exceeded maximum retries (${maxRetries}) for monitor announcement`);
           }
           // QueueManager owns failure metrics; it does not schedule retries.
@@ -112,7 +120,7 @@ export async function maybeAnnounce(config: Config, queueManager?: QueueManager)
       logger.info("Added monitor announcement to publish queue.");
     } else {
       // Fallback to direct publishing if no queue manager is available
-      await announcer.publish();
+      try { await announcer.publish(); } finally { if (publication) await announcer.close(); }
       logger.info("Monitor announcement published successfully.");
     }
   } catch (error: unknown) {

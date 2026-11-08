@@ -1,3 +1,4 @@
+import { createPublicationContext, installPublicationSignals, type PublicationContext } from "../utils/publishTransport.ts";
 import { header } from "../utils/header.ts";
 import { loadConfig } from "../config/config.ts";
 import { runDaemon, getPrivateKey, heartbeatTracker, errorTracker } from "./daemon.ts";
@@ -72,28 +73,37 @@ const PID_FILE = getPidFilePath();
 
 // Flag to track shutdown status
 let isShuttingDown = false;
+let publication: PublicationContext | undefined;
+let ownsPidFile = false;
+let shutdownPromise: Promise<void> | undefined;
 
 /**
  * Clean up resources and exit gracefully
  */
-async function shutdown(signal?: string): Promise<void> {
-  if (isShuttingDown) return; // Prevent multiple shutdown attempts
-  isShuttingDown = true;
-  
-  console.log(`\nReceived ${signal || 'shutdown'} signal. Cleaning up...`);
-  
-  try {
-    // Clean up PID file
-    if (existsSync(PID_FILE)) {
-      await Deno.remove(PID_FILE);
-      console.log("PID file removed successfully.");
+async function shutdown(signal?: string, exitCode = 0): Promise<void> {
+  return shutdownPromise ??= (async () => {
+    isShuttingDown = true;
+    if (publication) {
+      try { await publication.close(); }
+      catch (error) { console.error(`Publication shutdown: ${error}`); exitCode = 1; }
     }
-  } catch (error) {
-    console.error(`Error during cleanup: ${error}`);
-  }
   
-  console.log("Exiting gracefully.");
-  Deno.exit(0);
+    console.log(`\nReceived ${signal || 'shutdown'} signal. Cleaning up...`);
+  
+    try {
+      // Clean up PID file
+      if ((!publication || ownsPidFile) && existsSync(PID_FILE)) {
+        await Deno.remove(PID_FILE);
+        console.log("PID file removed successfully.");
+      }
+    } catch (error) {
+      console.error(`Error during cleanup: ${error}`);
+    }
+  
+    if (publication) console.log(JSON.stringify({ publicationShutdown: publication.processes.outcomes }));
+    console.log(exitCode === 0 ? "Exiting gracefully." : "Exiting after incomplete shutdown.");
+    Deno.exit(exitCode);
+  })();
 }
 
 /**
@@ -137,10 +147,11 @@ async function isAlreadyRunning(): Promise<{ running: boolean; pid?: number }> {
 /**
  * Create PID file with current process ID
  */
-async function createPidFile(): Promise<void> {
+async function createPidFile(registerSignals = true): Promise<void> {
   try {
     // Write current process ID to file
     await Deno.writeTextFile(PID_FILE, Deno.pid.toString());
+    ownsPidFile = true;
     
     // Add event listener to clean up PID file on exit
     globalThis.addEventListener("unload", async () => {
@@ -154,7 +165,7 @@ async function createPidFile(): Promise<void> {
     });
     
     // Register signal handlers for graceful shutdown
-    for (const signal of ["SIGINT", "SIGTERM"]) {
+    for (const signal of registerSignals ? ["SIGINT", "SIGTERM"] : []) {
       Deno.addSignalListener(signal as Deno.Signal, () => {
         shutdown(signal).catch(console.error);
       });
@@ -390,8 +401,7 @@ export async function main() {
       Deno.exit(1);
     }
     
-    // Create PID file
-    await createPidFile();
+    // PID creation follows configuration so opt-in signals have one owner.
   } else {
     console.log("PID check skipped (running in container mode)");
   }
@@ -412,43 +422,55 @@ export async function main() {
 
   // Load configuration
   const config = await loadConfig(configPath);
+  publication = await createPublicationContext(config, undefined, (context) => {
+    publication = context;
+    // Independent of PID-file creation and RELAYMON_SKIP_PID_CHECK.
+    installPublicationSignals(context, (signal) => { void shutdown(signal); });
+  });
+  if (!skipPidCheck) await createPidFile(!publication);
+  try {
 
-  //DO NOT REMOVE THIS.
-  console.log(header(config));
+    //DO NOT REMOVE THIS.
+    console.log(header(config));
 
-  logger.info(`Loaded configuration from ${configPath}`);
+    logger.info(`Loaded configuration from ${configPath}`);
 
-  // Load hostname blocklist
-  await loadHostnameBlocklist();
-  logger.info("Loaded hostname blocklist");
+    // Load hostname blocklist
+    await loadHostnameBlocklist();
+    logger.info("Loaded hostname blocklist");
 
-  // Env var overrides for db config
-  const envDbPath = Deno.env.get('RELAYMON_DB_PATH');
-  if (envDbPath) {
-    config.db = config.db || {};
-    config.db.path = envDbPath;
+    // Env var overrides for db config
+    const envDbPath = Deno.env.get('RELAYMON_DB_PATH');
+    if (envDbPath) {
+      config.db = config.db || {};
+      config.db.path = envDbPath;
+    }
+    const envDbWal = Deno.env.get('RELAYMON_DB_WAL');
+    if (envDbWal !== undefined) {
+      config.db = config.db || {};
+      config.db.enableWAL = envDbWal !== 'false';
+    }
+
+    // Initialize database
+    if (config.db?.path) {
+      await initializeDB(config.db.path, config.db.enableWAL);
+    } else {
+      console.error("Error: Database path not specified in config");
+      Deno.exit(1);
+    }
+
+    // Check for network migration flag
+    if (args.includes("-m") || args.includes("--migrate")) {
+      await migrateNetworks(config.db.path);
+    }
+
+    // Start the daemon
+    await runDaemon(config, publication);
+    if (publication) await shutdown();
+  } catch (error) {
+    if (publication) { console.error(`Daemon initialization/execution failed: ${error}`); await shutdown("failure", 1); }
+    throw error;
   }
-  const envDbWal = Deno.env.get('RELAYMON_DB_WAL');
-  if (envDbWal !== undefined) {
-    config.db = config.db || {};
-    config.db.enableWAL = envDbWal !== 'false';
-  }
-
-  // Initialize database
-  if (config.db?.path) {
-    await initializeDB(config.db.path, config.db.enableWAL);
-  } else {
-    console.error("Error: Database path not specified in config");
-    Deno.exit(1);
-  }
-
-  // Check for network migration flag
-  if (args.includes("-m") || args.includes("--migrate")) {
-    await migrateNetworks(config.db.path);
-  }
-
-  // Start the daemon
-  await runDaemon(config);
 }
 
 // Call main function if this module is executed directly

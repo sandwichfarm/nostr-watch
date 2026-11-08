@@ -1,3 +1,4 @@
+import { publisherFactory, type PublicationContext } from "./publishTransport.ts";
 // hostnames.ts
 import { getLogger, LogLevel } from "./logger.ts";
 import { normalizeURL } from "npm:nostr-tools/utils";
@@ -72,6 +73,11 @@ export function setIgnoreListSync(ignoreListSync: IgnoreListSyncInterface): void
   ignoreListSyncInstance = ignoreListSync;
 }
 
+/** Guard batch/cold callers using the existing effective config, before work. */
+export function requirePublicationContext(publication?: PublicationContext): void {
+  if (appConfig) publisherFactory(appConfig, publication);
+}
+
 /**
  * Groups an array of URLs by their protocol+hostname.
  * Returns a map where the key is "<protocol>//<hostname>" and the value is an array of URLs.
@@ -111,10 +117,12 @@ export const relayArrToHostnameProtocolKeyedMap = (urls: string[]): Map<string, 
 /**
  * Deduplicates an array of relay results by hostname.
  */
-export const relayListHostnameDedup = async (relays: RelayCheckResult[]): Promise<RelayCheckResult[]> => {
+export const relayListHostnameDedup = async (relays: RelayCheckResult[], publication?: PublicationContext): Promise<RelayCheckResult[]> => {
   const maybeModifiedRelays: RelayCheckResult[] = [];
+  requirePublicationContext(publication);
   for (const relay of relays) {
-    maybeModifiedRelays.push(await relayHostnameDedup(relay));
+    if (publication?.stopping) break;
+    maybeModifiedRelays.push(await relayHostnameDedup(relay, { publication }));
   }
   return maybeModifiedRelays;
 };
@@ -177,6 +185,7 @@ export interface DedupContext {
    * pre-grouped Map is a deferred optimization per 20-CONTEXT.md.
    */
   onlineUrls?: string[];
+  publication?: PublicationContext;
 }
 
 /**
@@ -198,6 +207,7 @@ export const relayHostnameDedup = async (
   result: RelayCheckResult,
   ctx?: DedupContext,
 ): Promise<RelayCheckResult> => {
+  requirePublicationContext(ctx?.publication);
   // Force direct console output at the start of function
 
   const { url: mURL, hostname: HOSTNAME, protocol: PROTOCOL } = result;
@@ -252,7 +262,7 @@ export const relayHostnameDedup = async (
           ignoreListSyncInstance.addToIgnoreList(canonicalMURL, verdict.reason);
         }
         if (appConfig) {
-          await deleteRelayCheckEvent(canonicalMURL, verdict.reason, appConfig);
+          await deleteRelayCheckEvent(canonicalMURL, verdict.reason, appConfig, undefined, ctx?.publication);
         }
         return result;
       }
@@ -310,7 +320,7 @@ export const relayHostnameDedup = async (
 
               // Generate deletion event for this ignored relay
               if (appConfig) {
-                await deleteRelayCheckEvent(canonicalMURL, nip11RootReason, appConfig);
+                await deleteRelayCheckEvent(canonicalMURL, nip11RootReason, appConfig, undefined, ctx?.publication);
               }
 
               return result;
@@ -330,7 +340,7 @@ export const relayHostnameDedup = async (
 
               // Generate deletion event for this ignored relay
               if (appConfig) {
-                await deleteRelayCheckEvent(canonicalMURL, nip11ShorterReason, appConfig);
+                await deleteRelayCheckEvent(canonicalMURL, nip11ShorterReason, appConfig, undefined, ctx?.publication);
               }
 
               return result;
@@ -421,7 +431,7 @@ export const relayHostnameDedup = async (
           ignoreListSyncInstance.addToIgnoreList(mURL, reason);
         }
         if (appConfig) {
-          await deleteRelayCheckEvent(mURL, reason, appConfig);
+          await deleteRelayCheckEvent(mURL, reason, appConfig, undefined, ctx?.publication);
         }
         return result;
       }
@@ -595,7 +605,7 @@ export const relayHostnameDedup = async (
 
         // Generate deletion event when a relay is ignored
         if (appConfig) {
-          await deleteRelayCheckEvent(canonicalMURL, reason, appConfig);
+          await deleteRelayCheckEvent(canonicalMURL, reason, appConfig, undefined, ctx?.publication);
         }
       } else {
         result.ignore = false;
@@ -621,7 +631,9 @@ export const relayHostnameDedup = async (
 export const reevaluateAllDeduplication = async (
   nip11CacheTtl: number = 24 * 60 * 60 * 1000,
   nip11StaleSkipMs?: number,
+  publication?: PublicationContext,
 ): Promise<any[]> => {
+  requirePublicationContext(publication);
   logger.info("Starting periodic deduplication re-evaluation for all relays...");
 
   // Phase 20 PERF: resolve stale-skip threshold. Caller > appConfig > 7d default.
@@ -685,6 +697,7 @@ export const reevaluateAllDeduplication = async (
   let nip11ChecksPerformed = 0;
 
   for (const [hostnameKey, relaysInGroup] of relaysByHostname.entries()) {
+    if (publication?.stopping) break;
     try {
       // Phase 20 PERF: determine whether this hostname group contains at
       // least one member that is both fresh (checked_at newer than
@@ -707,6 +720,7 @@ export const reevaluateAllDeduplication = async (
       let hasFreshUnignoredMember = false;
       const nowMs = Date.now();
       for (const relayUrl of relaysInGroup) {
+        if (publication?.stopping) break;
         const statusRow = db.query(
           "SELECT ignore, checked_at FROM relay_status WHERE url = ?",
           [relayUrl],
@@ -733,6 +747,7 @@ export const reevaluateAllDeduplication = async (
 
       // Check if any relay in this hostname group has stale NIP-11
       for (const relayUrl of relaysInGroup) {
+        if (publication?.stopping) break;
         const info = getRelayInfo(relayUrl);
         const checkedAt = db.query("SELECT checked_at FROM relay_status WHERE url = ?", [relayUrl]);
         const age = checkedAt.length > 0 && checkedAt[0][0] !== -1
@@ -765,6 +780,7 @@ export const reevaluateAllDeduplication = async (
 
       // Re-evaluate each relay in the group
       for (const relayUrl of relaysInGroup) {
+        if (publication?.stopping) break;
         try {
           const parsed = new URL(relayUrl);
           const previousIgnoreStatus = db.query("SELECT ignore FROM relay_status WHERE url = ?", [relayUrl]);
@@ -795,7 +811,7 @@ export const reevaluateAllDeduplication = async (
           // list instead of re-querying `SELECT url FROM relay_status WHERE online
           // = 1` once per row. Mirrors the Phase 20 PERF-02 tier-2 pattern now in
           // rerunDedupForAllRowsMigration (remediation.ts:118).
-          const updatedResult = await relayHostnameDedup(result, { onlineUrls: onlineRelays }).catch((err: unknown) => {
+          const updatedResult = await relayHostnameDedup(result, { onlineUrls: onlineRelays, publication }).catch((err: unknown) => {
             logger.error(`Error re-evaluating ${relayUrl}: ${getErrorMessage(err)}`);
             return { url: relayUrl, ignore: wasIgnored, parent: result.parent, hostname: result.hostname, protocol: result.protocol, checked_at: result.checked_at, online: result.online, network: result.network };
           });

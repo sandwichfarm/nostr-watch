@@ -1,3 +1,5 @@
+import { requirePublicationContext } from "./hostnames.ts";
+import { publisherFactory, type PublicationContext } from "./publishTransport.ts";
 /**
  * Phase 19 Remediation: Re-run dedup over every row in relay_status.
  *
@@ -61,7 +63,8 @@ const MIGRATION_NAME = "rerun_dedup_online_unignored_v1";
 // at docs/superpowers/specs/2026-04-11-nostrings-sweep-migration-design.md
 const NOSTRINGS_SWEEP_MIGRATION_NAME = `nostrings_sweep_v${VERSION}`;
 
-export async function rerunDedupForAllRowsMigration(): Promise<void> {
+export async function rerunDedupForAllRowsMigration(publication?: PublicationContext): Promise<void> {
+  requirePublicationContext(publication);
   // Top-level try: never let this migration crash startup.
   try {
     // Idempotency guard: sentinel row in relaymon_migrations means we
@@ -185,6 +188,7 @@ export async function rerunDedupForAllRowsMigration(): Promise<void> {
         // hostnames.ts (Plan 20-03).
         const deduped = await relayHostnameDedup(result, {
           onlineUrls: cachedOnline,
+          publication,
         });
 
         const newIgnore = deduped.ignore;
@@ -292,21 +296,22 @@ export function enqueueRemediationDeletion(url: string, reason: string): void {
  */
 let remediationDrain: Promise<void> | undefined;
 
-export function drainRemediationDeletionQueue(config: Config): Promise<void> {
+export function drainRemediationDeletionQueue(config: Config, publication?: PublicationContext): Promise<void> {
+  publisherFactory(config, publication);
   // The daemon and any overlapping retry caller share one pass over the
   // process-wide DB. A second snapshot could otherwise publish the same rows
   // while the first pass is still awaiting its ACKs.
   // This only coalesces drains: callers must retain ownership ordering with
   // other deletion paths (the daemon defers ignore-list loops until it ends).
   if (!remediationDrain) {
-    remediationDrain = drainRemediationDeletionQueueOnce(config).finally(() => {
+    remediationDrain = drainRemediationDeletionQueueOnce(config, publication).finally(() => {
       remediationDrain = undefined;
     });
   }
   return remediationDrain;
 }
 
-async function drainRemediationDeletionQueueOnce(config: Config): Promise<void> {
+async function drainRemediationDeletionQueueOnce(config: Config, publication?: PublicationContext): Promise<void> {
   try {
     const rows = db.query(
       `SELECT url, reason, attempts FROM remediation_deletion_queue
@@ -333,6 +338,7 @@ async function drainRemediationDeletionQueueOnce(config: Config): Promise<void> 
     const DRAIN_DELAY_MS = 200;
 
     for (const row of rows) {
+      if (publication?.stopping) break;
       const [urlRaw, reasonRaw, attemptsRaw] = row;
       const url = urlRaw as string;
       const reason = (reasonRaw as string) || "";
@@ -341,7 +347,7 @@ async function drainRemediationDeletionQueueOnce(config: Config): Promise<void> 
       try {
         // A previous pass may have recorded its ACK before exiting, or another
         // deletion path may already have completed this durable obligation.
-        const ok = isDeletionPublished(url) || await deleteRelayCheckEvent(url, reason, config);
+        const ok = isDeletionPublished(url) || await deleteRelayCheckEvent(url, reason, config, undefined, publication);
         if (ok) {
           db.query(
             `DELETE FROM remediation_deletion_queue WHERE url = ?`,
@@ -375,6 +381,8 @@ async function drainRemediationDeletionQueueOnce(config: Config): Promise<void> 
         );
       }
 
+      // Stop between durable rows; do not schedule another backlog admission.
+      if (publication?.stopping) break;
       // Throttle between publishes
       await new Promise((r) => setTimeout(r, DRAIN_DELAY_MS));
     }

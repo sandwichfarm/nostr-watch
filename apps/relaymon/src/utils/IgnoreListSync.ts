@@ -1,3 +1,4 @@
+import { publisherFactory, type PublicationContext } from "./publishTransport.ts";
 import { getLogger } from "./logger.ts";
 import { SimplePool, nip19, getPublicKey } from "npm:nostr-tools";
 import { hexToBytes } from "@noble/hashes/utils";
@@ -30,7 +31,8 @@ export class IgnoreListSync {
   private localIgnoredRelays: Map<string, string> = new Map();
   private localIgnoreListChanged: boolean = false;
 
-  constructor(config: Config, metaRelays: string[]) {
+  constructor(config: Config, metaRelays: string[], private publication?: PublicationContext) {
+    publisherFactory(config, publication);
     this.fullConfig = config;
     this.config = config?.relaymon?.ignorelist || {
       enabled: false,
@@ -312,13 +314,14 @@ export class IgnoreListSync {
     // Send Kind 5 deletions for newly-synced blocked relays
     const { deleteRelayCheckEvent } = await import("./deletion.ts");
     for (const [relay, reason] of allIgnoredRelays) {
+      if (this.publication?.stopping) break;
       if (!previousIgnored.has(relay)) {
         this.logger.info(`Sending deletion for remotely-synced blocked relay: ${relay}`);
         try {
           await deleteRelayCheckEvent(
             relay,
             reason,
-            this.fullConfig
+            this.fullConfig, undefined, this.publication
           );
         } catch (e) {
           this.logger.error(`Failed to send deletion for synced relay ${relay}: ${getErrorMessage(e)}`);
@@ -342,6 +345,7 @@ export class IgnoreListSync {
     }
 
     try {
+      const createPublisher = publisherFactory(this.fullConfig, this.publication);
       const pubkey = getPublicKey(hexToBytes(privkey));
       const event: Partial<Event> = {
         kind: 10006,
@@ -360,6 +364,13 @@ export class IgnoreListSync {
       const { finalizeEvent } = await import("npm:nostr-tools");
       const signedEvent = finalizeEvent(event, hexToBytes(privkey));
 
+      if (this.publication) {
+        const publisher = createPublisher(pubkey, this.listRelays);
+        try { await publisher.publishEvent(signedEvent); }
+        finally { await publisher.close(); }
+        this.localIgnoreListChanged = false;
+        return;
+      }
       // Publish to configured relays
       const publishPromises = this.listRelays.map(async (relay) => {
         try {
@@ -375,6 +386,7 @@ export class IgnoreListSync {
       this.localIgnoreListChanged = false;
     } catch (e: unknown) {
       this.logger.error(`Error publishing kind 10006: ${getErrorMessage(e)}`);
+      if (this.publication) throw e;
     }
   }
 
@@ -401,11 +413,12 @@ export class IgnoreListSync {
 
     let deletionCount = 0;
     for (const { url: relayUrl, reason } of pending) {
+      if (this.publication?.stopping) break;
       try {
         const ok = await deleteRelayCheckEvent(
           relayUrl,
           reason || "Relay marked as ignored by deduplication",
-          this.fullConfig
+          this.fullConfig, undefined, this.publication
         );
         if (ok) deletionCount++;
       } catch (e: unknown) {

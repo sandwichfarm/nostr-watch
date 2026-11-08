@@ -1,4 +1,5 @@
 import { publisherFactory, type PublicationContext } from "./publishTransport.ts";
+import { checkNetwork, type CheckProcesses } from "./checkTransport.ts";
 // hostnames.ts
 import { getLogger, LogLevel } from "./logger.ts";
 import { normalizeURL } from "npm:nostr-tools/utils";
@@ -632,6 +633,7 @@ export const reevaluateAllDeduplication = async (
   nip11CacheTtl: number = 24 * 60 * 60 * 1000,
   nip11StaleSkipMs?: number,
   publication?: PublicationContext,
+  networkChecks?: CheckProcesses,
 ): Promise<any[]> => {
   requirePublicationContext(publication);
   logger.info("Starting periodic deduplication re-evaluation for all relays...");
@@ -664,9 +666,9 @@ export const reevaluateAllDeduplication = async (
   const onlineRelays = getOnlineRelays();
   logger.info(`Re-evaluating ${onlineRelays.length} online relays`);
 
-  // Import nocap dynamically (only if needed)
-  const { Nocap } = await import("npm:@nostrwatch/nocap");
-  const InfoAdapterDefault = (await import("npm:@nostrwatch/nocap-info-adapter-default")).default;
+  if (appConfig?.relaymon?.checks.execution && !networkChecks) throw new Error("Process network checks require their runtime context");
+  const legacyNocap = networkChecks ? undefined : (await import("npm:@nostrwatch/nocap")).Nocap;
+  const legacyInfo = networkChecks ? undefined : (await import("npm:@nostrwatch/nocap-info-adapter-default@1.2.0")).default;
 
   // Group relays by hostname to batch NIP-11 checks
   const relaysByHostname = new Map<string, string[]>();
@@ -764,12 +766,19 @@ export const reevaluateAllDeduplication = async (
         // Fetch fresh NIP-11 once for this hostname (using any relay from the group)
         const sampleRelay = relaysInGroup[0];
 
-        const nocap = new Nocap(sampleRelay, { timeout: 10000, logLevel: "error" });
-        await nocap.useAdapters([InfoAdapterDefault]);
-        const checkResult = await nocap.check(["info"]).catch((err: unknown) => {
-          logger.debug(`Failed to fetch NIP-11 for ${hostnameKey}: ${getErrorMessage(err)}`);
-          return null;
-        });
+        let checkResult;
+        if (networkChecks) {
+          // Infrastructure errors propagate; they are never a target's offline
+          // result or permission to silently use an in-process network owner.
+          checkResult = await checkNetwork(sampleRelay, ["info"], { timeout: 10000, logLevel: "error" }, "info-only", networkChecks);
+        } else {
+          const nocap = new legacyNocap!(sampleRelay, { timeout: 10000, logLevel: "error" });
+          await nocap.useAdapters([legacyInfo!]);
+          checkResult = await nocap.check(["info"]).catch((err: unknown) => {
+            logger.debug(`Failed to fetch NIP-11 for ${hostnameKey}: ${getErrorMessage(err)}`);
+            return null;
+          });
+        }
 
         if (checkResult?.info?.data) {
           nip11Data = checkResult.info;

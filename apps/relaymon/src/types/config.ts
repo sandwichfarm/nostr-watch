@@ -158,6 +158,18 @@ export interface CheckOptionsConfig {
 export interface ChecksConfig {
   enabled: string[];
   options: CheckOptionsConfig;
+  /** Opt-in network-only child slots; normal check-queue concurrency is retained. */
+  execution?: CheckProcessConfig;
+}
+
+export interface CheckProcessConfig {
+  mode: "process";
+  maxChildren: number;
+  maxPending: number;
+  maxFrameBytes: number;
+  maxRestarts: number;
+  shutdownMs: number;
+  launch: PublicationProcessConfig["launch"];
 }
 
 /**
@@ -466,6 +478,7 @@ export function validateConfig(config: unknown): Config {
   ) {
     throw new Error("Missing required field: relaymon.checks.options");
   }
+  if (c.relaymon.checks.execution !== undefined) validateCheckProcessConfig(c);
 
   // Validate Trusted Relay Assertions (Kind 30385) configuration if present.
   // Defaults mirror the reference implementation's material-change behavior
@@ -779,5 +792,21 @@ export function validatePublicationProcessConfig(options: PublicationProcessConf
   for (const [name, min, max] of [['oldSpaceMb', 16, 128], ['semiSpaceMb', 1, 8]] as const) {
     const value = options.launch[name];
     if (!Number.isInteger(value) || value < min || value > max) throw new Error(`Invalid child heap profile: ${name}`);
+  }
+}
+
+export function validateCheckProcessConfig(config: Config): void {
+  const o = config.relaymon.checks.execution!;
+  if (o.mode !== "process" || Object.keys(o).some((k) => !["mode", "maxChildren", "maxPending", "maxFrameBytes", "maxRestarts", "shutdownMs", "launch"].includes(k))) {
+    throw new Error("Unsupported network check execution mode");
+  }
+  validatePublicationProcessConfig({ mode: "per-relay-process", expectedRelays: [], maxChildren: o.maxChildren,
+    maxPendingPerRelay: o.maxPending, maxFrameBytes: o.maxFrameBytes, maxRestarts: o.maxRestarts,
+    shutdownMs: o.shutdownMs, launch: o.launch });
+  if (!Number.isInteger(config.queue?.workerConcurrency) || config.queue?.workerConcurrency !== o.maxChildren) {
+    throw new Error("Check child slots must match explicit check queue concurrency");
+  }
+  if (config.relaymon.checks.enabled.some((k) => !["open", "read", "info"].includes(k))) {
+    throw new Error("Isolated checks support only open/read/info");
   }
 }

@@ -1,6 +1,5 @@
 import { publisherFactory, type PublicationContext } from "../utils/publishTransport.ts";
-import { Nocap } from "npm:@nostrwatch/nocap";
-import EveryAdapterDefault from "npm:@nostrwatch/nocap-every-adapter-default";
+import { checkNetwork, type CheckProcesses } from "../utils/checkTransport.ts";
 import { Kind30166, Publisher } from "npm:@nostrwatch/publisher";
 import { relayHostnameDedup, setConfig } from "../utils/hostnames.ts";
 import {
@@ -92,7 +91,9 @@ export class Worker {
     config: Config,
     ignoreListSync?: IgnoreListSync,
     private publication?: PublicationContext,
+    private networkChecks?: CheckProcesses,
   ) {
+    if (config.relaymon.checks.execution && !networkChecks) throw new Error("Process network checks require their runtime context");
     const createPublisher = publisherFactory(config, publication);
     this.config = config;
     this.ignoreListSync = ignoreListSync || null;
@@ -243,14 +244,10 @@ export class Worker {
     this.logger.debug(`Starting check for relay: ${relayUrl}`);
 
     try {
-      const nocap = new Nocap(relayUrl, {
+      const result = await checkNetwork(relayUrl, this.config.relaymon.checks.enabled || ["open", "read"], {
         timeouts: this.config.relaymon.checks.options.timeout,
         logLevel: this.config.logLevel,
-      });
-      await nocap.useAdapters(Object.values(EveryAdapterDefault));
-      const result = await nocap.check(
-        this.config.relaymon.checks.enabled || ["open", "read"],
-      );
+      }, "default", this.networkChecks);
 
       if (result.info?.data && Object.keys(result.info.data).length > 0) {
         try {
@@ -268,7 +265,9 @@ export class Worker {
         }
       }
 
-      const dedupedResult = await relayHostnameDedup(result, { publication: this.publication });
+      // This legacy mutating API types its raw NoCap input as enriched. Keep
+      // the same payload; do not invent parent database fields in the child.
+      const dedupedResult = await relayHostnameDedup(result as Parameters<typeof relayHostnameDedup>[0], { publication: this.publication });
 
       wasOnline = result.open?.data === true;
 
@@ -428,12 +427,10 @@ export class Worker {
     try {
       this.logger.info(`Re-checking ignored relay: ${relayUrl}`);
 
-      const nocap = new Nocap(relayUrl, {
+      const result = await checkNetwork(relayUrl, ["open", "read"], {
         timeouts: this.config.relaymon.checks.options.timeout,
         logLevel: this.config.logLevel,
-      });
-      await nocap.useAdapters(Object.values(EveryAdapterDefault));
-      const result = await nocap.check(["open", "read"]);
+      }, "default", this.networkChecks);
 
       const wasOnline = result.open?.data === true;
 

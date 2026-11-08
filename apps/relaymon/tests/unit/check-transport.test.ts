@@ -74,6 +74,8 @@ class FakeChild implements PublicationChild {
   resolveStatus!: (s: { code: number; success: boolean }) => void;
   killed: string[] = [];
   closed = false;
+  inputClosed = false;
+  failInputClose = false;
   retainOutputOnKill = false;
   received?: CheckRequest;
   constructor(
@@ -94,6 +96,10 @@ class FakeChild implements PublicationChild {
         this.received = frame.input;
         if (onCheck) onCheck(this);
         else this.complete();
+      },
+      close: () => {
+        this.inputClosed = true;
+        if (this.failInputClose) throw new Error("closed process pipe");
       },
     });
     queueMicrotask(() => this.emit({ type: "ready" }));
@@ -166,6 +172,31 @@ for (const statusFirst of [false, true]) {
   });
 }
 
+Deno.test("complete valid frame survives a late broken stdin pipe and exit1", async () => {
+  const { pool } = manager((child) => {
+    child.failInputClose = true;
+    child.complete(1);
+  });
+  assertEquals(await pool.check(input), result);
+  assertEquals(pool.outcomes.failures, 1);
+  await pool.close();
+});
+
+Deno.test("operation error frame cannot exempt an unexplained failed worker exit", async () => {
+  const { pool, children } = manager((child) => {
+    child.accepted();
+    child.emit({ type: "error" });
+    child.controller.close();
+    child.closed = true;
+    child.resolveStatus({ code: 1, success: false });
+  });
+  await assertRejects(() => pool.check(input));
+  await assertRejects(() => pool.check(input));
+  await assertRejects(() => pool.check(input), Error, "failure limit");
+  assertEquals(children.length, 2);
+  await pool.close();
+});
+
 Deno.test("lease is not reused until stdout EOF AND process status settle", async () => {
   const { pool, children } = manager((child) => child.complete(0, false, true));
   const first = pool.check(input);
@@ -179,6 +210,146 @@ Deno.test("lease is not reused until stdout EOF AND process status settle", asyn
   assertEquals(children.length, 2);
   children[1].resolveStatus({ code: 0, success: true });
   await second;
+  await pool.close();
+});
+
+Deno.test("three accepted operation failures do not poison later normal admission", async () => {
+  let fail = true;
+  const { pool, children } = manager((child) => {
+    if (!fail) return child.complete();
+    child.accepted();
+    child.emit({ type: "error" });
+    child.controller.close();
+    child.closed = true;
+    child.resolveStatus({ code: 0, success: true });
+  });
+  for (let i = 0; i < 3; i++) await assertRejects(() => pool.check(input));
+  fail = false;
+  assertEquals(await pool.check(input), result);
+  assertEquals(children.length, 4);
+  assertEquals(pool.outcomes.failures, 3);
+  await pool.close();
+});
+
+Deno.test("clean validated result and reap reset consecutive unexpected failures", async () => {
+  let crash = true;
+  const { pool, children } = manager((child) =>
+    crash ? child.kill() : child.complete()
+  );
+  for (let i = 0; i < 3; i++) {
+    crash = true;
+    await assertRejects(() => pool.check(input));
+    crash = false;
+    assertEquals(await pool.check(input), result);
+  }
+  assertEquals(children.length, 6);
+  assertEquals(pool.outcomes.failures, 3);
+  await pool.close();
+});
+
+Deno.test("consecutive unexpected worker faults still fail admission closed", async () => {
+  const { pool, children } = manager((child) => child.kill());
+  await assertRejects(() => pool.check(input));
+  await assertRejects(() => pool.check(input));
+  await assertRejects(() => pool.check(input), Error, "failure limit");
+  assertEquals(children.length, 2);
+  await pool.close();
+});
+
+Deno.test("parent retains stdin until result and closes it before slot reuse", async () => {
+  const { pool, children } = manager((child) => child.accepted());
+  const pending = pool.check(input);
+  for (let i = 0; i < 20; i++) await tick();
+  assertEquals(children[0].inputClosed, false);
+  children[0].emit({ type: "result", result });
+  for (let i = 0; i < 20; i++) await tick();
+  assertEquals(children[0].inputClosed, true);
+  assertEquals(pool.snapshot().active.length, 1);
+  children[0].controller.close();
+  children[0].closed = true;
+  children[0].resolveStatus({ code: 0, success: true });
+  assertEquals(await pending, result);
+  await pool.close();
+});
+
+Deno.test("accepted operation expiry is per-request and permits later valid work", async () => {
+  let expire = true;
+  const { pool, children } = manager((child) =>
+    expire ? child.accepted() : child.complete()
+  );
+  const short = {
+    ...input,
+    options: { timeout: { open: 1, read: 1, info: 1 } },
+  };
+  for (let i = 0; i < 3; i++) {
+    await assertRejects(() => pool.check(short), Error, "IPC deadline");
+  }
+  expire = false;
+  assertEquals(await pool.check(input), result);
+  assertEquals(children.length, 4);
+  assertEquals(pool.outcomes.failures, 3);
+  await pool.close();
+});
+
+Deno.test("numeric pending operations use the declared IPC timer without poisoning normal work", async () => {
+  const original = globalThis.setTimeout;
+  let expireOperation: (() => void) | undefined;
+  globalThis.setTimeout =
+    ((handler: TimerHandler, ms?: number, ...args: unknown[]) => {
+      if (ms !== 10000) return original(handler, ms, ...args);
+      expireOperation = () => {
+        if (typeof handler === "function") handler(...args);
+      };
+      return -1;
+    }) as typeof setTimeout;
+  let numeric = true;
+  const { pool, children } = manager((child) =>
+    numeric ? child.accepted() : child.complete()
+  );
+  try {
+    const periodic: CheckRequest = {
+      ...input,
+      checks: ["info"],
+      options: { timeout: 10000 },
+      profile: "info-only",
+    };
+    for (let i = 0; i < 3; i++) {
+      const pending = pool.check(periodic);
+      const rejected = assertRejects(() => pending, Error, "IPC deadline");
+      for (let j = 0; j < 20; j++) await tick();
+      assertEquals(children[i].inputClosed, false);
+      assert(expireOperation);
+      expireOperation();
+      await rejected;
+      assertEquals(pool.snapshot().active, []);
+    }
+    numeric = false;
+    assertEquals(await pool.check(input), result);
+    assertEquals(children.length, 4);
+    assertEquals(pool.outcomes.failures, 3);
+  } finally {
+    globalThis.setTimeout = original;
+    await pool.close();
+  }
+});
+
+Deno.test("expected operation failure neither increments nor resets unexpected breaker", async () => {
+  let mode: "crash" | "operation" = "crash";
+  const { pool, children } = manager((child) => {
+    if (mode === "crash") return child.kill();
+    child.accepted();
+    child.emit({ type: "error" });
+    child.controller.close();
+    child.closed = true;
+    child.resolveStatus({ code: 0, success: true });
+  });
+  await assertRejects(() => pool.check(input));
+  mode = "operation";
+  await assertRejects(() => pool.check(input));
+  mode = "crash";
+  await assertRejects(() => pool.check(input));
+  await assertRejects(() => pool.check(input), Error, "failure limit");
+  assertEquals(children.length, 3);
   await pool.close();
 });
 
@@ -240,6 +411,102 @@ Deno.test("result first received after an expired operation deadline is rejected
   };
   await assertRejects(() => pool.check(short), Error, "IPC deadline");
   await pool.close();
+});
+
+Deno.test("three expired operations with valid late frames still admit healthy work", async () => {
+  let late = true;
+  const { pool, children } = manager((child) => {
+    if (!late) return child.complete();
+    child.retainOutputOnKill = true;
+    child.accepted();
+    setTimeout(() => {
+      child.emit({ type: "result", result });
+      child.controller.close();
+      child.closed = true;
+    }, 8);
+  });
+  const short = {
+    ...input,
+    options: { timeout: { open: 1, read: 1, info: 1 } },
+  };
+  for (let i = 0; i < 3; i++) {
+    await assertRejects(() => pool.check(short), Error, "IPC deadline");
+  }
+  late = false;
+  assertEquals(await pool.check(input), result);
+  assertEquals(children.length, 4);
+  assertEquals(pool.outcomes.failures, 3);
+  await pool.close();
+});
+
+Deno.test("three expired late errors with broken stdin do not poison later normal work", async () => {
+  let late = true;
+  const { pool, children } = manager((child) => {
+    if (!late) return child.complete();
+    child.retainOutputOnKill = true;
+    child.failInputClose = true;
+    child.accepted();
+    setTimeout(() => {
+      child.emit({ type: "error" });
+      child.controller.close();
+      child.closed = true;
+    }, 8);
+  });
+  const short = {
+    ...input,
+    options: { timeout: { open: 1, read: 1, info: 1 } },
+  };
+  for (let i = 0; i < 3; i++) {
+    await assertRejects(() => pool.check(short), Error, "IPC deadline");
+  }
+  late = false;
+  assertEquals(await pool.check(input), result);
+  assertEquals(children.length, 4);
+  assertEquals(pool.outcomes.failures, 3);
+  await pool.close();
+});
+
+Deno.test("late corrupt, foreign, or duplicate frames remain unexpected faults", async () => {
+  for (
+    const mutation of [
+      "corrupt",
+      "foreign",
+      "duplicate",
+      "duplicate-error",
+    ] as const
+  ) {
+    const { pool, children } = manager((child) => {
+      child.retainOutputOnKill = true;
+      child.accepted();
+      setTimeout(() => {
+        child.emit(
+          mutation === "duplicate-error"
+            ? { type: "error" }
+            : mutation === "foreign"
+            ? { type: "result", generation: "foreign", result }
+            : {
+              type: "result",
+              result: mutation === "corrupt"
+                ? { url: input.url } as never
+                : result,
+            },
+        );
+        if (mutation === "duplicate") child.emit({ type: "result", result });
+        if (mutation === "duplicate-error") child.emit({ type: "error" });
+        child.controller.close();
+        child.closed = true;
+      }, 8);
+    });
+    const short = {
+      ...input,
+      options: { timeout: { open: 1, read: 1, info: 1 } },
+    };
+    await assertRejects(() => pool.check(short));
+    await assertRejects(() => pool.check(short));
+    await assertRejects(() => pool.check(input), Error, "failure limit");
+    assertEquals(children.length, 2);
+    await pool.close();
+  }
 });
 
 Deno.test("url-only or missing requested check fields is infrastructure failure", async () => {

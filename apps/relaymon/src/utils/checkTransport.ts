@@ -42,7 +42,7 @@ export class CheckProcesses {
     { generation: string; request: string; url: string }
   >();
   private requests = new Set<Promise<unknown>>();
-  private failures = 0;
+  private unexpectedFailures = 0;
   private abort = new AbortController();
   private closing?: Promise<void>;
   private parentDrain?: () => Promise<void>;
@@ -70,7 +70,8 @@ export class CheckProcesses {
         pid: child.pid,
         ...identity,
       })),
-      failures: this.failures,
+      failures: this.outcomes.failures,
+      consecutiveUnexpectedFailures: this.unexpectedFailures,
     };
   }
 
@@ -107,7 +108,7 @@ export class CheckProcesses {
       this.active.size < this.options.maxChildren
     ) {
       const job = this.queue.shift()!;
-      if (this.failures > this.options.maxRestarts) {
+      if (this.unexpectedFailures > this.options.maxRestarts) {
         job.reject(new Error("Check child failure limit reached"));
         continue;
       }
@@ -130,7 +131,7 @@ export class CheckProcesses {
     try {
       child = this.launch(job.input, generation, request);
     } catch {
-      this.failures++;
+      this.unexpectedFailures++;
       this.outcomes.failures++;
       job.reject(new Error("Check child launch failed"));
       queueMicrotask(() => this.dispatch());
@@ -146,7 +147,24 @@ export class CheckProcesses {
     let ready = false,
       accepted = false,
       operationExpired = false,
-      startupExpired = false;
+      startupExpired = false,
+      operationFailed = false,
+      lateResult = false,
+      statusUnavailable = false,
+      drainExpired = false,
+      inputClosed = false,
+      inputCloseFailed = false,
+      statusSucceeded = false;
+    const closeInput = async () => {
+      if (inputClosed) return;
+      inputClosed = true;
+      try {
+        await writer.close();
+      } catch {
+        inputCloseFailed = true;
+        fault ??= new Error("Check child input close failed");
+      }
+    };
     const expire = (
       message: string,
       ms: number,
@@ -157,6 +175,7 @@ export class CheckProcesses {
         fault = new Error(message);
         if (phase === "operation" && !candidate) operationExpired = true;
         if (phase === "startup" && !accepted) startupExpired = true;
+        if (phase === "drain") drainExpired = true;
         this.force(child);
       }, ms);
     };
@@ -181,7 +200,6 @@ export class CheckProcesses {
               this.options.maxFrameBytes,
             ),
           );
-          await writer.close();
           return;
         }
         if (
@@ -200,16 +218,34 @@ export class CheckProcesses {
           );
           return;
         }
-        if (frame.type === "error") {
-          throw new Error(
-            "Network check child operation failed",
+        if (
+          frame.type === "error" && accepted && !candidate &&
+          !operationFailed && !lateResult
+        ) {
+          operationFailed = true;
+          fault ??= new Error("Network check child operation failed");
+          expire(
+            "Check child error drain deadline",
+            this.options.shutdownMs,
+            "drain",
           );
-        }
-        if (operationExpired && frame.type === "result") {
-          throw fault ?? new Error("Check result after IPC deadline");
+          await closeInput();
+          return;
         }
         if (
-          frame.type !== "result" || !accepted || candidate || operationExpired
+          operationExpired && frame.type === "result" && accepted &&
+          !lateResult && !operationFailed
+        ) {
+          // A valid buffered completion cannot rescue an expired operation,
+          // but neither does it turn the owned cancellation into a worker fault.
+          validateCheckResult(job.input, frame.result);
+          lateResult = true;
+          await closeInput();
+          return;
+        }
+        if (
+          frame.type !== "result" || !accepted || candidate ||
+          operationExpired || operationFailed
         ) {
           throw new Error("Invalid or duplicate check result");
         }
@@ -222,40 +258,58 @@ export class CheckProcesses {
           this.options.shutdownMs,
           "drain",
         );
+        await closeInput();
       },
     ).catch((e) => {
       protocolFault ??= e instanceof Error ? e : new Error("Check IPC failed");
       this.force(child);
     });
+    let rejection: Error | undefined;
     try {
       const statusPromise = child.status.catch(() => {
+        statusUnavailable = true;
         fault ??= new Error("Check child status unavailable");
         this.force(child);
         return { code: -1, success: false };
       });
       const [status] = await Promise.all([statusPromise, drain]);
+      statusSucceeded = status.success;
       if (protocolFault || !candidate) {
         throw protocolFault ?? fault ??
           new Error("Check child exited without a complete result");
       }
       if (fault || !status.success) {
-        this.failures++;
+        this.unexpectedFailures++;
         this.outcomes.failures++;
+      } else {
+        // Only a complete, valid response with clean EOF and reap restores
+        // worker confidence. Known operation failures do not reset this streak.
+        this.unexpectedFailures = 0;
       }
-      job.resolve(candidate);
     } catch (error) {
-      this.failures++;
+      if (
+        protocolFault || statusUnavailable || drainExpired ||
+        (inputCloseFailed && !operationExpired) ||
+        (operationFailed && !operationExpired && !statusSucceeded &&
+          !this.stopping) ||
+        (!operationExpired && !operationFailed && !this.stopping)
+      ) {
+        this.unexpectedFailures++;
+      }
       this.outcomes.failures++;
-      job.reject(
-        error instanceof Error ? error : new Error("Check child failed"),
-      );
+      rejection = error instanceof Error
+        ? error
+        : new Error("Check child failed");
     } finally {
       clearTimeout(timer);
+      await closeInput();
       writer.releaseLock();
       this.active.delete(child);
       this.identities.delete(child);
       queueMicrotask(() => this.dispatch());
     }
+    if (rejection) job.reject(rejection);
+    else job.resolve(candidate!);
   }
 
   stop(): void {

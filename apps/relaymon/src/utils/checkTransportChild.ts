@@ -66,6 +66,11 @@ export async function runCheckChild(
   request: string,
   url: string,
   maxBytes: number,
+  channel = {
+    input: Deno.stdin.readable,
+    output: Deno.stdout.writable,
+    perform: performNetworkCheck,
+  },
 ): Promise<void> {
   const diagnostic = console.error.bind(console);
   console.log =
@@ -74,47 +79,60 @@ export async function runCheckChild(
     console.warn =
     console.error =
       () => diagnostic("Network check diagnostic");
-  const writer = Deno.stdout.writable.getWriter();
+  const writer = channel.output.getWriter();
   const base = { v: CHECK_PROTOCOL, generation, request, url };
-  let called = false;
+  let called = false, terminal = false;
+  let operation: Promise<void> | undefined;
   try {
     await writer.write(encodeCheckFrame({ ...base, type: "ready" }, maxBytes));
-    await readCheckFrames(Deno.stdin.readable, maxBytes, async (frame) => {
+    await readCheckFrames(channel.input, maxBytes, (frame) => {
       if (
         called || frame.v !== CHECK_PROTOCOL ||
         frame.generation !== generation || frame.request !== request ||
         frame.url !== url || frame.type !== "check" || frame.input?.url !== url
       ) throw new Error("Invalid check request identity");
+      const input = frame.input;
       called = true;
-      try {
-        checkRequest(frame.input);
-        const result = await performNetworkCheck(
-          frame.input,
-          async (deadline) => {
-            await writer.write(
-              encodeCheckFrame(
-                {
-                  ...base,
-                  type: "accepted",
-                  deadlineMs: deadline.ms,
-                  deadlineReason: deadline.reason,
-                  orderedChecks: deadline.orderedChecks,
-                },
-                maxBytes,
-              ),
-            );
-          },
-        );
-        await writer.write(
-          encodeCheckFrame({ ...base, type: "result", result }, maxBytes),
-        );
-      } catch {
-        await writer.write(
-          encodeCheckFrame({ ...base, type: "error" }, maxBytes),
-        );
-      }
+      // Keep reading the parent channel while NoCap is pending. A numeric SDK
+      // timeout has no timer of its own; stdin owns this worker until the parent
+      // supplies EOF after a terminal frame, or cancels/reaps the process.
+      operation = (async () => {
+        try {
+          checkRequest(input);
+          const result = await channel.perform(
+            input,
+            async (deadline) => {
+              await writer.write(
+                encodeCheckFrame(
+                  {
+                    ...base,
+                    type: "accepted",
+                    deadlineMs: deadline.ms,
+                    deadlineReason: deadline.reason,
+                    orderedChecks: deadline.orderedChecks,
+                  },
+                  maxBytes,
+                ),
+              );
+            },
+          );
+          terminal = true;
+          await writer.write(
+            encodeCheckFrame({ ...base, type: "result", result }, maxBytes),
+          );
+        } catch {
+          terminal = true;
+          await writer.write(
+            encodeCheckFrame({ ...base, type: "error" }, maxBytes),
+          );
+        }
+      })();
+      // Observe channel failures even if a parent disappears before completion.
+      void operation.catch(() => {});
     });
     if (!called) throw new Error("Missing check request");
+    if (!terminal) throw new Error("Parent closed before check completion");
+    await operation;
   } finally {
     try {
       await writer.close();
@@ -133,6 +151,7 @@ if (import.meta.main) {
     Deno.exit(0);
   } catch {
     console.error("Network check child channel failed");
-    Deno.exitCode = 1;
+    // A disconnected parent cannot retain an unbounded SDK operation owner.
+    Deno.exit(1);
   }
 }

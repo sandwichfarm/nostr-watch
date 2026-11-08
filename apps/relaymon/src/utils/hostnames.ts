@@ -668,7 +668,7 @@ export const reevaluateAllDeduplication = async (
 
   if (appConfig?.relaymon?.checks.execution && !networkChecks) throw new Error("Process network checks require their runtime context");
   const legacyNocap = networkChecks ? undefined : (await import("npm:@nostrwatch/nocap")).Nocap;
-  const legacyInfo = networkChecks ? undefined : (await import("npm:@nostrwatch/nocap-info-adapter-default")).default;
+  const legacyInfo = networkChecks ? undefined : (await import("npm:@nostrwatch/nocap-info-adapter-default@1.2.0")).default;
 
   // Group relays by hostname to batch NIP-11 checks
   const relaysByHostname = new Map<string, string[]>();

@@ -60,6 +60,7 @@ export async function maybeAnnounce(config: Config, queueManager?: QueueManager)
       owner,
       geo,
       outboxRelays,
+      userDataRelays: userMetaRelays,
       networks,
       timeouts,
       frequency,

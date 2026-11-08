@@ -1,3 +1,4 @@
+import { publisherFactory, type PublicationContext } from "../utils/publishTransport.ts";
 import { Nocap } from "npm:@nostrwatch/nocap";
 import EveryAdapterDefault from "npm:@nostrwatch/nocap-every-adapter-default";
 import { Kind30166, Publisher } from "npm:@nostrwatch/publisher";
@@ -81,18 +82,24 @@ export class Worker {
   private traProcessorRunning: boolean = false;
   private traQueueMax: number = 5000;
   private traQueueDropped: number = 0;
+  private retryTimers = new Set<ReturnType<typeof setTimeout>>();
+  private traStartTimer?: ReturnType<typeof setTimeout>;
+  private traRun?: Promise<void>;
 
   constructor(
     private pubkey: string,
     private queueManager: QueueManager,
     config: Config,
     ignoreListSync?: IgnoreListSync,
+    private publication?: PublicationContext,
   ) {
+    const createPublisher = publisherFactory(config, publication);
     this.config = config;
     this.ignoreListSync = ignoreListSync || null;
-    this.publisher = new Publisher(this.pubkey, config.publisher.relays);
-    if (config.relaymon.trustedRelayAssertions?.relays?.length) {
-      this.trustedRelayPublisher = new Publisher(
+    this.publisher = createPublisher(this.pubkey, config.publisher.relays);
+    if (config.relaymon.trustedRelayAssertions?.relays?.length &&
+      (!publication || config.relaymon.trustedRelayAssertions.enabled)) {
+      this.trustedRelayPublisher = createPublisher(
         this.pubkey,
         config.relaymon.trustedRelayAssertions.relays,
       );
@@ -118,6 +125,7 @@ export class Worker {
     this.initializeRelayStatusFromDB();
 
     setConfig(config);
+    publication?.onStop(() => this.stopPublicationProducers());
 
     // Validate period configuration if periods are enabled
     if (config.relaymon.delta?.periods?.enabled) {
@@ -180,6 +188,7 @@ export class Worker {
         "hostname is in blocklist",
         this.config,
         this.queueManager,
+        this.publication,
       );
       db.query("DELETE FROM relay_status WHERE url = ?", [relayUrl]);
       return;
@@ -217,6 +226,7 @@ export class Worker {
             "Relay was previously marked as ignored",
             this.config,
             this.queueManager,
+            this.publication,
           );
           this.logger.debug(
             `Published deletion event for previously ignored relay ${relayUrl}`,
@@ -258,7 +268,7 @@ export class Worker {
         }
       }
 
-      const dedupedResult = await relayHostnameDedup(result);
+      const dedupedResult = await relayHostnameDedup(result, { publication: this.publication });
 
       wasOnline = result.open?.data === true;
 
@@ -293,6 +303,7 @@ export class Worker {
           "Fake relay: WebSocket connects but does not speak nostr protocol",
           this.config,
           this.queueManager,
+          this.publication,
         );
       }
 
@@ -499,7 +510,7 @@ export class Worker {
             }): ${errorMsg}`,
           );
 
-          if (retryCount < maxRetries) {
+          if (!this.publication?.stopping && retryCount < maxRetries) {
             const nextRetryCount = retryCount + 1;
             const nextBackoffMs = backoffMs * 2;
             this.logger.info(
@@ -508,7 +519,7 @@ export class Worker {
               }s`,
             );
 
-            setTimeout(() => {
+            this.schedulePublicationRetry(() => {
               this.queueManager.addPublishJob(
                 () => publishJob(nextRetryCount, maxRetries, nextBackoffMs),
                 { isRetry: true, category: "delta" },
@@ -729,7 +740,7 @@ export class Worker {
             }/${maxRetries + 1}): ${errorMsg}`,
           );
 
-          if (retryCount < maxRetries) {
+          if (!this.publication?.stopping && retryCount < maxRetries) {
             const nextRetryCount = retryCount + 1;
             const nextBackoffMs = backoffMs * 2;
             this.logger.info(
@@ -738,7 +749,7 @@ export class Worker {
               }s`,
             );
 
-            setTimeout(() => {
+            this.schedulePublicationRetry(() => {
               this.queueManager.addPublishJob(
                 () => publishJob(nextRetryCount, maxRetries, nextBackoffMs),
                 { isRetry: true, category: "check" },
@@ -781,7 +792,7 @@ export class Worker {
    */
   enqueueTrustedRelayObservation(result: RelayCheckResult): void {
     const traConfig = this.config.relaymon.trustedRelayAssertions;
-    if (!traConfig?.enabled) {
+    if (!traConfig?.enabled || this.publication?.stopping) {
       return;
     }
 
@@ -816,9 +827,38 @@ export class Worker {
     this.traProcessorRunning = true;
     // Defer the loop to a macrotask so the first item's synchronous DB work
     // never runs inside enqueue's (check hot path) call stack.
-    setTimeout(() => {
-      void this.runTrustedRelayProcessor();
+    this.traStartTimer = setTimeout(() => {
+      this.traStartTimer = undefined;
+      if (this.publication?.stopping) { this.traProcessorActive = false; return; }
+      this.traRun = this.runTrustedRelayProcessor();
     }, 0);
+  }
+
+  private schedulePublicationRetry(callback: () => void, delayMs: number): void {
+    if (this.publication?.stopping) return;
+    const timer = setTimeout(() => {
+      this.retryTimers.delete(timer);
+      if (!this.publication?.stopping) callback();
+    }, delayMs);
+    if (this.publication) this.retryTimers.add(timer);
+  }
+
+  stopPublicationProducers(): void {
+    for (const timer of this.retryTimers) clearTimeout(timer);
+    this.retryTimers.clear();
+    if (this.traStartTimer !== undefined) clearTimeout(this.traStartTimer);
+    this.traStartTimer = undefined;
+    this.stopTrustedRelayProcessor();
+    clearInterval(this.statusIntval);
+  }
+
+  async drainPublicationWork(): Promise<void> {
+    await this.traRun;
+    await this.flushTrustedRelayQueue();
+  }
+
+  async closePublishers(): Promise<void> {
+    await Promise.all([this.publisher.close(), this.trustedRelayPublisher?.close()]);
   }
 
   /** Stop the background TRA processor (for shutdown / tests). */
@@ -960,7 +1000,7 @@ export class Worker {
             }/${maxRetries + 1}): ${errorMsg}`,
           );
 
-          if (retryCount < maxRetries) {
+          if (!this.publication?.stopping && retryCount < maxRetries) {
             const nextRetryCount = retryCount + 1;
             const nextBackoffMs = backoffMs * 2;
             this.logger.info(
@@ -969,7 +1009,7 @@ export class Worker {
               }s`,
             );
 
-            setTimeout(() => {
+            this.schedulePublicationRetry(() => {
               this.queueManager.addPublishJob(
                 () => publishJob(nextRetryCount, maxRetries, nextBackoffMs),
                 { isRetry: true, category: "other" },

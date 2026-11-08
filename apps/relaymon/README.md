@@ -208,6 +208,58 @@ queue:
 | `relaymon.trustedRelayAssertions` | Optional kind `30385` Trusted Relay Assertion publishing controls |
 | `queue.workerConcurrency` | Maximum parallel relay checks |
 
+### Publication process isolation (opt-in)
+
+Omitting `publisher.transport` keeps the existing in-process publisher. The
+`per-relay-process` mode uses one persistent SDK process per normalized relay,
+shared by checks, announcements, deletions and enabled TRA/ignore-list publishers.
+Signing and durable ACK markers remain in the parent. An uncertain child exit
+never marks a publication successful or automatically replays it.
+
+This mode requires an explicitly qualified deployment configuration:
+
+| `publisher.transport` field | Required value |
+| --- | --- |
+| `mode` | `per-relay-process` |
+| `expectedRelays` | Exact URL union of publisher destinations, effective announcement metadata defaults/config, enabled TRA destinations, and enabled ignore-list destinations |
+| `maxChildren` | Explicit process cap, at least the exact union cardinality (maximum 32) |
+| `maxPendingPerRelay` | Bounded active plus waiting requests per destination (1–128) |
+| `maxFrameBytes` | Maximum complete IPC frame including signed event (1024–1048576 bytes) |
+| `maxRestarts` | Maximum replacement generations per destination (0–10); pending attempts are never replayed |
+| `shutdownMs` | Lifecycle/startup/drain bound (100–60000ms); SDK connection and publication deadlines remain unchanged |
+| `launch.mode` | `proxychains` for multinet/proxied parents; `direct` only for a qualified direct route |
+| `launch.proxychainsBinary`, `launch.proxychainsConfig` | Absolute paths required in proxychains mode; use the same binary/config and supervised proxy route as the parent |
+| `launch.oldSpaceMb`, `launch.semiSpaceMb` | Explicit child V8 heap limits (16–128 and 1–8 MiB); separate from the parent's existing heap flags |
+| `launch.cacheDir`, `launch.certFile`, `launch.caStores` | Optional explicit cache/certificate/CA policy; supported inherited DENO_DIR/DENO_CERT/DENO_TLS_CA_STORE are retained and conflicting certificate policy fails startup |
+
+Startup validates the complete union and launch policy before spawning. Explicit
+empty metadata destinations stay empty; omitted metadata destinations retain the
+announcement library's two-relay default. A profile publishing to relay.nostr.watch
+and relaypag.es with explicit metadata destinations purplepag.es, user.kindpag.es
+and profiles.nostr1.com therefore requires **five** expected destinations and five
+children. Shared feature destinations reuse the same child.
+
+Children always use cached-only module loading, no lockfile updates, the app's
+import configuration and sloppy imports for the existing `.js` to TypeScript
+source layout. Cache the new child/protocol and SDK closure in the immutable image
+before enabling this mode. Child environment is allowlisted and the three
+deployment credential names are empty; the parent's env file, private key, API
+key, Kuma URL, database and arbitrary runtime options are not passed. Unsupported
+inherited HTTP/proxy/runtime/SSL policies fail startup for explicit reconciliation.
+Direct children reject `.onion`, `.i2p` and `.loki` destinations.
+
+SIGINT/SIGTERM stop producers and retries independently of PID-file checks, drain
+admitted checks/TRA/publications and leases, then close SDK pools and reap children.
+Complete matching ACKs buffered before child exit are decoded before unresolved
+requests are classified. Forced shutdown reports failure and leaves uncertain
+durable obligations eligible. Roll back by disabling the mode and reverting the
+qualified artifact/configuration together, preserving the parent database.
+
+Keep this mode disabled until the exact SDK/runtime, offline child closure,
+five-destination topology, proxy route matrix, startup/shutdown and aggregate
+cgroup memory have been qualified. Child heap limits alone do not establish RSS
+or fit within the existing service allocation.
+
 ## Known Limitations
 
 - **Relay URL filtering with pipe character:** `daemon.ts` (lines 234–239) logs relay URLs containing the `|` character but does not properly clean or reject them. This is a hotfix-level workaround for a structural URL validation gap at ingestion. As a workaround, remove malformed relay entries from the database directly via the SQLite CLI. See [CONCERNS.md — Relay URL Filtering with Pipe Character](../../.planning/codebase/CONCERNS.md#known-bugs).

@@ -1,3 +1,4 @@
+import { publisherFactory, type PublicationContext } from "../utils/publishTransport.ts";
 import { QueueManager } from "../utils/queueManager.ts";
 import { Worker } from "./worker.ts";
 import { RelaySeeder } from "./seeder.ts";
@@ -62,7 +63,20 @@ export const heartbeatTracker: HeartbeatTracker = {
 // Global error tracker for health monitoring
 export const errorTracker = new ErrorTracker();
 
-export async function runDaemon(config: Config): Promise<void> {
+export async function runDaemon(config: Config, publication?: PublicationContext): Promise<void> {
+  publisherFactory(config, publication);
+  let finishProducers!: () => void;
+  const producersDone = new Promise<void>((resolve) => { finishProducers = resolve; });
+  publication?.onDrain(() => producersDone);
+  const running = () => !publication?.stopping;
+  // Only daemon scheduling waits are interrupted. Admitted checks and SDK
+  // publication deadlines retain their own existing completion rules.
+  const wait = publication ? (ms: number) => new Promise<void>((resolve) => {
+    if (!running()) { resolve(); return; }
+    const finish = () => { clearTimeout(timer); publication.signal.removeEventListener('abort', finish); resolve(); };
+    const timer = setTimeout(finish, ms);
+    publication.signal.addEventListener('abort', finish, { once: true });
+  }) : delay;
   // Set global log level from config if specified
   if (config.logLevel) {
     setGlobalLogLevel(config.logLevel);
@@ -120,7 +134,7 @@ export async function runDaemon(config: Config): Promise<void> {
       "wss://user.kindpag.es",
       "wss://profiles.nostr1.com"
     ];
-    const ignoreListSync = new IgnoreListSync(config, staticMetaRelays);
+    const ignoreListSync = new IgnoreListSync(config, staticMetaRelays, publication);
 
     // Set the global IgnoreListSync instance for use in hostname deduplication
     setIgnoreListSync(ignoreListSync);
@@ -137,7 +151,7 @@ export async function runDaemon(config: Config): Promise<void> {
     }
 
     // Move maybeAnnounce call after creating queueManager so we can pass it
-    await maybeAnnounce(config, queueManager);
+    await maybeAnnounce(config, queueManager, publication);
 
     // Safely derive pubkey from RELAYMON_NSEC with error handling
     // Supports both nsec (NIP-19) and hex formats
@@ -172,7 +186,15 @@ export async function runDaemon(config: Config): Promise<void> {
       errorTracker.track("Missing or invalid RELAYMON_NSEC", "daemon");
     }
 
-    const worker = new Worker(pubkey, queueManager, config, ignoreListSync);
+    const worker = new Worker(pubkey, queueManager, config, ignoreListSync, publication);
+
+    publication?.onDrain(async () => {
+      await queueManager.waitEmpty([queueManager.checkQueue]);
+      await worker.drainPublicationWork();
+      await queueManager.waitEmpty([queueManager.publishQueue]);
+      await worker.closePublishers();
+      ignoreListSync.close();
+    });
 
     let seeder: RelaySeeder | undefined
     
@@ -195,7 +217,7 @@ export async function runDaemon(config: Config): Promise<void> {
       // Create a RetryManager instance with the same config as the worker
       const retryManager = new RetryManager(config.relaymon.retry.expiry);
       
-      while (true) {
+      while (running()) {
         try {
           logger.debug(`Checking for expired relays with expiry time: ${config.relaymon.checks.options.expires}`);
           logger.debug(`Using networks: ${JSON.stringify(config.relaymon.networks)}`);
@@ -210,7 +232,7 @@ export async function runDaemon(config: Config): Promise<void> {
           
           if (expiredRelays.length === 0) {
             logger.debug(`No expired relays found. Waiting for ${config.relaymon.checks.options.interval} before checking again.`);
-            await delay(config.relaymon.checks.options.interval);
+            await wait(config.relaymon.checks.options.interval);
             continue;
           }
           
@@ -239,10 +261,11 @@ export async function runDaemon(config: Config): Promise<void> {
 
           // Add relays to queue
           for (const relay of toEnqueue) {
+            if (!running()) break;
             //hotfixes
             if(relay.includes("|")) {
               logger.warn(`DEBUG: Skipping/Deleting relay ${relay} because it includes |`);
-              await deleteRelayCheckEvent(relay, "Skipping/Deleting relay because it includes |", config, queueManager);
+              await deleteRelayCheckEvent(relay, "Skipping/Deleting relay because it includes |", config, queueManager, publication);
               db.query("DELETE FROM relay_status WHERE url = ?", [relay]);
               continue;
             }
@@ -262,13 +285,13 @@ export async function runDaemon(config: Config): Promise<void> {
           heartbeatTracker.checkLoop = Date.now();
 
           logger.info(`Waiting for ${config.relaymon.checks.options.interval} before checking for more expired relays`);
-          await delay(config.relaymon.checks.options.interval);
+          await wait(config.relaymon.checks.options.interval);
         } catch (error) {
           logger.error(`Error in checkExpiredRelays: ${error.message}`);
           logger.error(error.stack || "No stack trace available");
           errorTracker.track(`Error in checkExpiredRelays: ${error.message}`, "daemon");
           // If there was an error, wait a bit before retrying
-          await delay(30000); // Wait 30 seconds before retrying after an error
+          await wait(30000); // Wait 30 seconds before retrying after an error
         }
       }
     }
@@ -356,6 +379,11 @@ export async function runDaemon(config: Config): Promise<void> {
       }
     }
 
+    if (publication) {
+      publication.onStop(() => kumaPusher?.stop());
+      publication.onDrain(async () => { await healthServer?.stop(); });
+    }
+
     // Warmup runner - checks all unchecked relays (checked_at = -1) for configured networks
     async function runWarmup(): Promise<void> {
       try {
@@ -363,7 +391,7 @@ export async function runDaemon(config: Config): Promise<void> {
         worker.setWarmupMode(true);
         queueManager.setWarmupActive(true);
         heartbeatTracker.checkLoop = Date.now();
-        while (true) {
+        while (running()) {
           // Build network filter from config
           const networks: string[] = Array.isArray(config.relaymon.networks) ? config.relaymon.networks : ["clearnet"];
           const placeholders = networks.map(() => '?').join(',');
@@ -380,6 +408,7 @@ export async function runDaemon(config: Config): Promise<void> {
           heartbeatTracker.checkLoop = Date.now();
           // Enqueue all unchecked relays
           for (const url of urls) {
+            if (!running()) break;
             // Skip any malformed items defensively
             if (typeof url !== 'string' || url.includes('|')) continue;
             queueManager.addCheckJob(async () => {
@@ -406,13 +435,15 @@ export async function runDaemon(config: Config): Promise<void> {
     }
 
     // Run warmup before starting normal loops
+    if (!running()) return;
     await runWarmup();
+    if (!running()) return;
 
     // Start the drain after warmup re-enables deletion publishing, but do not
     // gate check scheduling on a potentially hours-long remediation backlog.
     // Keep it supervised with the daemon tasks; pending rows survive exit.
     const remediationDrain = import("../utils/remediation.ts")
-      .then(({ drainRemediationDeletionQueue }) => drainRemediationDeletionQueue(config))
+      .then(({ drainRemediationDeletionQueue }) => drainRemediationDeletionQueue(config, publication))
       .catch((e) => {
         logger.error(`drainRemediationDeletionQueue failed: ${e}`);
       });
@@ -476,6 +507,7 @@ export async function runDaemon(config: Config): Promise<void> {
         }
 
         for (const url of toEnqueue) {
+          if (!running()) break;
           queueManager.addCheckJob(async () => {
             try {
               await worker.processRelay(url);
@@ -489,6 +521,7 @@ export async function runDaemon(config: Config): Promise<void> {
       }
     }
 
+    if (!running()) return;
     await kickstartPublishing();
 
     // Schedule ignore list sync if enabled
@@ -505,15 +538,16 @@ export async function runDaemon(config: Config): Promise<void> {
       const intervalMs = parseInterval(interval);
       logger.info(`Scheduling ignore list sync every ${interval}`);
 
-      while (true) {
+      while (running()) {
         try {
-          await delay(intervalMs);
+          await wait(intervalMs);
+          if (!running()) break;
           logger.info("Running scheduled ignore list sync and publish...");
           await ignoreListSync.sync().catch((err) => logger.error(`Sync error: ${err.message}`));
           await ignoreListSync.publish(getPrivateKey()).catch((err) => logger.error(`Publish error: ${err.message}`));
         } catch (error) {
           logger.error(`Error in runIgnoreListSync: ${error.message}`);
-          await delay(60000); // Wait 1 minute before retrying
+          await wait(60000); // Wait 1 minute before retrying
         }
       }
     }
@@ -530,14 +564,15 @@ export async function runDaemon(config: Config): Promise<void> {
       const intervalMs = parseInterval(interval);
       logger.info(`Scheduling ignore list deletions every ${interval}`);
 
-      while (true) {
+      while (running()) {
         try {
-          await delay(intervalMs);
+          await wait(intervalMs);
+          if (!running()) break;
           logger.info("Running scheduled ignore list deletion publish...");
           await ignoreListSync.publishDeletions(getPrivateKey()).catch((err) => logger.error(`Deletions error: ${err.message}`));
         } catch (error) {
           logger.error(`Error in runIgnoreListDeletions: ${error.message}`);
-          await delay(60000); // Wait 1 minute before retrying
+          await wait(60000); // Wait 1 minute before retrying
         }
       }
     }
@@ -551,11 +586,12 @@ export async function runDaemon(config: Config): Promise<void> {
       logger.info(`Scheduling deduplication re-evaluation every ${interval}`);
       logger.info(`NIP-11 cache TTL: ${nip11CacheTtl}`);
 
-      while (true) {
+      while (running()) {
         try {
-          await delay(intervalMs);
+          await wait(intervalMs);
+          if (!running()) break;
           logger.info("Running scheduled deduplication re-evaluation...");
-          const changedRelays = await reevaluateAllDeduplication(ttlMs).catch((err) => {
+          const changedRelays = await reevaluateAllDeduplication(ttlMs, undefined, publication).catch((err) => {
             logger.error(`Re-evaluation error: ${err.message}`);
             return [];
           });
@@ -568,7 +604,7 @@ export async function runDaemon(config: Config): Promise<void> {
           }
         } catch (error) {
           logger.error(`Error in runDedupReevaluation: ${error.message}`);
-          await delay(60000); // Wait 1 minute before retrying
+          await wait(60000); // Wait 1 minute before retrying
         }
       }
     }
@@ -585,9 +621,10 @@ export async function runDaemon(config: Config): Promise<void> {
       const intervalMs = parseInterval(interval);
       logger.info(`Scheduling ignored relay re-evaluation every ${interval}`);
 
-      while (true) {
+      while (running()) {
         try {
-          await delay(intervalMs);
+          await wait(intervalMs);
+          if (!running()) break;
           logger.info("Running scheduled ignored relay re-evaluation...");
 
           const fakeRelays = getIgnoredRelaysByReason("does not speak nostr protocol");
@@ -600,6 +637,7 @@ export async function runDaemon(config: Config): Promise<void> {
           let unignoredCount = 0;
 
           for (const { url } of fakeRelays) {
+            if (!running()) break;
             const wasUnignored = await worker.recheckIgnoredRelay(url);
             if (wasUnignored) {
               unignoredCount++;
@@ -616,14 +654,20 @@ export async function runDaemon(config: Config): Promise<void> {
           }
         } catch (error) {
           logger.error(`Error in runIgnoredRelayReevaluation: ${error.message}`);
-          await delay(60000);
+          await wait(60000);
         }
       }
     }
 
     if(seeder) {
       tasks.push(
-        seeder.start().catch(error => {
+        (publication ? (async () => {
+          while (running()) {
+            await seeder!.seed();
+            await wait(config.relaymon.seed.interval);
+          }
+          seeder!.stop();
+        })() : seeder.start()).catch(error => {
           logger.error(`Seeder process error: ${error.message}`);
           logger.error(error.stack || "No stack trace available");
           // Keep running - we'll just have a failed seeder
@@ -678,5 +722,7 @@ export async function runDaemon(config: Config): Promise<void> {
     logger.error(`Fatal error in daemon: ${error.message}`);
     logger.error(error.stack || "No stack trace available");
     throw error; // Re-throw to let Deno handle it
+  } finally {
+    finishProducers();
   }
 }

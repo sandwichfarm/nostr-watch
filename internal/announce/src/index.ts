@@ -2,6 +2,7 @@ import chalk from 'chalk'
 
 import { verifyEvent } from "nostr-tools";
 import { Publisher, Kind10166, Kind0, Kind10002 } from "@nostrwatch/publisher";
+import type { PublisherFactory } from '../../publisher/src/transport.js';
 import Logger from "@nostrwatch/logger";
 const log = new Logger('@nostrwatch/announce')
 
@@ -22,6 +23,7 @@ interface AnnounceMonitorOptions {
 
   relays?: string[];
   userDataRelays?: string[];
+  publisherFactory?: PublisherFactory;
 }
 
 export class AnnounceMonitor {
@@ -40,8 +42,13 @@ export class AnnounceMonitor {
     log.debug(`announce::constructor(): ${pubkey}`)
     this.setup(options);
     this.pubkey = pubkey
-    this.nip66Publisher = new Publisher(pubkey, this.monRelays)
-    this.userMetaPublisher = new Publisher(pubkey, this.userDataRelays)
+    const createPublisher = options.publisherFactory ?? ((key, relays) => new Publisher(key, relays));
+    this.nip66Publisher = createPublisher(pubkey, this.monRelays)
+    this.userMetaPublisher = createPublisher(pubkey, this.userDataRelays)
+  }
+
+  async close(): Promise<void> {
+    await Promise.all([this.nip66Publisher.close(), this.userMetaPublisher.close()]);
   }
 
   setup(options: AnnounceMonitorOptions): void {

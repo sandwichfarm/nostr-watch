@@ -1,5 +1,6 @@
+import { publisherFactory, type PublicationContext } from "./publishTransport.ts";
 import { getLogger } from "./logger.ts";
-import { Publisher, Event } from "npm:@nostrwatch/publisher";
+import { Event } from "npm:@nostrwatch/publisher";
 import { getEventHash, getPublicKey } from "npm:nostr-tools";
 import { hexToBytes } from "@noble/hashes/utils";
 import type { Config } from "../config/config.ts";
@@ -82,8 +83,10 @@ export async function deleteRelayCheckEvent(
   relayUrl: string,
   reason: string,
   config: Config,
-  queueManager?: QueueManager
+  queueManager?: QueueManager,
+  publication?: PublicationContext
 ): Promise<boolean> {
+  const createPublisher = publisherFactory(config, publication);
   try {
     // Respect warmup suppression
     if (suppressDeletionPublishing) {
@@ -130,7 +133,7 @@ export async function deleteRelayCheckEvent(
     if (queueManager) {
       queueManager.addPublishJob(async () => {
         // This job owns its publisher and must release it on both outcomes.
-        const publisher = new Publisher(pubkey, config.publisher.relays);
+        const publisher = createPublisher(pubkey, config.publisher.relays);
         try {
           await publisher.publishEvent(signedEvent);
           logger.info(`Queued deletion event for relay ${relayUrl} using a-tag`);
@@ -154,7 +157,7 @@ export async function deleteRelayCheckEvent(
       return true;
     } else {
       // Fallback to direct publishing if no queue manager is available
-      const publisher = new Publisher(pubkey, config.publisher.relays);
+      const publisher = createPublisher(pubkey, config.publisher.relays);
       try {
         await publisher.publishEvent(signedEvent);
 

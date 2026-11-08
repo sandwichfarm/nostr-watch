@@ -1,4 +1,5 @@
 import { createPublicationContext, installPublicationSignals, type PublicationContext } from "../utils/publishTransport.ts";
+import { createCheckTransport, type CheckProcesses } from "../utils/checkTransport.ts";
 import { header } from "../utils/header.ts";
 import { loadConfig } from "../config/config.ts";
 import { runDaemon, getPrivateKey, heartbeatTracker, errorTracker } from "./daemon.ts";
@@ -74,6 +75,7 @@ const PID_FILE = getPidFilePath();
 // Flag to track shutdown status
 let isShuttingDown = false;
 let publication: PublicationContext | undefined;
+let networkChecks: CheckProcesses | undefined;
 let ownsPidFile = false;
 let shutdownPromise: Promise<void> | undefined;
 
@@ -83,16 +85,21 @@ let shutdownPromise: Promise<void> | undefined;
 async function shutdown(signal?: string, exitCode = 0): Promise<void> {
   return shutdownPromise ??= (async () => {
     isShuttingDown = true;
+    networkChecks?.stop();
     if (publication) {
       try { await publication.close(); }
       catch (error) { console.error(`Publication shutdown: ${error}`); exitCode = 1; }
+    }
+    if (networkChecks) {
+      try { await networkChecks.close(); }
+      catch (error) { console.error(`Network check shutdown: ${error}`); exitCode = 1; }
     }
   
     console.log(`\nReceived ${signal || 'shutdown'} signal. Cleaning up...`);
   
     try {
       // Clean up PID file
-      if ((!publication || ownsPidFile) && existsSync(PID_FILE)) {
+      if (((!publication && !networkChecks) || ownsPidFile) && existsSync(PID_FILE)) {
         await Deno.remove(PID_FILE);
         console.log("PID file removed successfully.");
       }
@@ -422,12 +429,16 @@ export async function main() {
 
   // Load configuration
   const config = await loadConfig(configPath);
+  networkChecks = createCheckTransport(config);
   publication = await createPublicationContext(config, undefined, (context) => {
     publication = context;
     // Independent of PID-file creation and RELAYMON_SKIP_PID_CHECK.
     installPublicationSignals(context, (signal) => { void shutdown(signal); });
   });
-  if (!skipPidCheck) await createPidFile(!publication);
+  if (networkChecks && !publication) {
+    for (const signal of ["SIGINT", "SIGTERM"] as const) Deno.addSignalListener(signal, () => { void shutdown(signal); });
+  }
+  if (!skipPidCheck) await createPidFile(!publication && !networkChecks);
   try {
 
     //DO NOT REMOVE THIS.
@@ -465,10 +476,10 @@ export async function main() {
     }
 
     // Start the daemon
-    await runDaemon(config, publication);
-    if (publication) await shutdown();
+    await runDaemon(config, publication, networkChecks);
+    if (publication || networkChecks) await shutdown();
   } catch (error) {
-    if (publication) { console.error(`Daemon initialization/execution failed: ${error}`); await shutdown("failure", 1); }
+    if (publication || networkChecks) { console.error(`Daemon initialization/execution failed: ${error}`); await shutdown("failure", 1); }
     throw error;
   }
 }

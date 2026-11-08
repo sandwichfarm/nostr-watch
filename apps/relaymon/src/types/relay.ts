@@ -14,6 +14,8 @@ export interface CheckResult<T> {
   data: T;
   duration: number;
   error?: Error;
+  status?: string;
+  message?: string;
 }
 
 /**
@@ -100,6 +102,7 @@ export interface SslResult {
  */
 export interface NocapCheckResult {
   url: string;
+  network?: NetworkType;
   hostname?: string;
   protocol?: string;
   checked_at?: number;

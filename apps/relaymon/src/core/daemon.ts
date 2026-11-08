@@ -1,4 +1,5 @@
 import { publisherFactory, type PublicationContext } from "../utils/publishTransport.ts";
+import type { CheckProcesses } from "../utils/checkTransport.ts";
 import { QueueManager } from "../utils/queueManager.ts";
 import { Worker } from "./worker.ts";
 import { RelaySeeder } from "./seeder.ts";
@@ -63,19 +64,20 @@ export const heartbeatTracker: HeartbeatTracker = {
 // Global error tracker for health monitoring
 export const errorTracker = new ErrorTracker();
 
-export async function runDaemon(config: Config, publication?: PublicationContext): Promise<void> {
+export async function runDaemon(config: Config, publication?: PublicationContext, networkChecks?: CheckProcesses): Promise<void> {
   publisherFactory(config, publication);
   let finishProducers!: () => void;
   const producersDone = new Promise<void>((resolve) => { finishProducers = resolve; });
   publication?.onDrain(() => producersDone);
-  const running = () => !publication?.stopping;
+  const running = () => !publication?.stopping && !networkChecks?.stopping;
   // Only daemon scheduling waits are interrupted. Admitted checks and SDK
   // publication deadlines retain their own existing completion rules.
-  const wait = publication ? (ms: number) => new Promise<void>((resolve) => {
+  const stopSignal = publication?.signal ?? networkChecks?.signal;
+  const wait = stopSignal ? (ms: number) => new Promise<void>((resolve) => {
     if (!running()) { resolve(); return; }
-    const finish = () => { clearTimeout(timer); publication.signal.removeEventListener('abort', finish); resolve(); };
+    const finish = () => { clearTimeout(timer); stopSignal.removeEventListener('abort', finish); resolve(); };
     const timer = setTimeout(finish, ms);
-    publication.signal.addEventListener('abort', finish, { once: true });
+    stopSignal.addEventListener('abort', finish, { once: true });
   }) : delay;
   // Set global log level from config if specified
   if (config.logLevel) {
@@ -186,7 +188,16 @@ export async function runDaemon(config: Config, publication?: PublicationContext
       errorTracker.track("Missing or invalid RELAYMON_NSEC", "daemon");
     }
 
-    const worker = new Worker(pubkey, queueManager, config, ignoreListSync, publication);
+    const worker = new Worker(pubkey, queueManager, config, ignoreListSync, publication, networkChecks);
+    networkChecks?.signal.addEventListener("abort", () => worker.stopPublicationProducers(), { once: true });
+    if (networkChecks && !publication) networkChecks.setParentDrain(async () => {
+      await producersDone;
+      await queueManager.waitEmpty([queueManager.checkQueue]);
+      await worker.drainPublicationWork();
+      await queueManager.waitEmpty([queueManager.publishQueue]);
+      await worker.closePublishers();
+      ignoreListSync.close();
+    });
 
     publication?.onDrain(async () => {
       await queueManager.waitEmpty([queueManager.checkQueue]);
@@ -591,7 +602,7 @@ export async function runDaemon(config: Config, publication?: PublicationContext
           await wait(intervalMs);
           if (!running()) break;
           logger.info("Running scheduled deduplication re-evaluation...");
-          const changedRelays = await reevaluateAllDeduplication(ttlMs, undefined, publication).catch((err) => {
+          const changedRelays = await reevaluateAllDeduplication(ttlMs, undefined, publication, networkChecks).catch((err) => {
             logger.error(`Re-evaluation error: ${err.message}`);
             return [];
           });

@@ -81,16 +81,34 @@ export async function maybeAnnounce(config: Config, queueManager?: QueueManager)
 
   try {
     if (queueManager) {
-      // Use the queue manager to publish the announcement
-      queueManager.addPublishJob(async () => {
+      const queue = queueManager;
+      const maxRetries = config.publisher.retry?.maxRetries ?? 5;
+      const initialBackoffMs = config.publisher.retry?.initialBackoffMs ?? 60000;
+      // Reuse this generation's signed events and ACK state across attempts.
+      const publishJob = async (retryCount = 0, backoffMs = initialBackoffMs): Promise<void> => {
         try {
           await announcer.publish();
           logger.info("Monitor announcement published successfully via queue.");
         } catch (error: unknown) {
           logger.error("Failed to publish monitor announcement via queue: " + getErrorMessage(error));
-          throw error; // Rethrow to trigger retry mechanism
+          if (retryCount < maxRetries) {
+            const nextRetryCount = retryCount + 1;
+            const nextBackoffMs = backoffMs * 2;
+            logger.info(`Scheduling announcement retry ${nextRetryCount}/${maxRetries} in ${(nextBackoffMs / 1000).toFixed(1)}s`);
+            setTimeout(() => {
+              queue.addPublishJob(() => publishJob(nextRetryCount, nextBackoffMs), {
+                isRetry: true,
+                category: 'announce',
+              });
+            }, nextBackoffMs);
+          } else {
+            logger.error(`Exceeded maximum retries (${maxRetries}) for monitor announcement`);
+          }
+          // QueueManager owns failure metrics; it does not schedule retries.
+          throw error;
         }
-      }, { category: 'announce' });
+      };
+      queue.addPublishJob(() => publishJob(), { isRetry: false, category: 'announce' });
       logger.info("Added monitor announcement to publish queue.");
     } else {
       // Fallback to direct publishing if no queue manager is available
@@ -99,5 +117,6 @@ export async function maybeAnnounce(config: Config, queueManager?: QueueManager)
     }
   } catch (error: unknown) {
     logger.error("Failed to handle monitor announcement: " + getErrorMessage(error));
+    throw error;
   }
 }

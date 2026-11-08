@@ -690,3 +690,67 @@ Deno.test("five configured destinations have five persistent distinct owners and
   await context.close();
   ok(children.every((c) => c.ended));
 });
+
+Deno.test("parent 128/8 V8 heap policy remains unchanged while explicit child 32/2 supersedes it", () => {
+  const inherited = Object.freeze({
+    DENO_V8_FLAGS: "--max-old-space-size=128,--max-semi-space-size=8",
+    DENO_DIR: "/cache",
+    DENO_CERT: "/cert.pem",
+    DENO_TLS_CA_STORE: "system",
+    RELAYMON_MODE: "multinet",
+    LD_PRELOAD: "/usr/lib/libproxychains4.so",
+  });
+  const originalEnvironment = Deno.env.get("DENO_V8_FLAGS");
+  const proxied = {
+    ...options,
+    launch: {
+      ...options.launch,
+      mode: "proxychains" as const,
+      proxychainsBinary: "/usr/bin/proxychains4",
+      proxychainsConfig: "/etc/proxychains.conf",
+    },
+  };
+  const plan = publicationLaunchPlan(proxied, relay, "heap-fixture", inherited);
+  strictEqual(
+    inherited.DENO_V8_FLAGS,
+    "--max-old-space-size=128,--max-semi-space-size=8",
+  );
+  strictEqual(Deno.env.get("DENO_V8_FLAGS"), originalEnvironment);
+  strictEqual(plan.options.env?.DENO_V8_FLAGS, undefined);
+  strictEqual(plan.options.env?.DENO_DIR, "/cache");
+  strictEqual(plan.options.env?.DENO_TLS_CA_STORE, "system");
+  ok(plan.options.args?.includes("--cert=/cert.pem"));
+  ok(
+    plan.options.args?.includes(
+      "--v8-flags=--max-old-space-size=32,--max-semi-space-size=2",
+    ),
+  );
+  ok(
+    !plan.options.args?.some((arg) =>
+      arg.includes("max-old-space-size=128") ||
+      arg.includes("max-semi-space-size=8")
+    ),
+  );
+  strictEqual(plan.command, "/usr/bin/proxychains4");
+});
+
+Deno.test("unsupported or malformed inherited V8 policy fails rather than being silently discarded", () => {
+  for (
+    const policy of [
+      "--expose-gc",
+      "--max-old-space-size=128,--jitless",
+      "--max-old-space-size=0",
+      "--max-semi-space-size=-1",
+      "--max-old-space-size=128,--max-old-space-size=256",
+      "--max-old-space-size=128,",
+    ]
+  ) {
+    throws(
+      () =>
+        publicationLaunchPlan(options, relay, "heap-fixture", {
+          DENO_V8_FLAGS: policy,
+        }),
+      /Unsupported inherited publication V8 policy/,
+    );
+  }
+});

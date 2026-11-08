@@ -530,13 +530,28 @@ export function publicationLaunchPlan(
       "NODE_OPTIONS",
       "DENO_FLAGS",
       "DENO_OPTIONS",
-      "DENO_V8_FLAGS",
     ]
   ) {
     if (inherited[name]) {
       throw new Error(
         `Unsupported inherited publication runtime policy: ${name}`,
       );
+    }
+  }
+  // The parent's explicit heap profile remains untouched. Only these two
+  // memory flags may be superseded by this child's declared heap argv; other
+  // inherited V8 policy must be reconciled rather than silently discarded.
+  if (inherited.DENO_V8_FLAGS) {
+    const seen = new Set<string>();
+    for (const flag of inherited.DENO_V8_FLAGS.split(",")) {
+      const match = /^(--max-old-space-size|--max-semi-space-size)=([1-9]\d*)$/
+        .exec(flag.trim());
+      if (
+        !match || seen.has(match[1]) || !Number.isSafeInteger(Number(match[2]))
+      ) {
+        throw new Error("Unsupported inherited publication V8 policy");
+      }
+      seen.add(match[1]);
     }
   }
   const proxied = inherited.RELAYMON_MODE === "multinet" ||

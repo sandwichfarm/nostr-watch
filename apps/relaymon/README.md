@@ -246,6 +246,11 @@ before enabling this mode. Child environment is allowlisted and the three
 deployment credential names are empty; the parent's env file, private key, API
 key, Kuma URL, database and arbitrary runtime options are not passed. Unsupported
 inherited HTTP/proxy/runtime/SSL policies fail startup for explicit reconciliation.
+The parent `DENO_V8_FLAGS` may contain only positive integer
+`--max-old-space-size` and `--max-semi-space-size` settings (comma-separated,
+without duplicates). The parent's existing `128/8` profile remains unchanged;
+children use their explicitly declared profile, for example `32/2`, through
+child-only argv. Other inherited V8 flags fail startup rather than being dropped.
 Direct children reject `.onion`, `.i2p` and `.loki` destinations.
 
 SIGINT/SIGTERM stop producers and retries independently of PID-file checks, drain

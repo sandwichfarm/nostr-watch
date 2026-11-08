@@ -1,5 +1,13 @@
 # nostrawl
 
+## 0.2.2
+
+### Patch Changes
+
+- [#974](https://github.com/sandwichfarm/nostr-watch/pull/974) [`11d8eb9`](https://github.com/sandwichfarm/nostr-watch/commit/11d8eb94644679712746efd09e9a4eb1b88c116b) Thanks [@dskvr](https://github.com/dskvr)! - Count cached legacy markers without decoding and retaining every event payload.
+  This prevents large persistent caches from exhausting the JavaScript heap before
+  a relay crawl begins, while preserving existing counts and all stored records.
+
 ## 0.2.1
 
 ### Patch Changes

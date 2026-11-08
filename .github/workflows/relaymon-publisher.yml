@@ -8,6 +8,7 @@ on:
       - apps/relaymon/src/**
       - apps/relaymon/tests/unit/deletion*.test.ts
       - apps/relaymon/tests/unit/remediation-startup.test.ts
+      - apps/relaymon/tests/unit/check-transport*.test.ts
       - apps/relaymon/deno.json
       - .github/workflows/relaymon-publisher.yml
   push:
@@ -18,6 +19,7 @@ on:
       - apps/relaymon/src/**
       - apps/relaymon/tests/unit/deletion*.test.ts
       - apps/relaymon/tests/unit/remediation-startup.test.ts
+      - apps/relaymon/tests/unit/check-transport*.test.ts
       - apps/relaymon/deno.json
       - .github/workflows/relaymon-publisher.yml
 
@@ -46,3 +48,7 @@ jobs:
           tests/unit/deletion-publisher-lifecycle.test.ts
           tests/unit/deletion-publish-once.test.ts
           tests/unit/remediation-startup.test.ts
+      - name: Verify isolated check protocol, parity and process cleanup
+        run: |
+          deno cache --no-lock --unstable-sloppy-imports tests/unit/check-transport.test.ts tests/unit/check-transport-nocap.test.ts
+          deno test --cached-only --no-lock --no-check --unstable-sloppy-imports -A --deny-net tests/unit/check-transport.test.ts tests/unit/check-transport-nocap.test.ts

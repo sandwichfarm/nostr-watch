@@ -1,4 +1,5 @@
 import Logger from '@nostrwatch/logger';
+import { isLocalNetworkUrl } from '@nostrwatch/utils';
 const logger = new Logger('@nostrwatch/nostrings');
 
 const blocklist = [
@@ -190,7 +191,9 @@ export const qualifyRelayUrl = (maybeRelay: string): boolean => {
   // wss://(wss//relay.primal.net) (hostname="(wss")
   if ( !hostname.includes('.') ) return false;
 
-  if ( isLocalNet(maybeRelay) ) return false;
+  // Loopback, private, link-local, CGNAT and local-only names. Runs on the
+  // parsed hostname, so alternate IP spellings cannot slip past it.
+  if ( isLocalNetworkUrl(maybeRelay) ) return false;
 
   if ( isLocal(maybeRelay) ) return false;
 
@@ -212,11 +215,9 @@ export const qualifyRelayUrl = (maybeRelay: string): boolean => {
 
   if ( !maybeRelay.startsWith('wss://') && !maybeRelay.startsWith('ws://') ) return false;
 
-  if ( maybeRelay.match(/localhost|\.local|[\n\r]|\[object object\]/)) return false;
+  if ( maybeRelay.match(/[\n\r]|\[object object\]/)) return false;
 
   if ( maybeRelay.includes('http://') || maybeRelay.includes('https://') ) return false;
-
-  if ( maybeRelay.match(/(127\.)\d{0,3}(\.)\d{0,3}(\.)\d{0,3}|(192\.168|10\.)\d{1,3}(\.)\d{1,3}/) ) return false;
 
   if ( hasDisallowedNpub(maybeRelay, url) ) return false;
 

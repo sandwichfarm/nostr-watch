@@ -207,6 +207,8 @@
   };
 
   onMount(async () => {
+    // Static, crawlable shell from app.html; the app now renders its own UI.
+    document.getElementById('nw-static')?.remove();
 
     await load();
 

@@ -50,9 +50,128 @@
 				});
 			}
 		</script>
+		<title>nostr.watch: Nostr relay monitor</title>
+		<meta name="description" content="Free, open-source monitor for Nostr relays. Relay status, latency, supported NIPs and NIP-66 monitor data, with a REST API and MCP tools for agents." />
+		<link rel="alternate" type="text/markdown" href="/index.md" title="nostr.watch (markdown)" />
+		<link rel="alternate" type="text/plain" href="/llms.txt" title="llms.txt" />
+		<link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+		<script type="application/ld+json">
+		{
+			"@context": "https://schema.org",
+			"@graph": [
+				{
+					"@type": "Organization",
+					"@id": "https://nostr.watch/#organization",
+					"name": "nostr.watch",
+					"url": "https://nostr.watch/",
+					"logo": "https://nostr.watch/logo.png",
+					"founder": { "@type": "Organization", "name": "sandwich.farm", "url": "https://sandwich.farm" },
+					"sameAs": ["https://github.com/sandwichfarm/nostr-watch", "https://sandwich.farm"]
+				},
+				{
+					"@type": "WebSite",
+					"@id": "https://nostr.watch/#website",
+					"name": "nostr.watch",
+					"url": "https://nostr.watch/",
+					"description": "Free, open-source monitor for Nostr relays.",
+					"publisher": { "@id": "https://nostr.watch/#organization" },
+					"inLanguage": "en"
+				},
+				{
+					"@type": "Service",
+					"@id": "https://nostr.watch/#relay-monitoring",
+					"name": "Nostr relay monitoring",
+					"serviceType": "Nostr relay monitoring (NIP-66)",
+					"description": "Monitors in several regions check Nostr relays every hour and publish the results as NIP-66 events.",
+					"provider": { "@id": "https://nostr.watch/#organization" },
+					"areaServed": "Worldwide",
+					"url": "https://nostr.watch/relays",
+					"hoursAvailable": { "@id": "https://nostr.watch/#hours" },
+					"offers": { "@id": "https://nostr.watch/#offer" }
+				},
+				{
+					"@type": "Offer",
+					"@id": "https://nostr.watch/#offer",
+					"name": "nostr.watch relay monitoring",
+					"description": "Free. The website, REST API, CVM tools and raw NIP-66 events cost nothing for standard use.",
+					"price": "0",
+					"priceCurrency": "USD",
+					"availability": "https://schema.org/OnlineOnly",
+					"itemOffered": { "@id": "https://nostr.watch/#relay-monitoring" }
+				},
+				{
+					"@type": "OpeningHoursSpecification",
+					"@id": "https://nostr.watch/#hours",
+					"name": "Monitoring runs continuously",
+					"dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+					"opens": "00:00",
+					"closes": "23:59"
+				},
+				{
+					"@type": "WebAPI",
+					"@id": "https://api.nostr.watch/v2/#api",
+					"name": "nostr.watch REST API v2",
+					"description": "HTTP JSON API for aggregated NIP-66 relay monitoring data, with OpenAPI documentation and a sandbox.",
+					"url": "https://api.nostr.watch/v2/",
+					"documentation": "https://api.nostr.watch/v2/",
+					"provider": { "@id": "https://nostr.watch/#organization" },
+					"offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD", "description": "Free for standard use" }
+				},
+				{
+					"@type": "Service",
+					"@id": "https://cvm.nostr.watch/#cvm",
+					"name": "nostr.watch CVM (MCP over Nostr)",
+					"serviceType": "Model Context Protocol tools over Nostr",
+					"description": "21 MCP tools for querying relay monitoring data, transported over Nostr, for AI agents and MCP clients.",
+					"url": "https://cvm.nostr.watch",
+					"provider": { "@id": "https://nostr.watch/#organization" },
+					"offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD", "description": "Free for standard use" }
+				},
+				{
+					"@type": "FAQPage",
+					"@id": "https://nostr.watch/#faq",
+					"mainEntity": [
+						{ "@type": "Question", "name": "What is nostr.watch?", "acceptedAnswer": { "@type": "Answer", "text": "A free, open-source monitor for Nostr relays. It shows relay status, latency and supported NIPs, and publishes monitor results as NIP-66 events." } },
+						{ "@type": "Question", "name": "What is NIP-66?", "acceptedAnswer": { "@type": "Answer", "text": "NIP-66 is a Nostr protocol for relay discovery and liveness monitoring. Kind 10166 announces a monitor, kind 30166 describes a relay's status and kind 1066 records a status change. Specification: https://github.com/nostr-protocol/nips/blob/master/66.md" } },
+						{ "@type": "Question", "name": "How can agents and programs get relay data?", "acceptedAnswer": { "@type": "Answer", "text": "Use the REST API at https://api.nostr.watch/v2/, the MCP tools over Nostr at https://cvm.nostr.watch, or query NIP-66 events directly from wss://relay.nostr.watch." } },
+						{ "@type": "Question", "name": "Is nostr.watch free?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. The website, the raw NIP-66 events, the REST API and the CVM tools are free for standard use." } },
+						{ "@type": "Question", "name": "How often is relay data updated?", "acceptedAnswer": { "@type": "Answer", "text": "Monitors check relays about every hour and publish new NIP-66 events as they finish." } }
+					]
+				}
+			]
+		}
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover" class="overflow-y-auto">
+		<div id="nw-static" style="max-width:48rem;margin:0 auto;padding:2rem 1rem;font-family:Inter,system-ui,sans-serif;line-height:1.6;color:#e4e4e7;background:#09090b">
+			<header>
+				<nav aria-label="Primary">
+					<a href="/" style="color:inherit">nostr.watch</a> ·
+					<a href="/relays" style="color:inherit">Relays</a> ·
+					<a href="/relays/map" style="color:inherit">Relay map</a> ·
+					<a href="/monitors" style="color:inherit">Monitors</a> ·
+					<a href="/operators" style="color:inherit">Operators</a>
+				</nav>
+			</header>
+			<main>
+				<h1>nostr.watch: Nostr relay monitor</h1>
+				<p>Free, open-source monitoring for Nostr relays. Monitors in several regions check relays every hour and publish the results as <a href="https://github.com/nostr-protocol/nips/blob/master/66.md" style="color:inherit">NIP-66 events</a>. The relay table loads in your browser; enable JavaScript to use it.</p>
+				<h2>Data for developers and agents</h2>
+				<ul>
+					<li><a href="https://api.nostr.watch/v2/" style="color:inherit">REST API v2 documentation and sandbox</a></li>
+					<li><a href="https://cvm.nostr.watch" style="color:inherit">CVM: MCP tools over Nostr</a></li>
+					<li><a href="https://github.com/nostr-protocol/nips/blob/master/66.md" style="color:inherit">NIP-66 specification</a></li>
+					<li><a href="/llms.txt" style="color:inherit">llms.txt summary for agents</a></li>
+					<li><a href="/index.md" style="color:inherit">Markdown version of this page</a></li>
+				</ul>
+				<h2>Pricing</h2>
+				<p>Free. The website, the REST API, the CVM tools and the raw NIP-66 events cost $0.</p>
+			</main>
+			<footer>
+				<p><a href="https://github.com/sandwichfarm/nostr-watch" style="color:inherit">Source code on GitHub</a> · Built by <a href="https://sandwich.farm" style="color:inherit">sandwich.farm</a></p>
+			</footer>
+		</div>
 		<div>%sveltekit.body%</div>
 	</body>
 </html>

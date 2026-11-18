@@ -3,6 +3,7 @@
     import type { Monitor } from "@nostrwatch/route66/models";
     import { monitors } from '$lib/stores/monitors.js';
     import { PFP } from '$lib/utils/pfp.js';
+    import { publicImageUrl } from '$lib/utils/sanitize';
     
     export let check: any;
     
@@ -11,7 +12,7 @@
     $: monitorProfile = monitor ? monitor?.profile : null;
     $: monitorRelays = monitor ? monitor?.relays : null;
     $: monitorName = monitor?.name;
-    $: monitorPhoto = monitor?.photo ?? PFP.generate(pubkey);
+    $: monitorPhoto = publicImageUrl(monitor?.photo) ?? PFP.generate(pubkey);
 </script>
 
 <div class="space-y-4">

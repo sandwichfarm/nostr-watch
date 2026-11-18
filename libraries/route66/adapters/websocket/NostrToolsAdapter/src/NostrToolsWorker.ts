@@ -10,6 +10,7 @@ import {  WorkerOptions, AdapterWorkerResult, AdapterWebsocketWorker, IAdapterWe
 
 import { AdapterWebsocketWorkerCommand, IWebsocketAdapterCallbacks, defaultWebsocketAdapterOptions, defaultWebsocketRequestBody, WebsocketAdapterResult, WebsocketAdapterOptions, WebsocketRequestBody  } from '@nostrwatch/route66/core'
 import { IEvent } from "@nostrwatch/route66/interfaces";
+import { isLocalNetworkUrl } from "@nostrwatch/utils";
 
 const queue = new PQueue({ concurrency: 5 });
 
@@ -40,7 +41,7 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
   constructor( options: NostrToolsWorkerOptions ){
     super(options);
     this.init();
-    this.relays = options?.relays ? options.relays : defaultRelays;
+    this.relays = this.cleanRelayUrls(options?.relays ? options.relays : defaultRelays);
   }
 
   init(){
@@ -88,7 +89,7 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
 
   async _publish(request: WebsocketRequestBody = defaultWebsocketRequestBody): Promise<boolean> {
     let { relays, note } = request;
-    relays = relays ?? this.relays;
+    relays = this.cleanRelayUrls(relays ?? this.relays);
     if(!note) return false;
     if(!relays.length) return false;
     if(!this.pool) await this.connect();
@@ -99,7 +100,9 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
   }
 
   private cleanRelayUrls(relays: string[]): string[] {
-    return relays.filter((r: string) => !r.includes(','));
+    // Never open sockets to this device or a private network from the browser:
+    // relay URLs come from untrusted events (relay lists, hints, NIP-66 tags).
+    return relays.filter((r: string) => typeof r === 'string' && !r.includes(',') && !isLocalNetworkUrl(r));
   }
 
   private subscribeToFilters(
@@ -403,7 +406,7 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
   }
 
   close(relays?: string[]): void {
-    this.pool?.close(relays ?? this.relays as string[]);
+    this.pool?.close(this.cleanRelayUrls(relays ?? this.relays as string[]));
   }
 
   terminate(): void {

@@ -1,5 +1,6 @@
 import { get, writable, type Writable } from 'svelte/store';
 import { type CheckKey } from "@nostrwatch/nocap"
+import { isLocalNetworkUrl } from "@nostrwatch/utils"
 
 export type NocapRequestMessage = {
     relay: string,
@@ -25,7 +26,8 @@ export class NocapService {
     }
 
     async check(relay: string, checks: string | string[] = 'open'): Promise<any | undefined> {
-        // console.log('checking', relay)
+        // Never probe this device or a private network from the browser.
+        if (isLocalNetworkUrl(relay)) return undefined;
         this.worker.postMessage({ relay, checks } as NocapRequestMessage)
         // console.log('message posted', { relay, checks })
         let result: any | undefined;

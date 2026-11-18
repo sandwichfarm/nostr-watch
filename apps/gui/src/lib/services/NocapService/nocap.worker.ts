@@ -3,10 +3,12 @@ import WebsocketAdapterDefault from "@nostrwatch/nocap-websocket-adapter-default
 import InfoAdapterDefault from "@nostrwatch/nocap-info-adapter-default"
 import DnsAdapterDefault from "@nostrwatch/nocap-dns-adapter-default"
 import type { NocapRequestMessage, NocapResultMessage } from "./index.js";
+import { isLocalNetworkUrl } from "@nostrwatch/utils"
 
 // const global = self.global as any
 
 const check = async (relay: string, checks: CheckKey[]): Promise<any> => {
+    if (isLocalNetworkUrl(relay)) throw new Error('Checks against local or private network addresses are blocked.')
     const nocap = new Nocap(relay)
     nocap.useAdapter(WebsocketAdapterDefault)
     nocap.useAdapter(InfoAdapterDefault)

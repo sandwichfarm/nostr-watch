@@ -1,3 +1,4 @@
+import { isLocalNetworkUrl } from '@nostrwatch/utils';
 import createDOMPurify, {
     type Config,
     type DOMPurify as DOMPurifyInstance,
@@ -146,6 +147,8 @@ export function safeImageUrl(input: unknown): string {
     const isHttp = /^https?:\/\//i.test(input);
     const isDataImage = /^data:image\//i.test(input);
     if (!isHttp && !isDataImage) return '';
+    // Never load images from this device or a private network.
+    if (isHttp && isLocalNetworkUrl(input)) return '';
     // Encode entities (notably & in query strings) so the value is safe in
     // both `src=""` attribute context and CSS `url('...')` context.
     return escapeHtml(input);
@@ -350,4 +353,17 @@ export function sanitizedHtml(node: HTMLElement, value: unknown) {
             setSanitizedHtml(node, nextValue);
         },
     };
+}
+
+/**
+ * Gate an untrusted image URL for a Svelte `src={...}` binding (Svelte does
+ * the attribute escaping). Returns the URL unchanged when it is an http(s) or
+ * `data:image/` URL that does not target this device or a private network,
+ * otherwise `undefined` so callers can fall back with `??`.
+ */
+export function publicImageUrl(input: unknown): string | undefined {
+    if (typeof input !== 'string' || input.length === 0) return undefined;
+    if (/^data:image\//i.test(input)) return input;
+    if (!/^https?:\/\//i.test(input) || isLocalNetworkUrl(input)) return undefined;
+    return input;
 }

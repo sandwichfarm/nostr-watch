@@ -2,7 +2,7 @@
 
 import { isLocalNetworkUrl } from "@nostrwatch/utils/network";
 import { getLogger } from './logger.ts';
-import { hasDisallowedNpub } from '@nostrwatch/nostrings';
+import { hasDisallowedNpub, isValidRelayHostname } from '@nostrwatch/nostrings';
 
 const logger = getLogger('sanitizers');
 
@@ -68,6 +68,9 @@ export const qualifyRelayUrl = (relay: string): boolean => {
     return false;
 
   try {
+    // Same rule as @nostrwatch/nostrings: a hostname with empty labels or
+    // invalid characters (wss://.well-known/...) can never be checked.
+    if (!isValidRelayHostname(new URL(relay).hostname)) return false;
     if (hasDisallowedNpub(relay)) return false;
   } catch {
     return false;

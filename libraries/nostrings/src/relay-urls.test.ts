@@ -8,6 +8,7 @@ import {
   normalizeRelayUrls,
   normalizeRelayUrl,
   isNatoPhoneticSpam,
+  isValidRelayHostname,
 } from './relay-urls.js';  // Adjust this import to your actual file path
 
 describe('sanitize', () => {
@@ -222,5 +223,72 @@ describe('qualifyRelayUrl local network rejection', () => {
     'wss://100.128.0.1',
   ])('still accepts %s', (url) => {
     expect(qualifyRelayUrl(url)).toBe(true);
+  });
+});
+
+// Hostnames Deno's --allow-net refuses ("empty label found in FQDN", "invalid
+// char found in FQDN") must never qualify: relaymon cannot check them, and the
+// isolated check child exits at startup for each attempt.
+describe('isValidRelayHostname', () => {
+  it.each([
+    '.well-known',
+    'a..b',
+    '.',
+    '..',
+    'relay.example.com..',
+    'a*b.com',
+    'a~b.com',
+    'a!b.com',
+    'a$b.com',
+    'a(b.com',
+    "a'b.com",
+    `${'a'.repeat(64)}.com`,
+    `${'abcdefg.'.repeat(32)}com`,
+    '[]',
+    '[::1',
+    '',
+  ])('rejects %j', (hostname) => {
+    expect(isValidRelayHostname(hostname)).toBe(false);
+  });
+
+  it.each([
+    'relay.example.com',
+    'relay.example.com.',
+    'relay_x.example.com',
+    'xn--bcher-kva.example',
+    `${'a'.repeat(63)}.com`,
+    '8.8.8.8',
+    '[2001:db8::1]',
+    'abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwx.onion',
+  ])('accepts %j', (hostname) => {
+    expect(isValidRelayHostname(hostname)).toBe(true);
+  });
+});
+
+describe('qualifyRelayUrl invalid hostname rejection', () => {
+  it.each([
+    'wss://.well-known/nip50/is:rising/sort:top/language:en',
+    'wss://.relay.example.com',
+    'wss://relay..example.com',
+    'wss://re*lay.example.com',
+    'wss://relay~.example.com',
+    `wss://${'a'.repeat(64)}.example.com`,
+  ])('rejects %s', (url) => {
+    expect(qualifyRelayUrl(url)).toBe(false);
+    expect(sanitize([url])).toEqual([]);
+  });
+
+  it('rejects a doubled trailing dot', () => {
+    expect(qualifyRelayUrl('wss://relay.example.com../')).toBe(false);
+  });
+
+  it('accepts a single trailing root dot and sanitize strips it', () => {
+    expect(qualifyRelayUrl('wss://relay.example.com./')).toBe(true);
+    expect(sanitize(['wss://relay.example.com./'])).toEqual(['wss://relay.example.com/']);
+  });
+
+  it('still accepts underscores and punycode', () => {
+    expect(qualifyRelayUrl('wss://relay_1.example.com')).toBe(true);
+    expect(qualifyRelayUrl('wss://xn--bcher-kva.example/')).toBe(true);
   });
 });

@@ -1,5 +1,10 @@
 import { publisherFactory, type PublicationContext } from "../utils/publishTransport.ts";
-import { checkNetwork, type CheckProcesses } from "../utils/checkTransport.ts";
+import {
+  assertCheckableUrl,
+  CheckInputError,
+  checkNetwork,
+  type CheckProcesses,
+} from "../utils/checkTransport.ts";
 import { Kind30166, Publisher } from "npm:@nostrwatch/publisher";
 import { relayHostnameDedup, setConfig } from "../utils/hostnames.ts";
 import {
@@ -10,10 +15,12 @@ import {
   getRetryCount,
   incrementRetryCount,
   isRelayIgnored,
+  markFirstCheckFailed,
   markRelayIgnored,
   markRelayUnignored,
   persistResult,
   recordTrustedRelayObservation,
+  removeUncheckableRelay,
   storeDeltaState,
   storePeriodSnapshot,
   storePublishedTrustedRelayAssertion,
@@ -192,6 +199,17 @@ export class Worker {
         this.publication,
       );
       db.query("DELETE FROM relay_status WHERE url = ?", [relayUrl]);
+      return;
+    }
+
+    // A URL no check can ever run for (e.g. hostname ".well-known") is data
+    // that should never have been stored. Remove it on encounter instead of
+    // failing it on every pass.
+    try {
+      assertCheckableUrl(relayUrl);
+    } catch (error) {
+      if (!(error instanceof CheckInputError)) throw error;
+      this.forgetUncheckableRelay(relayUrl, error);
       return;
     }
 
@@ -387,12 +405,30 @@ export class Worker {
       this.logger.debug(`Successfully completed check for relay: ${relayUrl}`);
     } catch (error: unknown) {
       wasSuccessful = false;
+      if (error instanceof CheckInputError) {
+        this.forgetUncheckableRelay(relayUrl, error);
+        return;
+      }
       this.logger.error(
         `Error processing relay ${relayUrl}: ${getErrorMessage(error)}`,
       );
 
+      // A failed first check must still leave the unchecked set; otherwise
+      // warmup selects the same checked_at = -1 row again forever. Shutdown
+      // rejections are not a check outcome and leave the row untouched.
+      let firstCheckRecorded = false;
+      if (isFirstCheck && !this.checksStopping()) {
+        try {
+          firstCheckRecorded = markFirstCheckFailed(relayUrl);
+        } catch (dbError) {
+          this.logger.error(
+            `Error recording failed first check for ${relayUrl}: ${dbError}`,
+          );
+        }
+      }
+
       const currentRetryCount = this.relayRetries.get(relayUrl) || 0;
-      if (currentRetryCount > 0) {
+      if (currentRetryCount > 0 || firstCheckRecorded) {
         this.logger.debug(
           `Incrementing retry count for ${relayUrl} after repeated error (current: ${currentRetryCount})`,
         );
@@ -417,6 +453,22 @@ export class Worker {
         console.error("Error updating stats:", statsError);
       }
     }
+  }
+
+  private checksStopping(): boolean {
+    return this.networkChecks?.stopping === true ||
+      this.publication?.stopping === true;
+  }
+
+  private forgetUncheckableRelay(relayUrl: string, error: CheckInputError) {
+    this.logger.warn(`Removing uncheckable relay ${relayUrl}: ${error.detail}`);
+    try {
+      removeUncheckableRelay(relayUrl);
+    } catch (dbError) {
+      this.logger.error(`Error removing uncheckable relay ${relayUrl}: ${dbError}`);
+    }
+    this.relayRetries.delete(relayUrl);
+    this.knownRelayStatus.delete(relayUrl);
   }
 
   /**

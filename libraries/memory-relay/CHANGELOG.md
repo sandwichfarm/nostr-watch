@@ -1,5 +1,13 @@
 # @nostrwatch/memory-relay
 
+## 4.0.0
+
+### Patch Changes
+
+- Updated dependencies [[`b732346`](https://github.com/sandwichfarm/nostr-watch/commit/b7323468201c8e2833c3f917c3a27d087bcccd19)]:
+  - @nostrwatch/utils@0.4.0
+  - @nostrwatch/route66@0.0.4
+
 ## 3.0.0
 
 ### Patch Changes

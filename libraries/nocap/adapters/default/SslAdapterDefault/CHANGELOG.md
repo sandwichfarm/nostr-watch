@@ -1,5 +1,13 @@
 # @nostrwatch/nocap-ssl-adapter-default
 
+## 1.4.8
+
+### Patch Changes
+
+- Updated dependencies [[`b732346`](https://github.com/sandwichfarm/nostr-watch/commit/b7323468201c8e2833c3f917c3a27d087bcccd19)]:
+  - @nostrwatch/utils@0.4.0
+  - @nostrwatch/nocap@0.10.1
+
 ## 1.4.7
 
 ### Patch Changes

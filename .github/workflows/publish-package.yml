@@ -85,13 +85,14 @@ jobs:
       - name: Deploy to nsite
         uses: sandwichfarm/nsite-action@v0.7.0
         with:
+          # Pin nsyte instead of resolving "latest" at deploy time.
+          version: v0.29.0
           directory: "./apps/gui/dist"
           nbunksec: ${{ secrets.NBUNKSEC }}
-          relays: |
-            ${{ env.NSITE_RELAYS }}
-          servers: |
-            ${{ env.NSITE_SERVERS }}
-          purge: true
+          # Relays, Blossom servers and the SPA fallback come from the GUI's
+          # nsyte config. nsyte otherwise looks for .nsite/config.json in the
+          # repo root, which does not exist, and fails with "Missing servers".
+          config_path: apps/gui/.nsite/config.json
 
       - name: Deploy to Bunny
         uses: R-J-dev/bunny-deploy@v2.1.1

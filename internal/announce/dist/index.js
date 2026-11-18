@@ -11,14 +11,19 @@ export class AnnounceMonitor {
     monProfile;
     nip66Publisher;
     userMetaPublisher;
-    pubkey = null;
+    pubkey;
     clientTag;
+    acknowledgedEventIds = new Set();
     constructor(pubkey, options) {
         log.debug(`announce::constructor(): ${pubkey}`);
         this.setup(options);
         this.pubkey = pubkey;
-        this.nip66Publisher = new Publisher(pubkey, this.monRelays);
-        this.userMetaPublisher = new Publisher(pubkey, this.userDataRelays);
+        const createPublisher = options.publisherFactory ?? ((key, relays) => new Publisher(key, relays));
+        this.nip66Publisher = createPublisher(pubkey, this.monRelays);
+        this.userMetaPublisher = createPublisher(pubkey, this.userDataRelays);
+    }
+    async close() {
+        await Promise.all([this.nip66Publisher.close(), this.userMetaPublisher.close()]);
     }
     setup(options) {
         const { geo = {}, timeouts = {}, networks = {}, checks = [], owner = '', frequency = '', profile = {}, relays = [], clientTag, } = options;
@@ -62,6 +67,8 @@ export class AnnounceMonitor {
     }
     generate() {
         log.debug(`announce::generate(): ${this.pubkey}`);
+        this.events = {};
+        this.acknowledgedEventIds.clear();
         const $monReg = new Kind10166(this.pubkey);
         $monReg.generateEvent({ ...this.monReg });
         this.events["10166"] = $monReg;
@@ -97,31 +104,37 @@ export class AnnounceMonitor {
             throw new Error("Event has not yet been generated");
         console.log(this.events);
         const pubbedIds = [];
+        const failures = [];
         const kinds = Object.keys(this.events);
         for (let i = 0; i < kinds.length; i++) {
             const kind = kinds[i];
             const kindNum = Number(kind);
+            const metadata = kindNum === 0 || kindNum === 10002;
+            const activeRelays = metadata ? this.userDataRelays : this.monRelays;
+            if ((!metadata && kindNum !== 10166) || activeRelays.length === 0)
+                continue;
+            const event = this.events[kind];
+            if (this.acknowledgedEventIds.has(event.id)) {
+                pubbedIds.push(event.id);
+                continue;
+            }
             try {
-                let activeRelays = [];
-                if (kindNum === 0 || kindNum === 10002) {
-                    log.info(`publishing ${kind} to ${this.userDataRelays.join(',')}`);
-                    activeRelays = this.userDataRelays;
-                    await this.userMetaPublisher.publishEvent(this.events[kind]);
-                }
-                else if (kindNum === 10166) {
-                    log.info(`publishing ${kind} to ${this.monRelays.join(',')}`);
-                    activeRelays = this.monRelays;
-                    // console.log(this.events[kind])
-                    await this.nip66Publisher.publishEvent(this.events[kind]);
-                }
+                if (typeof event.id !== 'string' || !event.id)
+                    throw new Error(`Announcement ${kind} is not signed`);
+                log.info(`publishing ${kind} to ${activeRelays.join(',')}`);
+                await (metadata ? this.userMetaPublisher : this.nip66Publisher).publishEvent(event);
+                this.acknowledgedEventIds.add(event.id);
+                pubbedIds.push(event.id);
                 log.info(`${chalk.green.bold(kind)} ${chalk.gray.italic('published to')} ${chalk.white.bold(activeRelays.join(','))}`);
             }
             catch (e) {
+                failures.push(e);
                 console.log(e);
-                log.error(`${chalk.red.bold(kind)} ${chalk.gray.italic('failed to publish to')} ${chalk.white.bold(this.monRelays.join(','))}`);
+                log.error(`${chalk.red.bold(kind)} ${chalk.gray.italic('failed to publish to')} ${chalk.white.bold(activeRelays.join(','))}`);
             }
-            pubbedIds.push(this.events[kind].id);
         }
+        if (failures.length)
+            throw new AggregateError(failures, 'Monitor announcement publication failed');
         return pubbedIds;
     }
     static verify(ev) {

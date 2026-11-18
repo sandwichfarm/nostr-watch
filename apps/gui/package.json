@@ -21,7 +21,8 @@
 	},
 	"scripts": {
 		"dev": "vite dev",
-		"build": "rm -rf dist && vite build -c vite.production.js",
+		"build": "rm -rf dist && vite build -c vite.production.js && node ./scripts/inject-agent-pricing.mjs",
+		"pricing:snapshot": "node ./scripts/inject-agent-pricing.mjs --update-snapshot",
 		"seed": "node ./scripts/generate-seed.mjs",
 		"deploy:bunny": "node ./scripts/deploy-bunny.mjs",
 		"deploy:seeded:bunny": "pnpm run build:seeded && pnpm run deploy:bunny",

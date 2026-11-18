@@ -32,11 +32,19 @@ NIP-66 event kinds: `10166` monitor announcement, `30166` relay status (`d` tag 
 - [Monitors](https://nostr.watch/monitors)
 - [Operators](https://nostr.watch/operators)
 
+## Pricing
+
+<!-- agent-pricing:start -->
+
+The website and the raw NIP-66 events are free. Per-request prices for the REST API are listed at https://api.nostr.watch/v2/ and for CVM at https://cvm.nostr.watch.
+
+<!-- agent-pricing:end -->
+
 ## FAQ
 
 **What is NIP-66?** A Nostr protocol for relay discovery and liveness monitoring. Monitors publish signed events describing relay health, capabilities and availability.
 
-**Is the data free?** Yes. The website, the raw NIP-66 events, the REST API and the CVM tools are free for standard use.
+**Is the data free?** The website and the raw NIP-66 events are free. The REST API and the CVM tools charge small per-request amounts in sats; see Pricing.
 
 **How often is data updated?** Monitors check relays about every hour. The REST API and CVM ingest new monitor events as they are published.
 

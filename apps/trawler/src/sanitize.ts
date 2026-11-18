@@ -1,5 +1,6 @@
 /// <reference lib="deno.ns" />
 
+import { isLocalNetworkUrl } from "@nostrwatch/utils/network";
 import { getLogger } from './logger.ts';
 import { hasDisallowedNpub } from '@nostrwatch/nostrings';
 
@@ -49,6 +50,8 @@ export const sanitizeRelayUrl = (relay: string): string => {
 };
 
 export const qualifyRelayUrl = (relay: string): boolean => {
+  if (isLocalNetworkUrl(relay)) return false;
+
   if (/^(wss:\/\/)(.*)(:\/\/)(.*)$/.test(relay)) //multiple protocols
     return false;
 

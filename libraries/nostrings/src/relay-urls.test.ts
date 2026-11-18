@@ -188,3 +188,39 @@ describe('sanitize - NATO phonetic spam end-to-end', () => {
     expect(result).toEqual(['wss://good.relay.com/']);
   });
 });
+
+describe('qualifyRelayUrl local network rejection', () => {
+  it.each([
+    'ws://localhost:7777',
+    'ws://127.0.0.1:7777',
+    'ws://192.168.1.1',
+    'ws://10.0.0.5',
+    'ws://172.16.0.1:8080',
+    'ws://169.254.169.254',
+    'ws://100.64.0.1',
+    'ws://0.0.0.0:6379',
+    'ws://[::1]:6379',
+    'ws://[::ffff:127.0.0.1]:6379',
+    'ws://[fd00::1]',
+    'ws://2130706433:6379',
+    'ws://0x7f.0.0.1:6379',
+    'ws://nas.local',
+    'ws://router.lan',
+    'ws://host.docker.internal:5432',
+    'ws://metadata.google.internal',
+  ])('rejects %s', (url) => {
+    expect(qualifyRelayUrl(url)).toBe(false);
+    expect(sanitize([url])).toEqual([]);
+  });
+
+  it.each([
+    'wss://relay.damus.io',
+    'wss://localhost.example.org',
+    'wss://local.example.org',
+    'wss://8.8.8.8',
+    'wss://172.32.0.1',
+    'wss://100.128.0.1',
+  ])('still accepts %s', (url) => {
+    expect(qualifyRelayUrl(url)).toBe(true);
+  });
+});

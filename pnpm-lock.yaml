@@ -1749,6 +1749,9 @@ importers:
       '@nostrwatch/logger':
         specifier: workspace:^
         version: link:../../internal/logger
+      '@nostrwatch/utils':
+        specifier: workspace:^
+        version: link:../../internal/utils
     devDependencies:
       '@types/node':
         specifier: ^18.0.0

@@ -8,6 +8,7 @@ import {
   validateCheckProcessConfig,
 } from "../types/config.ts";
 import type { NocapCheckResult } from "../types/relay.ts";
+import { assertPublicTarget } from "./targetGuard.ts";
 import {
   CHECK_PROTOCOL,
   checkDeadline,
@@ -411,6 +412,8 @@ export async function checkNetwork(
   transport?: CheckProcesses,
 ): Promise<NocapCheckResult> {
   const input: CheckRequest = { url, checks, options, profile };
+  // Before either path: never point a check at this host or a private network.
+  await assertPublicTarget(url);
   if (transport) return await transport.check(input);
   // Existing deployments keep the original in-process behavior; NoCap runtime
   // imports remain lazy so isolated parents do not retain its module heap.

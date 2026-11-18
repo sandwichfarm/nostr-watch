@@ -169,6 +169,11 @@ export interface CheckProcessConfig {
   maxFrameBytes: number;
   maxRestarts: number;
   shutdownMs: number;
+  /** How long check admission stays closed once more than maxRestarts
+   * consecutive unexpected child failures occur (1000-3600000ms, default
+   * 60000). Admission then half-opens instead of staying closed until
+   * process restart. */
+  failureCooldownMs?: number;
   launch: PublicationProcessConfig["launch"];
 }
 
@@ -797,8 +802,12 @@ export function validatePublicationProcessConfig(options: PublicationProcessConf
 
 export function validateCheckProcessConfig(config: Config): void {
   const o = config.relaymon.checks.execution!;
-  if (o.mode !== "process" || Object.keys(o).some((k) => !["mode", "maxChildren", "maxPending", "maxFrameBytes", "maxRestarts", "shutdownMs", "launch"].includes(k))) {
+  if (o.mode !== "process" || Object.keys(o).some((k) => !["mode", "maxChildren", "maxPending", "maxFrameBytes", "maxRestarts", "shutdownMs", "failureCooldownMs", "launch"].includes(k))) {
     throw new Error("Unsupported network check execution mode");
+  }
+  if (o.failureCooldownMs !== undefined &&
+    (!Number.isInteger(o.failureCooldownMs) || o.failureCooldownMs < 1000 || o.failureCooldownMs > 3600000)) {
+    throw new Error("Invalid check execution bound: failureCooldownMs");
   }
   validatePublicationProcessConfig({ mode: "per-relay-process", expectedRelays: [], maxChildren: o.maxChildren,
     maxPendingPerRelay: o.maxPending, maxFrameBytes: o.maxFrameBytes, maxRestarts: o.maxRestarts,

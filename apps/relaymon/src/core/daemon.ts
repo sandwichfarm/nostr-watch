@@ -3,6 +3,7 @@ import type { CheckProcesses } from "../utils/checkTransport.ts";
 import { QueueManager } from "../utils/queueManager.ts";
 import { Worker } from "./worker.ts";
 import { RelaySeeder } from "./seeder.ts";
+import { runWarmupPasses } from "./warmup.ts";
 import { getLogger, setGlobalLogLevel } from "../utils/logger.ts";
 import { delay } from "npm:@nostrwatch/utils";
 import { db, getExpiredRelays } from "npm:@nostrwatch/db";
@@ -402,38 +403,34 @@ export async function runDaemon(config: Config, publication?: PublicationContext
         worker.setWarmupMode(true);
         queueManager.setWarmupActive(true);
         heartbeatTracker.checkLoop = Date.now();
-        while (running()) {
-          // Build network filter from config
-          const networks: string[] = Array.isArray(config.relaymon.networks) ? config.relaymon.networks : ["clearnet"];
-          const placeholders = networks.map(() => '?').join(',');
-          const query = `SELECT url FROM relay_status WHERE checked_at = -1 AND network IN (${placeholders})`;
-          const rows = db.query(query, networks);
-          const urls: string[] = rows.map(([url]) => url as string);
-
-          if (urls.length === 0) {
-            logger.info("Warmup complete: no unchecked relays remain");
-            break;
-          }
-
-          logger.info(`Warmup: processing ${urls.length} unchecked relays`);
-          heartbeatTracker.checkLoop = Date.now();
-          // Enqueue all unchecked relays
-          for (const url of urls) {
-            if (!running()) break;
-            // Skip any malformed items defensively
-            if (typeof url !== 'string' || url.includes('|')) continue;
-            queueManager.addCheckJob(async () => {
-              try {
-                await worker.processRelay(url);
-              } catch (error) {
-                logger.error(`Warmup error processing ${url}: ${error?.message || error}`);
-              }
-            }, url);
-          }
-
-          // Wait for warmup batch to drain
-          await queueManager.waitEmpty([queueManager.checkQueue]);
-          // Loop to re-check in case seeder or other inputs added more unchecked
+        // Build network filter from config
+        const networks: string[] = Array.isArray(config.relaymon.networks) ? config.relaymon.networks : ["clearnet"];
+        const placeholders = networks.map(() => '?').join(',');
+        const query = `SELECT url FROM relay_status WHERE checked_at = -1 AND network IN (${placeholders})`;
+        const outcome = await runWarmupPasses({
+          selectUnchecked: () => db.query(query, networks).map(([url]) => url as string),
+          enqueue: (url) => queueManager.addCheckJob(async () => {
+            try {
+              await worker.processRelay(url);
+            } catch (error) {
+              logger.error(`Warmup error processing ${url}: ${error?.message || error}`);
+            }
+          }, url),
+          // Wait for each warmup batch to drain, then loop in case the seeder
+          // or other inputs added more unchecked relays.
+          waitIdle: () => queueManager.waitEmpty([queueManager.checkQueue]),
+          wait,
+          running,
+          onPass: ({ urls, skipped }) => {
+            heartbeatTracker.checkLoop = Date.now();
+            logger.info(`Warmup: processing ${urls} unchecked relays` +
+              (skipped ? ` (${skipped} already attempted this warmup)` : ""));
+          },
+        });
+        if (running()) {
+          logger.info(outcome.leftUnchecked
+            ? `Warmup complete: ${outcome.leftUnchecked} unchecked relays were already attempted (or are malformed) and are left to the check loop`
+            : "Warmup complete: no unchecked relays remain");
         }
       } catch (e) {
         logger.error(`Warmup runner failed: ${e?.message || e}`);

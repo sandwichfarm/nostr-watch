@@ -718,6 +718,43 @@ export function clearPeriodSnapshots(url: string): void {
 }
 
 /**
+ * Remove a relay that can never be checked (for example a hostname with an
+ * empty label, wss://.well-known/...) from relay_status and its satellite
+ * tables in one transaction. Such a relay was never checked successfully, so
+ * nothing was published for it and no deletion event is queued.
+ * @returns true when a relay_status row was removed
+ */
+export function removeUncheckableRelay(url: string): boolean {
+  const existed = db.query(`SELECT 1 FROM relay_status WHERE url = ?`, [url]).length > 0;
+  db.query("BEGIN TRANSACTION");
+  try {
+    db.query(`DELETE FROM relay_status WHERE url = ?`, [url]);
+    db.query(`DELETE FROM relay_info WHERE url = ?`, [url]);
+    db.query(`DELETE FROM relay_delta_state WHERE url = ?`, [url]);
+    db.query(`DELETE FROM relay_period_snapshots WHERE url = ?`, [url]);
+    db.query("COMMIT");
+  } catch (e) {
+    db.query("ROLLBACK");
+    throw e;
+  }
+  return existed;
+}
+
+/**
+ * Record a failed first check so the relay leaves the unchecked set
+ * (checked_at = -1) that warmup drains. Retries are incremented by the
+ * caller, which gives the regular check loop its normal backoff.
+ * @returns true when the row was still unchecked and has now been marked
+ */
+export function markFirstCheckFailed(url: string, now = Math.round(Date.now() / 1000)): boolean {
+  db.query(
+    `UPDATE relay_status SET checked_at = ? WHERE url = ? AND checked_at = -1`,
+    [now, url],
+  );
+  return db.changes > 0;
+}
+
+/**
  * Get all period snapshots for a relay
  * @param url The relay URL
  * @returns Map of period to snapshot

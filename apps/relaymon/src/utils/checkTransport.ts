@@ -9,6 +9,7 @@ import {
 } from "../types/config.ts";
 import type { NocapCheckResult } from "../types/relay.ts";
 import { assertPublicTarget } from "./targetGuard.ts";
+import { isValidRelayHostname } from "@nostrwatch/nostrings";
 import {
   CHECK_PROTOCOL,
   checkDeadline,
@@ -20,6 +21,41 @@ import {
   readCheckFrames,
   validateCheckResult,
 } from "./checkTransportProtocol.ts";
+
+/** A check request that can never run, whatever the state of the pool: the
+ * fault is in the relay URL, not in a check child. It fails only its own
+ * check and never counts toward the pool's unexpected-failure breaker. */
+export class CheckInputError extends Error {
+  constructor(readonly url: string, readonly detail: string) {
+    super(`Cannot check ${url}: ${detail}`);
+    this.name = "CheckInputError";
+  }
+}
+
+/** Throws CheckInputError unless a child could be granted --allow-net for
+ * this URL's hostname. Deno refuses to start with a hostname that has an
+ * empty label (wss://.well-known/... has hostname ".well-known") or an
+ * invalid character, so such a child would exit before its ready frame. */
+export function assertCheckableUrl(url: string): void {
+  let hostname: string;
+  try {
+    hostname = new URL(url).hostname;
+  } catch {
+    throw new CheckInputError(url, "URL cannot be parsed");
+  }
+  if (!isValidRelayHostname(hostname)) {
+    throw new CheckInputError(
+      url,
+      `hostname ${
+        JSON.stringify(hostname)
+      } cannot be granted network permission`,
+    );
+  }
+}
+
+/** How long admission stays closed after the unexpected-failure breaker
+ * trips, when relaymon.checks.execution.failureCooldownMs is not set. */
+export const DEFAULT_CHECK_FAILURE_COOLDOWN_MS = 60_000;
 
 export type CheckLauncher = (
   input: CheckRequest,
@@ -44,6 +80,8 @@ export class CheckProcesses {
   >();
   private requests = new Set<Promise<unknown>>();
   private unexpectedFailures = 0;
+  /** When the breaker tripped; admission half-opens after the cooldown. */
+  private trippedAt?: number;
   private abort = new AbortController();
   private closing?: Promise<void>;
   private parentDrain?: () => Promise<void>;
@@ -73,12 +111,46 @@ export class CheckProcesses {
       })),
       failures: this.outcomes.failures,
       consecutiveUnexpectedFailures: this.unexpectedFailures,
+      admissionClosedUntil: this.trippedAt === undefined
+        ? undefined
+        : this.trippedAt + this.cooldownMs,
     };
+  }
+
+  private get cooldownMs(): number {
+    return this.options.failureCooldownMs ?? DEFAULT_CHECK_FAILURE_COOLDOWN_MS;
+  }
+
+  private unexpectedFailure(): void {
+    this.unexpectedFailures++;
+    if (this.unexpectedFailures > this.options.maxRestarts) {
+      this.trippedAt ??= Date.now();
+    }
+  }
+
+  /** Whether the consecutive-unexpected-failure breaker refuses admission.
+   * It used to latch until process restart, so a burst of faults disabled
+   * every relay's check for good. After the cooldown it now half-opens: the
+   * streak is set back to the limit, so one further unexpected failure closes
+   * it for another cooldown while a clean result resets it fully. */
+  private admissionClosed(): boolean {
+    if (this.unexpectedFailures <= this.options.maxRestarts) return false;
+    if (Date.now() - (this.trippedAt ?? 0) < this.cooldownMs) return true;
+    this.unexpectedFailures = this.options.maxRestarts;
+    this.trippedAt = undefined;
+    return false;
   }
 
   check(input: CheckRequest): Promise<NocapCheckResult> {
     checkRequest(input);
     checkDeadline(input);
+    // Input no child could ever run is refused before admission, so it can
+    // neither occupy a slot nor count against the shared breaker.
+    try {
+      assertCheckableUrl(input.url);
+    } catch (error) {
+      return Promise.reject(error);
+    }
     const captured = structuredClone(input);
     encodeCheckFrame({
       v: CHECK_PROTOCOL,
@@ -109,7 +181,7 @@ export class CheckProcesses {
       this.active.size < this.options.maxChildren
     ) {
       const job = this.queue.shift()!;
-      if (this.unexpectedFailures > this.options.maxRestarts) {
+      if (this.admissionClosed()) {
         job.reject(new Error("Check child failure limit reached"));
         continue;
       }
@@ -131,11 +203,16 @@ export class CheckProcesses {
     let child: PublicationChild;
     try {
       child = this.launch(job.input, generation, request);
-    } catch {
-      this.unexpectedFailures++;
+    } catch (error) {
+      queueMicrotask(() => this.dispatch());
+      if (error instanceof CheckInputError) {
+        // Per-relay input fault: fail this check only, leave the streak alone.
+        job.reject(error);
+        return;
+      }
+      this.unexpectedFailure();
       this.outcomes.failures++;
       job.reject(new Error("Check child launch failed"));
-      queueMicrotask(() => this.dispatch());
       return;
     }
     this.active.add(child);
@@ -280,12 +357,13 @@ export class CheckProcesses {
           new Error("Check child exited without a complete result");
       }
       if (fault || !status.success) {
-        this.unexpectedFailures++;
+        this.unexpectedFailure();
         this.outcomes.failures++;
       } else {
         // Only a complete, valid response with clean EOF and reap restores
         // worker confidence. Known operation failures do not reset this streak.
         this.unexpectedFailures = 0;
+        this.trippedAt = undefined;
       }
     } catch (error) {
       if (
@@ -295,7 +373,7 @@ export class CheckProcesses {
           !this.stopping) ||
         (!operationExpired && !operationFailed && !this.stopping)
       ) {
-        this.unexpectedFailures++;
+        this.unexpectedFailure();
       }
       this.outcomes.failures++;
       rejection = error instanceof Error
@@ -350,6 +428,8 @@ export function checkLaunchPlan(
   inherited?: Parameters<typeof publicationLaunchPlan>[3],
 ) {
   checkRequest(input);
+  // The --allow-net grant below is this hostname; refuse what Deno would.
+  assertCheckableUrl(input.url);
   const plan = publicationLaunchPlan(
     {
       mode: "per-relay-process",
@@ -412,7 +492,10 @@ export async function checkNetwork(
   transport?: CheckProcesses,
 ): Promise<NocapCheckResult> {
   const input: CheckRequest = { url, checks, options, profile };
-  // Before either path: never point a check at this host or a private network.
+  // Before either path: a URL no check can be run for is a per-relay input
+  // error (CheckInputError), never a pool fault or an offline result.
+  assertCheckableUrl(url);
+  // Never point a check at this host or a private network.
   await assertPublicTarget(url);
   if (transport) return await transport.check(input);
   // Existing deployments keep the original in-process behavior; NoCap runtime

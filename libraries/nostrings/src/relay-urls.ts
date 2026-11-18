@@ -171,6 +171,30 @@ export const hasDisallowedNpub = (relay: string, url: URL = new URL(relay)): boo
   return [url.username, url.password, url.pathname, outsideAuthority].some(part => npub.test(part));
 };
 
+// One DNS label: letters, digits, '-' and '_' (seen in real relay hostnames),
+// 1-63 octets. WHATWG URL parsing has already lowercased and punycoded it.
+const HOSTNAME_LABEL = /^[a-z0-9_-]{1,63}$/i;
+
+/**
+ * Whether a parsed URL hostname (`new URL(relay).hostname`) is a name or IP
+ * literal a monitor can resolve and be granted network permission for.
+ *
+ * WHATWG URL parsing accepts hostnames such as `.well-known`, `a..b` or
+ * `a*b.com`, but DNS cannot resolve them and Deno's `--allow-net` refuses to
+ * start with them ("empty label found in FQDN", "invalid char found in FQDN").
+ * Rejected: empty labels (leading dot, `a..b`, a lone or doubled trailing
+ * dot), characters outside `[a-z0-9_-]`, labels over 63 octets and names over
+ * 253 octets. A single trailing root dot (`relay.example.com.`) is accepted.
+ * Bracketed IPv6 literals are accepted as the URL parser produced them.
+ */
+export const isValidRelayHostname = (hostname: string): boolean => {
+  if (typeof hostname !== 'string' || hostname.length === 0) return false;
+  if (hostname.startsWith('[')) return /^\[[0-9a-f:.]+\]$/i.test(hostname);
+  const host = hostname.endsWith('.') ? hostname.slice(0, -1) : hostname;
+  if (host.length === 0 || host.length > 253) return false;
+  return host.split('.').every((label) => HOSTNAME_LABEL.test(label));
+};
+
 /** Qualify relay URLs using the shared rejection rules. */
 export const qualifyRelayUrl = (maybeRelay: string): boolean => {
 
@@ -190,6 +214,11 @@ export const qualifyRelayUrl = (maybeRelay: string): boolean => {
   // wss://wws//nos.lol (hostname="wws"), wss://was//x (hostname="was"),
   // wss://(wss//relay.primal.net) (hostname="(wss")
   if ( !hostname.includes('.') ) return false;
+
+  // Empty labels (wss://.well-known/..., hostname=".well-known"), invalid
+  // characters and overlong labels. Such a relay can never be checked: the
+  // isolated check child is refused --allow-net for it and exits at startup.
+  if ( !isValidRelayHostname(hostname) ) return false;
 
   // Loopback, private, link-local, CGNAT and local-only names. Runs on the
   // parsed hostname, so alternate IP spellings cannot slip past it.

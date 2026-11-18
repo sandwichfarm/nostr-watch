@@ -52,3 +52,14 @@ Deno.test('seeding requires FIPS opt-in and keeps other networks separate', asyn
     db.close();
   }
 });
+
+Deno.test('legacy sanitizer and relay-list parsing reject hostnames with empty labels', () => {
+  const bad = 'wss://.well-known/nip50/is:rising/sort:top/language:en';
+  assertEquals(qualifyRelayUrl(bad), false);
+  assertEquals(qualifyRelayUrl('wss://relay..example.com'), false);
+  assertEquals(qualifyRelayUrl('wss://relay.example.com'), true);
+  assertEquals(parseRelayList({
+    id: 'test', created_at: 1_700_000_000, kind: 10002, content: '',
+    tags: [['r', bad], ['r', 'wss://relay.example.com']],
+  }), ['wss://relay.example.com/']);
+});

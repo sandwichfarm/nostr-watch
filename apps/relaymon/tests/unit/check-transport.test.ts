@@ -6,7 +6,9 @@ import {
   assertThrows,
 } from "https://deno.land/std@0.218.2/assert/mod.ts";
 import {
+  CheckInputError,
   checkLaunchPlan,
+  checkNetwork,
   CheckProcesses,
 } from "../../src/utils/checkTransport.ts";
 import {
@@ -140,9 +142,12 @@ class FakeChild implements PublicationChild {
   }
 }
 
-function manager(action?: (child: FakeChild) => void) {
+function manager(
+  action?: (child: FakeChild) => void,
+  poolOptions: CheckProcessConfig = options,
+) {
   const children: FakeChild[] = [];
-  const pool = new CheckProcesses(options, (request, generation, id) => {
+  const pool = new CheckProcesses(poolOptions, (request, generation, id) => {
     const child = new FakeChild({
       v: CHECK_PROTOCOL,
       generation,
@@ -720,4 +725,149 @@ Deno.test("actual main check-only lifecycle owns shutdown but never a foreign PI
     line.includes("shutdown(")
   );
   assertEquals(shutdownGuards.length, 2); // normal daemon return and initialization/execution rejection
+});
+
+// nostr.watch-ops#21: Deno refuses --allow-net=.well-known ("empty label found
+// in FQDN"), so every child spawned for this URL exited before its ready
+// frame, tripped the pool-wide breaker and disabled every relay's check.
+const wellKnown: CheckRequest = {
+  ...input,
+  url: "wss://.well-known/nip50/is:rising/sort:top/language:en",
+};
+
+Deno.test("uncheckable hostname fails only its own check and never launches or trips the breaker", async () => {
+  const { pool, children } = manager();
+  for (let i = 0; i < 2 * (options.maxRestarts + 2); i++) {
+    await assertRejects(
+      () => pool.check(wellKnown),
+      CheckInputError,
+      "cannot be granted network permission",
+    );
+  }
+  assertEquals(children.length, 0);
+  assertEquals(pool.snapshot().consecutiveUnexpectedFailures, 0);
+  assertEquals(pool.outcomes.failures, 0);
+  assertEquals(await pool.check(input), result);
+  await pool.close();
+});
+
+Deno.test("checkNetwork rejects an uncheckable hostname as input before any lookup or admission", async () => {
+  const { pool, children } = manager();
+  for (
+    const url of [
+      wellKnown.url,
+      "wss://relay..example.com/",
+      "wss://re*lay.example.com/",
+    ]
+  ) {
+    await assertRejects(
+      () => checkNetwork(url, input.checks, input.options, "default", pool),
+      CheckInputError,
+    );
+  }
+  assertEquals(children.length, 0);
+  await pool.close();
+});
+
+Deno.test("launch plan refuses a hostname Deno cannot grant network permission for", () => {
+  assertThrows(
+    () => checkLaunchPlan(options, wellKnown, "generation", "request"),
+    CheckInputError,
+  );
+});
+
+Deno.test("launcher input refusal rejects that check without counting toward the breaker", async () => {
+  const children: FakeChild[] = [];
+  const pool = new CheckProcesses(options, (request, generation, id) => {
+    if (request.url !== input.url) {
+      throw new CheckInputError(request.url, "refused by launch policy");
+    }
+    const child = new FakeChild({
+      v: CHECK_PROTOCOL,
+      generation,
+      request: id,
+      url: request.url,
+    });
+    children.push(child);
+    return child;
+  });
+  const refused = { ...input, url: "ws://refused.invalid/" };
+  for (let i = 0; i < 4; i++) {
+    await assertRejects(
+      () => pool.check(refused),
+      CheckInputError,
+      "refused by launch policy",
+    );
+  }
+  assertEquals(pool.snapshot().consecutiveUnexpectedFailures, 0);
+  assertEquals(await pool.check(input), result);
+  assertEquals(children.length, 1);
+  await pool.close();
+});
+
+Deno.test("tripped breaker half-opens after its cooldown and a clean result closes it", async () => {
+  let crash = true;
+  const { pool, children } = manager(
+    (child) => crash ? child.kill() : child.complete(),
+    { ...options, failureCooldownMs: 30 },
+  );
+  await assertRejects(() => pool.check(input));
+  await assertRejects(() => pool.check(input));
+  await assertRejects(() => pool.check(input), Error, "failure limit");
+  assertEquals(children.length, 2);
+  assert(pool.snapshot().admissionClosedUntil !== undefined);
+  await new Promise((resolve) => setTimeout(resolve, 40));
+  crash = false;
+  assertEquals(await pool.check(input), result);
+  assertEquals(pool.snapshot().consecutiveUnexpectedFailures, 0);
+  assertEquals(pool.snapshot().admissionClosedUntil, undefined);
+  assertEquals(await pool.check(input), result);
+  await pool.close();
+});
+
+Deno.test("a failed half-open probe closes admission for another cooldown", async () => {
+  const { pool, children } = manager((child) => child.kill(), {
+    ...options,
+    failureCooldownMs: 30,
+  });
+  await assertRejects(() => pool.check(input));
+  await assertRejects(() => pool.check(input));
+  await assertRejects(() => pool.check(input), Error, "failure limit");
+  await new Promise((resolve) => setTimeout(resolve, 40));
+  await assertRejects(() => pool.check(input)); // the probe
+  assertEquals(children.length, 3);
+  await assertRejects(() => pool.check(input), Error, "failure limit");
+  assertEquals(children.length, 3);
+  await pool.close();
+});
+
+Deno.test("breaker stays closed within the default cooldown", async () => {
+  const { pool, children } = manager((child) => child.kill());
+  await assertRejects(() => pool.check(input));
+  await assertRejects(() => pool.check(input));
+  for (let i = 0; i < 3; i++) {
+    await assertRejects(() => pool.check(input), Error, "failure limit");
+  }
+  assertEquals(children.length, 2);
+  const until = pool.snapshot().admissionClosedUntil!;
+  assert(until - Date.now() > 50_000);
+  await pool.close();
+});
+
+Deno.test("failureCooldownMs is an optional bounded check execution option", () => {
+  const config = {
+    queue: { workerConcurrency: 1 },
+    relaymon: { checks: { enabled: ["open"], execution: { ...options } } },
+  } as unknown as Config;
+  validateCheckProcessConfig(config);
+  config.relaymon.checks.execution!.failureCooldownMs = 5000;
+  validateCheckProcessConfig(config);
+  for (const bad of [0, 999, 3600001, 1.5]) {
+    config.relaymon.checks.execution!.failureCooldownMs = bad;
+    assertThrows(
+      () => validateCheckProcessConfig(config),
+      Error,
+      "failureCooldownMs",
+    );
+  }
 });

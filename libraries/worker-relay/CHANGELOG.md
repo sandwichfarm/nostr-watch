@@ -1,5 +1,12 @@
 # @nostrwatch/worker-relay
 
+## 1.3.4
+
+### Patch Changes
+
+- Updated dependencies [[`c67cfc4`](https://github.com/sandwichfarm/nostr-watch/commit/c67cfc4096e63f33b806219a2adb2151852acc6d)]:
+  - @nostrwatch/utils@0.4.1
+
 ## 1.3.3
 
 ### Patch Changes

@@ -1,5 +1,16 @@
 # @nostrwatch/nostrings
 
+## 0.6.3
+
+### Patch Changes
+
+- [#991](https://github.com/sandwichfarm/nostr-watch/pull/991) [`a7eac01`](https://github.com/sandwichfarm/nostr-watch/commit/a7eac01d1ca6845f455d97fb320fe548f49e5e1e) Thanks [@dskvr](https://github.com/dskvr)! - `qualifyRelayUrl` now rejects relay URLs whose hostname cannot be resolved or granted network permission: empty labels (`wss://.well-known/...`, `a..b`), characters outside `[a-z0-9_-]`, labels over 63 octets and names over 253 octets. A single trailing root dot is still accepted. The rule is exported as `isValidRelayHostname`. `VERSION` is synced to the package version (0.6.2), which re-runs relaymon's nostrings sweep over existing rows.
+
+- [#989](https://github.com/sandwichfarm/nostr-watch/pull/989) [`9afaba4`](https://github.com/sandwichfarm/nostr-watch/commit/9afaba426a804a66afabd12861115cd67175cf41) Thanks [@dskvr](https://github.com/dskvr)! - `qualifyRelayUrl` now rejects loopback, private, link-local, CGNAT and local-only hostnames with `isLocalNetworkUrl` from `@nostrwatch/utils`, replacing the regex checks that missed `169.254.0.0/16`, `0.0.0.0`, `100.64.0.0/10` and suffixes such as `.internal` and `.lan`.
+
+- Updated dependencies [[`c67cfc4`](https://github.com/sandwichfarm/nostr-watch/commit/c67cfc4096e63f33b806219a2adb2151852acc6d)]:
+  - @nostrwatch/utils@0.4.1
+
 ## 0.6.2
 
 ### Patch Changes

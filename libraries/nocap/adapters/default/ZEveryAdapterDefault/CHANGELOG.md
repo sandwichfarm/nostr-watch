@@ -1,5 +1,17 @@
 # @nostrwatch/nocap-every-adapter-default
 
+## 1.6.7
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @nostrwatch/nocap@0.10.2
+  - @nostrwatch/nocap-ssl-adapter-default@1.4.9
+  - @nostrwatch/nocap-dns-adapter-default@1.1.9
+  - @nostrwatch/nocap-geo-adapter-default@1.2.4
+  - @nostrwatch/nocap-info-adapter-default@1.2.4
+  - @nostrwatch/nocap-websocket-adapter-default@1.5.2
+
 ## 1.6.6
 
 ### Patch Changes

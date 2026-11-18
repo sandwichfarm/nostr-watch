@@ -1,6 +1,6 @@
 {
   "name": "@nostrwatch/nocap-every-adapter-default",
-  "version": "1.6.6",
+  "version": "1.6.7",
   "type": "module",
   "license": "MIT",
   "entry": "src/index.ts",

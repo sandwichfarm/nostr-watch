@@ -1,5 +1,12 @@
 # @nostrwatch/nocap-dns-adapter-default
 
+## 1.1.9
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @nostrwatch/nocap@0.10.2
+
 ## 1.1.8
 
 ### Patch Changes

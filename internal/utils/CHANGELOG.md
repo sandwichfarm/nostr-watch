@@ -1,5 +1,11 @@
 # @nostrwatch/utils
 
+## 0.4.1
+
+### Patch Changes
+
+- [#992](https://github.com/sandwichfarm/nostr-watch/pull/992) [`c67cfc4`](https://github.com/sandwichfarm/nostr-watch/commit/c67cfc4096e63f33b806219a2adb2151852acc6d) Thanks [@dskvr](https://github.com/dskvr)! - Emit `.js` extensions on relative specifiers in the published declaration files (`dist/types`). The package is `"type": "module"`, so consumers resolving types with `moduleResolution: node16`/`nodenext` could not follow `export * from './network'` and saw no named exports (e.g. `isLocalNetworkUrl`). Sources and runtime bundles are unchanged.
+
 ## 0.4.0
 
 ### Minor Changes

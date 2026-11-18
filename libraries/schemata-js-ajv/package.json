@@ -1,6 +1,6 @@
 {
   "name": "@nostrwatch/schemata-js-ajv",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "",
   "type": "module",
   "exports": {

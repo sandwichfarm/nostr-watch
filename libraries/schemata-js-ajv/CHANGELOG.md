@@ -1,5 +1,12 @@
 # @nostrwatch/schemata-js-ajv
 
+## 1.0.5
+
+### Patch Changes
+
+- Updated dependencies [[`c67cfc4`](https://github.com/sandwichfarm/nostr-watch/commit/c67cfc4096e63f33b806219a2adb2151852acc6d)]:
+  - @nostrwatch/utils@0.4.1
+
 ## 1.0.4
 
 ### Patch Changes

@@ -1,0 +1,33 @@
+# nostr.watch
+
+> nostr.watch is a free, open-source monitor for Nostr relays. Monitors in several regions check relays every hour and publish the results as NIP-66 events. The same data is available on the website, as raw NIP-66 events on Nostr relays, over a REST API, and as MCP tools over Nostr (CVM).
+
+The website (https://nostr.watch) is a client-side app: relay data loads in the browser over WebSockets. Agents that need data should use the REST API, the CVM/MCP tools, or raw NIP-66 events listed below instead of scraping the HTML.
+
+## Data services
+
+- [REST API v2](https://api.nostr.watch/v2/): OpenAPI documentation and live sandbox. Base URL `https://api.nostr.watch/v2`. Examples: `GET /relays?limit=10&sortBy=updated&sortOrder=desc`, `GET /relays/state?relayUrl=wss://relay.damus.io`, `POST /relays/search` with `{"nips":[42]}`, `GET /health/ping`. Response formats: `full`, `detailed` (default), `simple`.
+- [CVM (MCP over Nostr)](https://cvm.nostr.watch): 21 MCP tools transported over Nostr, for AI agents and MCP clients. Tools include `relays/list`, `relays/state`, `relays/search`, `relays/nearby`, `relays/bbox`, `relays/by/software`, `relays/by/nip`, `relays/by/country`, `relays/online`, `relays/offline`, `relays/compare`, `monitors/list`, `monitors/get` and `relays/subscribe_state`.
+- [NIP-66 specification](https://github.com/nostr-protocol/nips/blob/master/66.md): the Nostr protocol for relay discovery and liveness monitoring. Kind 10166 is a monitor announcement, kind 30166 is a relay status (`d` tag = relay URL), and kind 1066 is a relay status delta.
+- NIP-66 relays carrying monitor data: `wss://relay.nostr.watch`, `wss://relaypag.es`, `wss://monitorlizard.nostr1.com`.
+
+## Website pages
+
+- [Relays](https://nostr.watch/relays): sortable, filterable table of known relays with status, latency and supported NIPs.
+- [Relay map](https://nostr.watch/relays/map): relays plotted by geolocation.
+- [Relays by software](https://nostr.watch/relays/software): relay implementations and their counts.
+- [Relays by country](https://nostr.watch/relays/geography): relays grouped by country.
+- [Relays by ISP](https://nostr.watch/relays/isps): relays grouped by hosting provider.
+- [Monitors](https://nostr.watch/monitors): NIP-66 monitors, their regions and check frequency.
+- [Operators](https://nostr.watch/operators): relay operators.
+- Relay detail: `https://nostr.watch/relays/wss/<host>` (for example https://nostr.watch/relays/wss/relay.damus.io), with NIP-11, checks, audits and insights tabs.
+
+## About
+
+- [Source code](https://github.com/sandwichfarm/nostr-watch): MIT-licensed monorepo (GUI, monitors, rstate aggregation engine, libraries).
+- [sandwich.farm](https://sandwich.farm): the developer behind nostr.watch.
+
+## Optional
+
+- [Markdown version of the homepage](https://nostr.watch/index.md)
+- [Sitemap](https://nostr.watch/sitemap.xml)

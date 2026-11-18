@@ -1,3 +1,4 @@
+import type { PublisherFactory } from "@nostrwatch/publisher";
 interface AnnounceMonitorOptions {
     geo?: object;
     kinds?: number[];
@@ -10,6 +11,7 @@ interface AnnounceMonitorOptions {
     clientTag?: string;
     relays?: string[];
     userDataRelays?: string[];
+    publisherFactory?: PublisherFactory;
 }
 export declare class AnnounceMonitor {
     events?: any;
@@ -21,7 +23,9 @@ export declare class AnnounceMonitor {
     private userMetaPublisher;
     private pubkey;
     private clientTag?;
+    private acknowledgedEventIds;
     constructor(pubkey: string, options: AnnounceMonitorOptions);
+    close(): Promise<void>;
     setup(options: AnnounceMonitorOptions): void;
     static formatChecks(checks: Array<string>): Array<string>;
     generate(): any;

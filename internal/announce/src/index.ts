@@ -2,7 +2,7 @@ import chalk from 'chalk'
 
 import { verifyEvent } from "nostr-tools";
 import { Publisher, Kind10166, Kind0, Kind10002 } from "@nostrwatch/publisher";
-import type { PublisherFactory } from '../../publisher/src/transport.js';
+import type { PublisherFactory } from "@nostrwatch/publisher";
 import Logger from "@nostrwatch/logger";
 const log = new Logger('@nostrwatch/announce')
 
@@ -34,7 +34,7 @@ export class AnnounceMonitor {
   public monProfile: any;
   private nip66Publisher: Publisher;
   private userMetaPublisher: Publisher;
-  private pubkey: string | null = null;
+  private pubkey: string;
   private clientTag?: string;
   private acknowledgedEventIds = new Set<string>();
 

@@ -1,0 +1,367 @@
+{
+	"fetchedAt": "2026-11-18T12:00:44.111Z",
+	"api": {
+		"methods": ["L402", "X-Cashu"],
+		"items": [
+			{
+				"name": "/relays",
+				"sats": 2,
+				"unit": "sats",
+				"description": "List relay URLs (simple)"
+			},
+			{
+				"name": "/relays/detailed",
+				"sats": 3,
+				"unit": "sats",
+				"description": "List relay states (detailed)"
+			},
+			{
+				"name": "/relays/full",
+				"sats": 4,
+				"unit": "sats",
+				"description": "List relay states (full, with attribution)"
+			},
+			{
+				"name": "/relays/state",
+				"sats": 1,
+				"unit": "sats",
+				"description": "Get single relay state"
+			},
+			{
+				"name": "/relays/search",
+				"sats": 3,
+				"unit": "sats",
+				"description": "Search relays (simple)"
+			},
+			{
+				"name": "/relays/search/detailed",
+				"sats": 4,
+				"unit": "sats",
+				"description": "Search relays (detailed)"
+			},
+			{
+				"name": "/relays/search/full",
+				"sats": 5,
+				"unit": "sats",
+				"description": "Search relays (full, with attribution)"
+			},
+			{
+				"name": "/relays/nearby",
+				"sats": 3,
+				"unit": "sats",
+				"description": "Geo-proximity relay search (simple)"
+			},
+			{
+				"name": "/relays/nearby/detailed",
+				"sats": 4,
+				"unit": "sats",
+				"description": "Geo-proximity relay search (detailed)"
+			},
+			{
+				"name": "/relays/nearby/full",
+				"sats": 5,
+				"unit": "sats",
+				"description": "Geo-proximity relay search (full, with attribution)"
+			},
+			{
+				"name": "/relays/bbox",
+				"sats": 3,
+				"unit": "sats",
+				"description": "Bounding-box relay search (simple)"
+			},
+			{
+				"name": "/relays/bbox/detailed",
+				"sats": 4,
+				"unit": "sats",
+				"description": "Bounding-box relay search (detailed)"
+			},
+			{
+				"name": "/relays/bbox/full",
+				"sats": 5,
+				"unit": "sats",
+				"description": "Bounding-box relay search (full, with attribution)"
+			},
+			{
+				"name": "/relays/labels",
+				"sats": 1,
+				"unit": "sats",
+				"description": "Get labels for a relay"
+			},
+			{
+				"name": "/relays/by/label",
+				"sats": 3,
+				"unit": "sats",
+				"description": "Find relays by label (simple)"
+			},
+			{
+				"name": "/relays/by/label/detailed",
+				"sats": 4,
+				"unit": "sats",
+				"description": "Find relays by label (detailed)"
+			},
+			{
+				"name": "/relays/by/label/full",
+				"sats": 5,
+				"unit": "sats",
+				"description": "Find relays by label (full, with attribution)"
+			},
+			{
+				"name": "/relays/by/software",
+				"sats": 2,
+				"unit": "sats",
+				"description": "Group relays by software"
+			},
+			{
+				"name": "/relays/by/network",
+				"sats": 2,
+				"unit": "sats",
+				"description": "Group relays by network type"
+			},
+			{
+				"name": "/relays/by/nip",
+				"sats": 2,
+				"unit": "sats",
+				"description": "Group relays by NIP support"
+			},
+			{
+				"name": "/relays/by/country",
+				"sats": 3,
+				"unit": "sats",
+				"description": "Group relays by country"
+			},
+			{
+				"name": "/relays/compare",
+				"sats": 5,
+				"unit": "sats",
+				"description": "Multi-relay comparison"
+			},
+			{
+				"name": "/relays/online",
+				"sats": 2,
+				"unit": "sats",
+				"description": "List currently online relays"
+			},
+			{
+				"name": "/relays/offline",
+				"sats": 2,
+				"unit": "sats",
+				"description": "List currently offline relays"
+			},
+			{
+				"name": "/relays/dead",
+				"sats": 2,
+				"unit": "sats",
+				"description": "List probably dead relays"
+			},
+			{
+				"name": "/monitors/:pubkey",
+				"sats": 1,
+				"unit": "sats",
+				"description": "Get monitor details"
+			},
+			{
+				"name": "/monitors/analytics",
+				"sats": 5,
+				"unit": "sats",
+				"description": "Monitor analytics (all)"
+			},
+			{
+				"name": "/monitors/:pubkey/analytics",
+				"sats": 2,
+				"unit": "sats",
+				"description": "Monitor analytics (single)"
+			}
+		]
+	},
+	"cvm": {
+		"methods": [],
+		"items": [
+			{
+				"name": "relays/list",
+				"sats": 2,
+				"unit": "sats",
+				"description": "List relay URLs (simple)"
+			},
+			{
+				"name": "relays/list/detailed",
+				"sats": 3,
+				"unit": "sats",
+				"description": "List relay states (detailed)"
+			},
+			{
+				"name": "relays/list/full",
+				"sats": 4,
+				"unit": "sats",
+				"description": "List relay states (full, with attribution)"
+			},
+			{
+				"name": "relays/state",
+				"sats": 1,
+				"unit": "sats",
+				"description": "Get single relay state"
+			},
+			{
+				"name": "relays/search",
+				"sats": 3,
+				"unit": "sats",
+				"description": "Search relays (simple)"
+			},
+			{
+				"name": "relays/search/detailed",
+				"sats": 4,
+				"unit": "sats",
+				"description": "Search relays (detailed)"
+			},
+			{
+				"name": "relays/search/full",
+				"sats": 5,
+				"unit": "sats",
+				"description": "Search relays (full, with attribution)"
+			},
+			{
+				"name": "relays/nearby",
+				"sats": 3,
+				"unit": "sats",
+				"description": "Geo-proximity relay search (simple)"
+			},
+			{
+				"name": "relays/nearby/detailed",
+				"sats": 4,
+				"unit": "sats",
+				"description": "Geo-proximity relay search (detailed)"
+			},
+			{
+				"name": "relays/nearby/full",
+				"sats": 5,
+				"unit": "sats",
+				"description": "Geo-proximity relay search (full, with attribution)"
+			},
+			{
+				"name": "relays/bbox",
+				"sats": 3,
+				"unit": "sats",
+				"description": "Bounding-box relay search (simple)"
+			},
+			{
+				"name": "relays/bbox/detailed",
+				"sats": 4,
+				"unit": "sats",
+				"description": "Bounding-box relay search (detailed)"
+			},
+			{
+				"name": "relays/bbox/full",
+				"sats": 5,
+				"unit": "sats",
+				"description": "Bounding-box relay search (full, with attribution)"
+			},
+			{
+				"name": "relays/labels",
+				"sats": 1,
+				"unit": "sats",
+				"description": "Get labels for a relay"
+			},
+			{
+				"name": "relays/labels/list",
+				"sats": 0,
+				"unit": "sats",
+				"description": "List all available labels"
+			},
+			{
+				"name": "relays/by/label",
+				"sats": 3,
+				"unit": "sats",
+				"description": "Find relays by label (simple)"
+			},
+			{
+				"name": "relays/by/label/detailed",
+				"sats": 4,
+				"unit": "sats",
+				"description": "Find relays by label (detailed)"
+			},
+			{
+				"name": "relays/by/label/full",
+				"sats": 5,
+				"unit": "sats",
+				"description": "Find relays by label (full, with attribution)"
+			},
+			{
+				"name": "relays/by/software",
+				"sats": 2,
+				"unit": "sats",
+				"description": "Group relays by software"
+			},
+			{
+				"name": "relays/by/network",
+				"sats": 2,
+				"unit": "sats",
+				"description": "Group relays by network type"
+			},
+			{
+				"name": "relays/by/nip",
+				"sats": 2,
+				"unit": "sats",
+				"description": "Group relays by NIP support"
+			},
+			{
+				"name": "relays/by/country",
+				"sats": 3,
+				"unit": "sats",
+				"description": "Group relays by country"
+			},
+			{
+				"name": "relays/compare",
+				"sats": 5,
+				"unit": "sats",
+				"description": "Multi-relay comparison"
+			},
+			{
+				"name": "relays/online",
+				"sats": 2,
+				"unit": "sats",
+				"description": "List currently online relays"
+			},
+			{
+				"name": "relays/offline",
+				"sats": 2,
+				"unit": "sats",
+				"description": "List currently offline relays"
+			},
+			{
+				"name": "relays/dead",
+				"sats": 2,
+				"unit": "sats",
+				"description": "List probably dead relays"
+			},
+			{
+				"name": "monitors/get",
+				"sats": 1,
+				"unit": "sats",
+				"description": "Get monitor details"
+			},
+			{
+				"name": "monitors/list",
+				"sats": 0,
+				"unit": "sats",
+				"description": "List all monitors"
+			},
+			{
+				"name": "monitors/analytics",
+				"sats": 5,
+				"unit": "sats",
+				"description": "Monitor analytics (all)"
+			},
+			{
+				"name": "monitors/analytics/get",
+				"sats": 2,
+				"unit": "sats",
+				"description": "Monitor analytics (single)"
+			},
+			{
+				"name": "health/ping",
+				"sats": 0,
+				"unit": "sats",
+				"description": "Health check"
+			}
+		]
+	}
+}

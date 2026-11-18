@@ -11,6 +11,14 @@ The website (https://nostr.watch) is a client-side app: relay data loads in the 
 - [NIP-66 specification](https://github.com/nostr-protocol/nips/blob/master/66.md): the Nostr protocol for relay discovery and liveness monitoring. Kind 10166 is a monitor announcement, kind 30166 is a relay status (`d` tag = relay URL), and kind 1066 is a relay status delta.
 - NIP-66 relays carrying monitor data: `wss://relay.nostr.watch`, `wss://relaypag.es`, `wss://monitorlizard.nostr1.com`.
 
+## Pricing
+
+<!-- agent-pricing:start -->
+
+The website and the raw NIP-66 events are free. Per-request prices for the REST API are listed at https://api.nostr.watch/v2/ and for CVM at https://cvm.nostr.watch.
+
+<!-- agent-pricing:end -->
+
 ## Website pages
 
 - [Relays](https://nostr.watch/relays): sortable, filterable table of known relays with status, latency and supported NIPs.

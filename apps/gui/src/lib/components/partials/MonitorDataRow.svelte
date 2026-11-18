@@ -3,10 +3,11 @@
     import { monitorRelayLivenessCounts } from '$lib/stores/monitors.js';
     import Badge from '$lib/components/ui/badge/Badge.svelte';
 	import { PFP } from '$lib/utils/pfp.js';
+    import { publicImageUrl } from '$lib/utils/sanitize';
     import Time from "svelte-time";
     export let monitor: Monitor;
 
-    $: photo = monitor?.profile?.photo || monitor?.profile?.picture;
+    $: photo = publicImageUrl(monitor?.profile?.photo || monitor?.profile?.picture);
     $: checksCount = $monitorRelayLivenessCounts?.[monitor.pubkey]?.online
     $: lastActive = monitor?.lastActive
     $: relays = monitor?.relays
@@ -16,7 +17,7 @@
 <section class="mb-10">
 <div class="flex items-center text-gray-300">
     <div class="flex-shrink-0">
-        {#if monitor?.profile?.photo}
+        {#if photo}
             <span class="rounded-full overflow-hidden">
                 <img src="{photo}" alt={photo} class="w-20 h-24" />
             </span>

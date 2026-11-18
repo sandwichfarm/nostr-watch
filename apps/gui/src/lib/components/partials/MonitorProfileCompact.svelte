@@ -1,15 +1,18 @@
 <script lang="ts">
     import { type Monitor } from '@nostrwatch/route66/models';
     import { PFP } from '$lib/utils/pfp.js';
+    import { publicImageUrl } from '$lib/utils/sanitize';
+
+    $: photo = publicImageUrl(monitor?.profile?.photo);
 
     export let monitor: Monitor;
 </script>
 
 <div class="flex">
     <div class="flex-shrink-0 mr-2">
-        {#if monitor?.profile?.photo}
+        {#if photo}
             <span class="rounded-full overflow-hidden">
-                <img src="{monitor.profile.photo}" alt={monitor.profile.photo} class="w-20 h-24" />
+                <img src={photo} alt={photo} class="w-20 h-24" />
             </span>
         {:else}
             <span class="rounded-full overflow-hidden inline-block">

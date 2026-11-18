@@ -1,3 +1,5 @@
+import { isLocalNetworkUrl } from '@nostrwatch/utils';
+
 const REMOTE_FETCH_MESSAGE = 'nostr-watch:remote-fetch:v1';
 const SERVICE_WORKER_URL = '/remote-fetch-service-worker.js';
 const BROKER_TIMEOUT_MS = 35_000;
@@ -77,6 +79,9 @@ export const createRemoteFetch = (environment: RemoteFetchEnvironment = {}): typ
 		const url = resolveUrl(input);
 		if (url.protocol !== 'http:' && url.protocol !== 'https:') {
 			throw new TypeError('Only HTTP(S) remote resources are supported.');
+		}
+		if (isLocalNetworkUrl(url)) {
+			throw new TypeError('Requests to local or private network addresses are blocked.');
 		}
 		if (init.method && init.method.toUpperCase() !== 'GET') {
 			throw new TypeError('The remote-fetch broker only supports GET requests.');

@@ -2005,6 +2005,9 @@ importers:
       '@nostrwatch/route66':
         specifier: workspace:^
         version: link:../../..
+      '@nostrwatch/utils':
+        specifier: workspace:^
+        version: link:../../../../../internal/utils
       browser-dtector:
         specifier: ^4.1.0
         version: 4.1.0

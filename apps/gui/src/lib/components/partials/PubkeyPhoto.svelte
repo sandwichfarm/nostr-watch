@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { pubkeyProfile$ } from "$stores/helpers/helpers-pubkey";
 	import { PFP } from "$utils/pfp";
+	import { publicImageUrl } from "$lib/utils/sanitize";
 	import type { PubkeyProfile } from "@nostrwatch/route66/models/PubkeyProfile";
 	import type { Readable } from "svelte/store";
 	import { onDestroy } from "svelte";
@@ -21,7 +22,7 @@
 		photo = undefined;
 
 		unsubscribe = profile.subscribe((p) => {
-			photo = p?.photo || p?.picture || PFP.generate(pubkey);
+			photo = publicImageUrl(p?.photo || p?.picture) ?? PFP.generate(pubkey);
 			loading = false;
 		});
 	}

@@ -1,5 +1,12 @@
 # @nostrwatch/nocap-websocket-adapter-default
 
+## 1.5.2
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @nostrwatch/nocap@0.10.2
+
 ## 1.5.1
 
 ### Patch Changes

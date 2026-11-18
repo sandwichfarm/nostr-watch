@@ -1,6 +1,6 @@
 {
   "name": "@nostrwatch/worker-relay",
-  "version": "1.3.3",
+  "version": "1.3.4",
   "description": "A nostr relay in a service worker",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

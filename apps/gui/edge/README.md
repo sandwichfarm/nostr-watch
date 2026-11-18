@@ -1,20 +1,31 @@
 # Edge scripts
 
-## `markdown-negotiation.ts`
+## `markdown-negotiation.mjs`
 
-Bunny Edge Script (middleware) for the nostr.watch pull zone.
+Bunny Edge Script (middleware) attached to the `nostr-watch` pull zone (3313140).
 
-- Rewrites `GET /` (and `/index.html`) to `/index.md` when the request sends `Accept: text/markdown`.
-- Sets `Content-Type: text/markdown; charset=utf-8` and `Vary: Accept` on `.md` responses.
+- `GET`/`HEAD` `/` or `/index.html` with an `Accept` header that allows `text/markdown` (q > 0) is rewritten to `/index.md`. That file is built from `static/index.md`.
+- Responses for `/index.md` get `Content-Type: text/markdown; charset=utf-8`.
+- HTML responses for `/` get `Link: </index.md>; rel="alternate"; type="text/markdown"`.
+- Both get `Vary: Accept`. Other paths and non-2xx responses pass through unchanged.
 
-Setup:
+The pull zone must run the script before the cache (`EdgeScriptExecutionPhase: 2`). That way the rewrite changes the cache key, and HTML and markdown never share a cache entry.
 
-1. Create a middleware Edge Script from `markdown-negotiation.ts` and link it to the nostr.watch pull zone.
-2. Enable **General > Origin > Run script before cache** on the pull zone (API: `EdgeScriptExecutionPhase: 2`), so the rewrite happens before the cache lookup.
+Deploy a new version:
+
+```bash
+bunny scripts deploy apps/gui/edge/markdown-negotiation.mjs <script-id>
+```
+
+Attach to the pull zone (one-time):
+
+```bash
+bunny api POST /pullzone/3313140 --body '{"MiddlewareScriptId": <script-id>, "EdgeScriptExecutionPhase": 2}'
+```
 
 Check:
 
 ```bash
 curl -sI -H 'Accept: text/markdown' https://nostr.watch/ | grep -i content-type   # text/markdown
-curl -sI https://nostr.watch/ | grep -i content-type                              # text/html
+curl -sI https://nostr.watch/ | grep -iE 'content-type|link'                       # text/html + Link
 ```

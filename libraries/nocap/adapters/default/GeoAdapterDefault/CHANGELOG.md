@@ -1,5 +1,12 @@
 # @nostrwatch/nocap-geo-adapter-default
 
+## 1.2.3
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @nostrwatch/nocap@0.10.1
+
 ## 1.2.2
 
 ### Patch Changes

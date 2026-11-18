@@ -56,10 +56,23 @@ const readBoundedBody = async (response, maximumBytes) => {
 
 // Inline copy of isLocalNetworkHost from @nostrwatch/utils (internal/utils/src/network.ts);
 // this file is served as-is and cannot import it. Keep the two in sync.
-const LOCAL_HOST_SUFFIXES = ['.localhost', '.local', '.localdomain', '.lan', '.internal', '.intranet', '.home.arpa'];
+const LOCAL_HOST_SUFFIXES = [
+	'.localhost',
+	'.local',
+	'.localdomain',
+	'.lan',
+	'.internal',
+	'.intranet',
+	'.home.arpa'
+];
 const isLocalIpv4 = ([a, b]) =>
-	a === 0 || a === 127 || a === 10 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) ||
-	(a === 169 && b === 254) || (a === 100 && b >= 64 && b <= 127);
+	a === 0 ||
+	a === 127 ||
+	a === 10 ||
+	(a === 172 && b >= 16 && b <= 31) ||
+	(a === 192 && b === 168) ||
+	(a === 169 && b === 254) ||
+	(a === 100 && b >= 64 && b <= 127);
 const isLocalIpv6 = (address) => {
 	if (address === '::' || address === '::1') return true;
 	const mapped = /^::(?:ffff:)?([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(address);

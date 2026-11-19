@@ -1,5 +1,12 @@
 # @nostrwatch/nostrings
 
+## 0.6.4
+
+### Patch Changes
+
+- Updated dependencies [[`77c6292`](https://github.com/sandwichfarm/nostr-watch/commit/77c62927b6800fd3f8e3d3d8f61579eea51360be)]:
+  - @nostrwatch/utils@0.4.2
+
 ## 0.6.3
 
 ### Patch Changes

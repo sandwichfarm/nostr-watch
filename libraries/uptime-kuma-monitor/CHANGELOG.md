@@ -1,5 +1,13 @@
 # @nostrwatch/kuma
 
+## 0.1.5
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @nostrwatch/nocap@0.10.3
+  - @nostrwatch/nocap-websocket-adapter-default@1.5.3
+
 ## 0.1.4
 
 ### Patch Changes

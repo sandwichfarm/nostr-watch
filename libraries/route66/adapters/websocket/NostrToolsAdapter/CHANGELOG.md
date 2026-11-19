@@ -1,5 +1,17 @@
 # @nostrwatch/route66-wsadapter-nostrtools
 
+## 0.0.6
+
+### Patch Changes
+
+- [#994](https://github.com/sandwichfarm/nostr-watch/pull/994) [`77c6292`](https://github.com/sandwichfarm/nostr-watch/commit/77c62927b6800fd3f8e3d3d8f61579eea51360be) Thanks [@dskvr](https://github.com/dskvr)! - Add `dedupeUrls` to `@nostrwatch/utils`. Route66 services no longer accumulate repeated relays in a relay group, and the nostr-tools websocket worker dedupes relay lists before every request, so a fetch no longer targets the same relay dozens of times.
+
+  The GUI seed script is now best-effort: relay queries are bounded by a script deadline and a per-query watchdog, operator metadata has its own time budget, and a failure or timeout writes an empty seed and exits 0 instead of failing the build (`SEED_STRICT=true` restores a non-zero exit). `SEED_ALLOW_EMPTY` is no longer read.
+
+- Updated dependencies [[`77c6292`](https://github.com/sandwichfarm/nostr-watch/commit/77c62927b6800fd3f8e3d3d8f61579eea51360be)]:
+  - @nostrwatch/utils@0.4.2
+  - @nostrwatch/route66@0.0.6
+
 ## 0.0.5
 
 ### Patch Changes

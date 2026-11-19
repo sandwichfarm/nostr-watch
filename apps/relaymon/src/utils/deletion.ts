@@ -72,6 +72,18 @@ export class Kind5Event extends Event {
  */
 const deletedRelays = new Set<string>();
 
+export interface DeletionPublishOptions {
+  /**
+   * Direct path only. The return value is decided by the first relay ACK, but
+   * Publisher.close() waits for every other relay's attempt (and its place in
+   * that relay's publication queue) to settle. A caller that admits deletions
+   * back to back can take ownership of that release instead of serializing on
+   * the slowest relay; it must observe the promise and await it before it
+   * reports its own work finished.
+   */
+  deferRelease?: (released: Promise<void>) => void;
+}
+
 /**
  * Delete a relay check event by sending a NIP-09 deletion event with an a-tag
  * @param relayUrl The URL of the relay to delete
@@ -84,7 +96,8 @@ export async function deleteRelayCheckEvent(
   reason: string,
   config: Config,
   queueManager?: QueueManager,
-  publication?: PublicationContext
+  publication?: PublicationContext,
+  options?: DeletionPublishOptions,
 ): Promise<boolean> {
   const createPublisher = publisherFactory(config, publication);
   try {
@@ -172,7 +185,9 @@ export async function deleteRelayCheckEvent(
         logger.info(`Published deletion event for relay ${relayUrl} using a-tag`);
         return true;
       } finally {
-        await publisher.close();
+        const released = publisher.close();
+        if (options?.deferRelease) options.deferRelease(released);
+        else await released;
       }
     }
   } catch (error) {

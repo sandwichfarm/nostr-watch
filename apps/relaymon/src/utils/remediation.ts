@@ -317,7 +317,7 @@ export function drainRemediationDeletionQueue(config: Config, publication?: Publ
  * Publisher.close() waits for every configured relay, including one whose
  * per-relay FIFO is full of check publications or whose attempts time out.
  * Awaiting that per row paced the whole backlog at the slowest relay's queue
- * depth (ops#28: ~16 x ~4.4s publish timeout = ~70s/row on fisherman).
+ * depth.
  *
  * Bounded to half the per-relay IPC queue so the backlog can never occupy more
  * than half of any relay's admission slots; check publications keep the rest.

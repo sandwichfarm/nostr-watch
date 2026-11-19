@@ -196,7 +196,7 @@ function enqueue(url: string) {
   );
 }
 
-Deno.test("remediation drain prunes durably published rows without sends or throttle (ops#28)", async () => {
+Deno.test("remediation drain prunes durably published rows without sends or throttle", async () => {
   reset();
   Deno.env.set("RELAYMON_NSEC", key);
   const c = config();
@@ -236,7 +236,7 @@ Deno.test("remediation drain prunes durably published rows without sends or thro
   }
 });
 
-Deno.test("remediation drain is paced by first ACK, not the slowest relay, within a bounded window (ops#28)", async () => {
+Deno.test("remediation drain is paced by first ACK, not the slowest relay, within a bounded window", async () => {
   reset();
   Deno.env.set("RELAYMON_NSEC", key);
   const fast = "wss://fast.invalid";

@@ -1,13 +1,6 @@
 // deno-lint-ignore-file no-import-prefix -- Reuse the existing versioned offline assertion fixture.
 /**
  * Warmup must make progress past relays whose first check fails.
- *
- * Regression for the fisherman outage (nostr.watch-ops#21): the row
- * wss://.well-known/nip50/is:rising/sort:top/language:en (hostname
- * ".well-known") was accepted, every check child spawned for it was refused
- * --allow-net by Deno, the pool's failure breaker latched, every check then
- * failed, and warmup re-selected the same checked_at = -1 row ~100 times a
- * second with no delay, starving /healthz.
  */
 import {
   assert,
@@ -56,8 +49,7 @@ const uncheckedQuery = () =>
   db.query("SELECT url FROM relay_status WHERE checked_at = -1")
     .map(([url]) => url as string);
 
-/** A transport whose breaker has already tripped: every check is refused,
- * exactly what fisherman's pool did once .well-known exhausted it. */
+/** A transport whose breaker has already tripped: every check is refused. */
 function latchedTransport(): CheckProcesses {
   return {
     stopping: false,

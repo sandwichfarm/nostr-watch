@@ -68,5 +68,7 @@ jobs:
     name: Deploy GUI
     needs: release
     if: always()
+    permissions:
+      contents: read
     uses: ./.github/workflows/gui-deploy.yml
     secrets: inherit

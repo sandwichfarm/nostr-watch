@@ -189,6 +189,117 @@ Deno.test("cold remediation drains use the factory and stop between durable rows
   }
 });
 
+function enqueue(url: string) {
+  db.query(
+    "INSERT INTO remediation_deletion_queue (url, reason, queued_at, attempts) VALUES (?, 'fixture', 0, 0)",
+    [url],
+  );
+}
+
+Deno.test("remediation drain prunes durably published rows without sends or throttle (ops#28)", async () => {
+  reset();
+  Deno.env.set("RELAYMON_NSEC", key);
+  const c = config();
+  // Interleave already-acknowledged rows with real obligations, as the
+  // nostrings sweep leaves them on a long-lived DB.
+  for (let i = 0; i < 25; i++) {
+    const url = `wss://acked-${i}.invalid/`;
+    seed(url);
+    db.query(
+      "UPDATE relay_status SET deletion_published_at = 1 WHERE url = ?",
+      [url],
+    );
+    enqueue(url);
+  }
+  seed("wss://unsent.invalid/");
+  enqueue("wss://unsent.invalid/");
+  // Hard-deleted rows have no relay_status row and must still be sent.
+  enqueue("wss://hard-deleted.invalid/");
+  const fake = context();
+  try {
+    const started = Date.now();
+    await drainRemediationDeletionQueue(c, fake.ctx);
+    const elapsed = Date.now() - started;
+    deepStrictEqual(db.query("SELECT url FROM remediation_deletion_queue"), []);
+    deepStrictEqual(
+      fake.events.map(({ event }) =>
+        event.tags.find((t) => t[0] === "a")?.[1].split(":").slice(2).join(":")
+      ).sort(),
+      ["wss://hard-deleted.invalid/", "wss://unsent.invalid/"],
+      "only rows without a durable ACK are sent",
+    );
+    // 25 skipped rows at the old 200ms per row would take >= 5s.
+    ok(elapsed < 2000, `drain took ${elapsed}ms`);
+    strictEqual(fake.leases(), 0);
+  } finally {
+    Deno.env.delete("RELAYMON_NSEC");
+  }
+});
+
+Deno.test("remediation drain is paced by first ACK, not the slowest relay, within a bounded window (ops#28)", async () => {
+  reset();
+  Deno.env.set("RELAYMON_NSEC", key);
+  const fast = "wss://fast.invalid";
+  const slow = "wss://slow.invalid";
+  const c = config();
+  c.publisher.relays = [fast, slow];
+  // Window = floor(4 / 2) = 2 unsettled deletions.
+  c.publisher.transport = {
+    ...c.publisher.transport!,
+    maxPendingPerRelay: 4,
+  };
+  const urls = [1, 2, 3, 4].map((n) => `wss://row-${n}.invalid/`);
+  for (const url of urls) {
+    seed(url);
+    enqueue(url);
+  }
+  const slowAcks: Array<() => void> = [];
+  const fake = context((_event, relay) =>
+    relay.startsWith(slow)
+      ? new Promise((resolve) => slowAcks.push(() => resolve("ACK")))
+      : Promise.resolve("ACK")
+  );
+  let finished = false;
+  const drain = drainRemediationDeletionQueue(c, fake.ctx).then(() => {
+    finished = true;
+  });
+  try {
+    const waitFor = async (cond: () => boolean, what: string) => {
+      const deadline = Date.now() + 3000;
+      while (!cond()) {
+        if (Date.now() > deadline) throw new Error(`timed out: ${what}`);
+        await new Promise((r) => setTimeout(r, 10));
+      }
+    };
+    // Two rows are recorded on the fast relay's ACK while the slow relay
+    // still holds both attempts.
+    await waitFor(() => isDeletionPublished(urls[1]), "second row ACK");
+    await new Promise((r) => setTimeout(r, 400));
+    strictEqual(isDeletionPublished(urls[0]), true);
+    strictEqual(isDeletionPublished(urls[2]), false, "window bounds admission");
+    strictEqual(slowAcks.length, 2);
+    strictEqual(fake.leases(), 2);
+    strictEqual(finished, false);
+    // Settling the slow relay reopens the window; the drain then completes
+    // and still owns every lease until they are released.
+    const release = async () => {
+      while (!finished) {
+        slowAcks.splice(0).forEach((ack) => ack());
+        await new Promise((r) => setTimeout(r, 10));
+      }
+    };
+    await Promise.all([drain, release()]);
+    for (const url of urls) strictEqual(isDeletionPublished(url), true);
+    deepStrictEqual(db.query("SELECT url FROM remediation_deletion_queue"), []);
+    strictEqual(fake.leases(), 0);
+    strictEqual(fake.events.filter(({ relay }) => relay.startsWith(slow)).length, 4);
+  } finally {
+    slowAcks.splice(0).forEach((ack) => ack());
+    await drain;
+    Deno.env.delete("RELAYMON_NSEC");
+  }
+});
+
 for (
   const branch of [
     "override",

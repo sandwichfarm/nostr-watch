@@ -1,5 +1,4 @@
-/** Pause between warmup passes, so a pass that finds only rows that keep
- * coming back (or new rows trickling in) can never spin the event loop. */
+/** Keeps passes over rows that keep coming back from spinning the event loop. */
 export const WARMUP_PASS_DELAY_MS = 1000;
 
 export interface WarmupDeps {
@@ -20,19 +19,13 @@ export interface WarmupDeps {
 export interface WarmupOutcome {
   passes: number;
   attempted: number;
-  /** Rows still unchecked at exit that warmup will not retry: already
-   * attempted once, or malformed. The regular check loop owns them. */
+  /** Unchecked rows left to the regular check loop. */
   leftUnchecked: number;
 }
 
 /**
- * Check every relay that has never been checked, once.
- *
- * Each URL is attempted at most once per warmup. A row whose check fails
- * without leaving the unchecked set (an older worker, a DB error, a shutdown
- * rejection) is handed to the regular check loop instead of being selected
- * again immediately, which previously spun at ~100 passes/s on a single
- * uncheckable URL and starved /healthz. Passes are also separated by a delay.
+ * Check every never-checked relay at most once. A URL that stays unchecked
+ * after its attempt is left to the regular check loop, not retried here.
  */
 export async function runWarmupPasses(
   deps: WarmupDeps,

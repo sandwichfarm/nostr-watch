@@ -74,12 +74,8 @@ const deletedRelays = new Set<string>();
 
 export interface DeletionPublishOptions {
   /**
-   * Direct path only. The return value is decided by the first relay ACK, but
-   * Publisher.close() waits for every other relay's attempt (and its place in
-   * that relay's publication queue) to settle. A caller that admits deletions
-   * back to back can take ownership of that release instead of serializing on
-   * the slowest relay; it must observe the promise and await it before it
-   * reports its own work finished.
+   * Direct path only. Hands the publisher release (which waits on every relay)
+   * to the caller, who must await it before reporting its work finished.
    */
   deferRelease?: (released: Promise<void>) => void;
 }

@@ -202,9 +202,7 @@ export class Worker {
       return;
     }
 
-    // A URL no check can ever run for (e.g. hostname ".well-known") is data
-    // that should never have been stored. Remove it on encounter instead of
-    // failing it on every pass.
+    // A URL no check can ever run for is removed rather than failed every pass.
     try {
       assertCheckableUrl(relayUrl);
     } catch (error) {
@@ -413,9 +411,8 @@ export class Worker {
         `Error processing relay ${relayUrl}: ${getErrorMessage(error)}`,
       );
 
-      // A failed first check must still leave the unchecked set; otherwise
-      // warmup selects the same checked_at = -1 row again forever. Shutdown
-      // rejections are not a check outcome and leave the row untouched.
+      // Leave the unchecked set so warmup does not reselect the row. Shutdown
+      // rejections are not a check outcome.
       let firstCheckRecorded = false;
       if (isFirstCheck && !this.checksStopping()) {
         try {

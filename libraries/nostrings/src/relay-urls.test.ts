@@ -226,9 +226,7 @@ describe('qualifyRelayUrl local network rejection', () => {
   });
 });
 
-// Hostnames Deno's --allow-net refuses ("empty label found in FQDN", "invalid
-// char found in FQDN") must never qualify: relaymon cannot check them, and the
-// isolated check child exits at startup for each attempt.
+// Hostnames Deno's --allow-net refuses must never qualify.
 describe('isValidRelayHostname', () => {
   it.each([
     '.well-known',

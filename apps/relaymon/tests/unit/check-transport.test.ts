@@ -727,9 +727,7 @@ Deno.test("actual main check-only lifecycle owns shutdown but never a foreign PI
   assertEquals(shutdownGuards.length, 2); // normal daemon return and initialization/execution rejection
 });
 
-// nostr.watch-ops#21: Deno refuses --allow-net=.well-known ("empty label found
-// in FQDN"), so every child spawned for this URL exited before its ready
-// frame, tripped the pool-wide breaker and disabled every relay's check.
+// Deno refuses --allow-net=.well-known ("empty label found in FQDN").
 const wellKnown: CheckRequest = {
   ...input,
   url: "wss://.well-known/nip50/is:rising/sort:top/language:en",

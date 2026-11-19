@@ -1,13 +1,6 @@
 // deno-lint-ignore-file no-import-prefix -- Reuse the existing versioned offline assertion fixture.
 /**
  * Warmup must make progress past relays whose first check fails.
- *
- * Regression for the fisherman outage (nostr.watch-ops#21): the row
- * wss://.well-known/nip50/is:rising/sort:top/language:en (hostname
- * ".well-known") was accepted, every check child spawned for it was refused
- * --allow-net by Deno, the pool's failure breaker latched, every check then
- * failed, and warmup re-selected the same checked_at = -1 row ~100 times a
- * second with no delay, starving /healthz.
  */
 import {
   assert,
@@ -56,8 +49,7 @@ const uncheckedQuery = () =>
   db.query("SELECT url FROM relay_status WHERE checked_at = -1")
     .map(([url]) => url as string);
 
-/** A transport whose breaker has already tripped: every check is refused,
- * exactly what fisherman's pool did once .well-known exhausted it. */
+/** A transport whose breaker has already tripped: every check is refused. */
 function latchedTransport(): CheckProcesses {
   return {
     stopping: false,
@@ -65,8 +57,7 @@ function latchedTransport(): CheckProcesses {
   } as unknown as CheckProcesses;
 }
 
-/** Drive real warmup passes against the real DB and Worker, and fail
- * instead of spinning if warmup keeps re-selecting the same rows. */
+/** Run warmup against the real DB and Worker; throw if it keeps re-selecting. */
 async function warmup(worker: Worker, maxSelects = 10) {
   const pending: Promise<void>[] = [];
   let selects = 0;
@@ -107,7 +98,7 @@ function createWorker(transport: CheckProcesses): Worker {
 }
 
 warmupTest(
-  "regression: .well-known row and a failing check do not hot-loop warmup",
+  "warmup removes uncheckable rows and moves failed first checks out of the unchecked set",
   async () => {
     reset();
     seedNewRelay(WELL_KNOWN, "clearnet");
@@ -133,10 +124,8 @@ warmupTest(
 );
 
 warmupTest(
-  "regression: warmup stops re-selecting a row whose failure was not recorded",
+  "warmup attempts each URL once even when its failure is not recorded",
   async () => {
-    // A worker (or DB write) that cannot record the failure must not make the
-    // warmup loop forever: each URL is attempted once per warmup.
     const attempts: string[] = [];
     let selects = 0;
     const waits: number[] = [];

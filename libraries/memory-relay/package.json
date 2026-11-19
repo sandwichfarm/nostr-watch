@@ -1,6 +1,6 @@
 {
   "name": "@nostrwatch/memory-relay",
-  "version": "4.0.1",
+  "version": "4.0.2",
   "description": "A simple memory relay",
   "type": "module",
   "main": "dist/esm/index.mjs",

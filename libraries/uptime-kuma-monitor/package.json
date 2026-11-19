@@ -1,6 +1,6 @@
 {
   "name": "@nostrwatch/kuma",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Uptime Kuma PUSH monitor for Nostr relays using @nostrwatch/nocap (websocket adapter).",
   "type": "module",
   "main": "dist/index.js",

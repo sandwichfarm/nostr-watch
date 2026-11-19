@@ -57,7 +57,7 @@ this repository's changes.
   them as `network=fips`. Only the hostname is exempt from npub rejection;
   npub paths, other URL components, and non-FIPS hostnames remain blocked.
   Initial FIPS seeds require `trawler.seed.options.allowedNetworks` to include
-  `fips`. See [Trawler configuration](../apps/trawler/README.md#fips-discovery).
+  `fips`. See [Trawler configuration](/apps/trawler/#fips-discovery).
 - Kind 10166 advertises `['n', 'fips']`; kind 30166 preserves the same network
   tag and the `.fips` relay URL. Kind 1066 continues to identify the relay with
   its `r` tag. Kind 30385 preserves FIPS as its network.
@@ -105,7 +105,7 @@ the database. The [discovery report](proofs/fips/discovery.md) records this proo
 ## Verification
 
 The implementation audit and unit/regression strategy are recorded in
-[the implementation plan](../.memory/plans/fips-support.md). Verification covers
+[the implementation plan](https://github.com/sandwichfarm/nostr-watch/blob/next/.memory/plans/fips-support.md). Verification covers
 both URL classifiers, seeding and DB partitioning, direct transport, DNS privacy,
 monitor validation and publishing, rstate normalization/querying, Chronicle,
 GUI formatting, and browser rendering/filtering.

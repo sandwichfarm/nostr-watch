@@ -10,7 +10,7 @@ import {  WorkerOptions, AdapterWorkerResult, AdapterWebsocketWorker, IAdapterWe
 
 import { AdapterWebsocketWorkerCommand, IWebsocketAdapterCallbacks, defaultWebsocketAdapterOptions, defaultWebsocketRequestBody, WebsocketAdapterResult, WebsocketAdapterOptions, WebsocketRequestBody  } from '@nostrwatch/route66/core'
 import { IEvent } from "@nostrwatch/route66/interfaces";
-import { isLocalNetworkUrl } from "@nostrwatch/utils";
+import { dedupeUrls, isLocalNetworkUrl } from "@nostrwatch/utils";
 
 const queue = new PQueue({ concurrency: 5 });
 
@@ -102,7 +102,9 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
   private cleanRelayUrls(relays: string[]): string[] {
     // Never open sockets to this device or a private network from the browser:
     // relay URLs come from untrusted events (relay lists, hints, NIP-66 tags).
-    return relays.filter((r: string) => typeof r === 'string' && !r.includes(',') && !isLocalNetworkUrl(r));
+    // Callers build these lists by concatenation, so the same relay can appear
+    // many times; one request per relay is enough.
+    return dedupeUrls(relays).filter((r: string) => !r.includes(',') && !isLocalNetworkUrl(r));
   }
 
   private subscribeToFilters(

@@ -57,8 +57,7 @@ function latchedTransport(): CheckProcesses {
   } as unknown as CheckProcesses;
 }
 
-/** Drive real warmup passes against the real DB and Worker, and fail
- * instead of spinning if warmup keeps re-selecting the same rows. */
+/** Run warmup against the real DB and Worker; throw if it keeps re-selecting. */
 async function warmup(worker: Worker, maxSelects = 10) {
   const pending: Promise<void>[] = [];
   let selects = 0;
@@ -99,7 +98,7 @@ function createWorker(transport: CheckProcesses): Worker {
 }
 
 warmupTest(
-  "regression: .well-known row and a failing check do not hot-loop warmup",
+  "warmup removes uncheckable rows and moves failed first checks out of the unchecked set",
   async () => {
     reset();
     seedNewRelay(WELL_KNOWN, "clearnet");
@@ -125,10 +124,8 @@ warmupTest(
 );
 
 warmupTest(
-  "regression: warmup stops re-selecting a row whose failure was not recorded",
+  "warmup attempts each URL once even when its failure is not recorded",
   async () => {
-    // A worker (or DB write) that cannot record the failure must not make the
-    // warmup loop forever: each URL is attempted once per warmup.
     const attempts: string[] = [];
     let selects = 0;
     const waits: number[] = [];

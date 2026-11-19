@@ -171,8 +171,7 @@ export interface CheckProcessConfig {
   shutdownMs: number;
   /** How long check admission stays closed once more than maxRestarts
    * consecutive unexpected child failures occur (1000-3600000ms, default
-   * 60000). Admission then half-opens instead of staying closed until
-   * process restart. */
+   * 60000). Admission then half-opens. */
   failureCooldownMs?: number;
   launch: PublicationProcessConfig["launch"];
 }

@@ -718,10 +718,8 @@ export function clearPeriodSnapshots(url: string): void {
 }
 
 /**
- * Remove a relay that can never be checked (for example a hostname with an
- * empty label, wss://.well-known/...) from relay_status and its satellite
- * tables in one transaction. Such a relay was never checked successfully, so
- * nothing was published for it and no deletion event is queued.
+ * Remove a relay that can never be checked, with its satellite rows. Nothing
+ * was ever published for it, so no deletion is queued.
  * @returns true when a relay_status row was removed
  */
 export function removeUncheckableRelay(url: string): boolean {
@@ -741,9 +739,8 @@ export function removeUncheckableRelay(url: string): boolean {
 }
 
 /**
- * Record a failed first check so the relay leaves the unchecked set
- * (checked_at = -1) that warmup drains. Retries are incremented by the
- * caller, which gives the regular check loop its normal backoff.
+ * Move a relay whose first check failed out of the unchecked set
+ * (checked_at = -1). The caller increments retries.
  * @returns true when the row was still unchecked and has now been marked
  */
 export function markFirstCheckFailed(url: string, now = Math.round(Date.now() / 1000)): boolean {

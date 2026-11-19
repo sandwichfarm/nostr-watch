@@ -200,8 +200,6 @@ Deno.test("remediation drain prunes durably published rows without sends or thro
   reset();
   Deno.env.set("RELAYMON_NSEC", key);
   const c = config();
-  // Interleave already-acknowledged rows with real obligations, as the
-  // nostrings sweep leaves them on a long-lived DB.
   for (let i = 0; i < 25; i++) {
     const url = `wss://acked-${i}.invalid/`;
     seed(url);
@@ -228,7 +226,7 @@ Deno.test("remediation drain prunes durably published rows without sends or thro
       ["wss://hard-deleted.invalid/", "wss://unsent.invalid/"],
       "only rows without a durable ACK are sent",
     );
-    // 25 skipped rows at the old 200ms per row would take >= 5s.
+    // Skipped rows must not pay the per-send throttle.
     ok(elapsed < 2000, `drain took ${elapsed}ms`);
     strictEqual(fake.leases(), 0);
   } finally {
@@ -280,8 +278,7 @@ Deno.test("remediation drain is paced by first ACK, not the slowest relay, withi
     strictEqual(slowAcks.length, 2);
     strictEqual(fake.leases(), 2);
     strictEqual(finished, false);
-    // Settling the slow relay reopens the window; the drain then completes
-    // and still owns every lease until they are released.
+    // Settling the slow relay reopens the window; the drain awaits every lease.
     const release = async () => {
       while (!finished) {
         slowAcks.splice(0).forEach((ack) => ack());

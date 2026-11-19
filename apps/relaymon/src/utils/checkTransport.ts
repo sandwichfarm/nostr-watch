@@ -22,9 +22,7 @@ import {
   validateCheckResult,
 } from "./checkTransportProtocol.ts";
 
-/** A check request that can never run, whatever the state of the pool: the
- * fault is in the relay URL, not in a check child. It fails only its own
- * check and never counts toward the pool's unexpected-failure breaker. */
+/** The relay URL itself cannot be checked; never counts toward the breaker. */
 export class CheckInputError extends Error {
   constructor(readonly url: string, readonly detail: string) {
     super(`Cannot check ${url}: ${detail}`);
@@ -32,10 +30,7 @@ export class CheckInputError extends Error {
   }
 }
 
-/** Throws CheckInputError unless a child could be granted --allow-net for
- * this URL's hostname. Deno refuses to start with a hostname that has an
- * empty label (wss://.well-known/... has hostname ".well-known") or an
- * invalid character, so such a child would exit before its ready frame. */
+/** Deno refuses --allow-net for invalid hostnames, so the child could not start. */
 export function assertCheckableUrl(url: string): void {
   let hostname: string;
   try {
@@ -53,8 +48,6 @@ export function assertCheckableUrl(url: string): void {
   }
 }
 
-/** How long admission stays closed after the unexpected-failure breaker
- * trips, when relaymon.checks.execution.failureCooldownMs is not set. */
 export const DEFAULT_CHECK_FAILURE_COOLDOWN_MS = 60_000;
 
 export type CheckLauncher = (
@@ -80,7 +73,7 @@ export class CheckProcesses {
   >();
   private requests = new Set<Promise<unknown>>();
   private unexpectedFailures = 0;
-  /** When the breaker tripped; admission half-opens after the cooldown. */
+  /** Admission half-opens after the cooldown. */
   private trippedAt?: number;
   private abort = new AbortController();
   private closing?: Promise<void>;
@@ -128,11 +121,8 @@ export class CheckProcesses {
     }
   }
 
-  /** Whether the consecutive-unexpected-failure breaker refuses admission.
-   * It used to latch until process restart, so a burst of faults disabled
-   * every relay's check for good. After the cooldown it now half-opens: the
-   * streak is set back to the limit, so one further unexpected failure closes
-   * it for another cooldown while a clean result resets it fully. */
+  /** Half-open after the cooldown: one more unexpected failure re-trips,
+   * a clean result resets the streak. */
   private admissionClosed(): boolean {
     if (this.unexpectedFailures <= this.options.maxRestarts) return false;
     if (Date.now() - (this.trippedAt ?? 0) < this.cooldownMs) return true;
@@ -144,8 +134,7 @@ export class CheckProcesses {
   check(input: CheckRequest): Promise<NocapCheckResult> {
     checkRequest(input);
     checkDeadline(input);
-    // Input no child could ever run is refused before admission, so it can
-    // neither occupy a slot nor count against the shared breaker.
+    // Before admission, so it takes no slot and does not count toward the breaker.
     try {
       assertCheckableUrl(input.url);
     } catch (error) {
@@ -206,7 +195,6 @@ export class CheckProcesses {
     } catch (error) {
       queueMicrotask(() => this.dispatch());
       if (error instanceof CheckInputError) {
-        // Per-relay input fault: fail this check only, leave the streak alone.
         job.reject(error);
         return;
       }
@@ -428,7 +416,6 @@ export function checkLaunchPlan(
   inherited?: Parameters<typeof publicationLaunchPlan>[3],
 ) {
   checkRequest(input);
-  // The --allow-net grant below is this hostname; refuse what Deno would.
   assertCheckableUrl(input.url);
   const plan = publicationLaunchPlan(
     {
@@ -492,10 +479,8 @@ export async function checkNetwork(
   transport?: CheckProcesses,
 ): Promise<NocapCheckResult> {
   const input: CheckRequest = { url, checks, options, profile };
-  // Before either path: a URL no check can be run for is a per-relay input
-  // error (CheckInputError), never a pool fault or an offline result.
   assertCheckableUrl(url);
-  // Never point a check at this host or a private network.
+  // Before either path: never point a check at this host or a private network.
   await assertPublicTarget(url);
   if (transport) return await transport.check(input);
   // Existing deployments keep the original in-process behavior; NoCap runtime

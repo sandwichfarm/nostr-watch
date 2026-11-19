@@ -171,21 +171,13 @@ export const hasDisallowedNpub = (relay: string, url: URL = new URL(relay)): boo
   return [url.username, url.password, url.pathname, outsideAuthority].some(part => npub.test(part));
 };
 
-// One DNS label: letters, digits, '-' and '_' (seen in real relay hostnames),
-// 1-63 octets. WHATWG URL parsing has already lowercased and punycoded it.
+// '_' is allowed: it appears in real relay hostnames. Input is already punycoded.
 const HOSTNAME_LABEL = /^[a-z0-9_-]{1,63}$/i;
 
 /**
- * Whether a parsed URL hostname (`new URL(relay).hostname`) is a name or IP
- * literal a monitor can resolve and be granted network permission for.
- *
- * WHATWG URL parsing accepts hostnames such as `.well-known`, `a..b` or
- * `a*b.com`, but DNS cannot resolve them and Deno's `--allow-net` refuses to
- * start with them ("empty label found in FQDN", "invalid char found in FQDN").
- * Rejected: empty labels (leading dot, `a..b`, a lone or doubled trailing
- * dot), characters outside `[a-z0-9_-]`, labels over 63 octets and names over
- * 253 octets. A single trailing root dot (`relay.example.com.`) is accepted.
- * Bracketed IPv6 literals are accepted as the URL parser produced them.
+ * Whether a parsed `URL.hostname` is resolvable and accepted by Deno's
+ * `--allow-net`. WHATWG URL parsing accepts names such as `.well-known`,
+ * `a..b` or `a*b.com` that are neither. One trailing root dot is allowed.
  */
 export const isValidRelayHostname = (hostname: string): boolean => {
   if (typeof hostname !== 'string' || hostname.length === 0) return false;
@@ -215,9 +207,7 @@ export const qualifyRelayUrl = (maybeRelay: string): boolean => {
   // wss://(wss//relay.primal.net) (hostname="(wss")
   if ( !hostname.includes('.') ) return false;
 
-  // Empty labels (wss://.well-known/..., hostname=".well-known"), invalid
-  // characters and overlong labels. Such a relay can never be checked: the
-  // isolated check child is refused --allow-net for it and exits at startup.
+  // wss://.well-known/... (hostname=".well-known"): cannot be resolved or checked.
   if ( !isValidRelayHostname(hostname) ) return false;
 
   // Loopback, private, link-local, CGNAT and local-only names. Runs on the

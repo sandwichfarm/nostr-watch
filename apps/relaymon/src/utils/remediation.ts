@@ -312,15 +312,9 @@ export function drainRemediationDeletionQueue(config: Config, publication?: Publ
 }
 
 /**
- * Deletions whose relay leases may still be settling while the drain admits
- * the next row. The first ACK decides a row (that is the durable marker), but
- * Publisher.close() waits for every configured relay, including one whose
- * per-relay FIFO is full of check publications or whose attempts time out.
- * Awaiting that per row paced the whole backlog at the slowest relay's queue
- * depth.
- *
- * Bounded to half the per-relay IPC queue so the backlog can never occupy more
- * than half of any relay's admission slots; check publications keep the rest.
+ * How many deletions may still be releasing their relays while the drain moves
+ * on; the first ACK decides a row. Half the per-relay queue, so check
+ * publications keep the rest.
  */
 export function remediationReleaseWindow(config: Config): number {
   const perRelay = config.publisher?.transport?.maxPendingPerRelay;
@@ -330,12 +324,7 @@ export function remediationReleaseWindow(config: Config): number {
   return 8;
 }
 
-/**
- * Remove queue rows whose deletion is already durably recorded, in one
- * statement, before any network work. These rows need no send (the per-row
- * isDeletionPublished check below would drop them too), but walking them one
- * by one interleaved with real publishes left them queued for hours.
- */
+/** Drop rows whose deletion is already recorded, in one statement. */
 function pruneAlreadyPublishedRows(): number {
   db.query(
     `DELETE FROM remediation_deletion_queue
@@ -398,8 +387,6 @@ async function drainRemediationDeletionQueueOnce(config: Config, publication?: P
         // deletion path may already have completed this durable obligation.
         let ok = isDeletionPublished(url);
         if (!ok) {
-          // Admission bound: never hold more unsettled deletions than the
-          // window, so slow relays see a bounded share of their queue.
           while (releases.size >= releaseWindow) await Promise.race(releases);
           if (publication?.stopping) break;
           sent = true;
@@ -440,13 +427,11 @@ async function drainRemediationDeletionQueueOnce(config: Config, publication?: P
 
       // Stop between durable rows; do not schedule another backlog admission.
       if (publication?.stopping) break;
-      // Throttle between publishes. Rows cleared from the durable marker sent
-      // nothing, so they do not pay the relay rate-limit delay.
+      // Throttle between publishes only.
       if (sent) await new Promise((r) => setTimeout(r, DRAIN_DELAY_MS));
     }
 
-    // The drain still owns every lease it started: callers (ignore-list loops,
-    // shutdown) rely on its completion meaning no deletion is in flight.
+    // Callers rely on completion meaning no deletion is in flight.
     await Promise.allSettled([...releases]);
 
     const durationMs = Date.now() - startTime;

@@ -4,60 +4,10 @@ on:
   schedule:
     - cron: "0 0 * * *"
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
-    runs-on: ubuntu-latest
-    environment: next.nostr.watch
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22.15.0
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 11
-
-      - name: Install
-        run: pnpm install --frozen-lockfile
-
-      - name: Build Dependencies (GUI graph)
-        run: pnpm --filter @nostrwatch/gui... build
-
-      - name: Build Seeded GUI
-        timeout-minutes: 10
-        run: pnpm --filter @nostrwatch/gui build:seeded
-
-      - name: Check Artifact Size
-        run: du -sh apps/gui/dist
-
-      - name: Deploy to nsite
-        uses: sandwichfarm/nsite-action@v0.1.1
-        id: nsite_deploy
-        with:
-          directory: "./apps/gui/dist"
-          nbunksec: ${{ secrets.NBUNKSEC }}
-          relays: |
-            ${{ env.NSITE_RELAYS }}
-          servers: |
-            ${{ env.NSITE_SERVERS }}
-          purge: true
-
-      - name: Deploy to Bunny
-        uses: R-J-dev/bunny-deploy@v2.1.1
-        with:
-          access-key: ${{ secrets.BUNNY_API_KEY }}
-          directory-to-upload: "./apps/gui/dist"
-          storage-endpoint: "https://sg.storage.bunnycdn.com"
-          storage-zone-name: "nostr-watch"
-          storage-zone-password: ${{ secrets.BUNNY_STORAGE_ZONE_PASSWORD }}
-          concurrency: "50"
-          enable-delete-action: true
-          enable-purge-pull-zone: true
-          pull-zone-id: "3313140"
-          replication-timeout: "15000"
-          request-timeout: "30000"
-          retry-limit: "5"
+    uses: ./.github/workflows/gui-deploy.yml
+    secrets: inherit

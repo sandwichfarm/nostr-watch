@@ -66,46 +66,9 @@ jobs:
 
   deploy-gui:
     name: Deploy GUI
-    runs-on: ubuntu-latest
     needs: release
     if: always()
-    environment: next.nostr.watch
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22.15.0
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @nostrwatch/gui... build
-      - run: pnpm --filter @nostrwatch/gui build:seeded
-
-      - name: Deploy to nsite
-        uses: sandwichfarm/nsite-action@v0.7.0
-        with:
-          # Pin nsyte instead of resolving "latest" at deploy time.
-          version: v0.29.0
-          directory: "./apps/gui/dist"
-          nbunksec: ${{ secrets.NBUNKSEC }}
-          # Relays, Blossom servers and the SPA fallback come from the GUI's
-          # nsyte config. nsyte otherwise looks for .nsite/config.json in the
-          # repo root, which does not exist, and fails with "Missing servers".
-          config_path: apps/gui/.nsite/config.json
-
-      - name: Deploy to Bunny
-        uses: R-J-dev/bunny-deploy@v2.1.1
-        with:
-          access-key: ${{ secrets.BUNNY_API_KEY }}
-          directory-to-upload: "./apps/gui/dist"
-          storage-endpoint: "https://sg.storage.bunnycdn.com"
-          storage-zone-name: "nostr-watch"
-          storage-zone-password: ${{ secrets.BUNNY_STORAGE_ZONE_PASSWORD }}
-          concurrency: "50"
-          enable-delete-action: true
-          enable-purge-pull-zone: true
-          pull-zone-id: "3313140"
-          replication-timeout: "15000"
-          request-timeout: "30000"
-          retry-limit: "5"
+    permissions:
+      contents: read
+    uses: ./.github/workflows/gui-deploy.yml
+    secrets: inherit

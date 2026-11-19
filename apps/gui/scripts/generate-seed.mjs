@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -38,7 +39,52 @@ function envString(name, fallback) {
   return String(raw);
 }
 
+// The seed is a convenience: it only makes the first page load faster. Relays
+// are untrusted and may be slow, hostile or misconfigured, so nothing in this
+// script may fail or stall the build. Every stage works against a deadline and
+// keeps what it has; if the script still fails, an empty seed is written and
+// it exits 0. Set SEED_STRICT=true to turn failures into a non-zero exit.
 const scriptTimeoutMs = envNumber('SEED_SCRIPT_TIMEOUT_MS', 5 * 60 * 1000);
+const writeReserveMs = envNumber('SEED_NIP11_WRITE_RESERVE_MS', 15_000);
+const strict = envString('SEED_STRICT', 'false').toLowerCase() === 'true';
+// Relay queries stop here; the time after it is reserved for writing files.
+const queryDeadlineMs = scriptStartedAt + scriptTimeoutMs - writeReserveMs;
+const queryMsLeft = () => queryDeadlineMs - Date.now();
+let seedWritten = false;
+
+function emptyManifest(reason) {
+  return {
+    version: 1,
+    generatedAt: new Date().toISOString(),
+    empty: true,
+    reason,
+    groups: {
+      monitors: { files: [], events: 0 },
+      blocklist: { files: [], count: 0 },
+      checks: { files: [], events: 0 },
+      operators: { files: [], events: 0 },
+      nip11s: { files: [], count: 0 },
+    },
+  };
+}
+
+// Synchronous so it can run from the watchdog timer right before exit. The
+// manifest is what the app reads, so replacing it also retires any data files
+// a half-finished write left behind.
+function writeEmptySeed(reason) {
+  try {
+    mkdirSync(outDir, { recursive: true });
+    writeFileSync(path.join(outDir, 'manifest.json'), JSON.stringify(emptyManifest(reason), null, 2));
+    console.warn('[seed] wrote empty seed:', reason);
+  } catch (err) {
+    console.error('[seed] could not write empty seed', err);
+  }
+}
+
+function giveUp(reason) {
+  if (!seedWritten) writeEmptySeed(reason);
+  process.exit(strict ? 1 : 0);
+}
 
 function uniq(arr) {
   return Array.from(new Set(arr));
@@ -126,19 +172,30 @@ async function ensureWebSocketImpl() {
   }
 }
 
-async function queryMany(pool, relays, filters, { maxWaitMs }) {
+async function queryMany(pool, relays, filters, { maxWaitMs: requestedWaitMs }) {
   if (!filters.length || !relays.length) return { events: [], closes: [] };
+  const maxWaitMs = Math.min(requestedWaitMs, queryMsLeft());
+  if (!(maxWaitMs > 0)) return { events: [], closes: ['seed query deadline reached'] };
   return await new Promise((resolve) => {
     const events = [];
     const closes = [];
     let subcloser;
     let resolved = false;
+    let watchdog;
     const finish = (reasons) => {
       if (resolved) return;
       resolved = true;
+      clearTimeout(watchdog);
       if (Array.isArray(reasons)) closes.push(...reasons);
       resolve({ events, closes });
     };
+    // The pool's own maxWait relies on relays behaving. This does not.
+    watchdog = setTimeout(() => {
+      try {
+        subcloser?.close('seed query watchdog');
+      } catch {}
+      finish(['seed query watchdog']);
+    }, maxWaitMs + 2_000);
     const params = {
       maxWait: maxWaitMs,
       onevent: (event) => {
@@ -147,24 +204,28 @@ async function queryMany(pool, relays, filters, { maxWaitMs }) {
       onclose: finish,
     };
 
-    if (filters.length === 1) {
-      subcloser = pool.subscribeManyEose(relays, filters[0], params);
-      return;
-    }
-
-    const requests = [];
-    for (const url of relays) {
-      for (const filter of filters) {
-        requests.push({ url, filter });
+    try {
+      if (filters.length === 1) {
+        subcloser = pool.subscribeManyEose(relays, filters[0], params);
+        return;
       }
-    }
 
-    subcloser = pool.subscribeMap(requests, {
-      ...params,
-      oneose: () => {
-        subcloser?.close('closed automatically on eose');
-      },
-    });
+      const requests = [];
+      for (const url of relays) {
+        for (const filter of filters) {
+          requests.push({ url, filter });
+        }
+      }
+
+      subcloser = pool.subscribeMap(requests, {
+        ...params,
+        oneose: () => {
+          subcloser?.close('closed automatically on eose');
+        },
+      });
+    } catch (err) {
+      finish([`seed query failed: ${String(err)}`]);
+    }
   });
 }
 
@@ -174,7 +235,6 @@ async function main() {
   // In Node (especially <=20), global WebSocket may be missing.
   useWebSocketImplementation(websocketImplementation);
   const pool = new SimplePool();
-  const allowEmpty = envString('SEED_ALLOW_EMPTY', 'false').toLowerCase() === 'true';
 
   let nip66Relays = uniq(
     (envString('SEED_NIP66_RELAYS', '').split(',').map((s) => s.trim()).filter(Boolean).length
@@ -215,7 +275,8 @@ async function main() {
   const nip11TimeoutMs = envNumber('SEED_NIP11_TIMEOUT_MS', 5_000);
   const nip11Concurrency = envNumber('SEED_NIP11_CONCURRENCY', 30);
   const nip11BudgetMs = envNumber('SEED_NIP11_BUDGET_MS', 90_000);
-  const nip11WriteReserveMs = envNumber('SEED_NIP11_WRITE_RESERVE_MS', 15_000);
+  const nip11WriteReserveMs = writeReserveMs;
+  const operatorMetaBudgetMs = envNumber('SEED_OPERATOR_META_BUDGET_MS', 60_000);
 
   console.log('[seed] relays', { nip66: nip66Relays.length, userMeta: userMetaRelays.length });
 
@@ -238,9 +299,9 @@ async function main() {
   }
   const registrations = Array.from(registrationsByPubkey.values());
   console.log('[seed] registrations', registrations.length);
-  if (!allowEmpty && registrations.length === 0) {
-    throw new Error(
-      `[seed] No registrations received. This usually means the build environment cannot connect to the configured NIP-66 relays over WebSocket (wss://), or maxWaitMs (${maxWaitMs}) is too low. Set SEED_ALLOW_EMPTY=true to write empty seed files anyway.`
+  if (registrations.length === 0) {
+    console.warn(
+      `[seed] No registrations received. This usually means the build environment cannot connect to the configured NIP-66 relays over WebSocket (wss://), or maxWaitMs (${maxWaitMs}) is too low. Continuing with an empty seed.`
     );
   }
 
@@ -423,9 +484,9 @@ async function main() {
     (a, b) => (b?.created_at ?? 0) - (a?.created_at ?? 0)
   );
   console.log('[seed] checks', checks.length);
-  if (!allowEmpty && checks.length === 0) {
-    throw new Error(
-      `[seed] No check events (kind 30166) received. This usually means monitor relays are unreachable from this environment. Set SEED_ALLOW_EMPTY=true to write empty seed files anyway.`
+  if (checks.length === 0) {
+    console.warn(
+      `[seed] No check events (kind 30166) received. This usually means monitor relays are unreachable from this environment. Continuing without checks.`
     );
   }
 
@@ -446,13 +507,24 @@ async function main() {
   console.log('[seed] operator pubkeys (capped)', operatorPubkeys.length);
 
   const operatorMetaByKey = new Map();
-  for (const authors of chunk(operatorPubkeys, envNumber('SEED_OPERATOR_META_AUTHORS_PER_REQ', 50))) {
+  const operatorMetaDeadlineMs = Date.now() + operatorMetaBudgetMs;
+  const operatorAuthorChunks = chunk(operatorPubkeys, envNumber('SEED_OPERATOR_META_AUTHORS_PER_REQ', 50));
+  let operatorChunksDone = 0;
+  for (const authors of operatorAuthorChunks) {
+    const operatorMsLeft = Math.min(operatorMetaDeadlineMs - Date.now(), queryMsLeft());
+    if (operatorMsLeft <= 0) {
+      console.warn(
+        `[seed] operator-meta budget exhausted after ${operatorChunksDone}/${operatorAuthorChunks.length} batches; writing partial operator seed`
+      );
+      break;
+    }
+    operatorChunksDone++;
     const limit = Math.min(metaLimitMax, Math.max(50, authors.length * metaLimitMultiplier));
     const { events, closes } = await queryMany(
       pool,
       userMetaRelays,
       [{ kinds: [0, 10002], authors, limit }],
-      { maxWaitMs }
+      { maxWaitMs: Math.min(maxWaitMs, operatorMsLeft) }
     );
     if (closes.length) console.warn('[seed] operator-meta closes:', closes);
     for (const ev of events) {
@@ -607,6 +679,7 @@ async function main() {
   };
 
   await fs.writeFile(path.join(outDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
+  seedWritten = true;
 
   pool.destroy?.();
   console.log('[seed] wrote', {
@@ -621,14 +694,23 @@ async function main() {
 }
 
 const scriptTimer = setTimeout(() => {
-  console.error(`[seed] TIMEOUT: script exceeded ${scriptTimeoutMs / 1000}s limit — aborting`);
-  process.exit(1);
+  console.error(`[seed] TIMEOUT: script exceeded ${scriptTimeoutMs / 1000}s limit`);
+  giveUp(`timed out after ${scriptTimeoutMs / 1000}s`);
 }, scriptTimeoutMs);
 scriptTimer.unref();
 
 main()
+  .then(() => process.exit(0))
   .catch((err) => {
     console.error('[seed] failed', err);
-    process.exit(1);
-  })
-  .finally(() => clearTimeout(scriptTimer));
+    giveUp(`failed: ${String(err?.message ?? err)}`);
+  });
+
+// A relay can also break us outside the promise chain (socket errors, bad frames).
+process.on('uncaughtException', (err) => {
+  console.error('[seed] uncaught exception', err);
+  giveUp(`uncaught exception: ${String(err?.message ?? err)}`);
+});
+process.on('unhandledRejection', (err) => {
+  console.error('[seed] unhandled rejection', err);
+});

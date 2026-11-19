@@ -4,6 +4,7 @@ import { defaultWebsocketAdapterOptions } from "@base/core";
 import { IAdaptersArgument } from "@base/interfaces/IAdaptersArgument";
 import { Filter } from "nostr-tools";
 import { deterministicHash, isPRE, isRE } from "@base/utils";
+import { dedupeUrls } from "@nostrwatch/utils";
 import { StateManager } from "@base/managers/StateManager";
 import { NostrEvent } from "@base/models";
 import { SOURCE } from "@base/models/Event";
@@ -341,7 +342,8 @@ export class Service {
 
   addRelay(to: keyof IGroupedRelays, relay: string): void {
     if (!this._groupedRelays?.[to]) this._groupedRelays[to] = [];
-    this._groupedRelays?.[to].push(relay);
+    // Called repeatedly with relays from monitor relay lists; keep one of each.
+    this._groupedRelays[to] = dedupeUrls([...this._groupedRelays[to], relay]);
   }
 
   removeRelay(from: keyof IGroupedRelays, relay: string): void {
@@ -358,7 +360,7 @@ export class Service {
       console.warn(`setRelays called with empty array for group '${group}', ignoring`);
       return;
     }
-    this._groupedRelays[group] = [...relays];
+    this._groupedRelays[group] = dedupeUrls(relays);
   }
 
   /**

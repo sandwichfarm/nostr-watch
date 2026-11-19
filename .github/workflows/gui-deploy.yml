@@ -1,0 +1,111 @@
+name: GUI Deploy
+
+# Builds the seeded GUI once, stores it as an artifact, then deploys it down two
+# independent paths. A failure on one path (for example the nsite signing
+# bunker being offline) never holds back the other.
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build GUI
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.15.0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Dependencies (GUI graph)
+        run: pnpm --filter @nostrwatch/gui... build
+
+      # The seed step is best-effort: it exits 0 with a partial or empty seed
+      # when relays misbehave, so only a real build failure stops here.
+      - name: Build Seeded GUI
+        timeout-minutes: 15
+        run: pnpm --filter @nostrwatch/gui build:seeded
+
+      - name: Check Artifact Size
+        run: du -sh apps/gui/dist
+
+      - name: Upload GUI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gui-dist
+          path: apps/gui/dist
+          # dist contains .well-known/, which is skipped by default.
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  deploy-bunny:
+    name: Deploy to Bunny
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 30
+    environment: next.nostr.watch
+    steps:
+      - name: Download GUI artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: gui-dist
+          path: apps/gui/dist
+
+      - name: Deploy to Bunny
+        uses: R-J-dev/bunny-deploy@v2.1.1
+        with:
+          access-key: ${{ secrets.BUNNY_API_KEY }}
+          directory-to-upload: "./apps/gui/dist"
+          storage-endpoint: "https://sg.storage.bunnycdn.com"
+          storage-zone-name: "nostr-watch"
+          storage-zone-password: ${{ secrets.BUNNY_STORAGE_ZONE_PASSWORD }}
+          concurrency: "50"
+          enable-delete-action: true
+          enable-purge-pull-zone: true
+          pull-zone-id: "3313140"
+          replication-timeout: "15000"
+          request-timeout: "30000"
+          retry-limit: "5"
+
+  deploy-nsite:
+    name: Deploy to nsite
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 30
+    environment: next.nostr.watch
+    steps:
+      # Only for apps/gui/.nsite/config.json; the site itself is the artifact.
+      - uses: actions/checkout@v4
+
+      - name: Download GUI artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: gui-dist
+          path: apps/gui/dist
+
+      - name: Deploy to nsite
+        uses: sandwichfarm/nsite-action@v0.7.0
+        with:
+          # Pin nsyte instead of resolving "latest" at deploy time.
+          version: v0.29.0
+          directory: "./apps/gui/dist"
+          nbunksec: ${{ secrets.NBUNKSEC }}
+          # Relays, Blossom servers and the SPA fallback come from the GUI's
+          # nsyte config. nsyte otherwise looks for .nsite/config.json in the
+          # repo root, which does not exist, and fails with "Missing servers".
+          config_path: apps/gui/.nsite/config.json
